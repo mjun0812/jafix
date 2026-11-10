@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use markdown::mdast::Node;
+use markdown::mdast::{Node, ReferenceKind};
 use markdown::{Constructs, ParseOptions};
 
 /// Markdownの本文に当たるText nodeの、元のソース上のバイト範囲を出現順に返す
@@ -26,14 +26,38 @@ fn collect(node: &Node, src: &str, ranges: &mut Vec<Range<usize>>) {
     };
     match node {
         Node::Text(_) => ranges.push(range(node)),
+        // 省略形とcollapsed形の文字列は、定義のラベルを兼ねるので直さない
+        Node::LinkReference(reference) if reference.reference_kind != ReferenceKind::Full => {}
         // `<https://...>` の自動リンクと裸のURLもLinkになり、子のTextがURLそのものになる
-        Node::Link(_) if !src[range(node)].starts_with('[') => {}
+        Node::Link(_) if src[range(node)].starts_with('<') => {}
+        // 裸のURLは空白までを取り込み、`）` や日本語の文字も含む。対応の取れない `）` から後ろはURLではない
+        Node::Link(_) if !src[range(node)].starts_with('[') => {
+            let link = range(node);
+            ranges.extend(after_unmatched_closing_paren(
+                &src[link.clone()],
+                link.start,
+            ));
+        }
         _ => {
             for child in node.children().into_iter().flatten() {
                 collect(child, src, ranges);
             }
         }
     }
+}
+
+/// `text` のうち、`（` と対にならない最初の `）` から終わりまでの範囲を返す。`start` は `text` のソース上の開始位置
+fn after_unmatched_closing_paren(text: &str, start: usize) -> Option<Range<usize>> {
+    let mut depth = 0;
+    for (offset, c) in text.char_indices() {
+        match c {
+            '（' => depth += 1,
+            '）' if depth == 0 => return Some(start + offset..start + text.len()),
+            '）' => depth -= 1,
+            _ => {}
+        }
+    }
+    None
 }
 
 #[cfg(test)]
@@ -96,5 +120,48 @@ mod tests {
             prose("![代替 A](a.png) [文字](<語 A> \"題 A\") 外"),
             vec![" ", "文字", " 外"]
         );
+    }
+
+    #[test]
+    fn excludes_shortcut_and_collapsed_reference_link_text_but_keeps_full_reference_link_text() {
+        assert_eq!(
+            prose(
+                "詳細は[設定 API]を参照。\n\n別に[設定 API][]と[文字][設定 API]も。\n\n[設定 API]: https://example.com/api\n"
+            ),
+            vec!["詳細は", "を参照。", "別に", "と", "文字", "も。"]
+        );
+    }
+
+    #[test]
+    fn treats_reference_link_text_without_definition_as_prose() {
+        assert_eq!(
+            prose("[設定 API] と [設定 API][]\n"),
+            vec!["[設定 API] と [設定 API][]"]
+        );
+    }
+
+    #[test]
+    fn ends_bare_urls_at_the_first_unmatched_fullwidth_closing_paren() {
+        assert_eq!(
+            prose("公式サイト（https://example.com）を参照する。"),
+            vec!["公式サイト（", "）を参照する。"]
+        );
+    }
+
+    #[test]
+    fn keeps_balanced_fullwidth_parens_inside_bare_urls() {
+        assert_eq!(
+            prose("公式サイト（https://ja.wikipedia.org/wiki/東京（駅））を参照する。"),
+            vec!["公式サイト（", "）を参照する。"]
+        );
+        assert_eq!(
+            prose("https://ja.wikipedia.org/wiki/東京（駅） の記事"),
+            vec![" の記事"]
+        );
+    }
+
+    #[test]
+    fn keeps_fullwidth_parens_inside_autolinks() {
+        assert_eq!(prose("<https://example.com/a）b> 外"), vec![" 外"]);
     }
 }

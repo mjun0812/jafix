@@ -54,6 +54,32 @@ fn fix_leaves_code_urls_front_matter_html_and_element_boundaries_unchanged() {
 }
 
 #[test]
+fn fix_leaves_shortcut_and_collapsed_reference_link_text_but_fixes_full_reference_link_text() {
+    let original = "詳細は[設定 API]を参照。\n\n別に[設定 API][]と[設定 API][設定 API]も。\n\n[設定 API]: https://example.com/api\n";
+    let expected = "詳細は[設定 API]を参照。\n\n別に[設定 API][]と[設定API][設定 API]も。\n\n[設定 API]: https://example.com/api\n";
+    assert_eq!(fix_one_file(original), expected);
+    assert_eq!(fix_one_file(expected), expected);
+}
+
+#[test]
+fn fix_replaces_fullwidth_parens_around_a_bare_url() {
+    let cases = [
+        (
+            "公式サイト（https://example.com）を参照する。\n",
+            "公式サイト(https://example.com)を参照する。\n",
+        ),
+        (
+            "公式サイト（https://ja.wikipedia.org/wiki/東京（駅））を参照する。\n",
+            "公式サイト(https://ja.wikipedia.org/wiki/東京（駅）)を参照する。\n",
+        ),
+    ];
+    for (original, expected) in cases {
+        assert_eq!(fix_one_file(original), expected);
+        assert_eq!(fix_one_file(expected), expected);
+    }
+}
+
+#[test]
 fn fix_accepts_files_with_any_extension() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("t.txt", "日本語 Rust\n");
