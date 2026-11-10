@@ -1,7 +1,10 @@
+use std::borrow::Cow;
 use std::ops::Range;
 use std::sync::LazyLock;
 
 use regex::Regex;
+
+use crate::prose::Prose;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuleId {
@@ -11,6 +14,14 @@ pub enum RuleId {
 }
 
 impl RuleId {
+    /// 組み込みのルールのすべて。設定の指摘ルールの `id` と重ならないことを確かめるのに使う
+    #[expect(dead_code, reason = "skeleton: not implemented")]
+    pub const ALL: [RuleId; 3] = [
+        RuleId::FullwidthParen,
+        RuleId::SpaceBetweenJaAndAlnum,
+        RuleId::SpaceBetweenJaAndParen,
+    ];
+
     /// `check` の出力の `[<rule-id>]` に使う名前
     pub fn name(self) -> &'static str {
         match self {
@@ -27,6 +38,12 @@ impl RuleId {
             RuleId::SpaceBetweenJaAndParen => "日本語と括弧の間の空白を削除する",
         }
     }
+
+    /// 見出しの中で空白のルールに当たったときの指摘の文面。空白を消すとアンカーが変わることを伝える
+    #[expect(dead_code, reason = "skeleton: not implemented")]
+    pub fn heading_message(self) -> &'static str {
+        todo!("skeleton: not implemented")
+    }
 }
 
 /// 修正ルールに当たった1箇所。`range` は元のソース上のバイト範囲で、`replacement` に置き換える
@@ -37,6 +54,50 @@ pub struct Finding {
     pub rule: RuleId,
 }
 
+/// 設定の `[[rules]]` で足した指摘ルール
+#[derive(Debug)]
+#[expect(dead_code, reason = "skeleton: not implemented")]
+pub struct CustomRule {
+    id: String,
+    message: String,
+    regex: Regex,
+}
+
+impl CustomRule {
+    /// `pattern` をRustの `regex` crateの正規表現として読む。読めなければ理由を返す
+    #[expect(dead_code, unused_variables, reason = "skeleton: not implemented")]
+    pub fn pattern(id: String, message: String, pattern: &str) -> Result<Self, String> {
+        todo!("skeleton: not implemented")
+    }
+
+    /// `words` の文字列をそのまま探す。同じ位置で重なる語は、長いほうに当てる。空の文字列があれば理由を返す
+    #[expect(dead_code, unused_variables, reason = "skeleton: not implemented")]
+    pub fn words(id: String, message: String, words: &[String]) -> Result<Self, String> {
+        todo!("skeleton: not implemented")
+    }
+
+    #[expect(dead_code, reason = "skeleton: not implemented")]
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+}
+
+/// 指摘ルールに当たった1箇所。直さずに指摘として出す。`range` は元のソース上のバイト範囲
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[expect(dead_code, reason = "skeleton: not implemented")]
+pub struct Report<'r> {
+    pub range: Range<usize>,
+    /// `check` の出力の `[<rule-id>]` に使う名前
+    pub rule: &'r str,
+    pub message: Cow<'r, str>,
+}
+
+/// 本文の範囲の中で指摘ルール (見出しの中の空白と、設定の `custom`) に当たる箇所を、位置の順に返す
+#[expect(dead_code, unused_variables, reason = "skeleton: not implemented")]
+pub fn report<'r>(src: &str, prose: &[Prose], custom: &'r [CustomRule]) -> Vec<Report<'r>> {
+    todo!("skeleton: not implemented")
+}
+
 static SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new("[ \u{3000}]+").unwrap());
 
 // `\p{Han}` のような省略形はScript_Extensionsで判定し、`、` や `。` まで含んでしまうので、Scriptで判定する
@@ -44,9 +105,9 @@ static JAPANESE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}ー]$").unwrap());
 
 /// 本文の範囲の中で修正ルールに当たる箇所を、位置の順に返す
-pub fn find(src: &str, prose: &[Range<usize>]) -> Vec<Finding> {
+pub fn find(src: &str, prose: &[Prose]) -> Vec<Finding> {
     let mut findings = Vec::new();
-    for range in prose {
+    for Prose { range, .. } in prose {
         let text = &src[range.clone()];
         for (i, paren) in text.match_indices(['（', '）']) {
             let start = range.start + i;
@@ -94,13 +155,19 @@ fn is_japanese(c: char) -> bool {
 }
 
 #[cfg(test)]
-// 本文の範囲を1つだけ渡すテストで、範囲の配列を意図して書いている
-#[allow(clippy::single_range_in_vec_init)]
 mod tests {
     use super::*;
 
+    /// 見出しの外にある本文の範囲を1つだけ持つ配列
+    fn body(range: Range<usize>) -> [Prose; 1] {
+        [Prose {
+            range,
+            in_heading: false,
+        }]
+    }
+
     fn find_all(src: &str) -> Vec<(&str, &'static str, RuleId)> {
-        find(src, &[0..src.len()])
+        find(src, &body(0..src.len()))
             .into_iter()
             .map(|f| (&src[f.range], f.replacement, f.rule))
             .collect()
@@ -190,8 +257,8 @@ mod tests {
     #[test]
     fn ignores_spaces_at_the_edges_of_a_range() {
         let src = "日本語 Rust";
-        assert_eq!(find(src, &[0.."日本語 ".len()]), vec![]);
-        assert_eq!(find(src, &["日本語".len()..src.len()]), vec![]);
+        assert_eq!(find(src, &body(0.."日本語 ".len())), vec![]);
+        assert_eq!(find(src, &body("日本語".len()..src.len())), vec![]);
     }
 
     #[test]
@@ -199,7 +266,7 @@ mod tests {
         let src = "日本語 Rust と（外） 語 A";
         let start = src.find("語 A").unwrap();
         assert_eq!(
-            find(src, &[start..src.len()]),
+            find(src, &body(start..src.len())),
             vec![Finding {
                 range: start + "語".len()..start + "語 ".len(),
                 replacement: "",

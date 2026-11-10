@@ -3,8 +3,17 @@ use std::ops::Range;
 use markdown::mdast::{Node, ReferenceKind};
 use markdown::{Constructs, ParseOptions};
 
-/// Markdownの本文に当たるText nodeの、元のソース上のバイト範囲を出現順に返す
-pub fn prose_ranges(src: &str) -> Vec<Range<usize>> {
+/// 本文の1つの範囲
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Prose {
+    /// 元のソース上のバイト範囲
+    pub range: Range<usize>,
+    /// 見出し (ATX形式とsetext形式) の中にあるか。見出しの空白を直すとアンカーが変わるので、空白のルールは指摘にする
+    pub in_heading: bool,
+}
+
+/// Markdownの本文に当たるText nodeの範囲を出現順に返す
+pub fn prose_ranges(src: &str) -> Vec<Prose> {
     let options = ParseOptions {
         constructs: Constructs {
             frontmatter: true,
@@ -19,13 +28,16 @@ pub fn prose_ranges(src: &str) -> Vec<Range<usize>> {
 }
 
 // コード・HTML・front matterのnodeは子を持たず、値をText nodeにしないので、たどるだけで除かれる
-fn collect(node: &Node, src: &str, ranges: &mut Vec<Range<usize>>) {
+fn collect(node: &Node, src: &str, ranges: &mut Vec<Prose>) {
     let range = |node: &Node| {
         let position = node.position().expect("to_mdastのnodeは位置を持つ");
         position.start.offset..position.end.offset
     };
     match node {
-        Node::Text(_) => ranges.push(range(node)),
+        Node::Text(_) => ranges.push(Prose {
+            range: range(node),
+            in_heading: false,
+        }),
         // 省略形とcollapsed形の文字列は、定義のラベルを兼ねるので直さない
         Node::LinkReference(reference) if reference.reference_kind != ReferenceKind::Full => {}
         // `<https://...>` の自動リンクと裸のURLもLinkになり、子のTextがURLそのものになる
@@ -33,10 +45,12 @@ fn collect(node: &Node, src: &str, ranges: &mut Vec<Range<usize>>) {
         // 裸のURLは空白までを取り込み、`）` や日本語の文字も含む。対応の取れない `）` から後ろはURLではない
         Node::Link(_) if !src[range(node)].starts_with('[') => {
             let link = range(node);
-            ranges.extend(after_unmatched_closing_paren(
-                &src[link.clone()],
-                link.start,
-            ));
+            ranges.extend(
+                after_unmatched_closing_paren(&src[link.clone()], link.start).map(|range| Prose {
+                    range,
+                    in_heading: false,
+                }),
+            );
         }
         _ => {
             for child in node.children().into_iter().flatten() {
@@ -65,7 +79,10 @@ mod tests {
     use super::*;
 
     fn prose(src: &str) -> Vec<&str> {
-        prose_ranges(src).into_iter().map(|r| &src[r]).collect()
+        prose_ranges(src)
+            .into_iter()
+            .map(|p| &src[p.range])
+            .collect()
     }
 
     #[test]

@@ -2,11 +2,15 @@ use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 
+use crate::rules::CustomRule;
+
 /// `$XDG_CONFIG_HOME/jafix/config.toml` (未設定なら `~/.config/jafix/config.toml`) の内容
 #[derive(Debug, Default)]
 pub struct Config {
     /// symlinkを解決した実体のパス
     exclude: Vec<PathBuf>,
+    /// `[[rules]]` で足した指摘ルール
+    rules: Vec<CustomRule>,
 }
 
 #[derive(Deserialize)]
@@ -52,7 +56,10 @@ pub fn load() -> Result<Config, String> {
             exclude.push(canonical);
         }
     }
-    Ok(Config { exclude })
+    Ok(Config {
+        exclude,
+        rules: Vec::new(),
+    })
 }
 
 impl Config {
@@ -60,5 +67,16 @@ impl Config {
     pub fn is_excluded(&self, path: &Path) -> bool {
         path.canonicalize()
             .is_ok_and(|canonical| self.exclude.contains(&canonical))
+    }
+
+    /// `path` の実体が `report-exclude` のglobのいずれかに当たればtrue。当たるファイルでは指摘ルールの指摘を出さない
+    #[expect(dead_code, unused_variables, reason = "skeleton: not implemented")]
+    pub fn is_report_excluded(&self, path: &Path) -> bool {
+        todo!("skeleton: not implemented")
+    }
+
+    #[expect(dead_code, reason = "skeleton: not implemented")]
+    pub fn rules(&self) -> &[CustomRule] {
+        &self.rules
     }
 }
