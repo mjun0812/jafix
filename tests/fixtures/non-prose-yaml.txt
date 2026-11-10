@@ -1,0 +1,19 @@
+---
+title: 日本語 Rust （補足）
+---
+
+```text
+日本語 Rust （補足）
+```
+
+    日本語 Rust （補足）
+
+`日本語 Rust （補足）` と `code` の文。
+
+[リンク](<日本語 Rust （補足）>) と <https://example.com/（補足）> と https://example.com と www.example.com と https://example.com/（補足） の文。
+
+**強調** の文と [link](https://example.com) の文と <span>x</span> の文。
+
+<div>
+日本語 Rust （補足）
+</div>
