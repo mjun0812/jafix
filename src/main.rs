@@ -6,7 +6,7 @@ mod rules;
 
 use std::fs;
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
@@ -104,15 +104,7 @@ fn run_fix(files: &[PathBuf]) -> ExitCode {
         if config.is_excluded(path) {
             continue;
         }
-        let result = fs::read_to_string(path).and_then(|src| {
-            let findings = rules::find(&src, &prose::prose_ranges(&src));
-            let fixed = apply::apply(&src, &findings, &TargetLines::All);
-            if fixed == src {
-                return Ok(());
-            }
-            fs::write(path, fixed)
-        });
-        if let Err(e) = result {
+        if let Err(e) = fix_file(path, &TargetLines::All) {
             eprintln!("jafix: {}: {e}", path.display());
             failed = true;
         }
@@ -147,15 +139,7 @@ fn run_hook(agent: Agent) -> ExitCode {
         eprintln!("jafix: {error}");
     }
     for target in &targets.files {
-        let result = fs::read_to_string(&target.path).and_then(|src| {
-            let findings = rules::find(&src, &prose::prose_ranges(&src));
-            let fixed = apply::apply(&src, &findings, &target.lines);
-            if fixed == src {
-                return Ok(());
-            }
-            fs::write(&target.path, fixed)
-        });
-        if let Err(e) = result {
+        if let Err(e) = fix_file(&target.path, &target.lines) {
             eprintln!("jafix: {}: {e}", target.path.display());
             failed = true;
         }
@@ -165,4 +149,15 @@ fn run_hook(agent: Agent) -> ExitCode {
     } else {
         ExitCode::SUCCESS
     }
+}
+
+/// 変更が無ければ書き戻さない
+fn fix_file(path: &Path, lines: &TargetLines) -> std::io::Result<()> {
+    let src = fs::read_to_string(path)?;
+    let findings = rules::find(&src, &prose::prose_ranges(&src));
+    let fixed = apply::apply(&src, &findings, lines);
+    if fixed == src {
+        return Ok(());
+    }
+    fs::write(path, fixed)
 }
