@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
+use std::process::{Command, Output, Stdio};
 
 use tempfile::TempDir;
 
@@ -50,6 +51,25 @@ impl Sandbox {
 
     pub fn run(&self, args: &[&str]) -> Output {
         self.command().args(args).output().unwrap()
+    }
+
+    /// `jafix hook <agent>` を、`input` を標準入力に渡して起動する
+    pub fn hook(&self, agent: &str, input: &str) -> Output {
+        let mut child = self
+            .command()
+            .args(["hook", agent])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(input.as_bytes())
+            .unwrap();
+        child.wait_with_output().unwrap()
     }
 }
 

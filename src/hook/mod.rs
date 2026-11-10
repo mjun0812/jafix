@@ -20,6 +20,5 @@ pub struct Targets {
 }
 
 pub fn is_markdown(path: &Path) -> bool {
-    let _ = path;
-    todo!("skeleton: not implemented")
+    path.extension().is_some_and(|ext| ext == "md")
 }

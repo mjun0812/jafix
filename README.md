@@ -53,6 +53,58 @@ jafix fix t.md
 | 1          | 修正ルールに当たる箇所が1件以上ある    | -                                              |
 | 2          | ファイルを読めない、設定ファイルが不正 | ファイルを読み書きできない、設定ファイルが不正 |
 
+## hookへの登録
+
+`jafix hook claude` と `jafix hook codex` は、PostToolUse hookの入力JSONを標準入力から読み、agentが今回の編集で追加・変更したMarkdownファイル(`.md`)の行だけを直します。標準出力には何も書きません。
+
+Claude Codeでは、`settings.json` の `PostToolUse` に登録します。対象行は、Edit・Writeの結果にある差分の `+` 行です。新規作成のファイルは全行を直します。
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [{ "type": "command", "command": "jafix hook claude" }]
+      }
+    ]
+  }
+}
+```
+
+Codexでは、`hooks.json` の `PostToolUse` に登録します。対象行は、apply_patchのpatchの `+` 行を編集後のファイルで位置づけたものです。`Bash` で呼んだapply_patchのpatchも読みます。
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "^(apply_patch|Bash)$",
+        "hooks": [{ "type": "command", "command": "jafix hook codex" }]
+      }
+    ]
+  }
+}
+```
+
+hookの終了コードは次のとおりです。終了コード1はagentの作業を止めず(Claude CodeとCodexのどちらも同じ)、利用者に失敗として見えます。
+
+| 終了コード | 意味                                                                                                        |
+| ---------- | ----------------------------------------------------------------------------------------------------------- |
+| 0          | 直した、または直すものが無かった                                                                            |
+| 1          | 入力JSONを読めない、設定ファイルが不正、対象行を決められない、ファイルを読み書きできない(理由は標準エラー) |
+
+対象行を決められないのは、Claude Codeの入力に差分が無いときと、編集後のファイルでCodexのpatchのchunkの位置を1か所に決められないときです。そのファイルは変えずに、他のファイルは直します。
+
+jafixの対象行は、agentが書いた直後のファイルを前提にします。oxfmtなど同じファイルを書き換える他のformatterと並列に登録すると、行の位置がずれることもあります。その場合は、1つのhookのscriptの中でjafixを先に呼び、hookの入力JSONを標準入力でjafixへ渡してから、他のformatterを呼びます。
+
+```zsh
+#!/usr/bin/env zsh
+input=$(cat)
+print -r -- "$input" | jafix hook claude
+# この後に他のformatterを呼ぶ
+```
+
 ## 設定ファイル
 
 設定ファイルは `$XDG_CONFIG_HOME/jafix/config.toml` です。`XDG_CONFIG_HOME` が未設定なら `~/.config/jafix/config.toml` を読みます。設定ファイルが無ければ、何も除外しません。
@@ -62,6 +114,8 @@ jafix fix t.md
 ```toml
 exclude = ["~/.dotfiles/docs/bad-examples.md"]
 ```
+
+`exclude` の値には、絶対パスか `~/` で始まるパスを書きます。hookを実行する作業ディレクトリは一定しないためです。
 
 `exclude` 以外のキーがあるとき、またはTOMLとして読めないときは、理由を標準エラーに書いて終了コード2で終えます。
 

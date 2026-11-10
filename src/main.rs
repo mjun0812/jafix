@@ -5,7 +5,7 @@ mod prose;
 mod rules;
 
 use std::fs;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -126,6 +126,43 @@ fn run_fix(files: &[PathBuf]) -> ExitCode {
 
 /// 標準出力には何も書かない。決められなかった理由や失敗があれば標準エラーに書いてexit 1
 fn run_hook(agent: Agent) -> ExitCode {
-    let _ = agent;
-    todo!("skeleton: not implemented")
+    let mut input = String::new();
+    if let Err(e) = std::io::stdin().read_to_string(&mut input) {
+        eprintln!("jafix: 標準入力を読めない: {e}");
+        return ExitCode::FAILURE;
+    }
+    let config = match config::load() {
+        Ok(config) => config,
+        Err(e) => {
+            eprintln!("jafix: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let targets = match agent {
+        Agent::Claude => hook::claude::targets(&input, &config),
+        Agent::Codex => hook::codex::targets(&input, &config),
+    };
+    let mut failed = !targets.errors.is_empty();
+    for error in &targets.errors {
+        eprintln!("jafix: {error}");
+    }
+    for target in &targets.files {
+        let result = fs::read_to_string(&target.path).and_then(|src| {
+            let findings = rules::find(&src, &prose::prose_ranges(&src));
+            let fixed = apply::apply(&src, &findings, &target.lines);
+            if fixed == src {
+                return Ok(());
+            }
+            fs::write(&target.path, fixed)
+        });
+        if let Err(e) = result {
+            eprintln!("jafix: {}: {e}", target.path.display());
+            failed = true;
+        }
+    }
+    if failed {
+        ExitCode::FAILURE
+    } else {
+        ExitCode::SUCCESS
+    }
 }
