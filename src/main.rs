@@ -27,7 +27,7 @@ enum Command {
     Check { files: Vec<PathBuf> },
     /// ファイルの全行に修正ルールを適用して書き戻す
     Fix { files: Vec<PathBuf> },
-    /// agentのPostToolUse hookの入力を標準入力から読み、今回の編集の行を直す
+    /// agentのPostToolUse hookの入力を標準入力から読み、今回の編集の行を直して、その行の指摘を標準エラーで返す
     Hook { agent: Agent },
 }
 
@@ -71,7 +71,11 @@ fn run_check(files: &[PathBuf]) -> ExitCode {
         };
         let prose = prose::prose_ranges(&src);
         let findings = rules::find(&src, &prose);
-        let reports = rules::report(&src, &prose, config.rules());
+        let reports = if config.is_report_excluded(path) {
+            Vec::new()
+        } else {
+            rules::report(&src, &prose, config.rules())
+        };
         let mut lines: Vec<(usize, &str, &str)> = findings
             .iter()
             .map(|finding| {
@@ -86,12 +90,11 @@ fn run_check(files: &[PathBuf]) -> ExitCode {
             .collect();
         lines.sort_by_key(|&(start, ..)| start);
         let index = LineIndex::new(&src);
-        for (start, message, rule) in &lines {
-            let (line, column) = index.line_col(*start);
+        for &(start, message, rule) in &lines {
             let _ = writeln!(
                 stdout,
-                "{}:{line}:{column}: {message} [{rule}]",
-                path.display()
+                "{}",
+                location_line(path, index.line_col(start), message, rule)
             );
         }
         found |= !lines.is_empty();
@@ -101,6 +104,11 @@ fn run_check(files: &[PathBuf]) -> ExitCode {
         (false, true) => ExitCode::from(1),
         (false, false) => ExitCode::SUCCESS,
     }
+}
+
+/// `check` とhookが箇所と指摘を出す `<path>:<line>:<column>: <message> [<rule-id>]` の行
+fn location_line(path: &Path, (line, column): (usize, usize), message: &str, rule: &str) -> String {
+    format!("{}:{line}:{column}: {message} [{rule}]", path.display())
 }
 
 /// 読み書きや設定の失敗があればexit 2
@@ -129,7 +137,8 @@ fn run_fix(files: &[PathBuf]) -> ExitCode {
     }
 }
 
-/// 標準出力には何も書かない。決められなかった理由や失敗があれば標準エラーに書いてexit 1
+/// 標準出力には何も書かない。今回変えた行に指摘があれば、指摘と、決められなかった理由や失敗を標準エラーに書いてexit 2。
+/// 指摘が無く、決められなかった理由や失敗があれば標準エラーに書いてexit 1
 fn run_hook(agent: Agent) -> ExitCode {
     let mut input = String::new();
     if let Err(e) = std::io::stdin().read_to_string(&mut input) {
@@ -147,30 +156,66 @@ fn run_hook(agent: Agent) -> ExitCode {
         Agent::Claude => hook::claude::targets(&input, &config),
         Agent::Codex => hook::codex::targets(&input, &config),
     };
-    let mut failed = !targets.errors.is_empty();
-    for error in &targets.errors {
-        eprintln!("jafix: {error}");
-    }
+    let mut errors: Vec<String> = targets
+        .errors
+        .iter()
+        .map(|error| format!("jafix: {error}"))
+        .collect();
+    let mut reports = Vec::new();
     for target in &targets.files {
-        if let Err(e) = fix_file(&target.path, &target.lines) {
-            eprintln!("jafix: {}: {e}", target.path.display());
-            failed = true;
+        let fixed = match fix_file(&target.path, &target.lines) {
+            Ok(fixed) => fixed,
+            Err(e) => {
+                errors.push(format!("jafix: {}: {e}", target.path.display()));
+                continue;
+            }
+        };
+        if config.is_report_excluded(&target.path) {
+            continue;
+        }
+        // 修正ルールは改行を足し引きしないので、対象行は直した後の内容でも同じ行番号である
+        let index = LineIndex::new(&fixed);
+        for report in rules::report(&fixed, &prose::prose_ranges(&fixed), config.rules()) {
+            let (line, column) = index.line_col(report.range.start);
+            if !target.lines.contains(line) {
+                continue;
+            }
+            reports.push(location_line(
+                &target.path,
+                (line, column),
+                &report.message,
+                report.rule,
+            ));
         }
     }
-    if failed {
-        ExitCode::FAILURE
-    } else {
-        ExitCode::SUCCESS
+    if reports.is_empty() {
+        for error in &errors {
+            eprintln!("{error}");
+        }
+        return if errors.is_empty() {
+            ExitCode::SUCCESS
+        } else {
+            ExitCode::FAILURE
+        };
     }
+    // PostToolUseのexit 2の標準エラーはagentへ届く。Codexでは元のtoolの出力がこの文面に置き換わるので、
+    // 編集が適用済みであることを先に伝える
+    eprintln!(
+        "jafix: 今回変えた行に指摘がある。編集は適用済み。指摘を直すか、誤検知なら直さずに進めてよい"
+    );
+    for line in reports.iter().chain(&errors) {
+        eprintln!("{line}");
+    }
+    ExitCode::from(2)
 }
 
-/// 変更が無ければ書き戻さない
-fn fix_file(path: &Path, lines: &TargetLines) -> std::io::Result<()> {
+/// 対象行に修正ルールを適用した内容を返す。変更が無ければ書き戻さない
+fn fix_file(path: &Path, lines: &TargetLines) -> std::io::Result<String> {
     let src = fs::read_to_string(path)?;
     let findings = rules::find(&src, &prose::prose_ranges(&src));
     let fixed = apply::apply(&src, &findings, lines);
-    if fixed == src {
-        return Ok(());
+    if fixed != src {
+        fs::write(path, &fixed)?;
     }
-    fs::write(path, fixed)
+    Ok(fixed)
 }

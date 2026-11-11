@@ -188,3 +188,62 @@ fn a_file_whose_chunk_is_missing_is_left_while_the_other_is_fixed() {
     assert_eq!(read(&missing), "語 A\n語 B\n");
     assert_eq!(read(&found), "語 A\n語B\n");
 }
+
+const AI_WORDS_RULE: &str =
+    "[[rules]]\nid = \"ai-words\"\nmessage = \"AIが多用する語\"\nwords = [\"照合\"]\n";
+
+#[test]
+fn apply_patch_reports_the_plus_line_to_stderr_and_exits_2() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(AI_WORDS_RULE);
+    let path = sandbox.write("t.md", "語 A\n照合 B\n");
+    let patch = update_patch("t.md", "@@\n 語 A\n-語 x\n+照合 B\n");
+    let output = sandbox.hook("codex", &apply_patch_input(&sandbox.path(""), &patch));
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(stdout(&output), "");
+    assert_eq!(read(&path), "語 A\n照合B\n");
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    let expected = format!(
+        "{}:2:1: 「照合」: AIが多用する語 [ai-words]",
+        path.display()
+    );
+    assert!(stderr.lines().any(|line| line == expected), "{stderr}");
+}
+
+#[test]
+fn reports_and_unlocated_chunks_are_both_written_with_exit_2() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(AI_WORDS_RULE);
+    let missing = sandbox.write("a.md", "語 A\n語 B\n");
+    let reported = sandbox.write("b.md", "語 A\n照合 B\n");
+    let patch = "\
+*** Begin Patch
+*** Update File: a.md
+@@
+ 語 A
+-語 x
++語 Z
+*** Update File: b.md
+@@
+ 語 A
+-語 x
++照合 B
+*** End Patch
+";
+    let output = sandbox.hook("codex", &apply_patch_input(&sandbox.path(""), patch));
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(read(&missing), "語 A\n語 B\n");
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    let missing_path = missing.display().to_string();
+    assert!(
+        stderr
+            .lines()
+            .any(|line| line.contains(&missing_path) && !line.ends_with("[ai-words]")),
+        "{stderr}"
+    );
+    let report = format!(
+        "{}:2:1: 「照合」: AIが多用する語 [ai-words]",
+        reported.display()
+    );
+    assert!(stderr.lines().any(|line| line == report), "{stderr}");
+}

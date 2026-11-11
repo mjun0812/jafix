@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 約30KBのMarkdownへのEditの入力で `jafix hook claude` をhyperfineで計り、平均が0.05秒未満ならexit 0、以上ならexit 1で終える
+# 30語の `words` と1つの `pattern` の指摘ルールを書いた設定で、約30KBのMarkdownへのEditの入力の `jafix hook claude` を
+# hyperfineで計り、平均が0.05秒未満ならexit 0、以上ならexit 1で終える
 set -euo pipefail
 
 threshold=0.05
@@ -10,8 +11,23 @@ jafix=$PWD/target/release/jafix
 
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-mkdir -p "$work/home" "$work/xdg"
+mkdir -p "$work/home" "$work/xdg/jafix"
 export HOME=$work/home XDG_CONFIG_HOME=$work/xdg
+cat >"$XDG_CONFIG_HOME/jafix/config.toml" <<'TOML'
+[[rules]]
+id = "ai-words"
+message = "AIが多用する語"
+words = [
+    "照合", "正本", "検査", "経路", "堅牢", "包括的", "網羅", "活用", "実現", "最適化",
+    "担保", "示唆", "留意", "顕著", "多岐", "包含", "円滑", "推進", "促進", "寄与",
+    "着実", "迅速", "柔軟", "効率的", "革新的", "画期的", "重要", "不可欠", "鍵となる", "本質的",
+]
+
+[[rules]]
+id = "long-kanji"
+message = "漢字が長く続く"
+pattern = '\p{sc=Han}{6,}'
+TOML
 
 block='## 見出し Rust の使い方
 
@@ -46,7 +62,8 @@ jq -n -c --arg path "$work/t.md" --argjson start "$start" --argjson lines "$patc
 }' >"$work/input.json"
 
 echo "Markdown: $(wc -c <"$work/original.md" | tr -d ' ') bytes" >&2
-hyperfine -N --runs 30 --warmup 3 \
+# 指摘があるとhookはexit 2で終えるので、exit codeの0以外を失敗とみなさない
+hyperfine -N --runs 30 --warmup 3 --ignore-failure \
     --prepare "cp $work/original.md $work/t.md" \
     --input "$work/input.json" \
     --export-csv "$work/result.csv" \

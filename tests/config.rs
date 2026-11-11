@@ -359,3 +359,53 @@ fn hook_exits_1_on_an_unknown_key_in_a_rule_without_changing_files() {
     assert!(stderr.contains("replace"), "{stderr}");
     assert_eq!(read(&path), "日本語 Rust\n");
 }
+
+const REPORT_EXCLUDE_NOTES_WITH_WORDS: &str = "report-exclude = [\"**/notes/**\"]\n\n[[rules]]\nid = \"ai-words\"\nmessage = \"AIが多用する語\"\nwords = [\"照合\"]\n";
+
+#[test]
+fn check_reports_only_fix_rules_for_a_report_excluded_file() {
+    let sandbox = Sandbox::new();
+    sandbox.write("notes/a.md", "照合 Rust\n");
+    sandbox.write_xdg_config(REPORT_EXCLUDE_NOTES_WITH_WORDS);
+    let output = sandbox.run(&["check", "notes/a.md"]);
+    assert_eq!(output.status.code(), Some(1));
+    let lines: Vec<&str> = stdout(&output).lines().collect();
+    assert_eq!(lines.len(), 1, "{lines:?}");
+    assert!(
+        lines[0].ends_with(" [space-between-ja-and-alnum]"),
+        "{lines:?}"
+    );
+}
+
+#[test]
+fn hook_fixes_a_report_excluded_file_without_reporting() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write("notes/a.md", "照合 Rust\n");
+    sandbox.write_xdg_config(REPORT_EXCLUDE_NOTES_WITH_WORDS);
+    let output = sandbox.hook("claude", &claude_edit_input(&path, true));
+    assert_eq!(output.status.code(), Some(0));
+    assert!(output.stderr.is_empty());
+    assert_eq!(read(&path), "照合Rust\n");
+}
+
+#[test]
+fn check_does_not_report_heading_spaces_in_a_report_excluded_file() {
+    let sandbox = Sandbox::new();
+    sandbox.write("notes/a.md", "# API の設計\n");
+    sandbox.write_xdg_config("report-exclude = [\"**/notes/**\"]\n");
+    let output = sandbox.run(&["check", "notes/a.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stdout(&output), "");
+}
+
+#[test]
+fn check_exits_2_on_a_relative_report_exclude_and_accepts_a_double_star_one() {
+    let sandbox = Sandbox::new();
+    sandbox.write("sub/a.md", "日本語Rust\n");
+    sandbox.write_xdg_config("report-exclude = [\"sub/*.md\"]\n");
+    let output = sandbox.run(&["check", "sub/a.md"]);
+    assert_eq!(output.status.code(), Some(2));
+    assert!(!output.stderr.is_empty());
+    sandbox.write_xdg_config("report-exclude = [\"**/sub/*.md\"]\n");
+    assert_eq!(sandbox.run(&["check", "sub/a.md"]).status.code(), Some(0));
+}

@@ -147,3 +147,113 @@ fn unreadable_json_exits_1() {
     assert_eq!(output.status.code(), Some(1));
     assert!(!output.stderr.is_empty());
 }
+
+const AI_WORDS_RULE: &str =
+    "[[rules]]\nid = \"ai-words\"\nmessage = \"AIが多用する語\"\nwords = [\"照合\"]\n";
+
+fn stderr(output: &std::process::Output) -> &str {
+    std::str::from_utf8(&output.stderr).unwrap()
+}
+
+/// ファイルの行のうち `changed` 行目だけを `+` にした `structuredPatch` を持つEditの入力
+fn edit_changing_line(path: &Path, changed: usize) -> String {
+    let content = read(path);
+    let lines: Vec<String> = content
+        .lines()
+        .enumerate()
+        .map(|(i, line)| {
+            let marker = if i + 1 == changed { '+' } else { ' ' };
+            format!("{marker}{line}")
+        })
+        .collect();
+    edit_input(
+        path,
+        json!({
+            "filePath": path,
+            "originalFile": "",
+            "structuredPatch": [
+                {"oldStart": 1, "oldLines": lines.len() - 1, "newStart": 1,
+                 "newLines": lines.len(), "lines": lines},
+            ],
+        }),
+    )
+}
+
+#[test]
+fn edit_reports_only_on_the_changed_line_to_stderr_and_exits_2() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(AI_WORDS_RULE);
+    let path = sandbox.write("t.md", "照合 Rust\n照合 Rust\n照合 Rust\n");
+    let output = sandbox.hook("claude", &edit_changing_line(&path, 2));
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(stdout(&output), "");
+    assert_eq!(read(&path), "照合 Rust\n照合Rust\n照合 Rust\n");
+    let lines: Vec<&str> = stderr(&output).lines().collect();
+    assert_eq!(lines.len(), 2, "{lines:?}");
+    assert!(
+        lines[0].contains("適用済み") && lines[0].contains("誤検知"),
+        "{lines:?}"
+    );
+    assert_eq!(
+        lines[1],
+        format!(
+            "{}:2:1: 「照合」: AIが多用する語 [ai-words]",
+            path.display()
+        )
+    );
+}
+
+#[test]
+fn write_of_a_new_heading_reports_the_space_and_leaves_the_file() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write("t.md", "# API の設計\n");
+    let input = json!({
+        "hook_event_name": "PostToolUse",
+        "tool_name": "Write",
+        "tool_input": {"file_path": path, "content": "# API の設計\n"},
+        "tool_response": {
+            "type": "create",
+            "filePath": path,
+            "content": "# API の設計\n",
+            "structuredPatch": [],
+            "originalFile": null,
+        },
+    })
+    .to_string();
+    let output = sandbox.hook("claude", &input);
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(read(&path), "# API の設計\n");
+    assert!(
+        stderr(&output)
+            .lines()
+            .any(|line| line.contains(":1:6:") && line.ends_with("[space-between-ja-and-alnum]")),
+        "{}",
+        stderr(&output)
+    );
+}
+
+#[test]
+fn report_column_is_counted_on_the_fixed_line() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(AI_WORDS_RULE);
+    let path = sandbox.write("t.md", "語 A、照合\n");
+    let output = sandbox.hook("claude", &edit_changing_line(&path, 1));
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(read(&path), "語A、照合\n");
+    assert!(
+        stderr(&output).contains(&format!("{}:1:4: 「照合」", path.display())),
+        "{}",
+        stderr(&output)
+    );
+}
+
+#[test]
+fn report_outside_the_changed_lines_is_not_returned() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(AI_WORDS_RULE);
+    let path = sandbox.write("t.md", "照合する\n語 B\n照合する\n");
+    let output = sandbox.hook("claude", &edit_changing_line(&path, 2));
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stderr(&output), "");
+    assert_eq!(read(&path), "照合する\n語B\n照合する\n");
+}

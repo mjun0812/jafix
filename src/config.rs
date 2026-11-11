@@ -10,6 +10,8 @@ use crate::rules::{CustomRule, RuleId};
 pub struct Config {
     /// symlinkを解決した実体の絶対パスと比べるglob
     exclude: GlobSet,
+    /// `exclude` と同じく実体の絶対パスと比べるglob。当たるファイルでは指摘ルールの指摘を出さない
+    report_exclude: GlobSet,
     /// `[[rules]]` で足した指摘ルール
     rules: Vec<CustomRule>,
 }
@@ -19,6 +21,8 @@ pub struct Config {
 struct RawConfig {
     #[serde(default)]
     exclude: Vec<String>,
+    #[serde(default, rename = "report-exclude")]
+    report_exclude: Vec<String>,
     #[serde(default)]
     rules: Vec<RawRule>,
 }
@@ -54,6 +58,8 @@ pub fn load() -> Result<Config, String> {
     let raw: RawConfig = toml::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
     let exclude = glob_set("exclude", &raw.exclude, home.as_deref())
         .map_err(|e| format!("{}: {e}", path.display()))?;
+    let report_exclude = glob_set("report-exclude", &raw.report_exclude, home.as_deref())
+        .map_err(|e| format!("{}: {e}", path.display()))?;
     let mut rules: Vec<CustomRule> = Vec::new();
     for raw_rule in raw.rules {
         let table = match &raw_rule.id {
@@ -64,7 +70,11 @@ pub fn load() -> Result<Config, String> {
             .map_err(|reason| format!("{}: {table}: {reason}", path.display()))?;
         rules.push(rule);
     }
-    Ok(Config { exclude, rules })
+    Ok(Config {
+        exclude,
+        report_exclude,
+        rules,
+    })
 }
 
 /// `[[rules]]` の1つの表を検証して指摘ルールにする。`defined` はそれより前の表から作った指摘ルール
@@ -145,9 +155,9 @@ impl Config {
     }
 
     /// `path` の実体が `report-exclude` のglobのいずれかに当たればtrue。当たるファイルでは指摘ルールの指摘を出さない
-    #[expect(dead_code, unused_variables, reason = "skeleton: not implemented")]
     pub fn is_report_excluded(&self, path: &Path) -> bool {
-        todo!("skeleton: not implemented")
+        path.canonicalize()
+            .is_ok_and(|canonical| self.report_exclude.is_match(canonical))
     }
 
     pub fn rules(&self) -> &[CustomRule] {
