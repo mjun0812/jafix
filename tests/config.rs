@@ -56,6 +56,124 @@ fn exclude_ignores_entries_for_missing_files() {
 }
 
 #[test]
+fn exclude_double_star_matches_files_in_any_drafts_directory() {
+    let sandbox = Sandbox::new();
+    let excluded = sandbox.write("drafts/a.md", "日本語 Rust\n");
+    let other = sandbox.write("other/b.md", "日本語 Rust\n");
+    sandbox.write_xdg_config("exclude = [\"**/drafts/**\"]\n");
+    let output = sandbox.run(&["fix", "drafts/a.md", "other/b.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(read(&excluded), "日本語 Rust\n");
+    assert_eq!(read(&other), "日本語Rust\n");
+}
+
+#[test]
+fn exclude_single_star_does_not_cross_a_directory() {
+    let sandbox = Sandbox::new();
+    let excluded = sandbox.write("drafts/a.md", "日本語 Rust\n");
+    let nested = sandbox.write("drafts/sub/a.md", "日本語 Rust\n");
+    sandbox.write_xdg_config("exclude = [\"**/drafts/*.md\"]\n");
+    let output = sandbox.run(&["fix", "drafts/a.md", "drafts/sub/a.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(read(&excluded), "日本語 Rust\n");
+    assert_eq!(read(&nested), "日本語Rust\n");
+}
+
+#[cfg(unix)]
+#[test]
+fn exclude_with_tilde_matches_when_home_is_a_symlink() {
+    let sandbox = Sandbox::new();
+    let excluded = sandbox.write("real-home/notes/a.md", "日本語 Rust\n");
+    let other = sandbox.write("real-home/b.md", "日本語 Rust\n");
+    let home = sandbox.path("link-home");
+    std::os::unix::fs::symlink(sandbox.path("real-home"), &home).unwrap();
+    sandbox.write_xdg_config("exclude = [\"~/notes/*.md\"]\n");
+    let output = sandbox
+        .command()
+        .env("HOME", &home)
+        .arg("fix")
+        .args([home.join("notes/a.md"), home.join("b.md")])
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(read(&excluded), "日本語 Rust\n");
+    assert_eq!(read(&other), "日本語Rust\n");
+}
+
+#[test]
+fn exclude_treats_glob_characters_in_the_home_path_literally() {
+    let sandbox = Sandbox::new();
+    let excluded = sandbox.write("h[o]me/a.md", "日本語 Rust\n");
+    // `h[o]me` をglobとして読むと、このディレクトリに当たる
+    let lookalike = sandbox.write("home/a.md", "日本語 Rust\n");
+    sandbox.write_xdg_config("exclude = [\"~/a.md\"]\n");
+    let output = sandbox
+        .command()
+        .env("HOME", sandbox.path("h[o]me"))
+        .args(["fix", "h[o]me/a.md", "home/a.md"])
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(read(&excluded), "日本語 Rust\n");
+    assert_eq!(read(&lookalike), "日本語Rust\n");
+}
+
+#[cfg(unix)]
+#[test]
+fn exclude_glob_matches_the_target_of_a_symlink_outside_the_directory() {
+    let sandbox = Sandbox::new();
+    let real = sandbox.write("drafts/a.md", "日本語 Rust\n");
+    std::os::unix::fs::symlink(&real, sandbox.path("link.md")).unwrap();
+    sandbox.write_xdg_config("exclude = [\"**/drafts/**\"]\n");
+    let output = sandbox.run(&["fix", "link.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(read(&real), "日本語 Rust\n");
+}
+
+#[cfg(unix)]
+#[test]
+fn exclude_listing_a_symlink_matches_its_target() {
+    let sandbox = Sandbox::new();
+    let real = sandbox.write("real/a.md", "日本語 Rust\n");
+    let link = sandbox.path("link.md");
+    std::os::unix::fs::symlink(&real, &link).unwrap();
+    sandbox.write_xdg_config(&format!("exclude = [{:?}]\n", link.to_str().unwrap()));
+    let output = sandbox.run(&["fix", "real/a.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(read(&real), "日本語 Rust\n");
+}
+
+#[test]
+fn check_reports_nothing_for_an_excluded_file() {
+    let sandbox = Sandbox::new();
+    sandbox.write("drafts/a.md", "照合 Rust\n");
+    sandbox.write_xdg_config("exclude = [\"**/drafts/**\"]\n");
+    let output = sandbox.run(&["check", "drafts/a.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stdout(&output), "");
+}
+
+#[test]
+fn check_exits_2_on_a_relative_exclude() {
+    let sandbox = Sandbox::new();
+    sandbox.write("drafts/a.md", "日本語Rust\n");
+    sandbox.write_xdg_config("exclude = [\"drafts/*.md\"]\n");
+    let output = sandbox.run(&["check", "drafts/a.md"]);
+    assert_eq!(output.status.code(), Some(2));
+    assert!(!output.stderr.is_empty());
+}
+
+#[test]
+fn check_exits_2_on_an_exclude_that_is_not_a_glob() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "日本語Rust\n");
+    sandbox.write_xdg_config("exclude = [\"/a/[b\"]\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(2));
+    assert!(!output.stderr.is_empty());
+}
+
+#[test]
 fn check_exits_2_on_invalid_toml() {
     let sandbox = Sandbox::new();
     sandbox.write("t.md", "日本語Rust\n");

@@ -11,6 +11,7 @@ use crate::config::Config;
 #[derive(Deserialize)]
 struct Input {
     cwd: PathBuf,
+    tool_name: String,
     #[serde(default)]
     tool_input: Value,
 }
@@ -53,8 +54,10 @@ impl Chunk {
     }
 }
 
-/// CodexのPostToolUseの入力JSONの `tool_input.command` にあるpatch本文から、直すMarkdownファイルと対象行を決める。
-/// Update Fileの対象行は、編集後のファイルを読んでchunkを位置づけて決める。`exclude` に当たるファイルは読まずに外す
+/// CodexのPostToolUseの入力JSONのうち、`tool_name` が `apply_patch` のものの `tool_input.command` にあるpatch本文から、
+/// 直すMarkdownファイルと対象行を決める。Codexはshellから呼んだapply_patchを自分で当ててPostToolUseを出さないので、
+/// `Bash` などの入力にあるpatchは当てられていない。Update Fileの対象行は、編集後のファイルを読んでchunkを位置づけて決める。
+/// `exclude` に当たるファイルは読まずに外す
 pub fn targets(input: &str, config: &Config) -> Targets {
     let mut targets = Targets::default();
     let input: Input = match serde_json::from_str(input) {
@@ -66,6 +69,9 @@ pub fn targets(input: &str, config: &Config) -> Targets {
             return targets;
         }
     };
+    if input.tool_name != "apply_patch" {
+        return targets;
+    }
     let Some(body) = input
         .tool_input
         .get("command")
@@ -104,7 +110,7 @@ pub fn targets(input: &str, config: &Config) -> Targets {
     targets
 }
 
-/// `*** Begin Patch` から `*** End Patch` までの間の行を返す。heredocの行など、markerの外は読まない
+/// `*** Begin Patch` から `*** End Patch` までの間の行を返す。markerの外は読まない
 fn patch_body(command: &str) -> Option<&str> {
     let mut offset = 0;
     let mut begin = None;
@@ -320,8 +326,8 @@ mod tests {
     }
 
     #[test]
-    fn extracts_the_patch_from_a_heredoc() {
-        let command = "apply_patch <<'EOF'\n  *** Begin Patch  \n*** Add File: a.md\n+x\n*** End Patch\nEOF\n";
+    fn extracts_the_patch_between_the_markers() {
+        let command = "  *** Begin Patch  \n*** Add File: a.md\n+x\n*** End Patch\n";
         assert_eq!(patch_body(command), Some("*** Add File: a.md\n+x\n"));
         assert_eq!(patch_body("ls -la"), None);
     }

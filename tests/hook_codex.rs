@@ -115,32 +115,43 @@ fn move_to_fixes_the_moved_file() {
     assert_eq!(read(&path), "語 A\n語B\n");
 }
 
+fn bash_input(cwd: &Path, command: &str) -> String {
+    json!({
+        "cwd": cwd,
+        "hook_event_name": "PostToolUse",
+        "tool_name": "Bash",
+        "tool_input": {"command": command},
+        "tool_response": "",
+    })
+    .to_string()
+}
+
 #[test]
-fn bash_heredoc_fixes_the_same_lines_as_apply_patch() {
+fn bash_command_that_only_writes_patch_text_leaves_the_file() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write("z.md", "一 abc\n");
+    let command = "cat > fixture.txt <<'EOF'\n*** Begin Patch\n*** Add File: z.md\n+一 abc\n*** End Patch\nEOF\n";
+    let output = sandbox.hook("codex", &bash_input(&sandbox.path(""), command));
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stdout(&output), "");
+    assert!(output.stderr.is_empty());
+    assert_eq!(read(&path), "一 abc\n");
+}
+
+#[test]
+fn bash_apply_patch_after_cd_leaves_both_files() {
+    let sandbox = Sandbox::new();
     let content = "語 A\n語 B\n語 C\n";
-    let chunks = "@@\n 語 A\n-語 x\n+語 B\n 語 C\n";
-    let fixed = |input: &dyn Fn(&Path) -> String| {
-        let sandbox = Sandbox::new();
-        let path = sandbox.write("t.md", content);
-        let output = sandbox.hook("codex", &input(&sandbox.path("")));
-        assert_eq!(output.status.code(), Some(0));
-        read(&path)
-    };
-    let via_apply_patch = fixed(&|cwd| apply_patch_input(cwd, &update_patch("t.md", chunks)));
-    let via_bash = fixed(&|cwd| {
-        json!({
-            "cwd": cwd,
-            "hook_event_name": "PostToolUse",
-            "tool_name": "Bash",
-            "tool_input": {
-                "command": format!("apply_patch <<'EOF'\n{}EOF\n", update_patch("t.md", chunks)),
-            },
-            "tool_response": "",
-        })
-        .to_string()
-    });
-    assert_eq!(via_apply_patch, "語 A\n語B\n語 C\n");
-    assert_eq!(via_bash, via_apply_patch);
+    let in_cwd = sandbox.write("t.md", content);
+    let in_sub = sandbox.write("sub/t.md", content);
+    let command = format!(
+        "cd sub && apply_patch <<'EOF'\n{}EOF\n",
+        update_patch("t.md", "@@\n 語 A\n-語 x\n+語 B\n 語 C\n")
+    );
+    let output = sandbox.hook("codex", &bash_input(&sandbox.path(""), &command));
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(read(&in_cwd), content);
+    assert_eq!(read(&in_sub), content);
 }
 
 #[test]
