@@ -146,8 +146,10 @@ fn exclude_listing_a_symlink_matches_its_target() {
 #[test]
 fn check_reports_nothing_for_an_excluded_file() {
     let sandbox = Sandbox::new();
-    sandbox.write("drafts/a.md", "照合 Rust\n");
-    sandbox.write_xdg_config("exclude = [\"**/drafts/**\"]\n");
+    sandbox.write("drafts/a.md", "照合する Rust\n");
+    sandbox.write_xdg_config(
+        "exclude = [\"**/drafts/**\"]\n\n[[rules]]\nid = \"ai-words\"\nmessage = \"AIが多用する語\"\nwords = [\"照合\"]\n",
+    );
     let output = sandbox.run(&["check", "drafts/a.md"]);
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stdout(&output), "");
@@ -192,6 +194,82 @@ fn fix_exits_2_on_unknown_key_without_changing_files() {
     assert_eq!(output.status.code(), Some(2));
     assert!(!output.stderr.is_empty());
     assert_eq!(read(&path), "日本語 Rust\n");
+}
+
+/// `rule` を `[[rules]]` の1つの表として書いた設定で `jafix check` を実行し、exit 2で標準エラーに `id` を含むことを確かめる
+fn assert_check_rejects_rule(rule: &str, id: &str) {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "日本語Rust\n");
+    sandbox.write_xdg_config(rule);
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(2), "{rule}");
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(stderr.contains(id), "{stderr}");
+}
+
+#[test]
+fn check_exits_2_on_a_rule_with_both_pattern_and_words() {
+    assert_check_rejects_rule(
+        "[[rules]]\nid = \"both-keys\"\nmessage = \"m\"\npattern = \"a\"\nwords = [\"b\"]\n",
+        "both-keys",
+    );
+}
+
+#[test]
+fn check_exits_2_on_a_rule_without_pattern_or_words() {
+    assert_check_rejects_rule(
+        "[[rules]]\nid = \"no-matcher\"\nmessage = \"m\"\n",
+        "no-matcher",
+    );
+}
+
+#[test]
+fn check_exits_2_on_a_rule_without_message() {
+    assert_check_rejects_rule(
+        "[[rules]]\nid = \"no-message\"\nwords = [\"a\"]\n",
+        "no-message",
+    );
+}
+
+#[test]
+fn check_exits_2_on_a_rule_with_an_invalid_regex() {
+    assert_check_rejects_rule(
+        "[[rules]]\nid = \"bad-regex\"\nmessage = \"m\"\npattern = \"(\"\n",
+        "bad-regex",
+    );
+}
+
+#[test]
+fn check_exits_2_on_a_rule_with_an_empty_word() {
+    assert_check_rejects_rule(
+        "[[rules]]\nid = \"empty-word\"\nmessage = \"m\"\nwords = [\"\"]\n",
+        "empty-word",
+    );
+}
+
+#[test]
+fn check_exits_2_on_duplicate_rule_ids() {
+    assert_check_rejects_rule(
+        "[[rules]]\nid = \"dup-id\"\nmessage = \"m\"\nwords = [\"a\"]\n\n\
+         [[rules]]\nid = \"dup-id\"\nmessage = \"m\"\nwords = [\"b\"]\n",
+        "dup-id",
+    );
+}
+
+#[test]
+fn check_exits_2_on_a_rule_named_after_a_builtin_rule() {
+    assert_check_rejects_rule(
+        "[[rules]]\nid = \"fullwidth-paren\"\nmessage = \"m\"\nwords = [\"a\"]\n",
+        "fullwidth-paren",
+    );
+}
+
+#[test]
+fn check_accepts_a_valid_rule() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "日本語Rust\n");
+    sandbox.write_xdg_config("[[rules]]\nid = \"ok\"\nmessage = \"m\"\nwords = [\"照合\"]\n");
+    assert_eq!(sandbox.run(&["check", "t.md"]).status.code(), Some(0));
 }
 
 /// `path` の1行目を書き換えたClaude CodeのEditの入力
@@ -265,5 +343,19 @@ fn hook_exits_1_on_unknown_key_without_changing_files() {
     let output = sandbox.hook("claude", &claude_edit_input(&path, true));
     assert_eq!(output.status.code(), Some(1));
     assert!(!output.stderr.is_empty());
+    assert_eq!(read(&path), "日本語 Rust\n");
+}
+
+#[test]
+fn hook_exits_1_on_an_unknown_key_in_a_rule_without_changing_files() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write("t.md", "日本語 Rust\n");
+    sandbox.write_xdg_config(
+        "[[rules]]\nid = \"ai-words\"\nmessage = \"m\"\nwords = [\"a\"]\nreplace = \"b\"\n",
+    );
+    let output = sandbox.hook("claude", &claude_edit_input(&path, true));
+    assert_eq!(output.status.code(), Some(1));
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(stderr.contains("replace"), "{stderr}");
     assert_eq!(read(&path), "日本語 Rust\n");
 }

@@ -151,6 +151,155 @@ fn check_exits_2_when_a_file_cannot_be_read_even_with_findings() {
     assert!(stdout(&output).starts_with("t.md:1:4: "));
 }
 
+/// `[[rules]]` に `ai-words` の指摘ルールを1つ書いた設定で、`content` の `t.md` に `jafix check t.md` を実行する
+fn check_with_rule(rule: &str, content: &str) -> std::process::Output {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", content);
+    sandbox.write_xdg_config(&format!(
+        "[[rules]]\nid = \"ai-words\"\nmessage = \"AIが多用する語\"\n{rule}\n"
+    ));
+    sandbox.run(&["check", "t.md"])
+}
+
+#[test]
+fn check_reports_words_rule_with_the_matched_word_and_message() {
+    let output = check_with_rule("words = [\"照合\", \"正本\"]", "本文を照合する。\n");
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        stdout(&output),
+        "t.md:1:4: 「照合」: AIが多用する語 [ai-words]\n"
+    );
+}
+
+#[test]
+fn check_reports_pattern_rule_with_the_matched_text_and_message() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "すごい！\n");
+    sandbox.write_xdg_config(
+        "[[rules]]\nid = \"bang\"\nmessage = \"感嘆符を使わない\"\npattern = \"[!！]\"\n",
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        stdout(&output),
+        "t.md:1:4: 「！」: 感嘆符を使わない [bang]\n"
+    );
+}
+
+#[test]
+fn check_does_not_report_words_inside_inline_code() {
+    let output = check_with_rule("words = [\"照合\"]", "`照合` と照合\n");
+    assert_eq!(
+        stdout(&output),
+        "t.md:1:7: 「照合」: AIが多用する語 [ai-words]\n"
+    );
+}
+
+#[test]
+fn check_does_not_match_words_across_an_emphasis_boundary() {
+    // `照合` も足した設定では、境目をまたいで当たると列1に `照合` が出る
+    for words in ["[\"照\", \"合\"]", "[\"照\", \"合\", \"照合\"]"] {
+        let output = check_with_rule(&format!("words = {words}"), "照**合**\n");
+        assert_eq!(
+            stdout(&output),
+            "t.md:1:1: 「照」: AIが多用する語 [ai-words]\n\
+             t.md:1:4: 「合」: AIが多用する語 [ai-words]\n",
+            "{words}"
+        );
+    }
+}
+
+#[test]
+fn check_reports_the_longer_of_overlapping_words_once() {
+    for words in ["[\"検査\", \"検査官\"]", "[\"検査官\", \"検査\"]"] {
+        let output = check_with_rule(&format!("words = {words}"), "検査官が来る\n");
+        assert_eq!(
+            stdout(&output),
+            "t.md:1:1: 「検査官」: AIが多用する語 [ai-words]\n",
+            "{words}"
+        );
+    }
+}
+
+#[test]
+fn check_does_not_report_empty_matches() {
+    let output = check_with_rule("pattern = \"x*\"", "日本語\n");
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stdout(&output), "");
+}
+
+#[test]
+fn check_reports_rules_inside_headings() {
+    let output = check_with_rule("words = [\"照合\"]", "# 照合の手順\n");
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        stdout(&output),
+        "t.md:1:3: 「照合」: AIが多用する語 [ai-words]\n"
+    );
+}
+
+#[test]
+fn check_prints_reports_and_findings_in_position_order() {
+    let output = check_with_rule("words = [\"照合\"]", "照合 Rust\n");
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        stdout(&output),
+        "t.md:1:1: 「照合」: AIが多用する語 [ai-words]\n\
+         t.md:1:3: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]\n"
+    );
+}
+
+#[test]
+fn fix_ignores_report_rules() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write("t.md", "本文を照合する。\n");
+    sandbox.write_xdg_config(
+        "[[rules]]\nid = \"ai-words\"\nmessage = \"AIが多用する語\"\nwords = [\"照合\"]\n",
+    );
+    let output = sandbox.run(&["fix", "t.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stdout(&output), "");
+    assert_eq!(read(&path), "本文を照合する。\n");
+}
+
+#[test]
+fn fix_keeps_spaces_in_headings_but_replaces_fullwidth_parens() {
+    assert_eq!(fix_one_file("# API の設計（案）\n"), "# API の設計(案)\n");
+    let setext = "API の設計\n===\n\n本文 Rust\n";
+    assert_eq!(fix_one_file(setext), "API の設計\n===\n\n本文Rust\n");
+}
+
+#[test]
+fn check_reports_spaces_in_headings_with_a_message_about_links() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "# API の設計\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(1));
+    let lines: Vec<&str> = stdout(&output).lines().collect();
+    assert_eq!(lines.len(), 1, "{lines:?}");
+    let message = lines[0]
+        .strip_prefix("t.md:1:6: ")
+        .and_then(|line| line.strip_suffix(" [space-between-ja-and-alnum]"))
+        .unwrap_or_else(|| panic!("{}", lines[0]));
+    assert!(message.contains("リンク"), "{message}");
+}
+
+#[test]
+fn check_reports_spaces_around_parens_in_headings_with_the_heading_message() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "本文\n\n## 設定 (補足) の説明\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(1));
+    let lines: Vec<&str> = stdout(&output).lines().collect();
+    assert_eq!(lines.len(), 2, "{lines:?}");
+    for line in lines {
+        let message = line
+            .strip_suffix(" [space-between-ja-and-paren]")
+            .unwrap_or_else(|| panic!("{line}"));
+        assert!(message.contains("リンク"), "{line}");
+    }
+}
+
 #[test]
 fn version_prints_name_and_version() {
     let output = Sandbox::new().run(&["--version"]);

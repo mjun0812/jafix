@@ -15,7 +15,6 @@ pub enum RuleId {
 
 impl RuleId {
     /// 組み込みのルールのすべて。設定の指摘ルールの `id` と重ならないことを確かめるのに使う
-    #[expect(dead_code, reason = "skeleton: not implemented")]
     pub const ALL: [RuleId; 3] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
@@ -40,9 +39,18 @@ impl RuleId {
     }
 
     /// 見出しの中で空白のルールに当たったときの指摘の文面。空白を消すとアンカーが変わることを伝える
-    #[expect(dead_code, reason = "skeleton: not implemented")]
     pub fn heading_message(self) -> &'static str {
-        todo!("skeleton: not implemented")
+        match self {
+            RuleId::FullwidthParen => {
+                unreachable!("全角括弧は置き換えてもアンカーが変わらないので、見出しでも直す")
+            }
+            RuleId::SpaceBetweenJaAndAlnum => {
+                "日本語と英数字の間の空白を削除する。見出しのアンカーが変わるので、見出しへのリンクも直す"
+            }
+            RuleId::SpaceBetweenJaAndParen => {
+                "日本語と括弧の間の空白を削除する。見出しのアンカーが変わるので、見出しへのリンクも直す"
+            }
+        }
     }
 }
 
@@ -56,7 +64,6 @@ pub struct Finding {
 
 /// 設定の `[[rules]]` で足した指摘ルール
 #[derive(Debug)]
-#[expect(dead_code, reason = "skeleton: not implemented")]
 pub struct CustomRule {
     id: String,
     message: String,
@@ -65,18 +72,26 @@ pub struct CustomRule {
 
 impl CustomRule {
     /// `pattern` をRustの `regex` crateの正規表現として読む。読めなければ理由を返す
-    #[expect(dead_code, unused_variables, reason = "skeleton: not implemented")]
     pub fn pattern(id: String, message: String, pattern: &str) -> Result<Self, String> {
-        todo!("skeleton: not implemented")
+        let regex =
+            Regex::new(pattern).map_err(|e| format!("`pattern` を正規表現として読めない: {e}"))?;
+        Ok(Self { id, message, regex })
     }
 
     /// `words` の文字列をそのまま探す。同じ位置で重なる語は、長いほうに当てる。空の文字列があれば理由を返す
-    #[expect(dead_code, unused_variables, reason = "skeleton: not implemented")]
     pub fn words(id: String, message: String, words: &[String]) -> Result<Self, String> {
-        todo!("skeleton: not implemented")
+        if words.iter().any(String::is_empty) {
+            return Err("`words` に空の文字列がある".to_owned());
+        }
+        // 選択は左から順に試すので、長い語を先に置くと、同じ位置で重なる語は長いほうに当たる
+        let mut sorted: Vec<&str> = words.iter().map(String::as_str).collect();
+        sorted.sort_by_key(|word| std::cmp::Reverse(word.len()));
+        let alternation: Vec<String> = sorted.into_iter().map(regex::escape).collect();
+        let regex = Regex::new(&alternation.join("|"))
+            .map_err(|e| format!("`words` を正規表現にできない: {e}"))?;
+        Ok(Self { id, message, regex })
     }
 
-    #[expect(dead_code, reason = "skeleton: not implemented")]
     pub fn id(&self) -> &str {
         &self.id
     }
@@ -84,7 +99,6 @@ impl CustomRule {
 
 /// 指摘ルールに当たった1箇所。直さずに指摘として出す。`range` は元のソース上のバイト範囲
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[expect(dead_code, reason = "skeleton: not implemented")]
 pub struct Report<'r> {
     pub range: Range<usize>,
     /// `check` の出力の `[<rule-id>]` に使う名前
@@ -93,9 +107,29 @@ pub struct Report<'r> {
 }
 
 /// 本文の範囲の中で指摘ルール (見出しの中の空白と、設定の `custom`) に当たる箇所を、位置の順に返す
-#[expect(dead_code, unused_variables, reason = "skeleton: not implemented")]
 pub fn report<'r>(src: &str, prose: &[Prose], custom: &'r [CustomRule]) -> Vec<Report<'r>> {
-    todo!("skeleton: not implemented")
+    let mut reports = Vec::new();
+    for Prose { range, in_heading } in prose {
+        let text = &src[range.clone()];
+        if *in_heading {
+            reports.extend(space_findings(text).map(|(spaces, rule)| Report {
+                range: range.start + spaces.start..range.start + spaces.end,
+                rule: rule.name(),
+                message: Cow::Borrowed(rule.heading_message()),
+            }));
+        }
+        for rule in custom {
+            for m in rule.regex.find_iter(text).filter(|m| !m.is_empty()) {
+                reports.push(Report {
+                    range: range.start + m.start()..range.start + m.end(),
+                    rule: &rule.id,
+                    message: Cow::Owned(format!("「{}」: {}", m.as_str(), rule.message)),
+                });
+            }
+        }
+    }
+    reports.sort_by_key(|report| report.range.start);
+    reports
 }
 
 static SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new("[ \u{3000}]+").unwrap());
@@ -107,7 +141,7 @@ static JAPANESE: LazyLock<Regex> =
 /// 本文の範囲の中で修正ルールに当たる箇所を、位置の順に返す
 pub fn find(src: &str, prose: &[Prose]) -> Vec<Finding> {
     let mut findings = Vec::new();
-    for Prose { range, .. } in prose {
+    for Prose { range, in_heading } in prose {
         let text = &src[range.clone()];
         for (i, paren) in text.match_indices(['（', '）']) {
             let start = range.start + i;
@@ -117,23 +151,27 @@ pub fn find(src: &str, prose: &[Prose]) -> Vec<Finding> {
                 rule: RuleId::FullwidthParen,
             });
         }
-        for spaces in SPACES.find_iter(text) {
-            let prev = text[..spaces.start()].chars().next_back();
-            let next = text[spaces.end()..].chars().next();
-            let (Some(prev), Some(next)) = (prev, next) else {
-                continue;
-            };
-            if let Some(rule) = space_rule(prev, next) {
-                findings.push(Finding {
-                    range: range.start + spaces.start()..range.start + spaces.end(),
-                    replacement: "",
-                    rule,
-                });
-            }
+        // 見出しの空白を消すとアンカーが変わり、見出しへのリンクが切れるので、`report` で指摘にする
+        if *in_heading {
+            continue;
         }
+        findings.extend(space_findings(text).map(|(spaces, rule)| Finding {
+            range: range.start + spaces.start..range.start + spaces.end,
+            replacement: "",
+            rule,
+        }));
     }
     findings.sort_by_key(|finding| finding.range.start);
     findings
+}
+
+/// `text` の中で空白のルールに当たる空白の範囲 (`text` の中のバイト範囲) とルールを返す
+fn space_findings(text: &str) -> impl Iterator<Item = (Range<usize>, RuleId)> {
+    SPACES.find_iter(text).filter_map(|spaces| {
+        let prev = text[..spaces.start()].chars().next_back()?;
+        let next = text[spaces.end()..].chars().next()?;
+        space_rule(prev, next).map(|rule| (spaces.range(), rule))
+    })
 }
 
 /// 空白の直前の文字 `prev` と直後の文字 `next` から、空白を削除するルールを決める

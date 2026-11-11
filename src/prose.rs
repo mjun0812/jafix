@@ -23,12 +23,12 @@ pub fn prose_ranges(src: &str) -> Vec<Prose> {
     };
     let root = markdown::to_mdast(src, &options).expect("MDXを有効にしない解析は失敗しない");
     let mut ranges = Vec::new();
-    collect(&root, src, &mut ranges);
+    collect(&root, src, false, &mut ranges);
     ranges
 }
 
 // コード・HTML・front matterのnodeは子を持たず、値をText nodeにしないので、たどるだけで除かれる
-fn collect(node: &Node, src: &str, ranges: &mut Vec<Prose>) {
+fn collect(node: &Node, src: &str, in_heading: bool, ranges: &mut Vec<Prose>) {
     let range = |node: &Node| {
         let position = node.position().expect("to_mdastのnodeは位置を持つ");
         position.start.offset..position.end.offset
@@ -36,7 +36,7 @@ fn collect(node: &Node, src: &str, ranges: &mut Vec<Prose>) {
     match node {
         Node::Text(_) => ranges.push(Prose {
             range: range(node),
-            in_heading: false,
+            in_heading,
         }),
         // 省略形とcollapsed形の文字列は、定義のラベルを兼ねるので直さない
         Node::LinkReference(reference) if reference.reference_kind != ReferenceKind::Full => {}
@@ -46,15 +46,14 @@ fn collect(node: &Node, src: &str, ranges: &mut Vec<Prose>) {
         Node::Link(_) if !src[range(node)].starts_with('[') => {
             let link = range(node);
             ranges.extend(
-                after_unmatched_closing_paren(&src[link.clone()], link.start).map(|range| Prose {
-                    range,
-                    in_heading: false,
-                }),
+                after_unmatched_closing_paren(&src[link.clone()], link.start)
+                    .map(|range| Prose { range, in_heading }),
             );
         }
         _ => {
+            let in_heading = in_heading || matches!(node, Node::Heading(_));
             for child in node.children().into_iter().flatten() {
-                collect(child, src, ranges);
+                collect(child, src, in_heading, ranges);
             }
         }
     }
@@ -90,6 +89,41 @@ mod tests {
         assert_eq!(
             prose("# 見出し\n\n段落\n\n- リスト\n\n> 引用\n"),
             vec!["見出し", "段落", "リスト", "引用"]
+        );
+    }
+
+    fn in_heading(src: &str) -> Vec<(&str, bool)> {
+        prose_ranges(src)
+            .into_iter()
+            .map(|p| (&src[p.range], p.in_heading))
+            .collect()
+    }
+
+    #[test]
+    fn marks_text_inside_atx_and_setext_headings() {
+        assert_eq!(
+            in_heading("# 見出し **強調**\n\n段落\n\n設定 A\n===\n"),
+            vec![
+                ("見出し ", true),
+                ("強調", true),
+                ("段落", false),
+                ("設定 A", true)
+            ]
+        );
+    }
+
+    #[test]
+    fn marks_text_after_a_bare_url_inside_a_heading() {
+        assert_eq!(
+            in_heading(
+                "# 公式（https://example.com）の説明\n\n本文（https://example.com）の説明\n"
+            ),
+            vec![
+                ("公式（", true),
+                ("）の説明", true),
+                ("本文（", false),
+                ("）の説明", false)
+            ]
         );
     }
 

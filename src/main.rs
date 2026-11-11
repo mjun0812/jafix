@@ -23,7 +23,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    /// 修正ルールに当たる箇所を、ファイルを書き換えずに出力する
+    /// 修正ルールに当たる箇所と指摘ルールの指摘を、ファイルを書き換えずに出力する
     Check { files: Vec<PathBuf> },
     /// ファイルの全行に修正ルールを適用して書き戻す
     Fix { files: Vec<PathBuf> },
@@ -69,19 +69,32 @@ fn run_check(files: &[PathBuf]) -> ExitCode {
                 continue;
             }
         };
-        let findings = rules::find(&src, &prose::prose_ranges(&src));
+        let prose = prose::prose_ranges(&src);
+        let findings = rules::find(&src, &prose);
+        let reports = rules::report(&src, &prose, config.rules());
+        let mut lines: Vec<(usize, &str, &str)> = findings
+            .iter()
+            .map(|finding| {
+                let rule = finding.rule;
+                (finding.range.start, rule.message(), rule.name())
+            })
+            .chain(
+                reports
+                    .iter()
+                    .map(|report| (report.range.start, report.message.as_ref(), report.rule)),
+            )
+            .collect();
+        lines.sort_by_key(|&(start, ..)| start);
         let index = LineIndex::new(&src);
-        for finding in &findings {
-            let (line, column) = index.line_col(finding.range.start);
+        for (start, message, rule) in &lines {
+            let (line, column) = index.line_col(*start);
             let _ = writeln!(
                 stdout,
-                "{}:{line}:{column}: {} [{}]",
-                path.display(),
-                finding.rule.message(),
-                finding.rule.name()
+                "{}:{line}:{column}: {message} [{rule}]",
+                path.display()
             );
         }
-        found |= !findings.is_empty();
+        found |= !lines.is_empty();
     }
     match (failed, found) {
         (true, _) => ExitCode::from(2),
