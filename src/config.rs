@@ -150,17 +150,20 @@ fn resolve_literal_prefix(value: &str, home: Option<&Path>) -> Result<String, St
 impl Config {
     /// `path` の実体の絶対パスが `exclude` のglobのいずれかに当たればtrue
     pub fn is_excluded(&self, path: &Path) -> bool {
-        path.canonicalize()
-            .is_ok_and(|canonical| self.exclude.is_match(canonical))
+        matches_canonical(&self.exclude, path)
     }
 
     /// `path` の実体が `report-exclude` のglobのいずれかに当たればtrue。当たるファイルでは指摘ルールの指摘を出さない
     pub fn is_report_excluded(&self, path: &Path) -> bool {
-        path.canonicalize()
-            .is_ok_and(|canonical| self.report_exclude.is_match(canonical))
+        matches_canonical(&self.report_exclude, path)
     }
 
     pub fn rules(&self) -> &[CustomRule] {
         &self.rules
     }
+}
+
+fn matches_canonical(globs: &GlobSet, path: &Path) -> bool {
+    path.canonicalize()
+        .is_ok_and(|canonical| globs.is_match(canonical))
 }

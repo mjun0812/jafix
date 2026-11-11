@@ -37,17 +37,30 @@ impl RuleId {
             RuleId::SpaceBetweenJaAndParen => "日本語と括弧の間の空白を削除する",
         }
     }
+}
 
-    /// 見出しの中で空白のルールに当たったときの指摘の文面。空白を消すとアンカーが変わることを伝える
-    pub fn heading_message(self) -> &'static str {
+/// 空白を削除するルール。見出しの中では直さず指摘にするので、`RuleId` とは別に持つ
+#[derive(Clone, Copy)]
+enum SpaceRule {
+    JaAndAlnum,
+    JaAndParen,
+}
+
+impl SpaceRule {
+    fn id(self) -> RuleId {
         match self {
-            RuleId::FullwidthParen => {
-                unreachable!("全角括弧は置き換えてもアンカーが変わらないので、見出しでも直す")
-            }
-            RuleId::SpaceBetweenJaAndAlnum => {
+            SpaceRule::JaAndAlnum => RuleId::SpaceBetweenJaAndAlnum,
+            SpaceRule::JaAndParen => RuleId::SpaceBetweenJaAndParen,
+        }
+    }
+
+    /// 見出しの中で当たったときの指摘の文面。空白を消すとアンカーが変わることを伝える
+    fn heading_message(self) -> &'static str {
+        match self {
+            SpaceRule::JaAndAlnum => {
                 "日本語と英数字の間の空白を削除する。見出しのアンカーが変わるので、見出しへのリンクも直す"
             }
-            RuleId::SpaceBetweenJaAndParen => {
+            SpaceRule::JaAndParen => {
                 "日本語と括弧の間の空白を削除する。見出しのアンカーが変わるので、見出しへのリンクも直す"
             }
         }
@@ -88,7 +101,7 @@ impl CustomRule {
         sorted.sort_by_key(|word| std::cmp::Reverse(word.len()));
         let alternation: Vec<String> = sorted.into_iter().map(regex::escape).collect();
         let regex = Regex::new(&alternation.join("|"))
-            .map_err(|e| format!("`words` を正規表現にできない: {e}"))?;
+            .map_err(|e| format!("`words` が長すぎて正規表現にできない: {e}"))?;
         Ok(Self { id, message, regex })
     }
 
@@ -114,7 +127,7 @@ pub fn report<'r>(src: &str, prose: &[Prose], custom: &'r [CustomRule]) -> Vec<R
         if *in_heading {
             reports.extend(space_findings(text).map(|(spaces, rule)| Report {
                 range: range.start + spaces.start..range.start + spaces.end,
-                rule: rule.name(),
+                rule: rule.id().name(),
                 message: Cow::Borrowed(rule.heading_message()),
             }));
         }
@@ -158,7 +171,7 @@ pub fn find(src: &str, prose: &[Prose]) -> Vec<Finding> {
         findings.extend(space_findings(text).map(|(spaces, rule)| Finding {
             range: range.start + spaces.start..range.start + spaces.end,
             replacement: "",
-            rule,
+            rule: rule.id(),
         }));
     }
     findings.sort_by_key(|finding| finding.range.start);
@@ -166,7 +179,7 @@ pub fn find(src: &str, prose: &[Prose]) -> Vec<Finding> {
 }
 
 /// `text` の中で空白のルールに当たる空白の範囲 (`text` の中のバイト範囲) とルールを返す
-fn space_findings(text: &str) -> impl Iterator<Item = (Range<usize>, RuleId)> {
+fn space_findings(text: &str) -> impl Iterator<Item = (Range<usize>, SpaceRule)> {
     SPACES.find_iter(text).filter_map(|spaces| {
         let prev = text[..spaces.start()].chars().next_back()?;
         let next = text[spaces.end()..].chars().next()?;
@@ -175,15 +188,15 @@ fn space_findings(text: &str) -> impl Iterator<Item = (Range<usize>, RuleId)> {
 }
 
 /// 空白の直前の文字 `prev` と直後の文字 `next` から、空白を削除するルールを決める
-fn space_rule(prev: char, next: char) -> Option<RuleId> {
+fn space_rule(prev: char, next: char) -> Option<SpaceRule> {
     let alnum = |c: char| c.is_ascii_alphanumeric();
     if (is_japanese(prev) && alnum(next)) || (alnum(prev) && is_japanese(next)) {
-        return Some(RuleId::SpaceBetweenJaAndAlnum);
+        return Some(SpaceRule::JaAndAlnum);
     }
     if (is_japanese(prev) && matches!(next, '(' | '（'))
         || (matches!(prev, ')' | '）') && is_japanese(next))
     {
-        return Some(RuleId::SpaceBetweenJaAndParen);
+        return Some(SpaceRule::JaAndParen);
     }
     None
 }
