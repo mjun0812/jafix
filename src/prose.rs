@@ -96,7 +96,7 @@ pub fn parse(src: &str) -> Document {
     };
     let root = markdown::to_mdast(src, &options).expect("MDXを有効にしない解析は失敗しない");
     let mut texts = Vec::new();
-    collect(&root, src, false, &mut texts);
+    collect(&root, src, Context::default(), &mut texts);
     Document {
         texts,
         // skeleton: not implemented
@@ -104,8 +104,9 @@ pub fn parse(src: &str) -> Document {
     }
 }
 
+// `context` は `node` が置かれた文脈である。
 // コード・HTML・front matterのnodeは子を持たず、値をText nodeにしないので、たどるだけで除かれる
-fn collect(node: &Node, src: &str, in_heading: bool, ranges: &mut Vec<Prose>) {
+fn collect(node: &Node, src: &str, context: Context, ranges: &mut Vec<Prose>) {
     let range = |node: &Node| {
         let position = node.position().expect("to_mdastのnodeは位置を持つ");
         position.start.offset..position.end.offset
@@ -113,11 +114,7 @@ fn collect(node: &Node, src: &str, in_heading: bool, ranges: &mut Vec<Prose>) {
     match node {
         Node::Text(_) => ranges.push(Prose {
             range: range(node),
-            // skeleton: not implemented (見出し以外の文脈)
-            context: Context {
-                heading: in_heading,
-                ..Context::default()
-            },
+            context,
         }),
         // 省略形とcollapsed形の文字列は、定義のラベルを兼ねるので直さない
         Node::LinkReference(reference) if reference.reference_kind != ReferenceKind::Full => {}
@@ -126,20 +123,23 @@ fn collect(node: &Node, src: &str, in_heading: bool, ranges: &mut Vec<Prose>) {
         // 裸のURLは空白までを取り込み、`）` や日本語の文字も含む。対応の取れない `）` から後ろはURLではない
         Node::Link(_) if !src[range(node)].starts_with('[') => {
             let link = range(node);
+            // URLの後ろの本文は、Linkの外でLinkと並ぶ文字列として扱う
             ranges.extend(
-                after_unmatched_closing_paren(&src[link.clone()], link.start).map(|range| Prose {
-                    range,
-                    context: Context {
-                        heading: in_heading,
-                        ..Context::default()
-                    },
-                }),
+                after_unmatched_closing_paren(&src[link.clone()], link.start)
+                    .map(|range| Prose { range, context }),
             );
         }
         _ => {
-            let in_heading = in_heading || matches!(node, Node::Heading(_));
+            let blockquote = context.blockquote || matches!(node, Node::Blockquote(_));
+            let children_context = Context {
+                heading: context.heading || matches!(node, Node::Heading(_)),
+                blockquote,
+                emphasis: context.emphasis || matches!(node, Node::Emphasis(_)),
+                link: context.link || matches!(node, Node::Link(_)),
+                plain: matches!(node, Node::Paragraph(_)) && !blockquote,
+            };
             for child in node.children().into_iter().flatten() {
-                collect(child, src, in_heading, ranges);
+                collect(child, src, children_context, ranges);
             }
         }
     }
@@ -196,6 +196,88 @@ mod tests {
                 ("強調", true),
                 ("段落", false),
                 ("設定 A", true)
+            ]
+        );
+    }
+
+    fn contexts(src: &str) -> Vec<(&str, Context)> {
+        parse(src)
+            .texts
+            .into_iter()
+            .map(|p| (&src[p.range], p.context))
+            .collect()
+    }
+
+    #[test]
+    fn marks_the_context_of_each_text_by_its_ancestors() {
+        let plain = Context {
+            plain: true,
+            ..Context::default()
+        };
+        assert_eq!(
+            contexts(
+                "段 *強 [リ](u)* **太** [参][r]\n\n- 項\n\n> 引\n\n| 表 |\n| - |\n\n# 見\n\n[r]: u\n"
+            ),
+            vec![
+                ("段 ", plain),
+                (
+                    "強 ",
+                    Context {
+                        emphasis: true,
+                        ..Context::default()
+                    }
+                ),
+                (
+                    "リ",
+                    Context {
+                        emphasis: true,
+                        link: true,
+                        ..Context::default()
+                    }
+                ),
+                (" ", plain),
+                ("太", Context::default()),
+                (" ", plain),
+                ("参", Context::default()),
+                ("項", plain),
+                (
+                    "引",
+                    Context {
+                        blockquote: true,
+                        ..Context::default()
+                    }
+                ),
+                ("表", Context::default()),
+                (
+                    "見",
+                    Context {
+                        heading: true,
+                        ..Context::default()
+                    }
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn treats_text_after_a_bare_url_as_outside_the_link() {
+        assert_eq!(
+            contexts("公式（https://example.com）を参照"),
+            vec![
+                (
+                    "公式（",
+                    Context {
+                        plain: true,
+                        ..Context::default()
+                    }
+                ),
+                (
+                    "）を参照",
+                    Context {
+                        plain: true,
+                        ..Context::default()
+                    }
+                ),
             ]
         );
     }

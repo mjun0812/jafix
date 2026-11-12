@@ -1,13 +1,17 @@
-#![expect(dead_code, unused_variables, reason = "skeleton: not implemented")]
+use std::borrow::Cow;
+use std::sync::LazyLock;
+
+use regex::Regex;
 
 use crate::prose::Prose;
 
 use super::builtin::Builtin;
-use super::{Finding, Report};
+use super::{Finding, Report, RuleId};
 
 /// 本文の範囲ごとに当てる修正ルール (`no-nfd`、`no-hankaku-kana`、`no-zero-width-spaces`、
 /// `no-invalid-control-character`) の箇所を返す。見出しの中の箇所も返し、指摘にするかは呼び出し側が決める。
 /// `no-nfd` は、前の文字と合成して1文字になる組み合わせだけを返す
+#[expect(dead_code, unused_variables, reason = "skeleton: not implemented")]
 pub fn find(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<Finding> {
     todo!("skeleton: not implemented")
 }
@@ -15,5 +19,197 @@ pub fn find(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<Finding> {
 /// 本文の範囲ごとに当てる指摘ルール (`max-kanji-continuous-len`、`arabic-kanji-numbers`、
 /// `no-exclamation-question-mark`、`ja-unnatural-alphabet`) の指摘と、`no-nfd` のうち合成できない組み合わせの指摘を返す
 pub fn report(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<Report<'static>> {
-    todo!("skeleton: not implemented")
+    let mut reports = Vec::new();
+    for Prose { range, context } in texts {
+        let text = &src[range.clone()];
+        let at = |start: usize, end: usize, rule: RuleId, message: String| Report {
+            range: range.start + start..range.start + end,
+            rule: rule.name(),
+            message: Cow::Owned(message),
+        };
+        // textlintの3つのルールは、祖先に引用・強調・リンクがある文字列を見ない
+        let in_quote_emphasis_or_link = context.blockquote || context.emphasis || context.link;
+        if let Some(rule) = &builtin.max_kanji_continuous_len
+            && !in_quote_emphasis_or_link
+        {
+            for run in KANJI_RUN.find_iter(text) {
+                let len: usize = run.as_str().chars().map(char::len_utf16).sum();
+                if len > rule.max && !rule.allow.iter().any(|word| word == run.as_str()) {
+                    reports.push(at(
+                        run.start(),
+                        run.end(),
+                        RuleId::MaxKanjiContinuousLen,
+                        format!("漢字が{}文字以上続いている: {}", rule.max + 1, run.as_str()),
+                    ));
+                }
+            }
+        }
+        if builtin.arabic_kanji_numbers && context.plain {
+            for pattern in NUMBER_PATTERNS.iter() {
+                if pattern.ignore.iter().any(|ignore| ignore.is_match(text)) {
+                    continue;
+                }
+                let Some(m) = pattern.regex.find_iter(text).find(|m| {
+                    pattern
+                        .not_followed_by
+                        .is_none_or(|c| !text[m.end()..].starts_with(c))
+                }) else {
+                    continue;
+                };
+                reports.push(at(
+                    m.start(),
+                    m.end(),
+                    RuleId::ArabicKanjiNumbers,
+                    format!("{}: {}", pattern.message, m.as_str()),
+                ));
+            }
+        }
+        if let Some(rule) = &builtin.no_exclamation_question_mark
+            && !in_quote_emphasis_or_link
+        {
+            for (i, c) in text.char_indices() {
+                let allowed_kind = match c {
+                    '!' => rule.allow_half_width_exclamation,
+                    '！' => rule.allow_full_width_exclamation,
+                    '?' => rule.allow_half_width_question,
+                    '？' => rule.allow_full_width_question,
+                    _ => continue,
+                };
+                if allowed_kind || is_allowed(&rule.allow, text, i) {
+                    continue;
+                }
+                reports.push(at(
+                    i,
+                    i + c.len_utf8(),
+                    RuleId::NoExclamationQuestionMark,
+                    format!("「{c}」を使わない"),
+                ));
+            }
+        }
+        if let Some(rule) = &builtin.ja_unnatural_alphabet {
+            let mut start = 0;
+            while let Some(captures) = UNNATURAL_ALPHABET.captures_at(text, start) {
+                let whole = captures.get(0).expect("一致の全体は必ずある");
+                let alphabet = captures.get(1).expect("アルファベットは必ず捕まえる");
+                // textlintはUTF-16で照合するので、後ろの文字がサロゲートペアなら上位だけを使い、
+                // 下位のサロゲートが次の一致の前の文字になる。その文字から次の一致を探して合わせる
+                let next_is_surrogate_pair = whole
+                    .as_str()
+                    .chars()
+                    .next_back()
+                    .is_some_and(|c| c.len_utf16() == 2);
+                start = if next_is_surrogate_pair {
+                    alphabet.end()
+                } else {
+                    whole.end()
+                };
+                if is_allowed(&rule.allow, text, alphabet.start()) {
+                    continue;
+                }
+                reports.push(at(
+                    alphabet.start(),
+                    alphabet.end(),
+                    RuleId::JaUnnaturalAlphabet,
+                    format!("不自然なアルファベットがある: {}", alphabet.as_str()),
+                ));
+            }
+        }
+    }
+    reports
+}
+
+/// `allow` のどれかの一致の先頭から直後の位置まで (直後の位置を含む) に、`text` の位置 `i` があればtrue。
+/// textlintは直後の1文字まで許すので、指摘の有無を合わせる
+fn is_allowed(allow: &[Regex], text: &str, i: usize) -> bool {
+    allow.iter().any(|regex| {
+        regex
+            .find_iter(text)
+            .any(|m| m.start() <= i && i <= m.end())
+    })
+}
+
+// textlintの正規表現の範囲をそのまま写す。U+20000からU+2FFFFは、textlintがサロゲートペアで書いている範囲である
+static KANJI_RUN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"[々〇〻\x{3400}-\x{9FFF}\x{F900}-\x{FAFF}\x{20000}-\x{2FFFF}]+").unwrap()
+});
+
+// textlintはUTF-16のコードユニットで照合し、前後の文字に単独のサロゲートも入れている。前の文字は下位のサロゲートで
+// U+10000以上のどの文字にも当たり、後ろの文字は上位のサロゲート (U+D840からU+D87F) でU+20000からU+2FFFFに当たる
+static UNNATURAL_ALPHABET: LazyLock<Regex> = LazyLock::new(|| {
+    let japanese = r"々〇〻\x{3400}-\x{4DBF}\x{4E00}-\x{9FFF}\x{F900}-\x{FAFF}\x{FF00}-\x{FFEF}ぁ-んァ-ヶー。、・−";
+    Regex::new(&format!(
+        r"[{japanese}\x{{10000}}-\x{{10FFFF}}]([a-zA-Zａ-ｚＡ-Ｚ])[{japanese}\x{{20000}}-\x{{2FFFF}}]"
+    ))
+    .unwrap()
+});
+
+/// `arabic-kanji-numbers` の1つのパターン。範囲ごとに最初の一致だけを指摘する
+struct NumberPattern {
+    regex: Regex,
+    /// 範囲のどこかに一致すれば、このパターンを指摘しない
+    ignore: Vec<Regex>,
+    /// 一致の直後にこの文字があれば、その一致を使わない。`regex` crateが先読みを持たないので分けて持つ
+    not_followed_by: Option<char>,
+    message: &'static str,
+}
+
+static NUMBER_PATTERNS: LazyLock<Vec<NumberPattern>> = LazyLock::new(|| {
+    const K: &str = "[一二三四五六七八九十壱弐参拾百〇]+";
+    let pattern = |regex: &str, ignore: &[&str], message| NumberPattern {
+        regex: Regex::new(regex).unwrap(),
+        ignore: ignore
+            .iter()
+            .map(|ignore| Regex::new(ignore).unwrap())
+            .collect(),
+        not_followed_by: None,
+        message,
+    };
+    let to_arabic = |regex: &str, ignore: &[&str]| pattern(regex, ignore, "算用数字で書く");
+    let to_kanji = |regex: &str| pattern(regex, &[], "漢数字で書く");
+    vec![
+        to_arabic(&format!("{K}[兆億万]"), &[&format!("(数|何){K}[兆億万]")]),
+        to_arabic(
+            &format!("{K}つ"),
+            &[
+                "[一二三四五六七八九]つ(返事|子|ひとつ|星|編|葉|橋|と[無な]い|に一つ)",
+                "(ただ|唯|[女男]手|穴|瓜|馬鹿の)[一二]つ",
+            ],
+        ),
+        to_arabic(&format!("{K}回"), &[]),
+        to_arabic(&format!("{K}か月"), &[]),
+        to_arabic(&format!("{K}番目"), &[]),
+        to_arabic(&format!("{K}進法"), &[]),
+        to_arabic(&format!("{K}次元"), &[]),
+        to_arabic(&format!("第{K}章"), &[]),
+        to_arabic(&format!("第{K}節"), &[]),
+        to_kanji("世界1"),
+        to_kanji("1時的"),
+        to_kanji("1部分"),
+        to_kanji("第3者"),
+        NumberPattern {
+            not_followed_by: Some('類'),
+            ..to_kanji("[^0-9]1種")
+        },
+        to_kanji("1部の"),
+        to_kanji("1番に"),
+        to_kanji("数10+倍"),
+        to_kanji("数10+[兆億万]"),
+        to_kanji("数10+年"),
+        to_kanji("[0-9]+次関数"),
+        to_kanji("5大陸"),
+    ]
+});
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prose::parse;
+
+    #[test]
+    fn a_surrogate_pair_after_an_alphabet_is_also_the_japanese_character_before_the_next_one() {
+        let src = "あg𠮷hい";
+        let reports = report(src, &parse(src).texts, &Builtin::default());
+        let alphabets: Vec<&str> = reports.iter().map(|r| &src[r.range.clone()]).collect();
+        assert_eq!(alphabets, vec!["g", "h"]);
+    }
 }

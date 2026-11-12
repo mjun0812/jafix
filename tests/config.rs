@@ -409,3 +409,165 @@ fn check_exits_2_on_a_relative_report_exclude_and_accepts_a_double_star_one() {
     sandbox.write_xdg_config("report-exclude = [\"**/sub/*.md\"]\n");
     assert_eq!(sandbox.run(&["check", "sub/a.md"]).status.code(), Some(0));
 }
+
+#[test]
+fn check_reports_a_builtin_report_rule_only_while_it_is_enabled() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "すごい！\n");
+    sandbox.write_xdg_config("[builtin]\nno-exclamation-question-mark = true\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        stdout(&output),
+        "t.md:1:4: 「！」を使わない [no-exclamation-question-mark]\n"
+    );
+
+    sandbox.write_xdg_config("[builtin]\nno-exclamation-question-mark = false\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stdout(&output), "");
+}
+
+#[test]
+fn a_disabled_fullwidth_paren_is_neither_fixed_nor_reported() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write("t.md", "注（補足）です。\n");
+    assert_eq!(sandbox.run(&["check", "t.md"]).status.code(), Some(1));
+
+    sandbox.write_xdg_config("[builtin]\nfullwidth-paren = false\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stdout(&output), "");
+    assert_eq!(sandbox.run(&["fix", "t.md"]).status.code(), Some(0));
+    assert_eq!(read(&path), "注（補足）です。\n");
+}
+
+#[test]
+fn a_disabled_space_rule_is_not_reported_inside_a_heading() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "# API の設計\n");
+    assert_eq!(sandbox.run(&["check", "t.md"]).status.code(), Some(1));
+
+    sandbox.write_xdg_config("[builtin]\nspace-between-ja-and-alnum = false\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stdout(&output), "");
+}
+
+/// `builtin` を `[builtin]` の表に書いた設定で `jafix check` を実行し、exit 2で標準エラーに `expected` をすべて含むことを確かめる
+fn assert_check_rejects_builtin(builtin: &str, expected: &[&str]) {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "日本語Rust\n");
+    sandbox.write_xdg_config(&format!("[builtin]\n{builtin}\n"));
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(2), "{builtin}");
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    for needle in expected {
+        assert!(stderr.contains(needle), "{builtin}: {stderr}");
+    }
+}
+
+#[test]
+fn check_exits_2_on_an_unknown_builtin_rule() {
+    assert_check_rejects_builtin("no-such-rule = false", &["no-such-rule"]);
+}
+
+#[test]
+fn check_exits_2_on_a_builtin_value_that_is_neither_bool_nor_table() {
+    assert_check_rejects_builtin("sentence-length = 5", &["sentence-length"]);
+}
+
+#[test]
+fn check_exits_2_on_an_unknown_builtin_option() {
+    assert_check_rejects_builtin(
+        "sentence-length = { maxx = 5 }",
+        &["sentence-length", "maxx"],
+    );
+    assert_check_rejects_builtin("no-nfd = { x = 1 }", &["no-nfd", "x"]);
+}
+
+#[test]
+fn check_exits_2_on_textlint_options_that_jafix_does_not_support() {
+    for (builtin, option) in [
+        (
+            "ja-no-mixed-period = { forceAppendPeriod = true }",
+            "forceAppendPeriod",
+        ),
+        (
+            "ja-no-mixed-period = { checkFootnote = true }",
+            "checkFootnote",
+        ),
+        (
+            "sentence-length = { exclusionPatterns = [] }",
+            "exclusionPatterns",
+        ),
+        (
+            "no-invalid-control-character = { checkCode = true }",
+            "checkCode",
+        ),
+        (
+            "no-invalid-control-character = { checkImage = false }",
+            "checkImage",
+        ),
+    ] {
+        assert_check_rejects_builtin(builtin, &[option]);
+    }
+}
+
+#[test]
+fn check_exits_2_on_a_builtin_option_of_the_wrong_type_or_value() {
+    assert_check_rejects_builtin(
+        "sentence-length = { max = \"a\" }",
+        &["sentence-length", "max"],
+    );
+    assert_check_rejects_builtin("max-comma = { max = 0 }", &["max-comma", "max"]);
+    assert_check_rejects_builtin(
+        "max-kanji-continuous-len = { max = 0 }",
+        &["max-kanji-continuous-len", "max"],
+    );
+    assert_check_rejects_builtin("sentence-length = { countBy = \"bytes\" }", &["countBy"]);
+    assert_check_rejects_builtin(
+        "no-invalid-control-character = { allow = [\"ab\"] }",
+        &["allow"],
+    );
+}
+
+#[test]
+fn check_accepts_zero_as_the_sentence_length_max() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "日本語Rust\n");
+    sandbox.write_xdg_config("[builtin]\nsentence-length = { max = 0 }\n");
+    assert_ne!(sandbox.run(&["check", "t.md"]).status.code(), Some(2));
+}
+
+#[test]
+fn check_exits_2_on_a_pattern_that_cannot_be_read() {
+    assert_check_rejects_builtin(
+        "sentence-length = { skipPatterns = [\"/(/\"] }",
+        &["skipPatterns"],
+    );
+    assert_check_rejects_builtin(
+        "no-exclamation-question-mark = { allow = [\"/a/y\"] }",
+        &["allow"],
+    );
+}
+
+#[test]
+fn check_exits_2_on_a_rule_named_after_a_ported_builtin_rule() {
+    assert_check_rejects_rule(
+        "[[rules]]\nid = \"max-comma\"\nmessage = \"m\"\nwords = [\"a\"]\n",
+        "max-comma",
+    );
+}
+
+#[test]
+fn hook_exits_1_on_an_unknown_builtin_rule_without_changing_files() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write("t.md", "日本語 Rust\n");
+    sandbox.write_xdg_config("[builtin]\nno-such-rule = false\n");
+    let output = sandbox.hook("claude", &claude_edit_input(&path, true));
+    assert_eq!(output.status.code(), Some(1));
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(stderr.contains("no-such-rule"), "{stderr}");
+    assert_eq!(read(&path), "日本語 Rust\n");
+}

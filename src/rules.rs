@@ -89,6 +89,13 @@ impl SpaceRule {
         }
     }
 
+    fn enabled(self, builtin: &Builtin) -> bool {
+        match self {
+            SpaceRule::JaAndAlnum => builtin.space_between_ja_and_alnum,
+            SpaceRule::JaAndParen => builtin.space_between_ja_and_paren,
+        }
+    }
+
     fn message(self) -> &'static str {
         match self {
             SpaceRule::JaAndAlnum => "日本語と英数字の間の空白を削除する",
@@ -166,18 +173,17 @@ pub struct Report<'r> {
 }
 
 /// 指摘ルール (組み込みの指摘ルール、見出しの中で直さない修正ルール、設定の `custom`) に当たる箇所を、位置の順に返す
-#[expect(unused_variables, reason = "skeleton: not implemented")]
 pub fn report<'r>(
     src: &str,
     document: &Document,
     builtin: &Builtin,
     custom: &'r [CustomRule],
 ) -> Vec<Report<'r>> {
-    let mut reports = Vec::new();
+    let mut reports = text::report(src, &document.texts, builtin);
     for Prose { range, context } in &document.texts {
         let text = &src[range.clone()];
         if context.heading {
-            reports.extend(space_findings(text).map(|(spaces, rule)| Report {
+            reports.extend(space_findings(text, builtin).map(|(spaces, rule)| Report {
                 range: range.start + spaces.start..range.start + spaces.end,
                 rule: rule.id().name(),
                 message: Cow::Borrowed(rule.heading_message()),
@@ -204,26 +210,27 @@ static JAPANESE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}ー]$").unwrap());
 
 /// 有効な修正ルールに当たる箇所を、位置の順に返す。見出しの中で直さない箇所は含めない
-#[expect(unused_variables, reason = "skeleton: not implemented")]
 pub fn find(src: &str, document: &Document, builtin: &Builtin) -> Vec<Finding> {
     let mut findings = Vec::new();
     for Prose { range, context } in &document.texts {
         let text = &src[range.clone()];
-        for (i, paren) in text.match_indices(['（', '）']) {
-            let start = range.start + i;
-            findings.push(Finding {
-                range: start..start + paren.len(),
-                replacement: Cow::Borrowed(if paren == "（" { "(" } else { ")" }),
-                rule: RuleId::FullwidthParen,
-                position: start,
-                message: Cow::Borrowed("全角括弧を半角にする"),
-            });
+        if builtin.fullwidth_paren {
+            for (i, paren) in text.match_indices(['（', '）']) {
+                let start = range.start + i;
+                findings.push(Finding {
+                    range: start..start + paren.len(),
+                    replacement: Cow::Borrowed(if paren == "（" { "(" } else { ")" }),
+                    rule: RuleId::FullwidthParen,
+                    position: start,
+                    message: Cow::Borrowed("全角括弧を半角にする"),
+                });
+            }
         }
         // 見出しの空白を消すとアンカーが変わり、見出しへのリンクが切れるので、`report` で指摘にする
         if context.heading {
             continue;
         }
-        findings.extend(space_findings(text).map(|(spaces, rule)| Finding {
+        findings.extend(space_findings(text, builtin).map(|(spaces, rule)| Finding {
             range: range.start + spaces.start..range.start + spaces.end,
             replacement: Cow::Borrowed(""),
             rule: rule.id(),
@@ -235,12 +242,16 @@ pub fn find(src: &str, document: &Document, builtin: &Builtin) -> Vec<Finding> {
     findings
 }
 
-/// `text` の中で空白のルールに当たる空白の範囲 (`text` の中のバイト範囲) とルールを返す
-fn space_findings(text: &str) -> impl Iterator<Item = (Range<usize>, SpaceRule)> {
-    SPACES.find_iter(text).filter_map(|spaces| {
+/// `text` の中で、有効な空白のルールに当たる空白の範囲 (`text` の中のバイト範囲) とルールを返す
+fn space_findings(
+    text: &str,
+    builtin: &Builtin,
+) -> impl Iterator<Item = (Range<usize>, SpaceRule)> {
+    SPACES.find_iter(text).filter_map(move |spaces| {
         let prev = text[..spaces.start()].chars().next_back()?;
         let next = text[spaces.end()..].chars().next()?;
-        space_rule(prev, next).map(|rule| (spaces.range(), rule))
+        let rule = space_rule(prev, next).filter(|rule| rule.enabled(builtin))?;
+        Some((spaces.range(), rule))
     })
 }
 

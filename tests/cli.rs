@@ -174,16 +174,13 @@ fn check_reports_words_rule_with_the_matched_word_and_message() {
 #[test]
 fn check_reports_pattern_rule_with_the_matched_text_and_message() {
     let sandbox = Sandbox::new();
-    sandbox.write("t.md", "すごい！\n");
+    sandbox.write("t.md", "すごい〜です。\n");
     sandbox.write_xdg_config(
-        "[[rules]]\nid = \"bang\"\nmessage = \"感嘆符を使わない\"\npattern = \"[!！]\"\n",
+        "[[rules]]\nid = \"wave\"\nmessage = \"波線を使わない\"\npattern = \"[〜～]\"\n",
     );
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(output.status.code(), Some(1));
-    assert_eq!(
-        stdout(&output),
-        "t.md:1:4: 「！」: 感嘆符を使わない [bang]\n"
-    );
+    assert_eq!(stdout(&output), "t.md:1:4: 「〜」: 波線を使わない [wave]\n");
 }
 
 #[test]
