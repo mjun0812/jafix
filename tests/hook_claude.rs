@@ -53,7 +53,7 @@ fn edit_fixes_only_the_plus_lines_of_the_structured_patch() {
 #[test]
 fn write_of_a_new_file_fixes_every_line() {
     let sandbox = Sandbox::new();
-    let path = sandbox.write("t.md", "日本語 Rust\n（補足） です\n");
+    let path = sandbox.write("t.md", "日本語 Rust\n（補足） です。\n");
     let input = json!({
         "hook_event_name": "PostToolUse",
         "tool_name": "Write",
@@ -70,7 +70,7 @@ fn write_of_a_new_file_fixes_every_line() {
     .to_string();
     let output = sandbox.hook("claude", &input);
     assert_eq!(output.status.code(), Some(0));
-    assert_eq!(read(&path), "日本語Rust\n(補足)です\n");
+    assert_eq!(read(&path), "日本語Rust\n(補足)です。\n");
 }
 
 #[test]
@@ -256,4 +256,78 @@ fn report_outside_the_changed_lines_is_not_returned() {
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stderr(&output), "");
     assert_eq!(read(&path), "照合する\n語B\n照合する\n");
+}
+
+#[test]
+fn edit_fixes_halfwidth_kana_only_on_the_changed_line() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write("t.md", "最初はﾊﾝｶｸです。\n\n次もﾊﾝｶｸです。\n");
+    let output = sandbox.hook("claude", &edit_changing_line(&path, 3));
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stderr(&output), "");
+    assert_eq!(read(&path), "最初はﾊﾝｶｸです。\n\n次もハンカクです。\n");
+}
+
+/// 1行目が短い文、3行目が101文字の文のファイル。`third_line_prefix` は3行目の先頭に足す
+fn write_long_sentence_file(sandbox: &Sandbox, third_line_prefix: &str) -> std::path::PathBuf {
+    sandbox.write(
+        "t.md",
+        &format!(
+            "短い文です。\n\n{third_line_prefix}{}。\n",
+            "あ".repeat(100)
+        ),
+    )
+}
+
+#[test]
+fn edit_reports_a_long_sentence_on_the_changed_line() {
+    let sandbox = Sandbox::new();
+    let path = write_long_sentence_file(&sandbox, "");
+    let output = sandbox.hook("claude", &edit_changing_line(&path, 3));
+    assert_eq!(output.status.code(), Some(2));
+    let lines: Vec<&str> = stderr(&output).lines().collect();
+    assert_eq!(
+        lines.get(1).copied(),
+        Some(
+            format!(
+                "{}:3:1: 1文が100文字を超えている (101文字) [sentence-length]",
+                path.display()
+            )
+            .as_str()
+        ),
+        "{lines:?}"
+    );
+}
+
+#[test]
+fn edit_does_not_report_a_long_sentence_outside_the_changed_line() {
+    let sandbox = Sandbox::new();
+    let path = write_long_sentence_file(&sandbox, "");
+    let output = sandbox.hook("claude", &edit_changing_line(&path, 1));
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stderr(&output), "");
+}
+
+#[test]
+fn edit_does_not_report_a_disabled_builtin_rule() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nsentence-length = false\n");
+    let path = write_long_sentence_file(&sandbox, "");
+    let output = sandbox.hook("claude", &edit_changing_line(&path, 3));
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stderr(&output), "");
+}
+
+#[test]
+fn edit_of_a_report_excluded_file_fixes_but_does_not_report_builtin_rules() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("report-exclude = [\"**/t.md\"]\n");
+    let path = write_long_sentence_file(&sandbox, "ﾊﾝｶｸと");
+    let output = sandbox.hook("claude", &edit_changing_line(&path, 3));
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stderr(&output), "");
+    assert_eq!(
+        read(&path),
+        format!("短い文です。\n\nハンカクと{}。\n", "あ".repeat(100))
+    );
 }

@@ -62,28 +62,28 @@ fn an_identical_line_before_the_chunk_is_left_unchanged() {
 #[test]
 fn append_only_chunk_before_a_context_chunk_fixes_both() {
     let (content, output) = run_update(
-        "語 A\n語 B\n語 C\n語 D\n",
-        "@@\n+語 D\n@@\n 語 A\n-語 x\n+語 B\n",
+        "語 A\n語 B\n語 C\n語 D。\n",
+        "@@\n+語 D。\n@@\n 語 A\n-語 x\n+語 B\n",
     );
     assert_eq!(output.status.code(), Some(0));
-    assert_eq!(content, "語 A\n語B\n語 C\n語D\n");
+    assert_eq!(content, "語 A\n語B\n語 C\n語D。\n");
 }
 
 #[test]
 fn two_append_only_chunks_fix_the_last_lines() {
-    let (content, output) = run_update("語 A\n語 B\n語 C\n", "@@\n+語 B\n@@\n+語 C\n");
+    let (content, output) = run_update("語 A\n語 B\n語 C。\n", "@@\n+語 B\n@@\n+語 C。\n");
     assert_eq!(output.status.code(), Some(0));
-    assert_eq!(content, "語 A\n語B\n語C\n");
+    assert_eq!(content, "語 A\n語B\n語C。\n");
 }
 
 #[test]
 fn end_of_file_chunk_fixes_only_the_last_lines() {
     let (content, output) = run_update(
-        "語 A\n語 B\n語 A\n語 B\n",
-        "@@\n 語 A\n-語 x\n+語 B\n*** End of File\n",
+        "語 A\n語 B。\n語 A\n語 B。\n",
+        "@@\n 語 A\n-語 x\n+語 B。\n*** End of File\n",
     );
     assert_eq!(output.status.code(), Some(0));
-    assert_eq!(content, "語 A\n語 B\n語 A\n語B\n");
+    assert_eq!(content, "語 A\n語 B。\n語 A\n語B。\n");
 }
 
 #[test]
@@ -97,22 +97,22 @@ fn chunk_without_context_matching_twice_leaves_the_file_and_exits_1() {
 #[test]
 fn add_file_fixes_every_line() {
     let sandbox = Sandbox::new();
-    let path = sandbox.write("new.md", "日本語 Rust\n（補足） です\n");
+    let path = sandbox.write("new.md", "日本語 Rust\n（補足） です。\n");
     let patch =
-        "*** Begin Patch\n*** Add File: new.md\n+日本語 Rust\n+（補足） です\n*** End Patch\n";
+        "*** Begin Patch\n*** Add File: new.md\n+日本語 Rust\n+（補足） です。\n*** End Patch\n";
     let output = sandbox.hook("codex", &apply_patch_input(&sandbox.path(""), patch));
     assert_eq!(output.status.code(), Some(0));
-    assert_eq!(read(&path), "日本語Rust\n(補足)です\n");
+    assert_eq!(read(&path), "日本語Rust\n(補足)です。\n");
 }
 
 #[test]
 fn move_to_fixes_the_moved_file() {
     let sandbox = Sandbox::new();
-    let path = sandbox.write("new.md", "語 A\n語 B\n");
-    let patch = "*** Begin Patch\n*** Update File: old.md\n*** Move to: new.md\n@@\n 語 A\n-語 x\n+語 B\n*** End Patch\n";
+    let path = sandbox.write("new.md", "語 A\n語 B。\n");
+    let patch = "*** Begin Patch\n*** Update File: old.md\n*** Move to: new.md\n@@\n 語 A\n-語 x\n+語 B。\n*** End Patch\n";
     let output = sandbox.hook("codex", &apply_patch_input(&sandbox.path(""), patch));
     assert_eq!(output.status.code(), Some(0));
-    assert_eq!(read(&path), "語 A\n語B\n");
+    assert_eq!(read(&path), "語 A\n語B。\n");
 }
 
 fn bash_input(cwd: &Path, command: &str) -> String {
@@ -167,7 +167,7 @@ fn delete_only_patch_does_nothing() {
 fn a_file_whose_chunk_is_missing_is_left_while_the_other_is_fixed() {
     let sandbox = Sandbox::new();
     let missing = sandbox.write("a.md", "語 A\n語 B\n");
-    let found = sandbox.write("b.md", "語 A\n語 B\n");
+    let found = sandbox.write("b.md", "語 A\n語 B。\n");
     let patch = "\
 *** Begin Patch
 *** Update File: a.md
@@ -179,14 +179,14 @@ fn a_file_whose_chunk_is_missing_is_left_while_the_other_is_fixed() {
 @@
  語 A
 -語 x
-+語 B
++語 B。
 *** End Patch
 ";
     let output = sandbox.hook("codex", &apply_patch_input(&sandbox.path(""), patch));
     assert_eq!(output.status.code(), Some(1));
     assert!(!output.stderr.is_empty());
     assert_eq!(read(&missing), "語 A\n語 B\n");
-    assert_eq!(read(&found), "語 A\n語B\n");
+    assert_eq!(read(&found), "語 A\n語B。\n");
 }
 
 const AI_WORDS_RULE: &str =
@@ -246,4 +246,17 @@ fn reports_and_unlocated_chunks_are_both_written_with_exit_2() {
         reported.display()
     );
     assert!(stderr.lines().any(|line| line == report), "{stderr}");
+}
+
+#[test]
+fn apply_patch_reports_a_builtin_report_rule_on_the_plus_line() {
+    let (_, output) = run_update("語 A\nすごい！\n", "@@\n 語 A\n-語 x\n+すごい！\n");
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(
+        stderr
+            .lines()
+            .any(|line| line.ends_with("[no-exclamation-question-mark]")),
+        "{stderr}"
+    );
 }

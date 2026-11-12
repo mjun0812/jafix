@@ -93,3 +93,43 @@ fn no_exclamation_question_mark() {
 fn ja_unnatural_alphabet() {
     assert_cases("ja-unnatural-alphabet");
 }
+
+#[test]
+fn no_nfd() {
+    assert_cases("no-nfd");
+}
+
+#[test]
+fn no_invalid_control_character() {
+    assert_cases("no-invalid-control-character");
+}
+
+#[test]
+fn no_zero_width_spaces() {
+    assert_cases("no-zero-width-spaces");
+}
+
+#[test]
+fn no_hankaku_kana() {
+    assert_cases("no-hankaku-kana");
+}
+
+#[test]
+fn sentence_length() {
+    assert_cases("sentence-length");
+}
+
+#[test]
+fn max_comma() {
+    assert_cases("max-comma");
+}
+
+#[test]
+fn ja_no_mixed_period() {
+    assert_cases("ja-no-mixed-period");
+}
+
+#[test]
+fn no_unmatched_pair() {
+    assert_cases("no-unmatched-pair");
+}

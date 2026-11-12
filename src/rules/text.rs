@@ -1,7 +1,9 @@
 use std::borrow::Cow;
+use std::ops::Range;
 use std::sync::LazyLock;
 
 use regex::Regex;
+use unicode_normalization::UnicodeNormalization;
 
 use crate::prose::Prose;
 
@@ -11,9 +13,119 @@ use super::{Finding, Report, RuleId};
 /// 本文の範囲ごとに当てる修正ルール (`no-nfd`、`no-hankaku-kana`、`no-zero-width-spaces`、
 /// `no-invalid-control-character`) の箇所を返す。見出しの中の箇所も返し、指摘にするかは呼び出し側が決める。
 /// `no-nfd` は、前の文字と合成して1文字になる組み合わせだけを返す
-#[expect(dead_code, unused_variables, reason = "skeleton: not implemented")]
 pub fn find(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<Finding> {
-    todo!("skeleton: not implemented")
+    let mut findings = Vec::new();
+    for Prose { range, context } in texts {
+        let text = &src[range.clone()];
+        let at = |start: usize,
+                  end: usize,
+                  replacement: String,
+                  rule: RuleId,
+                  message: Cow<'static, str>| {
+            Finding {
+                range: range.start + start..range.start + end,
+                replacement: Cow::Owned(replacement),
+                rule,
+                position: range.start + start,
+                message,
+            }
+        };
+        // textlintは、祖先に引用・強調・リンクがある文字列の濁点を見ない
+        if builtin.no_nfd && !(context.blockquote || context.emphasis || context.link) {
+            for mark in nfd_marks(text) {
+                let Some(composed) = mark.composed else {
+                    continue;
+                };
+                findings.push(Finding {
+                    // textlintと同じく、置き換える2文字のうち濁点・半濁点の位置に出す
+                    position: range.start + mark.position,
+                    ..at(
+                        mark.range.start,
+                        mark.range.end,
+                        composed.to_string(),
+                        RuleId::NoNfd,
+                        "濁点・半濁点を前の文字と合成する".into(),
+                    )
+                });
+            }
+        }
+        if builtin.no_hankaku_kana && context.plain {
+            for run in HANKAKU_KANA.find_iter(text) {
+                findings.push(at(
+                    run.start(),
+                    run.end(),
+                    run.as_str().nfkc().collect(),
+                    RuleId::NoHankakuKana,
+                    "半角カナを全角にする".into(),
+                ));
+            }
+        }
+        if builtin.no_zero_width_spaces {
+            for (i, _) in text.match_indices('\u{200B}') {
+                findings.push(at(
+                    i,
+                    i + '\u{200B}'.len_utf8(),
+                    String::new(),
+                    RuleId::NoZeroWidthSpaces,
+                    "ゼロ幅スペースを削除する".into(),
+                ));
+            }
+        }
+        if let Some(rule) = &builtin.no_invalid_control_character {
+            for (i, c) in text.char_indices() {
+                if is_invalid_control_character(c) && !rule.allow.contains(&c) {
+                    findings.push(at(
+                        i,
+                        i + c.len_utf8(),
+                        String::new(),
+                        RuleId::NoInvalidControlCharacter,
+                        format!("制御文字 (U+{:04X}) を削除する", u32::from(c)).into(),
+                    ));
+                }
+            }
+        }
+    }
+    findings
+}
+
+/// textlintの正規表現の範囲をそのまま写す。タブ・改行・復帰と、U+2066からU+2069・U+200E・U+200Fは含めない
+fn is_invalid_control_character(c: char) -> bool {
+    matches!(c, '\u{0}'..='\u{8}' | '\u{B}' | '\u{C}' | '\u{E}'..='\u{1F}' | '\u{7F}'..='\u{9F}' | '\u{202A}'..='\u{202E}')
+}
+
+static HANKAKU_KANA: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"[\x{FF61}-\x{FF9F}]+").unwrap());
+
+/// 濁点・半濁点と、その前の文字との組み合わせ。範囲と位置は本文の範囲の中のバイト位置
+struct NfdMark {
+    /// 前の文字と濁点・半濁点を合わせた範囲
+    range: Range<usize>,
+    /// 濁点・半濁点の位置
+    position: usize,
+    /// 合成した1文字。1文字にならない組み合わせは `None`
+    composed: Option<char>,
+}
+
+/// 本文の範囲の先頭以外にある濁点・半濁点 (結合文字と、単独のU+309B・U+309C) を返す
+fn nfd_marks(text: &str) -> impl Iterator<Item = NfdMark> {
+    text.char_indices().filter_map(|(i, c)| {
+        if !matches!(c, '\u{3099}'..='\u{309C}') {
+            return None;
+        }
+        let prev = text[..i].chars().next_back()?;
+        let combining = match c {
+            '\u{309B}' => '\u{3099}',
+            '\u{309C}' => '\u{309A}',
+            _ => c,
+        };
+        let mut composed = [prev, combining].into_iter().nfc();
+        let composed = composed.next().filter(|_| composed.next().is_none());
+        Some(NfdMark {
+            range: i - prev.len_utf8()..i + c.len_utf8(),
+            position: i,
+            composed,
+        })
+    })
 }
 
 /// 本文の範囲ごとに当てる指摘ルール (`max-kanji-continuous-len`、`arabic-kanji-numbers`、
@@ -27,7 +139,7 @@ pub fn report(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<Report<'stat
             rule: rule.name(),
             message: Cow::Owned(message),
         };
-        // textlintの3つのルールは、祖先に引用・強調・リンクがある文字列を見ない
+        // textlintの4つのルールは、祖先に引用・強調・リンクがある文字列を見ない
         let in_quote_emphasis_or_link = context.blockquote || context.emphasis || context.link;
         if let Some(rule) = &builtin.max_kanji_continuous_len
             && !in_quote_emphasis_or_link
@@ -42,6 +154,16 @@ pub fn report(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<Report<'stat
                         format!("漢字が{}文字以上続いている: {}", rule.max + 1, run.as_str()),
                     ));
                 }
+            }
+        }
+        if builtin.no_nfd && !in_quote_emphasis_or_link {
+            for mark in nfd_marks(text).filter(|mark| mark.composed.is_none()) {
+                reports.push(at(
+                    mark.position,
+                    mark.range.end,
+                    RuleId::NoNfd,
+                    "濁点・半濁点を前の文字と合成できない".to_owned(),
+                ));
             }
         }
         if builtin.arabic_kanji_numbers && context.plain {

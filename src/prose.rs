@@ -62,7 +62,6 @@ pub struct Inline {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[expect(dead_code, reason = "skeleton: not implemented")]
 pub enum InlineKind {
     Text,
     Code,
@@ -97,32 +96,31 @@ pub fn parse(src: &str) -> Document {
     let root = markdown::to_mdast(src, &options).expect("MDXを有効にしない解析は失敗しない");
     let mut texts = Vec::new();
     collect(&root, src, Context::default(), &mut texts);
-    Document {
-        texts,
-        // skeleton: not implemented
-        paragraphs: Vec::new(),
-    }
+    let mut paragraphs = Vec::new();
+    collect_paragraphs(&root, src, false, false, false, &mut paragraphs);
+    Document { texts, paragraphs }
+}
+
+fn node_range(node: &Node) -> Range<usize> {
+    let position = node.position().expect("to_mdastのnodeは位置を持つ");
+    position.start.offset..position.end.offset
 }
 
 // `context` は `node` が置かれた文脈である。
 // コード・HTML・front matterのnodeは子を持たず、値をText nodeにしないので、たどるだけで除かれる
 fn collect(node: &Node, src: &str, context: Context, ranges: &mut Vec<Prose>) {
-    let range = |node: &Node| {
-        let position = node.position().expect("to_mdastのnodeは位置を持つ");
-        position.start.offset..position.end.offset
-    };
     match node {
         Node::Text(_) => ranges.push(Prose {
-            range: range(node),
+            range: node_range(node),
             context,
         }),
         // 省略形とcollapsed形の文字列は、定義のラベルを兼ねるので直さない
         Node::LinkReference(reference) if reference.reference_kind != ReferenceKind::Full => {}
         // `<https://...>` の自動リンクと裸のURLもLinkになり、子のTextがURLそのものになる
-        Node::Link(_) if src[range(node)].starts_with('<') => {}
+        Node::Link(_) if src[node_range(node)].starts_with('<') => {}
         // 裸のURLは空白までを取り込み、`）` や日本語の文字も含む。対応の取れない `）` から後ろはURLではない
-        Node::Link(_) if !src[range(node)].starts_with('[') => {
-            let link = range(node);
+        Node::Link(_) if !src[node_range(node)].starts_with('[') => {
+            let link = node_range(node);
             // URLの後ろの本文は、Linkの外でLinkと並ぶ文字列として扱う
             ranges.extend(
                 after_unmatched_closing_paren(&src[link.clone()], link.start)
@@ -143,6 +141,83 @@ fn collect(node: &Node, src: &str, context: Context, ranges: &mut Vec<Prose>) {
             }
         }
     }
+}
+
+/// `node` の中の段落を集める。3つのflagは、`node` の祖先に引用・リスト項目・脚注の定義があるかである
+fn collect_paragraphs(
+    node: &Node,
+    src: &str,
+    blockquote: bool,
+    list_item: bool,
+    footnote: bool,
+    paragraphs: &mut Vec<Paragraph>,
+) {
+    if let Node::Paragraph(paragraph) = node {
+        paragraphs.push(Paragraph {
+            range: node_range(node),
+            blockquote,
+            list_item,
+            footnote,
+            children: paragraph
+                .children
+                .iter()
+                .filter_map(|child| inline(child, src, true))
+                .collect(),
+        });
+        return;
+    }
+    for child in node.children().into_iter().flatten() {
+        collect_paragraphs(
+            child,
+            src,
+            blockquote || matches!(node, Node::Blockquote(_)),
+            list_item || matches!(node, Node::ListItem(_)),
+            footnote || matches!(node, Node::FootnoteDefinition(_)),
+            paragraphs,
+        );
+    }
+}
+
+/// 段落の中のnodeを `Inline` にする。`direct` は、`node` が段落の直下にあるか。
+/// textlintと同じく、段落の直下の文字列は元のソースのまま、リンクや強調の中の文字列はnodeの値で数える
+fn inline(node: &Node, src: &str, direct: bool) -> Option<Inline> {
+    let range = node_range(node);
+    let leaf = |kind, text: &str| Inline {
+        kind,
+        range: range.clone(),
+        text: text.to_owned(),
+        children: Vec::new(),
+    };
+    let kind = match node {
+        Node::Text(_) if direct => return Some(leaf(InlineKind::Text, &src[range.clone()])),
+        Node::Text(text) => return Some(leaf(InlineKind::Text, &text.value)),
+        Node::InlineCode(code) => return Some(leaf(InlineKind::Code, &code.value)),
+        Node::Image(image) => return Some(leaf(InlineKind::Image, &image.alt)),
+        Node::ImageReference(image) => return Some(leaf(InlineKind::Image, &image.alt)),
+        Node::Html(_) => return Some(leaf(InlineKind::Html, "")),
+        Node::Break(_) => return Some(leaf(InlineKind::Break, "")),
+        Node::FootnoteReference(_) => return Some(leaf(InlineKind::FootnoteReference, "")),
+        Node::Link(link) => InlineKind::Link {
+            url: link.url.clone(),
+        },
+        Node::LinkReference(_) => InlineKind::LinkReference,
+        Node::Emphasis(_) => InlineKind::Emphasis,
+        Node::Strong(_) => InlineKind::Strong,
+        Node::Delete(_) => InlineKind::Delete,
+        _ => return None,
+    };
+    let children: Vec<Inline> = node
+        .children()
+        .into_iter()
+        .flatten()
+        .filter_map(|child| inline(child, src, false))
+        .collect();
+    Some(Inline {
+        kind,
+        text: children.iter().map(|child| child.text.as_str()).collect(),
+        range,
+        children,
+    })
 }
 
 /// `text` のうち、`（` と対にならない最初の `）` から終わりまでの範囲を返す。`start` は `text` のソース上の開始位置
@@ -384,5 +459,63 @@ mod tests {
     #[test]
     fn keeps_fullwidth_parens_inside_autolinks() {
         assert_eq!(prose("<https://example.com/a）b> 外"), vec![" 外"]);
+    }
+
+    fn paragraphs(src: &str) -> Vec<(&str, bool, bool, bool)> {
+        parse(src)
+            .paragraphs
+            .into_iter()
+            .map(|p| (&src[p.range], p.blockquote, p.list_item, p.footnote))
+            .collect()
+    }
+
+    #[test]
+    fn collects_paragraphs_outside_headings_and_table_cells_with_their_containers() {
+        assert_eq!(
+            paragraphs("段\n\n- 項\n\n> 引\n\n# 見\n\n| 表 |\n| - |\n\n文[^1]\n\n[^1]: 脚\n"),
+            vec![
+                ("段", false, false, false),
+                ("項", false, true, false),
+                ("引", true, false, false),
+                ("文[^1]", false, false, false),
+                ("脚", false, false, true),
+            ]
+        );
+    }
+
+    fn inline_texts(src: &str) -> Vec<(&str, String)> {
+        parse(src).paragraphs[0]
+            .children
+            .iter()
+            .map(|inline| (&src[inline.range.clone()], inline.text.clone()))
+            .collect()
+    }
+
+    #[test]
+    fn keeps_direct_text_as_source_and_resolves_text_inside_elements() {
+        assert_eq!(
+            inline_texts("a\\*b&amp;*c\\*d&amp;*`e` ![f](g)<br>h  \ni[^1]\n\n[^1]: x\n"),
+            vec![
+                ("a\\*b&amp;", "a\\*b&amp;".to_owned()),
+                ("*c\\*d&amp;*", "c*d&".to_owned()),
+                ("`e`", "e".to_owned()),
+                (" ", " ".to_owned()),
+                ("![f](g)", "f".to_owned()),
+                ("<br>", String::new()),
+                ("h", "h".to_owned()),
+                ("  \n", String::new()),
+                ("i", "i".to_owned()),
+                ("[^1]", String::new()),
+            ]
+        );
+    }
+
+    #[test]
+    fn keeps_a_bare_url_as_one_link_including_the_text_after_it() {
+        let src = "公式（https://example.com）を参照。";
+        let paragraph = &parse(src).paragraphs[0];
+        let link = &paragraph.children[1];
+        assert_eq!(&src[link.range.clone()], "https://example.com）を参照。");
+        assert!(matches!(link.kind, InlineKind::Link { .. }));
     }
 }

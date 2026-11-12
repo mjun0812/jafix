@@ -267,7 +267,7 @@ fn check_exits_2_on_a_rule_named_after_a_builtin_rule() {
 #[test]
 fn check_accepts_a_valid_rule() {
     let sandbox = Sandbox::new();
-    sandbox.write("t.md", "日本語Rust\n");
+    sandbox.write("t.md", "日本語Rustです。\n");
     sandbox.write_xdg_config("[[rules]]\nid = \"ok\"\nmessage = \"m\"\nwords = [\"照合\"]\n");
     assert_eq!(sandbox.run(&["check", "t.md"]).status.code(), Some(0));
 }
@@ -440,6 +440,19 @@ fn a_disabled_fullwidth_paren_is_neither_fixed_nor_reported() {
     assert_eq!(stdout(&output), "");
     assert_eq!(sandbox.run(&["fix", "t.md"]).status.code(), Some(0));
     assert_eq!(read(&path), "注（補足）です。\n");
+}
+
+#[test]
+fn a_disabled_no_hankaku_kana_is_not_fixed() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write("t.md", "ﾊﾝｶｸです。\n");
+    sandbox.write_xdg_config("[builtin]\nno-hankaku-kana = false\n");
+    assert_eq!(sandbox.run(&["fix", "t.md"]).status.code(), Some(0));
+    assert_eq!(read(&path), "ﾊﾝｶｸです。\n");
+
+    sandbox.write_xdg_config("[builtin]\nno-hankaku-kana = true\n");
+    assert_eq!(sandbox.run(&["fix", "t.md"]).status.code(), Some(0));
+    assert_eq!(read(&path), "ハンカクです。\n");
 }
 
 #[test]

@@ -74,7 +74,7 @@ impl RuleId {
     }
 }
 
-/// 空白を削除するルール。見出しの中では直さず指摘にするので、`RuleId` とは別に持つ
+/// 空白を削除する2つのルール。空白の前後の文字から決まるルールを、この2つに限って表すので、`RuleId` とは別に持つ
 #[derive(Clone, Copy)]
 enum SpaceRule {
     JaAndAlnum,
@@ -100,18 +100,6 @@ impl SpaceRule {
         match self {
             SpaceRule::JaAndAlnum => "日本語と英数字の間の空白を削除する",
             SpaceRule::JaAndParen => "日本語と括弧の間の空白を削除する",
-        }
-    }
-
-    /// 見出しの中で当たったときの指摘の文面。空白を消すとアンカーが変わることを伝える
-    fn heading_message(self) -> &'static str {
-        match self {
-            SpaceRule::JaAndAlnum => {
-                "日本語と英数字の間の空白を削除する。見出しのアンカーが変わるので、見出しへのリンクも直す"
-            }
-            SpaceRule::JaAndParen => {
-                "日本語と括弧の間の空白を削除する。見出しのアンカーが変わるので、見出しへのリンクも直す"
-            }
         }
     }
 }
@@ -180,15 +168,27 @@ pub fn report<'r>(
     custom: &'r [CustomRule],
 ) -> Vec<Report<'r>> {
     let mut reports = text::report(src, &document.texts, builtin);
-    for Prose { range, context } in &document.texts {
+    reports.extend(paragraph::report(src, &document.paragraphs, builtin));
+    let headings: Vec<Prose> = document
+        .texts
+        .iter()
+        .filter(|prose| prose.context.heading)
+        .cloned()
+        .collect();
+    reports.extend(
+        anchor_changing_findings(src, &headings, builtin)
+            .into_iter()
+            .map(|finding| Report {
+                range: finding.position..finding.range.end,
+                rule: finding.rule.name(),
+                message: Cow::Owned(format!(
+                    "{}。見出しのアンカーが変わるので、見出しへのリンクも直す",
+                    finding.message
+                )),
+            }),
+    );
+    for Prose { range, .. } in &document.texts {
         let text = &src[range.clone()];
-        if context.heading {
-            reports.extend(space_findings(text, builtin).map(|(spaces, rule)| Report {
-                range: range.start + spaces.start..range.start + spaces.end,
-                rule: rule.id().name(),
-                message: Cow::Borrowed(rule.heading_message()),
-            }));
-        }
         for rule in custom {
             for m in rule.regex.find_iter(text).filter(|m| !m.is_empty()) {
                 reports.push(Report {
@@ -212,10 +212,9 @@ static JAPANESE: LazyLock<Regex> =
 /// 有効な修正ルールに当たる箇所を、位置の順に返す。見出しの中で直さない箇所は含めない
 pub fn find(src: &str, document: &Document, builtin: &Builtin) -> Vec<Finding> {
     let mut findings = Vec::new();
-    for Prose { range, context } in &document.texts {
-        let text = &src[range.clone()];
-        if builtin.fullwidth_paren {
-            for (i, paren) in text.match_indices(['（', '）']) {
+    if builtin.fullwidth_paren {
+        for Prose { range, .. } in &document.texts {
+            for (i, paren) in src[range.clone()].match_indices(['（', '）']) {
                 let start = range.start + i;
                 findings.push(Finding {
                     range: start..start + paren.len(),
@@ -226,19 +225,34 @@ pub fn find(src: &str, document: &Document, builtin: &Builtin) -> Vec<Finding> {
                 });
             }
         }
-        // 見出しの空白を消すとアンカーが変わり、見出しへのリンクが切れるので、`report` で指摘にする
-        if context.heading {
-            continue;
-        }
-        findings.extend(space_findings(text, builtin).map(|(spaces, rule)| Finding {
-            range: range.start + spaces.start..range.start + spaces.end,
-            replacement: Cow::Borrowed(""),
-            rule: rule.id(),
-            position: range.start + spaces.start,
-            message: Cow::Borrowed(rule.message()),
-        }));
     }
+    let body: Vec<Prose> = document
+        .texts
+        .iter()
+        .filter(|prose| !prose.context.heading)
+        .cloned()
+        .collect();
+    findings.extend(anchor_changing_findings(src, &body, builtin));
     findings.sort_by_key(|finding| finding.range.start);
+    findings
+}
+
+/// `fullwidth-paren` 以外の修正ルールの、`texts` の中の箇所。見出しの文字を変えるとアンカーが変わり、
+/// 見出しへのリンクが切れるので、見出しの中の箇所は直さずに `report` で指摘にする。
+/// 全角括弧は、置き換えてもアンカーが変わらないので、見出しの中でも直す
+fn anchor_changing_findings(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<Finding> {
+    let mut findings = text::find(src, texts, builtin);
+    for Prose { range, .. } in texts {
+        findings.extend(
+            space_findings(&src[range.clone()], builtin).map(|(spaces, rule)| Finding {
+                range: range.start + spaces.start..range.start + spaces.end,
+                replacement: Cow::Borrowed(""),
+                rule: rule.id(),
+                position: range.start + spaces.start,
+                message: Cow::Borrowed(rule.message()),
+            }),
+        );
+    }
     findings
 }
 

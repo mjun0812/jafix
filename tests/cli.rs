@@ -100,20 +100,20 @@ fn fix_continues_after_an_unreadable_file_and_exits_2() {
 #[test]
 fn check_prints_findings_without_changing_the_file() {
     let sandbox = Sandbox::new();
-    let path = sandbox.write("t.md", "日本語 Rust");
+    let path = sandbox.write("t.md", "日本語 Rustです。");
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         stdout(&output),
         "t.md:1:4: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]\n"
     );
-    assert_eq!(read(&path), "日本語 Rust");
+    assert_eq!(read(&path), "日本語 Rustです。");
 }
 
 #[test]
 fn check_prints_each_rule_with_line_and_character_column() {
     let sandbox = Sandbox::new();
-    sandbox.write("t.md", "前の行\n\n**強**の文 （補足）\n");
+    sandbox.write("t.md", "前の行。\n\n**強**の文 （補足）\n");
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
@@ -135,7 +135,7 @@ fn check_prints_paths_as_given() {
 #[test]
 fn check_exits_0_with_empty_output_without_findings() {
     let sandbox = Sandbox::new();
-    sandbox.write("t.md", "日本語Rustです。 Rustは(補足)です\n");
+    sandbox.write("t.md", "日本語Rustです。 Rustは(補足)です。\n");
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stdout(&output), "");
@@ -185,7 +185,7 @@ fn check_reports_pattern_rule_with_the_matched_text_and_message() {
 
 #[test]
 fn check_does_not_report_words_inside_inline_code() {
-    let output = check_with_rule("words = [\"照合\"]", "`照合` と照合\n");
+    let output = check_with_rule("words = [\"照合\"]", "`照合` と照合。\n");
     assert_eq!(
         stdout(&output),
         "t.md:1:7: 「照合」: AIが多用する語 [ai-words]\n"
@@ -209,7 +209,7 @@ fn check_does_not_match_words_across_an_emphasis_boundary() {
 #[test]
 fn check_reports_the_longer_of_overlapping_words_once() {
     for words in ["[\"検査\", \"検査官\"]", "[\"検査官\", \"検査\"]"] {
-        let output = check_with_rule(&format!("words = {words}"), "検査官が来る\n");
+        let output = check_with_rule(&format!("words = {words}"), "検査官が来る。\n");
         assert_eq!(
             stdout(&output),
             "t.md:1:1: 「検査官」: AIが多用する語 [ai-words]\n",
@@ -220,7 +220,7 @@ fn check_reports_the_longer_of_overlapping_words_once() {
 
 #[test]
 fn check_does_not_report_empty_matches() {
-    let output = check_with_rule("pattern = \"x*\"", "日本語\n");
+    let output = check_with_rule("pattern = \"x*\"", "日本語。\n");
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stdout(&output), "");
 }
@@ -237,13 +237,37 @@ fn check_reports_rules_inside_headings() {
 
 #[test]
 fn check_prints_reports_and_findings_in_position_order() {
-    let output = check_with_rule("words = [\"照合\"]", "照合 Rust\n");
+    let output = check_with_rule("words = [\"照合\"]", "照合 Rustを使う。\n");
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         stdout(&output),
         "t.md:1:1: 「照合」: AIが多用する語 [ai-words]\n\
          t.md:1:3: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]\n"
     );
+}
+
+#[test]
+fn check_prints_fix_rule_findings_and_builtin_reports_in_position_order() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "日本語 Rust！\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        stdout(&output),
+        "t.md:1:4: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]\n\
+         t.md:1:9: 「！」を使わない [no-exclamation-question-mark]\n"
+    );
+}
+
+#[test]
+fn fix_leaves_builtin_reports_unchanged_and_prints_nothing() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write("t.md", "すごい！\n");
+    assert_eq!(sandbox.run(&["check", "t.md"]).status.code(), Some(1));
+    let output = sandbox.run(&["fix", "t.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stdout(&output), "");
+    assert_eq!(read(&path), "すごい！\n");
 }
 
 #[test]
@@ -284,7 +308,7 @@ fn check_reports_spaces_in_headings_with_a_message_about_links() {
 #[test]
 fn check_reports_spaces_around_parens_in_headings_with_the_heading_message() {
     let sandbox = Sandbox::new();
-    sandbox.write("t.md", "本文\n\n## 設定 (補足) の説明\n");
+    sandbox.write("t.md", "本文。\n\n## 設定 (補足) の説明\n");
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(output.status.code(), Some(1));
     let lines: Vec<&str> = stdout(&output).lines().collect();
