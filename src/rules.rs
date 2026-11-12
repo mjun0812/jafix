@@ -169,14 +169,9 @@ pub fn report<'r>(
 ) -> Vec<Report<'r>> {
     let mut reports = text::report(src, &document.texts, builtin);
     reports.extend(paragraph::report(src, &document.paragraphs, builtin));
-    let headings: Vec<Prose> = document
-        .texts
-        .iter()
-        .filter(|prose| prose.context.heading)
-        .cloned()
-        .collect();
+    let headings = document.texts.iter().filter(|prose| prose.context.heading);
     reports.extend(
-        anchor_changing_findings(src, &headings, builtin)
+        anchor_changing_findings(src, headings, builtin)
             .into_iter()
             .map(|finding| Report {
                 range: finding.position..finding.range.end,
@@ -226,13 +221,8 @@ pub fn find(src: &str, document: &Document, builtin: &Builtin) -> Vec<Finding> {
             }
         }
     }
-    let body: Vec<Prose> = document
-        .texts
-        .iter()
-        .filter(|prose| !prose.context.heading)
-        .cloned()
-        .collect();
-    findings.extend(anchor_changing_findings(src, &body, builtin));
+    let body = document.texts.iter().filter(|prose| !prose.context.heading);
+    findings.extend(anchor_changing_findings(src, body, builtin));
     findings.sort_by_key(|finding| finding.range.start);
     findings
 }
@@ -240,8 +230,12 @@ pub fn find(src: &str, document: &Document, builtin: &Builtin) -> Vec<Finding> {
 /// `fullwidth-paren` 以外の修正ルールの、`texts` の中の箇所。見出しの文字を変えるとアンカーが変わり、
 /// 見出しへのリンクが切れるので、見出しの中の箇所は直さずに `report` で指摘にする。
 /// 全角括弧は、置き換えてもアンカーが変わらないので、見出しの中でも直す
-fn anchor_changing_findings(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<Finding> {
-    let mut findings = text::find(src, texts, builtin);
+fn anchor_changing_findings<'a>(
+    src: &str,
+    texts: impl Iterator<Item = &'a Prose> + Clone,
+    builtin: &Builtin,
+) -> Vec<Finding> {
+    let mut findings = text::find(src, texts.clone(), builtin);
     for Prose { range, .. } in texts {
         findings.extend(
             space_findings(&src[range.clone()], builtin).map(|(spaces, rule)| Finding {

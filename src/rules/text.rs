@@ -13,7 +13,11 @@ use super::{Finding, Report, RuleId};
 /// 本文の範囲ごとに当てる修正ルール (`no-nfd`、`no-hankaku-kana`、`no-zero-width-spaces`、
 /// `no-invalid-control-character`) の箇所を返す。見出しの中の箇所も返し、指摘にするかは呼び出し側が決める。
 /// `no-nfd` は、前の文字と合成して1文字になる組み合わせだけを返す
-pub fn find(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<Finding> {
+pub fn find<'a>(
+    src: &str,
+    texts: impl IntoIterator<Item = &'a Prose>,
+    builtin: &Builtin,
+) -> Vec<Finding> {
     let mut findings = Vec::new();
     for Prose { range, context } in texts {
         let text = &src[range.clone()];
