@@ -1,0 +1,68 @@
+# max-comma の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所である。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの
+
+[[cases]]
+name = "mc-3"
+text = "a,b,c,d"
+findings = []
+
+[[cases]]
+name = "mc-4"
+text = "a,b,c,d,e"
+findings = ["1:8"]
+messages = ["1文の「,」が3個を超えている (4個)"]
+
+[[cases]]
+name = "mc-second"
+note = "textlintは2文目以降で位置が前にずれる (1:8)。jafixは文の最後の `,` に出す"
+text = "前の文です。a,b,c,d,e"
+findings = ["1:14"]
+
+[[cases]]
+name = "mc-code"
+text = "x `a,b,c,d,e` y"
+findings = []
+
+[[cases]]
+name = "mc-link"
+text = "[a,b,c,d,e](u)"
+findings = ["1:9"]
+
+[[cases]]
+name = "mc-heading"
+text = "# a,b,c,d,e"
+findings = []
+
+[[cases]]
+name = "mc-quote"
+text = "> a,b,c,d,e"
+findings = ["1:10"]
+
+[[cases]]
+name = "mc-zenkaku"
+text = "a，b，c，d，e"
+findings = []
+
+[[cases]]
+name = "mc-max-ok"
+builtin = 'max-comma = { max = 4 }'
+text = "a,b,c,d,e"
+findings = []
+
+[[cases]]
+name = "mc-max-ng"
+builtin = 'max-comma = { max = 4 }'
+text = "a,b,c,d,e,f"
+findings = ["1:10"]
+
+[[cases]]
+name = "mc-list"
+text = "- a,b,c,d,e"
+findings = ["1:10"]

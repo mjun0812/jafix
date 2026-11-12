@@ -2,23 +2,54 @@ use std::borrow::Cow;
 use std::ops::Range;
 use std::sync::LazyLock;
 
+pub mod builtin;
+mod paragraph;
+mod text;
+
 use regex::Regex;
 
-use crate::prose::Prose;
+use crate::prose::{Document, Prose};
 
+use self::builtin::Builtin;
+
+/// 組み込みのルール。全角括弧と空白の3つ以外は、textlintの `preset-ja-technical-writing` と同じIDである
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuleId {
     FullwidthParen,
     SpaceBetweenJaAndAlnum,
     SpaceBetweenJaAndParen,
+    SentenceLength,
+    MaxComma,
+    MaxKanjiContinuousLen,
+    ArabicKanjiNumbers,
+    JaNoMixedPeriod,
+    NoNfd,
+    NoInvalidControlCharacter,
+    NoZeroWidthSpaces,
+    NoExclamationQuestionMark,
+    NoHankakuKana,
+    JaUnnaturalAlphabet,
+    NoUnmatchedPair,
 }
 
 impl RuleId {
-    /// 組み込みのルールのすべて。設定の指摘ルールの `id` と重ならないことを確かめるのに使う
-    pub const ALL: [RuleId; 3] = [
+    /// 組み込みのルールのすべて。設定の `[builtin]` のキーと、設定の指摘ルールの `id` と重ならないことを確かめるのに使う
+    pub const ALL: [RuleId; 15] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
         RuleId::SpaceBetweenJaAndParen,
+        RuleId::SentenceLength,
+        RuleId::MaxComma,
+        RuleId::MaxKanjiContinuousLen,
+        RuleId::ArabicKanjiNumbers,
+        RuleId::JaNoMixedPeriod,
+        RuleId::NoNfd,
+        RuleId::NoInvalidControlCharacter,
+        RuleId::NoZeroWidthSpaces,
+        RuleId::NoExclamationQuestionMark,
+        RuleId::NoHankakuKana,
+        RuleId::JaUnnaturalAlphabet,
+        RuleId::NoUnmatchedPair,
     ];
 
     /// `check` の出力の `[<rule-id>]` に使う名前
@@ -27,14 +58,18 @@ impl RuleId {
             RuleId::FullwidthParen => "fullwidth-paren",
             RuleId::SpaceBetweenJaAndAlnum => "space-between-ja-and-alnum",
             RuleId::SpaceBetweenJaAndParen => "space-between-ja-and-paren",
-        }
-    }
-
-    pub fn message(self) -> &'static str {
-        match self {
-            RuleId::FullwidthParen => "全角括弧を半角にする",
-            RuleId::SpaceBetweenJaAndAlnum => "日本語と英数字の間の空白を削除する",
-            RuleId::SpaceBetweenJaAndParen => "日本語と括弧の間の空白を削除する",
+            RuleId::SentenceLength => "sentence-length",
+            RuleId::MaxComma => "max-comma",
+            RuleId::MaxKanjiContinuousLen => "max-kanji-continuous-len",
+            RuleId::ArabicKanjiNumbers => "arabic-kanji-numbers",
+            RuleId::JaNoMixedPeriod => "ja-no-mixed-period",
+            RuleId::NoNfd => "no-nfd",
+            RuleId::NoInvalidControlCharacter => "no-invalid-control-character",
+            RuleId::NoZeroWidthSpaces => "no-zero-width-spaces",
+            RuleId::NoExclamationQuestionMark => "no-exclamation-question-mark",
+            RuleId::NoHankakuKana => "no-hankaku-kana",
+            RuleId::JaUnnaturalAlphabet => "ja-unnatural-alphabet",
+            RuleId::NoUnmatchedPair => "no-unmatched-pair",
         }
     }
 }
@@ -51,6 +86,13 @@ impl SpaceRule {
         match self {
             SpaceRule::JaAndAlnum => RuleId::SpaceBetweenJaAndAlnum,
             SpaceRule::JaAndParen => RuleId::SpaceBetweenJaAndParen,
+        }
+    }
+
+    fn message(self) -> &'static str {
+        match self {
+            SpaceRule::JaAndAlnum => "日本語と英数字の間の空白を削除する",
+            SpaceRule::JaAndParen => "日本語と括弧の間の空白を削除する",
         }
     }
 
@@ -71,8 +113,12 @@ impl SpaceRule {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Finding {
     pub range: Range<usize>,
-    pub replacement: &'static str,
+    pub replacement: Cow<'static, str>,
     pub rule: RuleId,
+    /// `check` の出力に使う位置。置き換える範囲の先頭とは限らない (`no-nfd` は濁点の位置に出す)
+    pub position: usize,
+    /// `check` の出力に使う文面
+    pub message: Cow<'static, str>,
 }
 
 /// 設定の `[[rules]]` で足した指摘ルール
@@ -119,12 +165,18 @@ pub struct Report<'r> {
     pub message: Cow<'r, str>,
 }
 
-/// 本文の範囲の中で指摘ルール (見出しの中の空白と、設定の `custom`) に当たる箇所を、位置の順に返す
-pub fn report<'r>(src: &str, prose: &[Prose], custom: &'r [CustomRule]) -> Vec<Report<'r>> {
+/// 指摘ルール (組み込みの指摘ルール、見出しの中で直さない修正ルール、設定の `custom`) に当たる箇所を、位置の順に返す
+#[expect(unused_variables, reason = "skeleton: not implemented")]
+pub fn report<'r>(
+    src: &str,
+    document: &Document,
+    builtin: &Builtin,
+    custom: &'r [CustomRule],
+) -> Vec<Report<'r>> {
     let mut reports = Vec::new();
-    for Prose { range, in_heading } in prose {
+    for Prose { range, context } in &document.texts {
         let text = &src[range.clone()];
-        if *in_heading {
+        if context.heading {
             reports.extend(space_findings(text).map(|(spaces, rule)| Report {
                 range: range.start + spaces.start..range.start + spaces.end,
                 rule: rule.id().name(),
@@ -151,27 +203,32 @@ static SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new("[ \u{3000}]+").unw
 static JAPANESE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}ー]$").unwrap());
 
-/// 本文の範囲の中で修正ルールに当たる箇所を、位置の順に返す
-pub fn find(src: &str, prose: &[Prose]) -> Vec<Finding> {
+/// 有効な修正ルールに当たる箇所を、位置の順に返す。見出しの中で直さない箇所は含めない
+#[expect(unused_variables, reason = "skeleton: not implemented")]
+pub fn find(src: &str, document: &Document, builtin: &Builtin) -> Vec<Finding> {
     let mut findings = Vec::new();
-    for Prose { range, in_heading } in prose {
+    for Prose { range, context } in &document.texts {
         let text = &src[range.clone()];
         for (i, paren) in text.match_indices(['（', '）']) {
             let start = range.start + i;
             findings.push(Finding {
                 range: start..start + paren.len(),
-                replacement: if paren == "（" { "(" } else { ")" },
+                replacement: Cow::Borrowed(if paren == "（" { "(" } else { ")" }),
                 rule: RuleId::FullwidthParen,
+                position: start,
+                message: Cow::Borrowed("全角括弧を半角にする"),
             });
         }
         // 見出しの空白を消すとアンカーが変わり、見出しへのリンクが切れるので、`report` で指摘にする
-        if *in_heading {
+        if context.heading {
             continue;
         }
         findings.extend(space_findings(text).map(|(spaces, rule)| Finding {
             range: range.start + spaces.start..range.start + spaces.end,
-            replacement: "",
+            replacement: Cow::Borrowed(""),
             rule: rule.id(),
+            position: range.start + spaces.start,
+            message: Cow::Borrowed(rule.message()),
         }));
     }
     findings.sort_by_key(|finding| finding.range.start);
@@ -208,19 +265,27 @@ fn is_japanese(c: char) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::prose::Context;
 
-    /// 見出しの外にある本文の範囲を1つだけ持つ配列
-    fn body(range: Range<usize>) -> [Prose; 1] {
-        [Prose {
-            range,
-            in_heading: false,
-        }]
+    /// 見出しの外にある本文の範囲を1つだけ持つ文書
+    fn body(range: Range<usize>) -> Document {
+        Document {
+            texts: vec![Prose {
+                range,
+                context: Context::default(),
+            }],
+            paragraphs: Vec::new(),
+        }
     }
 
-    fn find_all(src: &str) -> Vec<(&str, &'static str, RuleId)> {
-        find(src, &body(0..src.len()))
+    fn find_in(src: &str, range: Range<usize>) -> Vec<Finding> {
+        find(src, &body(range), &Builtin::default())
+    }
+
+    fn find_all(src: &str) -> Vec<(&str, String, RuleId)> {
+        find_in(src, 0..src.len())
             .into_iter()
-            .map(|f| (&src[f.range], f.replacement, f.rule))
+            .map(|f| (&src[f.range], f.replacement.into_owned(), f.rule))
             .collect()
     }
 
@@ -229,8 +294,8 @@ mod tests {
         assert_eq!(
             find_all("注（補足）"),
             vec![
-                ("（", "(", RuleId::FullwidthParen),
-                ("）", ")", RuleId::FullwidthParen),
+                ("（", "(".to_owned(), RuleId::FullwidthParen),
+                ("）", ")".to_owned(), RuleId::FullwidthParen),
             ]
         );
     }
@@ -240,15 +305,15 @@ mod tests {
         assert_eq!(
             find_all("日本語 Rust で"),
             vec![
-                (" ", "", RuleId::SpaceBetweenJaAndAlnum),
-                (" ", "", RuleId::SpaceBetweenJaAndAlnum),
+                (" ", "".to_owned(), RuleId::SpaceBetweenJaAndAlnum),
+                (" ", "".to_owned(), RuleId::SpaceBetweenJaAndAlnum),
             ]
         );
         assert_eq!(
             find_all("版 2 です"),
             vec![
-                (" ", "", RuleId::SpaceBetweenJaAndAlnum),
-                (" ", "", RuleId::SpaceBetweenJaAndAlnum),
+                (" ", "".to_owned(), RuleId::SpaceBetweenJaAndAlnum),
+                (" ", "".to_owned(), RuleId::SpaceBetweenJaAndAlnum),
             ]
         );
     }
@@ -257,7 +322,11 @@ mod tests {
     fn treats_a_run_of_halfwidth_and_fullwidth_spaces_as_one_finding() {
         assert_eq!(
             find_all("日本語\u{3000} \u{3000}Rust"),
-            vec![("\u{3000} \u{3000}", "", RuleId::SpaceBetweenJaAndAlnum)]
+            vec![(
+                "\u{3000} \u{3000}",
+                "".to_owned(),
+                RuleId::SpaceBetweenJaAndAlnum
+            )]
         );
     }
 
@@ -266,7 +335,7 @@ mod tests {
         for src in ["漢 A", "ひ A", "カ A", "ー A", "々 A"] {
             assert_eq!(
                 find_all(src),
-                vec![(" ", "", RuleId::SpaceBetweenJaAndAlnum)],
+                vec![(" ", "".to_owned(), RuleId::SpaceBetweenJaAndAlnum)],
                 "{src}"
             );
         }
@@ -285,8 +354,8 @@ mod tests {
         assert_eq!(
             find_all("語 (a) 語"),
             vec![
-                (" ", "", RuleId::SpaceBetweenJaAndParen),
-                (" ", "", RuleId::SpaceBetweenJaAndParen),
+                (" ", "".to_owned(), RuleId::SpaceBetweenJaAndParen),
+                (" ", "".to_owned(), RuleId::SpaceBetweenJaAndParen),
             ]
         );
         assert_eq!(find_all("語) (語"), vec![]);
@@ -297,10 +366,10 @@ mod tests {
         assert_eq!(
             find_all("で （補足） です"),
             vec![
-                (" ", "", RuleId::SpaceBetweenJaAndParen),
-                ("（", "(", RuleId::FullwidthParen),
-                ("）", ")", RuleId::FullwidthParen),
-                (" ", "", RuleId::SpaceBetweenJaAndParen),
+                (" ", "".to_owned(), RuleId::SpaceBetweenJaAndParen),
+                ("（", "(".to_owned(), RuleId::FullwidthParen),
+                ("）", ")".to_owned(), RuleId::FullwidthParen),
+                (" ", "".to_owned(), RuleId::SpaceBetweenJaAndParen),
             ]
         );
     }
@@ -308,8 +377,8 @@ mod tests {
     #[test]
     fn ignores_spaces_at_the_edges_of_a_range() {
         let src = "日本語 Rust";
-        assert_eq!(find(src, &body(0.."日本語 ".len())), vec![]);
-        assert_eq!(find(src, &body("日本語".len()..src.len())), vec![]);
+        assert_eq!(find_in(src, 0.."日本語 ".len()), vec![]);
+        assert_eq!(find_in(src, "日本語".len()..src.len()), vec![]);
     }
 
     #[test]
@@ -317,11 +386,13 @@ mod tests {
         let src = "日本語 Rust と（外） 語 A";
         let start = src.find("語 A").unwrap();
         assert_eq!(
-            find(src, &body(start..src.len())),
+            find_in(src, start..src.len()),
             vec![Finding {
                 range: start + "語".len()..start + "語 ".len(),
-                replacement: "",
+                replacement: Cow::Borrowed(""),
                 rule: RuleId::SpaceBetweenJaAndAlnum,
+                position: start + "語".len(),
+                message: Cow::Borrowed("日本語と英数字の間の空白を削除する"),
             }]
         );
     }

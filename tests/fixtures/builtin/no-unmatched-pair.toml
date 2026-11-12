@@ -1,0 +1,132 @@
+# no-unmatched-pair の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所である。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの
+
+[[cases]]
+name = "up-basic"
+text = "「閉じない文です。次の文。"
+findings = ["1:2"]
+messages = ["「 に対応する 」 が無い"]
+
+[[cases]]
+name = "up-second"
+text = "前の文。（閉じない。"
+findings = ["1:6"]
+messages = ["（ に対応する ） が無い"]
+
+[[cases]]
+name = "up-cross"
+text = "「a（b」c）です。"
+findings = []
+
+[[cases]]
+name = "up-close-only"
+text = "閉じだけ」です。"
+findings = []
+
+[[cases]]
+name = "up-double"
+text = "((二重)です。"
+findings = []
+
+[[cases]]
+name = "up-strong"
+text = "**「強調内**です。"
+findings = []
+
+[[cases]]
+name = "up-link"
+text = "[「リンク内](u)です。"
+findings = []
+
+[[cases]]
+name = "up-code"
+text = "`「コード`です。"
+findings = []
+
+[[cases]]
+name = "up-delete"
+text = "~~「削除内~~です。"
+findings = ["1:4"]
+
+[[cases]]
+name = "up-quote"
+text = "> 「引用"
+findings = ["1:4"]
+
+[[cases]]
+name = "up-list"
+text = "- 「リスト"
+findings = ["1:4"]
+
+[[cases]]
+name = "up-heading"
+text = "# 「見出し"
+findings = []
+
+[[cases]]
+name = "up-table"
+text = "| 列 |\n| - |\n| 「表 |"
+findings = []
+
+[[cases]]
+name = "up-url"
+text = "公式（https://example.com）を参照。"
+findings = ["1:4"]
+
+[[cases]]
+name = "up-multi"
+text = "«a ‹b"
+findings = ["1:2", "1:5"]
+
+[[cases]]
+name = "up-end"
+text = "文「"
+findings = ["1:3"]
+
+[[cases]]
+name = "up-same-twice"
+text = "a（b。c（d。"
+findings = ["1:3"]
+
+[[cases]]
+name = "up-quote-mark"
+text = "彼は\"こんにちはと言った。"
+findings = ["1:4"]
+messages = ["\" に対応する \" が無い"]
+
+[[cases]]
+name = "up-multiline"
+text = "「一行目\n二行目」です。"
+findings = []
+
+[[cases]]
+name = "up-closed-next-sentence"
+text = "「一文目。二文目」です。"
+findings = []
+
+[[cases]]
+name = "up-escape"
+text = "\\(エスケープ"
+findings = ["1:3"]
+
+[[cases]]
+name = "up-image"
+text = "![「画像](a.png)です。"
+findings = ["1:4"]
+
+[[cases]]
+name = "up-footnote"
+text = "本文[^1]。\n\n[^1]: （閉じない"
+findings = ["3:8"]
+
+[[cases]]
+name = "up-url-swallow"
+text = "公式（https://example.com/a）を参照"
+findings = ["1:4"]

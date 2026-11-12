@@ -3,17 +3,90 @@ use std::ops::Range;
 use markdown::mdast::{Node, ReferenceKind};
 use markdown::{Constructs, ParseOptions};
 
+/// Markdownから取り出した、ルールを当てる単位
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Document {
+    /// 本文の範囲。出現順に並ぶ
+    pub texts: Vec<Prose>,
+    /// 段落。文に区切るルールと、段落の末尾を見るルールが使う。見出しと表のセルは段落ではない
+    pub paragraphs: Vec<Paragraph>,
+}
+
 /// 本文の1つの範囲
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Prose {
     /// 元のソース上のバイト範囲
     pub range: Range<usize>,
-    /// 見出し (ATX形式とsetext形式) の中にあるか。見出しの空白を直すとアンカーが変わるので、空白のルールは指摘にする
-    pub in_heading: bool,
+    pub context: Context,
 }
 
-/// Markdownの本文に当たるText nodeの範囲を出現順に返す
-pub fn prose_ranges(src: &str) -> Vec<Prose> {
+/// 本文の範囲が置かれた文脈。textlintのルールが祖先のnodeの型で対象を絞るのに合わせて持つ
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Context {
+    /// 見出し (ATX形式とsetext形式) の中。見出しの文字を変えるとアンカーが変わるので、修正ルールの多くは指摘にする
+    pub heading: bool,
+    /// 引用の中
+    pub blockquote: bool,
+    /// 強調 (`*x*`) の中。太字 (`**x**`) は含めない
+    pub emphasis: bool,
+    /// リンク (`[x](url)`) の中。参照形式のリンクは含めない
+    pub link: bool,
+    /// 段落の直下にあり、引用の中でない
+    pub plain: bool,
+}
+
+/// 段落。`range` は元のソース上のバイト範囲
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Paragraph {
+    pub range: Range<usize>,
+    /// 引用の中
+    pub blockquote: bool,
+    /// リスト項目の中
+    pub list_item: bool,
+    /// 脚注の定義の中
+    pub footnote: bool,
+    pub children: Vec<Inline>,
+}
+
+/// 段落の中のインラインの要素。`range` は元のソース上のバイト範囲
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Inline {
+    pub kind: InlineKind,
+    pub range: Range<usize>,
+    /// 段落の文字列のうち、この要素の分。文の長さと `,` を数えるのに使う。
+    /// 段落の直下の文字列は元のソースのまま、リンクや強調の中の文字列はエスケープと文字参照を解決したもの、
+    /// インラインコードは中身、画像はaltで、HTMLのタグ・ハード改行・脚注への参照は空である
+    pub text: String,
+    /// リンク・強調・太字・取り消し線・参照形式のリンクの中身
+    pub children: Vec<Inline>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[expect(dead_code, reason = "skeleton: not implemented")]
+pub enum InlineKind {
+    Text,
+    Code,
+    /// 画像 (参照形式を含む)
+    Image,
+    /// リンク (自動リンクと裸のURLを含む)。裸のURLの範囲は、Markdownの解析結果のままにする
+    Link {
+        url: String,
+    },
+    /// 参照形式のリンク
+    LinkReference,
+    Emphasis,
+    Strong,
+    Delete,
+    /// インラインHTMLのタグ
+    Html,
+    /// ハード改行
+    Break,
+    /// 脚注への参照
+    FootnoteReference,
+}
+
+/// Markdownを解析し、本文の範囲と段落を取り出す
+pub fn parse(src: &str) -> Document {
     let options = ParseOptions {
         constructs: Constructs {
             frontmatter: true,
@@ -22,9 +95,13 @@ pub fn prose_ranges(src: &str) -> Vec<Prose> {
         ..ParseOptions::gfm()
     };
     let root = markdown::to_mdast(src, &options).expect("MDXを有効にしない解析は失敗しない");
-    let mut ranges = Vec::new();
-    collect(&root, src, false, &mut ranges);
-    ranges
+    let mut texts = Vec::new();
+    collect(&root, src, false, &mut texts);
+    Document {
+        texts,
+        // skeleton: not implemented
+        paragraphs: Vec::new(),
+    }
 }
 
 // コード・HTML・front matterのnodeは子を持たず、値をText nodeにしないので、たどるだけで除かれる
@@ -36,7 +113,11 @@ fn collect(node: &Node, src: &str, in_heading: bool, ranges: &mut Vec<Prose>) {
     match node {
         Node::Text(_) => ranges.push(Prose {
             range: range(node),
-            in_heading,
+            // skeleton: not implemented (見出し以外の文脈)
+            context: Context {
+                heading: in_heading,
+                ..Context::default()
+            },
         }),
         // 省略形とcollapsed形の文字列は、定義のラベルを兼ねるので直さない
         Node::LinkReference(reference) if reference.reference_kind != ReferenceKind::Full => {}
@@ -46,8 +127,13 @@ fn collect(node: &Node, src: &str, in_heading: bool, ranges: &mut Vec<Prose>) {
         Node::Link(_) if !src[range(node)].starts_with('[') => {
             let link = range(node);
             ranges.extend(
-                after_unmatched_closing_paren(&src[link.clone()], link.start)
-                    .map(|range| Prose { range, in_heading }),
+                after_unmatched_closing_paren(&src[link.clone()], link.start).map(|range| Prose {
+                    range,
+                    context: Context {
+                        heading: in_heading,
+                        ..Context::default()
+                    },
+                }),
             );
         }
         _ => {
@@ -78,7 +164,8 @@ mod tests {
     use super::*;
 
     fn prose(src: &str) -> Vec<&str> {
-        prose_ranges(src)
+        parse(src)
+            .texts
             .into_iter()
             .map(|p| &src[p.range])
             .collect()
@@ -93,9 +180,10 @@ mod tests {
     }
 
     fn in_heading(src: &str) -> Vec<(&str, bool)> {
-        prose_ranges(src)
+        parse(src)
+            .texts
             .into_iter()
-            .map(|p| (&src[p.range], p.in_heading))
+            .map(|p| (&src[p.range], p.context.heading))
             .collect()
     }
 

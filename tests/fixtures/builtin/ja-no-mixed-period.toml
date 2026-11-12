@@ -1,0 +1,154 @@
+# ja-no-mixed-period の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所である。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの
+
+[[cases]]
+name = "mp-none"
+text = "これは文です"
+findings = ["1:6"]
+messages = ["文末が「。」で終わっていない"]
+
+[[cases]]
+name = "mp-ok"
+text = "これは文です。"
+findings = []
+
+[[cases]]
+name = "mp-question"
+text = "本当ですか？"
+findings = []
+
+[[cases]]
+name = "mp-paren"
+text = "（補足です）"
+findings = []
+
+[[cases]]
+name = "mp-dot"
+text = "終わりがピリオド."
+findings = ["1:9"]
+messages = ["文末が「。」で終わっていない: 「.」を「。」にする"]
+
+[[cases]]
+name = "mp-space"
+text = "全角空白で終わる。\u3000"
+findings = ["1:10"]
+messages = ["文末が「。」で終わっていない: 末尾の空白を削除する"]
+
+[[cases]]
+name = "mp-list"
+text = "- リストの項目"
+findings = []
+
+[[cases]]
+name = "mp-quote"
+text = "> 引用の文"
+findings = []
+
+[[cases]]
+name = "mp-heading"
+text = "# 見出しの文"
+findings = []
+
+[[cases]]
+name = "mp-footnote"
+text = "本文[^1]。\n\n[^1]: 脚注の文"
+findings = []
+
+[[cases]]
+name = "mp-code-end"
+text = "日本語の`code`"
+findings = []
+
+[[cases]]
+name = "mp-link-end"
+text = "日本語の[リンク](u)"
+findings = []
+
+[[cases]]
+name = "mp-link-start"
+text = "[リンク](u)です"
+findings = ["1:10"]
+
+[[cases]]
+name = "mp-english"
+text = "English only"
+findings = []
+
+[[cases]]
+name = "mp-mark"
+builtin = 'ja-no-mixed-period = { periodMark = "．" }'
+text = "これは文です．"
+findings = []
+
+[[cases]]
+name = "mp-mark-default"
+text = "これは文です．"
+findings = ["1:7"]
+
+[[cases]]
+name = "mp-allow"
+builtin = 'ja-no-mixed-period = { periodMark = "。", allowPeriodMarks = [":"] }'
+text = "コロンで終わる:"
+findings = []
+
+[[cases]]
+name = "mp-emoji"
+builtin = 'ja-no-mixed-period = { periodMark = "。", allowEmojiAtEnd = true }'
+text = "絵文字で終わる😀"
+findings = []
+
+[[cases]]
+name = "mp-emoji-default"
+text = "絵文字で終わる😀"
+findings = ["1:8"]
+
+[[cases]]
+name = "mp-astral"
+note = "textlintは補助面の文字の数だけ前にずれる。jafixは最後の文字に出す"
+text = "𠮷𠮷で終わる"
+findings = ["1:6"]
+
+[[cases]]
+name = "mp-multiline"
+text = "一行目です。\n二行目です"
+findings = ["2:5"]
+
+[[cases]]
+name = "mp-two-paragraphs"
+text = "一つ目の段落\n\n二つ目の段落。"
+findings = ["1:6"]
+
+[[cases]]
+name = "mp-html-end"
+text = "終わり<br>"
+findings = []
+
+[[cases]]
+name = "mp-bare-url"
+text = "詳細は https://example.com/?q=1 を参照"
+findings = ["1:32"]
+
+[[cases]]
+name = "mp-dot-mark"
+builtin = 'ja-no-mixed-period = { periodMark = "." }'
+text = "これは文です。"
+findings = ["1:7"]
+messages = ["文末が「.」で終わっていない: 「。」を「.」にする"]
+
+[[cases]]
+name = "mp-bare-url-swallow"
+text = "詳細は https://example.com/a）を参照"
+findings = []
+
+[[cases]]
+name = "mp-full-dot"
+text = "全角のピリオド．"
+findings = ["1:8"]
+messages = ["文末が「。」で終わっていない"]

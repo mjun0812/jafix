@@ -1,0 +1,84 @@
+# max-kanji-continuous-len の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所である。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの
+
+[[cases]]
+name = "mk-6"
+text = "情報処理推進です。"
+findings = []
+
+[[cases]]
+name = "mk-7"
+text = "情報処理推進機です。"
+findings = ["1:1"]
+messages = ["漢字が7文字以上続いている: 情報処理推進機"]
+
+[[cases]]
+name = "mk-two"
+text = "これは情報処理推進機構と東京都特許許可局長です。"
+findings = ["1:4", "1:13"]
+
+[[cases]]
+name = "mk-heading"
+text = "# 情報処理推進機構"
+findings = ["1:3"]
+
+[[cases]]
+name = "mk-strong"
+text = "**情報処理推進機構**です。"
+findings = ["1:3"]
+
+[[cases]]
+name = "mk-em"
+text = "*情報処理推進機構*です。"
+findings = []
+
+[[cases]]
+name = "mk-link"
+text = "[情報処理推進機構](u)です。"
+findings = []
+
+[[cases]]
+name = "mk-quote"
+text = "> 情報処理推進機構です。"
+findings = []
+
+[[cases]]
+name = "mk-table"
+text = "| 列 |\n| - |\n| 情報処理推進機構 |"
+findings = ["3:3"]
+
+[[cases]]
+name = "mk-code-split"
+text = "情報処理`x`推進機構情報です。"
+findings = []
+
+[[cases]]
+name = "mk-allow"
+builtin = 'max-kanji-continuous-len = { max = 6, allow = ["情報処理推進機構"] }'
+text = "情報処理推進機構です。"
+findings = []
+
+[[cases]]
+name = "mk-allow-partial"
+builtin = 'max-kanji-continuous-len = { max = 6, allow = ["情報処理推進機構"] }'
+text = "情報処理推進機構体です。"
+findings = ["1:1"]
+
+[[cases]]
+name = "mk-max"
+builtin = 'max-kanji-continuous-len = { max = 3 }'
+text = "東京都庁です。"
+findings = ["1:1"]
+messages = ["漢字が4文字以上続いている: 東京都庁"]
+
+[[cases]]
+name = "mk-astral"
+text = "𠮷一二三四五です。"
+findings = ["1:1"]

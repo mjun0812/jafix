@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use serde::Deserialize;
 
+use crate::rules::builtin::Builtin;
 use crate::rules::{CustomRule, RuleId};
 
 /// `$XDG_CONFIG_HOME/jafix/config.toml` (未設定なら `~/.config/jafix/config.toml`) の内容
@@ -14,6 +15,8 @@ pub struct Config {
     report_exclude: GlobSet,
     /// `[[rules]]` で足した指摘ルール
     rules: Vec<CustomRule>,
+    /// `[builtin]` で決めた、組み込みのルールの有効・無効とオプション
+    builtin: Builtin,
 }
 
 #[derive(Deserialize)]
@@ -25,6 +28,7 @@ struct RawConfig {
     report_exclude: Vec<String>,
     #[serde(default)]
     rules: Vec<RawRule>,
+    builtin: Option<toml::Table>,
 }
 
 /// `[[rules]]` の1つの表。不正の理由にその表の `id` を含めるため、serdeの必須のフィールドと
@@ -70,10 +74,16 @@ pub fn load() -> Result<Config, String> {
             .map_err(|reason| format!("{}: {table}: {reason}", path.display()))?;
         rules.push(rule);
     }
+    let builtin = match &raw.builtin {
+        Some(table) => Builtin::from_table(table)
+            .map_err(|reason| format!("{}: [builtin]: {reason}", path.display()))?,
+        None => Builtin::default(),
+    };
     Ok(Config {
         exclude,
         report_exclude,
         rules,
+        builtin,
     })
 }
 
@@ -160,6 +170,10 @@ impl Config {
 
     pub fn rules(&self) -> &[CustomRule] {
         &self.rules
+    }
+
+    pub fn builtin(&self) -> &Builtin {
+        &self.builtin
     }
 }
 

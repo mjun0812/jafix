@@ -1,0 +1,67 @@
+# no-invalid-control-character の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所である。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの
+
+[[cases]]
+name = "cc-fix"
+text = "あ\u0001い"
+findings = ["1:2"]
+messages = ["制御文字 (U+0001) を削除する"]
+fixed = "あい"
+
+[[cases]]
+name = "cc-tab"
+text = "あ\tい"
+findings = []
+fixed = "あ\tい"
+
+[[cases]]
+name = "cc-allow"
+builtin = 'no-invalid-control-character = { allow = ["\u0001"] }'
+text = "あ\u0001い"
+findings = []
+fixed = "あ\u0001い"
+
+[[cases]]
+name = "cc-em"
+text = "*あ\u0001*です。"
+findings = ["1:3"]
+fixed = "*あ*です。"
+
+[[cases]]
+name = "cc-link"
+text = "[あ\u0001](u)です。"
+findings = ["1:3"]
+fixed = "[あ](u)です。"
+
+[[cases]]
+name = "cc-code"
+text = "`あ\u0001`です。"
+findings = []
+fixed = "`あ\u0001`です。"
+
+[[cases]]
+name = "cc-bidi"
+text = "あ\u202eい"
+findings = ["1:2"]
+messages = ["制御文字 (U+202E) を削除する"]
+fixed = "あい"
+
+[[cases]]
+name = "cc-del"
+text = "あ\u007fい\u0085う"
+findings = ["1:2", "1:4"]
+fixed = "あいう"
+
+[[cases]]
+name = "cc-heading"
+text = "# あ\u0001い"
+findings = ["1:4"]
+messages = ["制御文字 (U+0001) を削除する。見出しのアンカーが変わるので、見出しへのリンクも直す"]
+fixed = "# あ\u0001い"

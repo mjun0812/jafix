@@ -1,0 +1,92 @@
+# no-exclamation-question-mark の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所である。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの
+
+[[cases]]
+name = "eq-basic"
+text = "すごい!本当？はい?いいえ！"
+findings = ["1:4", "1:7", "1:10", "1:14"]
+messages = ["「!」を使わない", "「？」を使わない", "「?」を使わない", "「！」を使わない"]
+
+[[cases]]
+name = "eq-yahoo"
+text = "Yahoo!はOK。Yahoo!!はどうか。yahoo!は。"
+findings = ["1:28"]
+
+[[cases]]
+name = "eq-link"
+text = "[リンク!](u)です。"
+findings = []
+
+[[cases]]
+name = "eq-quote"
+text = "> 引用!です。"
+findings = []
+
+[[cases]]
+name = "eq-strong"
+text = "**太字!**です。"
+findings = ["1:5"]
+
+[[cases]]
+name = "eq-heading"
+text = "# 見出し!"
+findings = ["1:6"]
+
+[[cases]]
+name = "eq-url"
+text = "詳細は https://example.com/?q=1 です。"
+findings = []
+
+[[cases]]
+name = "eq-half-ex"
+builtin = 'no-exclamation-question-mark = { allowHalfWidthExclamation = true }'
+text = "すごい!すごい！"
+findings = ["1:8"]
+
+[[cases]]
+name = "eq-full-ex"
+builtin = 'no-exclamation-question-mark = { allowFullWidthExclamation = true }'
+text = "すごい!すごい！"
+findings = ["1:4"]
+
+[[cases]]
+name = "eq-half-q"
+builtin = 'no-exclamation-question-mark = { allowHalfWidthQuestion = true }'
+text = "本当?本当？"
+findings = ["1:6"]
+
+[[cases]]
+name = "eq-full-q"
+builtin = 'no-exclamation-question-mark = { allowFullWidthQuestion = true }'
+text = "本当?本当？"
+findings = ["1:3"]
+
+[[cases]]
+name = "eq-allow"
+builtin = 'no-exclamation-question-mark = { allow = ["すごい！"] }'
+text = "すごい！と驚き！"
+findings = ["1:8"]
+
+[[cases]]
+name = "eq-allow-regex"
+builtin = 'no-exclamation-question-mark = { allow = ["/No[!?]/"] }'
+text = "No!と言う。Yes!と言う。"
+findings = ["1:11"]
+
+[[cases]]
+name = "eq-allow-regex-i"
+builtin = 'no-exclamation-question-mark = { allow = ["/NO!/i"] }'
+text = "no!と言う。"
+findings = []
+
+[[cases]]
+name = "eq-em2"
+text = "これは *強調!* です。"
+findings = []

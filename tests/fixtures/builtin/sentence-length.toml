@@ -1,0 +1,199 @@
+# sentence-length の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所である。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの
+
+[[cases]]
+name = "sl-100"
+text = "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ。"
+findings = []
+
+[[cases]]
+name = "sl-101"
+text = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ。"
+findings = ["1:1"]
+messages = ["1文が100文字を超えている (101文字)"]
+
+[[cases]]
+name = "sl-second"
+text = "短い文。ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ。"
+findings = ["1:5"]
+
+[[cases]]
+name = "sl-quote"
+text = "> あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ"
+findings = []
+
+[[cases]]
+name = "sl-list"
+text = "- あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ"
+findings = ["1:3"]
+
+[[cases]]
+name = "sl-heading"
+text = "# あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ"
+findings = []
+
+[[cases]]
+name = "sl-table"
+text = "| 列 |\n| - |\n| あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ |"
+findings = []
+
+[[cases]]
+name = "sl-linkonly"
+text = "[あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ](http://x)"
+findings = []
+
+[[cases]]
+name = "sl-code"
+text = "`ああああああああああああああああああああああああああああああああああああああああああああああああああ`ああああああああああああああああああああああああああああああああああああああああああああああああああ。"
+findings = ["1:1"]
+
+[[cases]]
+name = "sl-softbreak"
+text = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ\nああああああああああああああああああああああああああああああああああああああああ"
+findings = ["1:1"]
+
+[[cases]]
+name = "sl-hardbreak"
+text = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ  \nああああああああああああああああああああああああああああああああああああああああ"
+findings = []
+
+[[cases]]
+name = "sl-url"
+text = "[https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa](https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) ああああああああああ。"
+findings = []
+
+[[cases]]
+name = "sl-url-off"
+builtin = 'sentence-length = { max = 100, skipUrlStringLink = false }'
+text = "[https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa](https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa) ああああああああああ。"
+findings = ["1:1"]
+
+[[cases]]
+name = "sl-max-11"
+builtin = 'sentence-length = { max = 10 }'
+text = "一二三四五六七八九十。"
+findings = ["1:1"]
+messages = ["1文が10文字を超えている (11文字)"]
+
+[[cases]]
+name = "sl-max-10"
+builtin = 'sentence-length = { max = 10 }'
+text = "一二三四五六七八九。"
+findings = []
+
+[[cases]]
+name = "sl-skip"
+builtin = 'sentence-length = { max = 10, skipPatterns = ["/（.*?）/"] }'
+text = "一二三四五（補足です）六七。"
+findings = []
+
+[[cases]]
+name = "sl-noskip"
+builtin = 'sentence-length = { max = 10 }'
+text = "一二三四五（補足です）六七。"
+findings = ["1:1"]
+
+[[cases]]
+name = "sl-countby-units"
+builtin = 'sentence-length = { max = 4 }'
+text = "𠮷𠮷。"
+findings = ["1:1"]
+
+[[cases]]
+name = "sl-countby-points"
+builtin = 'sentence-length = { max = 4, countBy = "codepoints" }'
+text = "𠮷𠮷。"
+findings = []
+
+[[cases]]
+name = "sp-two"
+builtin = 'sentence-length = { max = 10 }'
+text = "一二三四五。六七八九十。"
+findings = []
+
+[[cases]]
+name = "sp-pair"
+builtin = 'sentence-length = { max = 10 }'
+text = "「一二三四五。六七八九十」"
+findings = ["1:1"]
+
+[[cases]]
+name = "sp-dot"
+builtin = 'sentence-length = { max = 10 }'
+text = "一二三四五.六七八九十"
+findings = ["1:1"]
+
+[[cases]]
+name = "sp-dot-space"
+builtin = 'sentence-length = { max = 10 }'
+text = "一二三四五. 六七八九十"
+findings = []
+
+[[cases]]
+name = "sp-abbr"
+builtin = 'sentence-length = { max = 10 }'
+text = "Mr. Smith is."
+findings = ["1:1"]
+
+[[cases]]
+name = "sp-excl"
+builtin = 'sentence-length = { max = 10 }'
+text = "Yahoo! JAPANです。"
+findings = ["1:1"]
+
+[[cases]]
+name = "sp-unclosed"
+builtin = 'sentence-length = { max = 10 }'
+text = "「一二三。四五六。七八九十"
+findings = ["1:1"]
+
+[[cases]]
+name = "sp-question"
+builtin = 'sentence-length = { max = 10 }'
+text = "一二三四五？六七八九十！"
+findings = []
+
+[[cases]]
+name = "sp-inline"
+builtin = 'sentence-length = { max = 10 }'
+text = "一二三`。`四五六七八九十"
+findings = ["1:1"]
+
+[[cases]]
+name = "sp-third"
+builtin = 'sentence-length = { max = 10 }'
+text = "一二。三四。五六七八九十一二三四。"
+findings = ["1:7"]
+
+[[cases]]
+name = "sp-line2"
+builtin = 'sentence-length = { max = 10 }'
+text = "一行目。\n二行目は一二三四五六七。"
+findings = ["2:1"]
+
+[[cases]]
+name = "sl-footnote"
+text = "本文[^1]。\n\n[^1]: あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ"
+findings = ["3:7"]
+
+[[cases]]
+name = "sl-two-findings"
+text = "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ。いいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいいい。"
+findings = ["1:1", "1:103"]
+
+[[cases]]
+name = "sl-entity-top"
+text = "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ&amp;。"
+findings = ["1:1"]
+
+[[cases]]
+name = "sl-entity-em"
+text = "*あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ&amp;*。"
+findings = []

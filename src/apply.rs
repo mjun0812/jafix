@@ -51,7 +51,7 @@ pub fn apply(src: &str, findings: &[Finding], targets: &TargetLines) -> String {
             continue;
         }
         out.push_str(&src[copied..finding.range.start]);
-        out.push_str(finding.replacement);
+        out.push_str(&finding.replacement);
         copied = finding.range.end;
     }
     out.push_str(&src[copied..]);
@@ -65,9 +65,11 @@ mod tests {
 
     fn delete(range: std::ops::Range<usize>) -> Finding {
         Finding {
+            position: range.start,
             range,
-            replacement: "",
+            replacement: "".into(),
             rule: RuleId::SpaceBetweenJaAndAlnum,
+            message: "".into(),
         }
     }
 
@@ -101,13 +103,17 @@ mod tests {
         let findings = [
             Finding {
                 range: 0..3,
-                replacement: "(",
+                position: 0,
+                replacement: "(".into(),
                 rule: RuleId::FullwidthParen,
+                message: "".into(),
             },
             Finding {
                 range: 4..7,
-                replacement: ")",
+                position: 4,
+                replacement: ")".into(),
                 rule: RuleId::FullwidthParen,
+                message: "".into(),
             },
         ];
         assert_eq!(apply(src, &findings, &TargetLines::All), "(a)");

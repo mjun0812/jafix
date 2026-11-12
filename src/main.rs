@@ -3,6 +3,7 @@ mod config;
 mod hook;
 mod prose;
 mod rules;
+mod sentence;
 
 use std::fs;
 use std::io::{Read, Write};
@@ -12,6 +13,7 @@ use std::process::ExitCode;
 use clap::{Parser, Subcommand, ValueEnum};
 
 use crate::apply::{LineIndex, TargetLines};
+use crate::rules::builtin::Builtin;
 
 /// AI agentが書いた日本語の文章を直す
 #[derive(Parser)]
@@ -69,18 +71,21 @@ fn run_check(files: &[PathBuf]) -> ExitCode {
                 continue;
             }
         };
-        let prose = prose::prose_ranges(&src);
-        let findings = rules::find(&src, &prose);
+        let document = prose::parse(&src);
+        let findings = rules::find(&src, &document, config.builtin());
         let reports = if config.is_report_excluded(path) {
             Vec::new()
         } else {
-            rules::report(&src, &prose, config.rules())
+            rules::report(&src, &document, config.builtin(), config.rules())
         };
         let mut lines: Vec<(usize, &str, &str)> = findings
             .iter()
             .map(|finding| {
-                let rule = finding.rule;
-                (finding.range.start, rule.message(), rule.name())
+                (
+                    finding.position,
+                    finding.message.as_ref(),
+                    finding.rule.name(),
+                )
             })
             .chain(
                 reports
@@ -125,7 +130,7 @@ fn run_fix(files: &[PathBuf]) -> ExitCode {
         if config.is_excluded(path) {
             continue;
         }
-        if let Err(e) = fix_file(path, &TargetLines::All) {
+        if let Err(e) = fix_file(path, &TargetLines::All, config.builtin()) {
             eprintln!("jafix: {}: {e}", path.display());
             failed = true;
         }
@@ -163,7 +168,7 @@ fn run_hook(agent: Agent) -> ExitCode {
         .collect();
     let mut reports = Vec::new();
     for target in &targets.files {
-        let fixed = match fix_file(&target.path, &target.lines) {
+        let fixed = match fix_file(&target.path, &target.lines, config.builtin()) {
             Ok(fixed) => fixed,
             Err(e) => {
                 errors.push(format!("jafix: {}: {e}", target.path.display()));
@@ -175,7 +180,8 @@ fn run_hook(agent: Agent) -> ExitCode {
         }
         // 修正ルールは改行を足し引きしないので、対象行は直した後の内容でも同じ行番号である
         let index = LineIndex::new(&fixed);
-        for report in rules::report(&fixed, &prose::prose_ranges(&fixed), config.rules()) {
+        let document = prose::parse(&fixed);
+        for report in rules::report(&fixed, &document, config.builtin(), config.rules()) {
             let (line, column) = index.line_col(report.range.start);
             if !target.lines.contains(line) {
                 continue;
@@ -210,9 +216,9 @@ fn run_hook(agent: Agent) -> ExitCode {
 }
 
 /// 対象行に修正ルールを適用した内容を返す。変更が無ければ書き戻さない
-fn fix_file(path: &Path, lines: &TargetLines) -> std::io::Result<String> {
+fn fix_file(path: &Path, lines: &TargetLines, builtin: &Builtin) -> std::io::Result<String> {
     let src = fs::read_to_string(path)?;
-    let findings = rules::find(&src, &prose::prose_ranges(&src));
+    let findings = rules::find(&src, &prose::parse(&src), builtin);
     let fixed = apply::apply(&src, &findings, lines);
     if fixed != src {
         fs::write(path, &fixed)?;

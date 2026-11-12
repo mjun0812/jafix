@@ -1,0 +1,41 @@
+# no-zero-width-spaces の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所である。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの
+
+[[cases]]
+name = "zw-fix"
+text = "あ\u200bい\u200b\u200bう"
+findings = ["1:2", "1:4", "1:5"]
+messages = ["ゼロ幅スペースを削除する", "ゼロ幅スペースを削除する", "ゼロ幅スペースを削除する"]
+fixed = "あいう"
+
+[[cases]]
+name = "zw-other"
+text = "あ\u200cい\u200dう\ufeffえ\u2060お"
+findings = []
+fixed = "あ\u200cい\u200dう\ufeffえ\u2060お"
+
+[[cases]]
+name = "zw-code"
+text = "`あ\u200b`です。"
+findings = []
+fixed = "`あ\u200b`です。"
+
+[[cases]]
+name = "zw-quote"
+text = "> あ\u200bです。"
+findings = ["1:4"]
+fixed = "> あです。"
+
+[[cases]]
+name = "zw-heading"
+text = "# あ\u200bい"
+findings = ["1:4"]
+messages = ["ゼロ幅スペースを削除する。見出しのアンカーが変わるので、見出しへのリンクも直す"]
+fixed = "# あ\u200bい"

@@ -1,0 +1,93 @@
+# no-nfd の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所である。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの
+
+[[cases]]
+name = "nf-fix"
+text = "か\u3099き"
+findings = ["1:2"]
+messages = ["濁点・半濁点を前の文字と合成する"]
+fixed = "がき"
+
+[[cases]]
+name = "nf-spacing"
+text = "か\u309bき"
+findings = ["1:2"]
+fixed = "がき"
+
+[[cases]]
+name = "nf-handakuten"
+text = "は\u309aい"
+findings = ["1:2"]
+fixed = "ぱい"
+
+[[cases]]
+name = "nf-uncomposable"
+text = "あ\u3099"
+findings = ["1:2"]
+messages = ["濁点・半濁点を前の文字と合成できない"]
+fixed = "あ\u3099"
+
+[[cases]]
+name = "nf-em"
+text = "*か\u3099*です。"
+findings = []
+fixed = "*か\u3099*です。"
+
+[[cases]]
+name = "nf-quote"
+text = "> か\u3099です。"
+findings = []
+fixed = "> か\u3099です。"
+
+[[cases]]
+name = "nf-link"
+text = "[か\u3099](u)です。"
+findings = []
+fixed = "[か\u3099](u)です。"
+
+[[cases]]
+name = "nf-strong"
+text = "**か\u3099**です。"
+findings = ["1:4"]
+fixed = "**が**です。"
+
+[[cases]]
+name = "nf-heading"
+text = "# か\u3099"
+findings = ["1:4"]
+messages = ["濁点・半濁点を前の文字と合成する。見出しのアンカーが変わるので、見出しへのリンクも直す"]
+fixed = "# か\u3099"
+
+[[cases]]
+name = "nf-start"
+text = "\u3099先頭です。"
+findings = []
+fixed = "\u3099先頭です。"
+
+[[cases]]
+name = "nf-spacing-uncomposable"
+note = "textlintのfixerは、単独の濁点を結合文字に置き換えるが、合成できないので指摘は消えない。jafixは直さずに指摘する"
+text = "あ\u309bです。"
+findings = ["1:2"]
+messages = ["濁点・半濁点を前の文字と合成できない"]
+fixed = "あ\u309bです。"
+
+[[cases]]
+name = "nf-two"
+text = "か\u3099きく\u3099とは\u309a。"
+findings = ["1:2", "1:5", "1:8"]
+fixed = "がきぐとぱ。"
+
+[[cases]]
+name = "nf-mixed"
+text = "か\u3099とあ\u3099。"
+findings = ["1:2", "1:5"]
+messages = ["濁点・半濁点を前の文字と合成する", "濁点・半濁点を前の文字と合成できない"]
+fixed = "がとあ\u3099。"
