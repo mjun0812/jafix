@@ -6,7 +6,7 @@ use super::Analyzed;
 
 /// 同じ助詞が、数えるトークンの列で `min_interval` 以下の間隔で続いたら、後ろの助詞に指摘を出す
 pub(super) fn report(sentence: &Analyzed, rule: &NoDoubledJoshi) -> Vec<Report<'static>> {
-    let merged = merge(sentence.tokens);
+    let merged = merge(&sentence.tokens);
     // `merged` の中の番号。並びの位置の差が、助詞の間隔になる
     let countable: Vec<usize> = (0..merged.len())
         .filter(|&i| is_countable(&merged[i], rule))

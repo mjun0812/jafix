@@ -6,7 +6,7 @@ use super::Analyzed;
 
 /// 文の中の読点を数え、`max` を超えたら最後に数えた読点に指摘を出す。`!` などと `kuten` で数を0に戻す
 pub(super) fn report(sentence: &Analyzed, rule: &MaxTen) -> Vec<Report<'static>> {
-    let tokens = sentence.tokens;
+    let tokens = &sentence.tokens;
     let mut reports = Vec::new();
     let mut count = 0;
     for (i, token) in tokens.iter().enumerate() {

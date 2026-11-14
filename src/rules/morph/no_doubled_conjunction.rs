@@ -8,7 +8,7 @@ pub(super) fn report(sentences: &[Analyzed]) -> Vec<Report<'static>> {
     let mut reports = Vec::new();
     let mut previous: Option<&str> = None;
     for sentence in sentences {
-        let Some(conjunction) = first_conjunction(sentence.tokens) else {
+        let Some(conjunction) = first_conjunction(&sentence.tokens) else {
             continue;
         };
         if previous == Some(conjunction.surface) {

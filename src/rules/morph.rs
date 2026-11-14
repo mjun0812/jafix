@@ -51,19 +51,10 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report<'
             .iter()
             .map(|sentence| Projection::new(src, sentence))
             .collect();
-        let tokens: Vec<Vec<Token>> = projections
-            .iter()
-            .map(|projection| morph::tokenize(&projection.text))
-            .collect();
         let analyzed: Vec<Analyzed> = sentences
             .iter()
             .zip(&projections)
-            .zip(&tokens)
-            .map(|((sentence, projection), tokens)| Analyzed {
-                sentence,
-                projection,
-                tokens,
-            })
+            .map(|(sentence, projection)| Analyzed::new(sentence, projection))
             .collect();
         if let Some(rule) = redundant {
             for sentence in &analyzed {
@@ -104,12 +95,7 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report<'
         {
             for sentence in sentence::split(src, heading) {
                 let projection = Projection::new(src, &sentence);
-                let tokens = morph::tokenize(&projection.text);
-                let analyzed = Analyzed {
-                    sentence: &sentence,
-                    projection: &projection,
-                    tokens: &tokens,
-                };
+                let analyzed = Analyzed::new(&sentence, &projection);
                 styles.count(Kind::Header, &analyzed, rule.strict);
             }
         }
@@ -180,10 +166,18 @@ impl AnalyzedProse<'_> {
 struct Analyzed<'a> {
     sentence: &'a Sentence,
     projection: &'a Projection,
-    tokens: &'a [Token<'a>],
+    tokens: Vec<Token<'a>>,
 }
 
-impl Analyzed<'_> {
+impl<'a> Analyzed<'a> {
+    fn new(sentence: &'a Sentence, projection: &'a Projection) -> Self {
+        Self {
+            sentence,
+            projection,
+            tokens: morph::tokenize(&projection.text),
+        }
+    }
+
     /// `token` の元のソースでの範囲
     fn source(&self, token: &Token) -> Range<usize> {
         self.projection.source(token.range.start)..self.projection.source(token.range.end)

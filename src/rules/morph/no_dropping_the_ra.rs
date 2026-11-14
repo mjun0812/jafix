@@ -15,7 +15,7 @@ pub(super) fn report(prose: &AnalyzedProse) -> Vec<Report<'static>> {
         .filter_map(|(i, token)| {
             if token.pos == "動詞" && ["来れる", "見れる"].contains(&token.basic_form) {
                 // 「見れる」「来れる」は1つのトークンなので、2文字目の「れ」を指す
-                let first = token.surface.chars().next().map_or(0, char::len_utf8);
+                let first = token.surface.chars().next().unwrap().len_utf8();
                 return Some(token.range.start + first..token.range.end);
             }
             let after_ichidan_mizen = i > 0 && is_ichidan_mizen(&tokens[i - 1]);

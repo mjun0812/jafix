@@ -48,7 +48,7 @@ impl Styles {
             Kind::Body => &mut self.body,
             Kind::List => &mut self.list,
         };
-        let tokens = sentence.tokens;
+        let tokens = &sentence.tokens;
         for (i, token) in tokens.iter().enumerate() {
             let Some(style) = style(token, tokens.get(i + 1)) else {
                 continue;
