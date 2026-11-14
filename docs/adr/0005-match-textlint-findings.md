@@ -1,5 +1,7 @@
 # ADR-0005: 移植したルールは、textlintと同じ箇所を指摘する
 
+Status: superseded by ADR-0006
+
 textlintの `preset-ja-technical-writing` から移植した組み込みのルールは、同じ入力に対して、textlintと同じ箇所を指摘する。見逃しや、許可リストが直後の文字まで許すような癖も写す。textlintから移っても指摘の数が変わらず、実物のtextlintの実行結果と比べて確かめられるからである。期待値は、textlint 15.8.0とpreset 12.0.2の実行結果から作り、`tests/fixtures/builtin/` に置く。
 
 textlintと変えるのは、次の点だけである。
