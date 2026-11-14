@@ -9,6 +9,7 @@ repository = "https://github.com/mjun0812/jafix"
 [dependencies]
 clap = { version = "4.6.7", features = ["derive"] }
 globset = "0.4.21"
+lindera = { version = "6.2.0", default-features = false, features = ["embed-ipadic"] }
 markdown = "1"
 regex = "1.13.1"
 serde = { version = "1.0.229", features = ["derive"] }

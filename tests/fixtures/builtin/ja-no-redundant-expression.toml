@@ -1,0 +1,226 @@
+# ja-no-redundant-expression の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+[[cases]]
+name = "redundant-dict1"
+text = "省略することが可能です。"
+findings = ["1:3"]
+messages = ["冗長な表現「することが可能です」(dict1): 「することが」を省ける"]
+
+[[cases]]
+name = "redundant-dict1-comma"
+text = "省略することが、可能です。"
+findings = ["1:3"]
+messages = ["冗長な表現「することが、可能です」(dict1): 「することが、」を省ける"]
+
+[[cases]]
+name = "redundant-dict1-no-auxiliary"
+text = "省略することが可能。"
+findings = []
+
+[[cases]]
+name = "redundant-dict2"
+text = "解析することができます。"
+findings = ["1:3"]
+messages = ["冗長な表現「することができます」(dict2): 「することが」を省ける"]
+
+[[cases]]
+name = "redundant-dict2-wa"
+text = "解析することはできます。"
+findings = ["1:3"]
+messages = ["冗長な表現「することはできます」(dict2): 「することは」を省ける"]
+
+[[cases]]
+name = "redundant-dict2-kanji"
+text = "解析することが出来ます。"
+findings = []
+
+[[cases]]
+name = "redundant-dict3"
+text = "必要であると言えます。"
+findings = ["1:3"]
+messages = ["冗長な表現「であると言えます」(dict3): 「である」か「と言えます」を省ける"]
+
+[[cases]]
+name = "redundant-dict3-masen"
+text = "必要であると言えません。"
+findings = []
+
+[[cases]]
+name = "redundant-dict4"
+text = "必要であると考えている。"
+findings = ["1:3"]
+messages = ["冗長な表現「であると考えている」(dict4): 「である」か「と考えている」を省ける"]
+
+[[cases]]
+name = "redundant-dict4-masu"
+text = "必要であると考えています。"
+findings = ["1:3"]
+messages = ["冗長な表現「であると考えています」(dict4): 「である」か「と考えています」を省ける"]
+
+[[cases]]
+name = "redundant-dict5"
+text = "動作の確認を行う。"
+findings = ["1:4"]
+messages = ["冗長な表現「確認を行う」(dict5): 「確認する」などにできる"]
+
+[[cases]]
+name = "redundant-dict5-comma"
+text = "動作の確認を、行う。"
+findings = ["1:4"]
+
+[[cases]]
+name = "redundant-dict5-allows"
+text = "テストを行う。処理を行う。"
+findings = []
+
+[[cases]]
+name = "redundant-dict5-allows-empty"
+builtin = 'ja-no-redundant-expression = { dictOptions = { dict5 = { allows = [] } } }'
+text = "処理を行う。"
+findings = ["1:1"]
+
+[[cases]]
+name = "redundant-dict5-allows-custom"
+builtin = 'ja-no-redundant-expression = { dictOptions = { dict5 = { allows = ["/^確認を/"] } } }'
+text = "動作の確認を行う。処理を行う。"
+findings = ["1:10"]
+
+[[cases]]
+name = "redundant-dict6"
+text = "動作の確認を実行する。"
+findings = ["1:4"]
+messages = ["冗長な表現「確認を実行」(dict6): 「確認する」などにできる"]
+
+[[cases]]
+name = "redundant-dict6-allows"
+text = "処理を実行する。"
+findings = []
+
+[[cases]]
+name = "redundant-disabled"
+builtin = 'ja-no-redundant-expression = { dictOptions = { dict1 = { disabled = true } } }'
+text = "省略することが可能です。解析することができます。"
+findings = ["1:15"]
+
+[[cases]]
+name = "redundant-second-sentence"
+text = "前の文です。解析することができます。"
+findings = ["1:9"]
+
+[[cases]]
+name = "redundant-multiline"
+text = "前の行です。\n解析することができます。"
+findings = ["2:3"]
+
+[[cases]]
+name = "redundant-after-paragraph"
+text = "前の段落です。\n\n解析することができます。"
+findings = ["3:3"]
+
+[[cases]]
+name = "redundant-list"
+text = "- 解析することができます。"
+findings = ["1:5"]
+
+[[cases]]
+name = "redundant-list-allowed"
+builtin = 'ja-no-redundant-expression = { allowNodeTypes = ["BlockQuote", "Link", "ReferenceDef", "Code", "ListItem"] }'
+text = "- 解析することができます。"
+findings = []
+
+[[cases]]
+name = "redundant-quote"
+text = "> 解析することができます。"
+findings = []
+
+[[cases]]
+name = "redundant-quote-not-allowed"
+builtin = 'ja-no-redundant-expression = { allowNodeTypes = [] }'
+text = "> 解析することができます。"
+findings = ["1:5"]
+
+[[cases]]
+name = "redundant-heading"
+text = "# 解析することができます。"
+findings = []
+
+[[cases]]
+name = "redundant-table"
+text = "| 解析することができます。 |\n| --- |"
+findings = []
+
+[[cases]]
+name = "redundant-footnote"
+text = "本文です[^1]。\n\n[^1]: 解析することができます。"
+findings = ["3:9"]
+
+[[cases]]
+name = "redundant-link"
+text = "[解析することができます](https://example.com)。"
+findings = []
+
+[[cases]]
+name = "redundant-link-not-allowed"
+builtin = 'ja-no-redundant-expression = { allowNodeTypes = ["BlockQuote"] }'
+text = "[解析することができます](https://example.com)。"
+findings = ["1:4"]
+
+[[cases]]
+name = "redundant-link-start"
+text = "[解析する](https://example.com)ことができます。"
+findings = []
+
+[[cases]]
+name = "redundant-link-after"
+text = "解析する[ことができます](https://example.com)。"
+findings = ["1:3"]
+
+[[cases]]
+name = "redundant-strong"
+text = "**解析することができます**。"
+findings = ["1:5"]
+
+[[cases]]
+name = "redundant-strong-allowed"
+builtin = 'ja-no-redundant-expression = { allowNodeTypes = ["BlockQuote", "Link", "ReferenceDef", "Code", "Strong"] }'
+text = "**解析することができます**。"
+findings = []
+
+[[cases]]
+name = "redundant-code"
+note = "textlintはインラインコードの中身を含む段落の文字列を解析して `こと` に当てる。jafixはインラインコードを `ー` にした文字列を解析するので一致しない"
+text = "解析する`こと`ができます。"
+findings = []
+
+[[cases]]
+name = "redundant-dict4-end"
+note = "textlintは末尾の `ます` (skippable) が次のトークンを待ち、段落の末尾では一致を返さない。jafixは残りが無ければ末尾のskippableを除いて一致とする"
+text = "必要であると考えている"
+findings = ["1:3"]
+messages = ["冗長な表現「であると考えている」(dict4): 「である」か「と考えている」を省ける"]
+
+[[cases]]
+name = "redundant-paragraphs"
+note = "textlintは照合の状態を段落をまたいで持ち越し、次の段落の `ま` に出す (3:3)。jafixは文をまたいで状態を持ち越さない"
+text = "解析することが\n\nできます。"
+findings = []
+
+[[cases]]
+name = "redundant-retry"
+note = "textlintは一致の途中で外れた2つ目の `確認` を開始位置として試さず指摘しない。jafixはそのトークンからも試して `確認を行う` に出す"
+text = "確認を確認を行う。"
+findings = ["1:4"]
+
+[[cases]]
+name = "redundant-surrogate"
+note = "textlintは前にある絵文字の分だけ1文字左に出す (1:3)。jafixは一致の最初のトークン `する` の位置に出す"
+text = "\U0001f600解析することができます。"
+findings = ["1:4"]

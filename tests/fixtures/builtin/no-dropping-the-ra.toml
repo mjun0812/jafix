@@ -1,0 +1,165 @@
+# no-dropping-the-ra の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+[[cases]]
+name = "ra-pair"
+text = "朝食を食べれる。"
+findings = ["1:6"]
+messages = ["ら抜き言葉を使っている"]
+
+[[cases]]
+name = "ra-pair-negative"
+text = "早く寝れない。"
+findings = ["1:4"]
+
+[[cases]]
+name = "ra-pair-past"
+text = "全部食べれた。"
+findings = ["1:5"]
+
+[[cases]]
+name = "ra-pair-out"
+text = "服を着れる。"
+findings = ["1:4"]
+
+[[cases]]
+name = "ra-miru"
+text = "映画が見れる。"
+findings = ["1:5"]
+messages = ["ら抜き言葉を使っている"]
+
+[[cases]]
+name = "ra-kuru"
+text = "彼は来れる。"
+findings = ["1:4"]
+
+[[cases]]
+name = "ra-miru-masu"
+text = "映画が見れます。"
+findings = ["1:5"]
+
+[[cases]]
+name = "ra-rareru"
+text = "朝食を食べられる。"
+findings = []
+
+[[cases]]
+name = "ra-godan"
+text = "そこへ行かれる。"
+findings = []
+
+[[cases]]
+name = "ra-conditional"
+text = "朝食を食べれば。"
+findings = []
+
+[[cases]]
+name = "ra-kure"
+text = "早く来れば。"
+findings = []
+
+[[cases]]
+name = "ra-three"
+text = "食べれる。見れる。来れる。"
+findings = ["1:3", "1:7", "1:11"]
+
+[[cases]]
+name = "ra-heading"
+text = "# 朝食を食べれる。"
+findings = ["1:8"]
+
+[[cases]]
+name = "ra-list"
+text = "- 朝食を食べれる。"
+findings = ["1:8"]
+
+[[cases]]
+name = "ra-table"
+text = "| a |\n| - |\n| 朝食を食べれる。 |"
+findings = ["3:8"]
+
+[[cases]]
+name = "ra-strong"
+text = "**朝食を食べれる**。"
+findings = ["1:8"]
+
+[[cases]]
+name = "ra-delete"
+text = "~~朝食を食べれる~~。"
+findings = ["1:8"]
+
+[[cases]]
+name = "ra-reference-full"
+text = "[朝食を食べれる][r]。\n\n[r]: https://example.com"
+findings = ["1:7"]
+
+[[cases]]
+name = "ra-footnote"
+text = "本文[^1]。\n\n[^1]: 朝食を食べれる。"
+findings = ["3:12"]
+
+[[cases]]
+name = "ra-multiline"
+text = "あ。\n朝食を食べれる。"
+findings = ["2:6"]
+
+[[cases]]
+name = "ra-quote"
+text = "> 朝食を食べれる。"
+findings = []
+
+[[cases]]
+name = "ra-emphasis"
+text = "*朝食を食べれる*。"
+findings = []
+
+[[cases]]
+name = "ra-link"
+text = "[朝食を食べれる](https://example.com)。"
+findings = []
+
+[[cases]]
+name = "ra-emphasis-in-strong"
+text = "**a *食べれる* b**。"
+findings = []
+
+[[cases]]
+name = "ra-code"
+text = "`食べれる`。"
+findings = []
+
+[[cases]]
+name = "ra-across-code"
+text = "食べ`x`れる。"
+findings = []
+
+[[cases]]
+name = "ra-surrogate"
+note = "textlintは前のサロゲートペアの文字の分だけ1文字前の「べ」を指すが、jafixは「れる」の先頭を指す"
+text = "\U00020bb7が食べれる。"
+findings = ["1:5"]
+
+[[cases]]
+name = "ra-surrogate-miru"
+note = "textlintは前のサロゲートペアの文字の分だけ1文字前の「見」を指すが、jafixは「見れる」の2文字目を指す"
+text = "\U00020bb7が見れる。"
+findings = ["1:4"]
+
+[[cases]]
+name = "ra-surrogate-run"
+note = "textlintは続くサロゲートペアの文字の後ろのトークンを読み飛ばして指摘しないが、linderaは「食べ」「れる」を残すので当たる"
+text = "\U00020bb7\U00020bb7が食べれる。"
+findings = ["1:6"]
+
+[[cases]]
+name = "ra-reference-collapsed"
+note = "textlintは定義を持つcollapsed形の参照リンクの文字列をStrとして見るが、jafixでは本文の範囲に入らない"
+text = "[朝食を食べれる][]。\n\n[朝食を食べれる]: https://example.com"
+findings = []

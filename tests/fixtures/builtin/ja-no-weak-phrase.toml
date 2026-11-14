@@ -1,0 +1,169 @@
+# ja-no-weak-phrase の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+[[cases]]
+name = "weak-kamo-period"
+text = "問題があるかも。"
+findings = ["1:6"]
+messages = ["弱い表現「かも」を使っている"]
+
+[[cases]]
+name = "weak-kamo-shirenai"
+text = "問題があるかもしれない。"
+findings = ["1:6"]
+messages = ["弱い表現「かも」を使っている"]
+
+[[cases]]
+name = "weak-kamo-shiremasen"
+text = "問題があるかもしれません。"
+findings = ["1:6"]
+
+[[cases]]
+name = "weak-omou"
+text = "問題があると思う。"
+findings = ["1:7"]
+messages = ["弱い表現「思う」を使っている"]
+
+[[cases]]
+name = "weak-omoimasu"
+text = "問題があると思います。"
+findings = ["1:7"]
+messages = ["弱い表現「思います」を使っている"]
+
+[[cases]]
+name = "weak-shisa"
+text = "この結果は可能性を示唆している。"
+findings = ["1:6"]
+messages = ["弱い表現「可能性を示唆している」を使っている"]
+
+[[cases]]
+name = "weak-kamo-comma"
+text = "問題があるかも、しれない。"
+findings = []
+
+[[cases]]
+name = "weak-kamo-no-period"
+text = "問題があるかも"
+findings = []
+
+[[cases]]
+name = "weak-kamo-kanji"
+text = "問題があるかも知れない。"
+findings = []
+
+[[cases]]
+name = "weak-omotteiru"
+text = "問題があると思っている。"
+findings = []
+
+[[cases]]
+name = "weak-omoimashita"
+text = "問題があると思いました。"
+findings = []
+
+[[cases]]
+name = "weak-shisa-masu"
+text = "可能性を示唆しています。"
+findings = []
+
+[[cases]]
+name = "weak-kamo-noun"
+text = "あるかもかもしれない。"
+findings = ["1:5"]
+
+[[cases]]
+name = "weak-many"
+text = "かもしれない。思う。思います。可能性を示唆している。"
+findings = ["1:1", "1:8", "1:11", "1:16"]
+
+[[cases]]
+name = "weak-heading"
+text = "# 問題があるかもしれない。"
+findings = ["1:8"]
+
+[[cases]]
+name = "weak-list"
+text = "- 問題があるかもしれない。"
+findings = ["1:8"]
+
+[[cases]]
+name = "weak-quote"
+text = "> 問題があるかもしれない。"
+findings = ["1:8"]
+
+[[cases]]
+name = "weak-table"
+text = "| a |\n| - |\n| 問題があるかもしれない。 |"
+findings = ["3:8"]
+
+[[cases]]
+name = "weak-emphasis"
+text = "*問題があるかもしれない*。"
+findings = ["1:7"]
+
+[[cases]]
+name = "weak-strong"
+text = "**問題があると思います**。"
+findings = ["1:9"]
+
+[[cases]]
+name = "weak-link"
+text = "[問題があるかもしれない](https://example.com)。"
+findings = ["1:7"]
+
+[[cases]]
+name = "weak-footnote"
+text = "本文[^1]。\n\n[^1]: 問題があると思う。"
+findings = ["3:13"]
+
+[[cases]]
+name = "weak-multiline"
+text = "あ。\n問題があると思う。"
+findings = ["2:7"]
+
+[[cases]]
+name = "weak-soft-break"
+text = "問題があるかも\nしれない。"
+findings = []
+
+[[cases]]
+name = "weak-code"
+text = "`問題があるかもしれない`。"
+findings = []
+
+[[cases]]
+name = "weak-surrogate"
+note = "textlintは前のサロゲートペアの文字の分だけ1文字前の「る」を指すが、jafixは「かも」の先頭を指す"
+text = "\U00020bb7が問題があるかもしれない。"
+findings = ["1:8"]
+
+[[cases]]
+name = "weak-surrogate-run"
+note = "textlintは続くサロゲートペアの文字の後ろの「と思」を読み飛ばして指摘しないが、linderaは「思い」「ます」を残すので当たる"
+text = "これは\U00020bb7\U00020bb7と思います。"
+findings = ["1:7"]
+
+[[cases]]
+name = "weak-across-code"
+note = "textlintは照合の状態をStrをまたいで持ち越し、2つ目のStrに位置をずらして指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "問題があるかも`x`。"
+findings = []
+
+[[cases]]
+name = "weak-across-strong"
+note = "textlintは照合の状態をStrをまたいで持ち越して指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "問題があるかも**しれ**ない。"
+findings = []
+
+[[cases]]
+name = "weak-restart"
+note = "textlintは一致の途中で外れた2つ目の「思い」を開始位置として試さないが、jafixはすべての位置から試すので「思います」が一致する"
+text = "と思い思います。"
+findings = ["1:4"]

@@ -10,6 +10,8 @@ pub struct Document {
     pub texts: Vec<Prose>,
     /// 段落。文に区切るルールと、段落の末尾を見るルールが使う。見出しと表のセルは段落ではない
     pub paragraphs: Vec<Paragraph>,
+    /// 見出し。段落と同じ形で持つ。`list_item` と `footnote` は使わない。`paragraphs` には入らない
+    pub headings: Vec<Paragraph>,
 }
 
 /// 本文の1つの範囲
@@ -98,7 +100,12 @@ pub fn parse(src: &str) -> Document {
     collect(&root, src, Context::default(), &mut texts);
     let mut paragraphs = Vec::new();
     collect_paragraphs(&root, src, false, false, false, &mut paragraphs);
-    Document { texts, paragraphs }
+    Document {
+        texts,
+        paragraphs,
+        // skeleton: not implemented
+        headings: Vec::new(),
+    }
 }
 
 fn node_range(node: &Node) -> Range<usize> {

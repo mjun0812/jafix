@@ -1,0 +1,173 @@
+# max-ten の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+[[cases]]
+name = "ten-4"
+text = "走って、食べて、寝て、起きて、歩く。"
+findings = ["1:15"]
+messages = ["1文の「、」が3個を超えている"]
+
+[[cases]]
+name = "ten-3"
+text = "走って、食べて、寝て、歩く。"
+findings = []
+
+[[cases]]
+name = "ten-noun"
+text = "東京、大阪、名古屋、福岡、札幌の都市。"
+findings = []
+
+[[cases]]
+name = "ten-noun-strict"
+builtin = 'max-ten = { max = 3, strict = true }'
+text = "東京、大阪、名古屋、福岡、札幌の都市。"
+findings = ["1:13"]
+
+[[cases]]
+name = "ten-paren"
+text = "東京（都）、大阪（府）、京都（府）、福岡（県）、札幌（市）の話。"
+findings = []
+
+[[cases]]
+name = "ten-kuten-in-bracket"
+text = "彼は「走って、食べて。起きて、歩いて」と言った、そして、走って、泣いた。"
+findings = ["1:32"]
+
+[[cases]]
+name = "ten-bracket-no-reset"
+text = "彼は「走って、食べて、起きて、歩いて」と言った、そして、走って、泣いた。"
+findings = ["1:24"]
+
+[[cases]]
+name = "ten-multi"
+text = "走って、食べて、寝て、起きて、歩いて、走って、食べて、寝て、起きる。"
+findings = ["1:15", "1:30"]
+
+[[cases]]
+name = "ten-two-sentences"
+text = "走って、食べて、寝て。起きて、歩いて、走る。"
+findings = []
+
+[[cases]]
+name = "ten-exclamation"
+text = "走って、食べて！寝て、起きて、歩く。"
+findings = []
+
+[[cases]]
+name = "ten-second-sentence"
+text = "前の文です。走って、食べて、寝て、起きて、歩く。"
+findings = ["1:21"]
+
+[[cases]]
+name = "ten-max-2"
+builtin = 'max-ten = { max = 2 }'
+text = "走って、食べて、寝て、歩く。"
+findings = ["1:11"]
+messages = ["1文の「、」が2個を超えている"]
+
+[[cases]]
+name = "ten-max-0"
+builtin = 'max-ten = { max = 0 }'
+text = "走って、歩く。"
+findings = ["1:4"]
+
+[[cases]]
+name = "ten-touten"
+builtin = 'max-ten = { max = 3, touten = "，" }'
+text = "走って，食べて，寝て，起きて，歩く。"
+findings = ["1:15"]
+messages = ["1文の「，」が3個を超えている"]
+
+[[cases]]
+name = "ten-kuten-option"
+builtin = 'max-ten = { max = 3, kuten = "；" }'
+text = "走って、食べて、寝て、休んで；起きて、歩く。"
+findings = []
+
+[[cases]]
+name = "ten-kuten-default"
+text = "走って、食べて、寝て、休んで；起きて、歩く。"
+findings = ["1:19"]
+
+[[cases]]
+name = "ten-list"
+text = "- 走って、食べて、寝て、起きて、歩く。"
+findings = ["1:17"]
+
+[[cases]]
+name = "ten-quote"
+text = "> 走って、食べて、寝て、起きて、歩く。"
+findings = []
+
+[[cases]]
+name = "ten-heading"
+text = "# 走って、食べて、寝て、起きて、歩く。"
+findings = []
+
+[[cases]]
+name = "ten-table"
+text = "| 走って、食べて、寝て、起きて、歩く。 |\n| --- |"
+findings = []
+
+[[cases]]
+name = "ten-footnote"
+text = "本文です[^1]。\n\n[^1]: 走って、食べて、寝て、起きて、歩く。"
+findings = ["3:21"]
+
+[[cases]]
+name = "ten-multiline"
+text = "走って、食べて、\n寝て、起きて、歩く。"
+findings = ["2:7"]
+
+[[cases]]
+name = "ten-paragraphs"
+text = "走って、食べて、寝て。\n\n起きて、歩く。"
+findings = []
+
+[[cases]]
+name = "ten-strong"
+text = "**走って、食べて、寝て、起きて、歩く**です。"
+findings = ["1:17"]
+
+[[cases]]
+name = "ten-link"
+text = "[走って、食べて、寝て、起きて、歩く](https://example.com)です。"
+findings = ["1:16"]
+
+[[cases]]
+name = "ten-dot"
+note = "textlintのmax-tenは `.` で文を区切らず4つ目の `、` に出す (1:20)。jafixは `sentence::split` の文を使うので、`. ` で2文に分かれて指摘しない"
+text = "走って、食べて、寝て. 起きて、歩いて、走る。"
+findings = []
+
+[[cases]]
+name = "ten-kuten-replaces"
+note = "textlintは `kuten` で区切り文字を置き換え、`。` で文を区切らずに4つ目の `、` に出す (1:19)。jafixの文は `kuten` によらず `。` で区切る"
+builtin = 'max-ten = { max = 3, kuten = "；" }'
+text = "走って、食べて、寝て。起きて、歩いて、走る。"
+findings = []
+
+[[cases]]
+name = "ten-code"
+note = "textlintはコードを `_` にし、`_、` が1つの未知語になって読点を数えない。jafixは `ー` にするので、4つの `、` を数えて4つ目に出す"
+text = "走って`a`、食べて`b`、寝て`c`、起きて`d`、歩く。"
+findings = ["1:27"]
+
+[[cases]]
+name = "ten-surrogate"
+note = "textlintは前にある絵文字の分だけ1文字左に出す (1:16)。jafixは4つ目の `、` の位置に出す"
+text = "\U0001f600で走って、食べて、寝て、起きて、歩く。"
+findings = ["1:17"]
+
+[[cases]]
+name = "ten-same-lines"
+note = "textlintは同じ文字列の子の位置を前の出現に写して2行目に出す (2:4)。jafixは4つ目の `、` の位置に出す"
+text = "走って、\n走って、\n走って、\n走って、\n歩く。"
+findings = ["4:4"]

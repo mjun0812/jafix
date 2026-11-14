@@ -1,0 +1,219 @@
+# no-double-negative-ja の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+[[cases]]
+name = "neg-nakumo"
+text = "言えなくもない。"
+findings = ["1:6"]
+messages = ["二重否定「なくもない」を使っている"]
+
+[[cases]]
+name = "neg-nakuha"
+text = "時間が無くは無い。"
+findings = ["1:7"]
+messages = ["二重否定「無くは無い」を使っている"]
+
+[[cases]]
+name = "neg-naideha-renyou"
+text = "知らないでは無い。"
+findings = ["1:7"]
+messages = ["二重否定「ないでは無い」を使っている"]
+
+[[cases]]
+name = "neg-naidemo-joshi"
+text = "行かないでもない。"
+findings = ["1:7"]
+
+[[cases]]
+name = "neg-naimonodemo"
+text = "知らないものでもない。"
+findings = ["1:9"]
+
+[[cases]]
+name = "neg-naimonodeha"
+text = "知らないものでは無い。"
+findings = ["1:9"]
+
+[[cases]]
+name = "neg-naikotoha"
+text = "知らないことはない。"
+findings = ["1:8"]
+
+[[cases]]
+name = "neg-naikotomo-adj"
+text = "知らないこともない。"
+findings = ["1:8"]
+messages = ["二重否定「ないこともない」を使っている"]
+
+[[cases]]
+name = "neg-naikotomo-aux"
+text = "知らないこともないでしょう。"
+findings = ["1:8"]
+
+[[cases]]
+name = "neg-naiwakedemo"
+text = "知らないわけでもない。"
+findings = ["1:9"]
+
+[[cases]]
+name = "neg-naiwakedeha"
+text = "知らないわけではない。"
+findings = ["1:9"]
+
+[[cases]]
+name = "neg-naitoiikire"
+text = "知らないといいきれない。"
+findings = ["1:10"]
+
+[[cases]]
+name = "neg-naitohaiikire"
+text = "知らないとは言い切れない。"
+findings = ["1:11"]
+messages = ["二重否定「ないとは言い切れない」を使っている"]
+
+[[cases]]
+name = "neg-naitohakagira"
+text = "知らないとは限らない。"
+findings = ["1:9"]
+
+[[cases]]
+name = "neg-naitomokagira"
+text = "知らないともかぎらない。"
+findings = ["1:10"]
+
+[[cases]]
+name = "neg-nakuha-aux"
+text = "言えなくはない。"
+findings = []
+
+[[cases]]
+name = "neg-naimonodeha-aux"
+text = "知らないものではない。"
+findings = []
+
+[[cases]]
+name = "neg-overlap"
+text = "知らないこともないわけではない。"
+findings = ["1:8", "1:14"]
+messages = ["二重否定「ないこともない」を使っている", "二重否定「ないわけではない」を使っている"]
+
+[[cases]]
+name = "neg-escape"
+text = "知らない\\*こともない。"
+findings = []
+
+[[cases]]
+name = "neg-soft-break"
+text = "知らない\nこともない。"
+findings = []
+
+[[cases]]
+name = "neg-heading"
+text = "# 知らないこともない。"
+findings = ["1:10"]
+
+[[cases]]
+name = "neg-list"
+text = "- 知らないこともない。"
+findings = ["1:10"]
+
+[[cases]]
+name = "neg-quote"
+text = "> 知らないこともない。"
+findings = ["1:10"]
+
+[[cases]]
+name = "neg-quote-continuation"
+text = "> 知らない\n> こともない。"
+findings = []
+
+[[cases]]
+name = "neg-table"
+text = "| a |\n| - |\n| 知らないこともない。 |"
+findings = ["3:10"]
+
+[[cases]]
+name = "neg-emphasis"
+text = "*知らないこともない*。"
+findings = ["1:9"]
+
+[[cases]]
+name = "neg-strong"
+text = "**知らないこともない**。"
+findings = ["1:10"]
+
+[[cases]]
+name = "neg-link"
+text = "[知らないこともない](https://example.com)。"
+findings = ["1:9"]
+
+[[cases]]
+name = "neg-footnote"
+text = "本文[^1]。\n\n[^1]: 知らないこともない。"
+findings = ["3:14"]
+
+[[cases]]
+name = "neg-multiline"
+text = "あ。\n知らないこともない。"
+findings = ["2:8"]
+
+[[cases]]
+name = "neg-code"
+text = "`知らないこともない`。"
+findings = []
+
+[[cases]]
+name = "neg-surrogate"
+note = "textlintは前のサロゲートペアの文字の分だけ1文字前の「も」を指すが、jafixは最後の「ない」の位置を指す"
+text = "\U00020bb7が知らないこともない。"
+findings = ["1:10"]
+
+[[cases]]
+name = "neg-surrogate-run"
+note = "textlintは続くサロゲートペアの文字の後ろの「ない」を読み飛ばして指摘しないが、linderaは「ない」を残すので並びが一致する"
+text = "\U00020bb7\U00020bb7ないこともない。"
+findings = ["1:8"]
+messages = ["二重否定「ないこともない」を使っている"]
+
+[[cases]]
+name = "neg-across-code"
+note = "textlintは照合の状態をStrをまたいで持ち越して指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "知らない`x`こともない。"
+findings = []
+
+[[cases]]
+name = "neg-across-paragraph"
+note = "textlintは照合の状態を段落をまたいで持ち越して指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "知らない\n\nこともない。"
+findings = []
+
+[[cases]]
+name = "neg-restart"
+note = "textlintは一致の途中で外れた2つ目の「ない」を開始位置として試さないが、jafixはすべての位置から試すので「ないことはない」が一致する"
+text = "ないないことはない。"
+findings = ["1:8"]
+
+[[cases]]
+name = "neg-chain"
+note = "textlintは「ないことはない」が一致したトークンを「ないこともない」の照合器に渡さないが、jafixは並びごとにすべての位置から試すので、一致の最後の「ない」から始まる並びも当たる"
+text = "知らないことはないこともない。"
+findings = ["1:8", "1:13"]
+
+[[cases]]
+name = "neg-bare-url"
+note = "textlintは裸のURLの文字列をStrとして見るが、jafixでは本文の範囲に入らない"
+text = "https://example.com/知らないこともない"
+findings = []
+
+[[cases]]
+name = "neg-reference-shortcut"
+note = "textlintは定義を持つ省略形の参照リンクの文字列をStrとして見るが、jafixでは本文の範囲に入らない"
+text = "[知らないこともない]\n\n[知らないこともない]: https://example.com"
+findings = []

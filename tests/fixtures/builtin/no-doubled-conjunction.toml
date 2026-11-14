@@ -1,0 +1,124 @@
+# no-doubled-conjunction の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+[[cases]]
+name = "conj-next"
+text = "雨だ。しかし、行く。しかし、帰る。"
+findings = ["1:11"]
+messages = ["同じ接続詞「しかし」が続いている"]
+
+[[cases]]
+name = "conj-gap"
+text = "しかし、行く。走る。しかし、帰る。"
+findings = ["1:11"]
+
+[[cases]]
+name = "conj-different"
+text = "しかし、行く。そして、走る。しかし、帰る。"
+findings = []
+
+[[cases]]
+name = "conj-first-only"
+text = "雨だ。しかし、しかし行く。しかし帰る。"
+findings = ["1:14"]
+
+[[cases]]
+name = "conj-first-differs"
+text = "しかし、そして行く。そして帰る。"
+findings = []
+
+[[cases]]
+name = "conj-after-space"
+text = "走る しかし歩く。走る しかし歩く。"
+findings = []
+
+[[cases]]
+name = "conj-mata"
+text = "走る。また歩く。また歩く。"
+findings = ["1:9"]
+messages = ["同じ接続詞「また」が続いている"]
+
+[[cases]]
+name = "conj-mata-adverb"
+text = "走る。また歩く。また止まる。"
+findings = []
+
+[[cases]]
+name = "conj-dakara"
+text = "走る。だから歩く。だから歩く。"
+findings = ["1:10"]
+
+[[cases]]
+name = "conj-multiline"
+text = "走る。\nしかし歩く。\nしかし歩く。"
+findings = ["3:1"]
+
+[[cases]]
+name = "conj-paragraphs"
+text = "しかし、行く。\n\nしかし、帰る。"
+findings = []
+
+[[cases]]
+name = "conj-list"
+text = "- 走る。しかし歩く。しかし歩く。"
+findings = ["1:12"]
+
+[[cases]]
+name = "conj-list-items"
+text = "- しかし歩く。\n- しかし歩く。"
+findings = []
+
+[[cases]]
+name = "conj-quote"
+text = "> 走る。しかし歩く。しかし歩く。"
+findings = []
+
+[[cases]]
+name = "conj-heading"
+text = "# 走る。しかし歩く。しかし歩く。"
+findings = []
+
+[[cases]]
+name = "conj-table"
+text = "| 走る。しかし歩く。しかし歩く。 |\n| --- |"
+findings = []
+
+[[cases]]
+name = "conj-footnote"
+text = "本文です[^1]。\n\n[^1]: 走る。しかし歩く。しかし歩く。"
+findings = ["3:16"]
+
+[[cases]]
+name = "conj-after-heading"
+text = "# 見出し\n\n走る。しかし歩く。しかし歩く。"
+findings = ["3:10"]
+
+[[cases]]
+name = "conj-strong"
+note = "textlintは記法を含む原文を解析し、`**しかし**` が `しか` と `し` に分かれて接続詞にならない。jafixは記法を除いた `しかし歩く。` を解析して3文目に出す"
+text = "走る。**しかし**歩く。しかし歩く。"
+findings = ["1:14"]
+
+[[cases]]
+name = "conj-code"
+text = "走る。`しかし`歩く。しかし歩く。"
+findings = []
+
+[[cases]]
+name = "conj-link"
+note = "textlintは記法を含む原文を解析し、リンクの中の `しかし` を接続詞にしない。jafixはリンクの文字列を含む `しかし歩く。` を解析して3文目の `しかし` に出す"
+text = "走る。しかし歩く。[しかし](https://example.com)歩く。"
+findings = ["1:11"]
+
+[[cases]]
+name = "conj-surrogate"
+note = "textlintは前にある絵文字の分だけ1文字左の `、` に出す (1:11)。jafixは3文目の `しかし` の位置に出す"
+text = "走る。しかし歩く。\U0001f600、しかし歩く。"
+findings = ["1:12"]

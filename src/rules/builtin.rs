@@ -24,6 +24,17 @@ pub struct Builtin {
     pub no_hankaku_kana: bool,
     pub ja_unnatural_alphabet: Option<JaUnnaturalAlphabet>,
     pub no_unmatched_pair: bool,
+    pub max_ten: Option<MaxTen>,
+    pub no_mix_dearu_desumasu: Option<NoMixDearuDesumasu>,
+    pub no_doubled_conjunction: bool,
+    pub no_doubled_conjunctive_particle_ga: bool,
+    pub no_double_negative_ja: bool,
+    pub no_doubled_joshi: Option<NoDoubledJoshi>,
+    pub no_dropping_the_ra: bool,
+    pub ja_no_weak_phrase: bool,
+    pub ja_no_successive_word: Option<JaNoSuccessiveWord>,
+    pub ja_no_abusage: bool,
+    pub ja_no_redundant_expression: Option<JaNoRedundantExpression>,
 }
 
 impl Default for Builtin {
@@ -44,6 +55,17 @@ impl Default for Builtin {
             no_hankaku_kana: true,
             ja_unnatural_alphabet: Some(JaUnnaturalAlphabet::default()),
             no_unmatched_pair: true,
+            max_ten: Some(MaxTen::default()),
+            no_mix_dearu_desumasu: Some(NoMixDearuDesumasu::default()),
+            no_doubled_conjunction: true,
+            no_doubled_conjunctive_particle_ga: true,
+            no_double_negative_ja: true,
+            no_doubled_joshi: Some(NoDoubledJoshi::default()),
+            no_dropping_the_ra: true,
+            ja_no_weak_phrase: true,
+            ja_no_successive_word: Some(JaNoSuccessiveWord::default()),
+            ja_no_abusage: true,
+            ja_no_redundant_expression: Some(JaNoRedundantExpression::default()),
         }
     }
 }
@@ -114,6 +136,31 @@ impl Builtin {
                     options.map(JaUnnaturalAlphabet::from_options).transpose()?;
             }
             RuleId::NoUnmatchedPair => self.no_unmatched_pair = enabled(options)?,
+            RuleId::MaxTen => self.max_ten = options.map(MaxTen::from_options).transpose()?,
+            RuleId::NoMixDearuDesumasu => {
+                self.no_mix_dearu_desumasu =
+                    options.map(NoMixDearuDesumasu::from_options).transpose()?;
+            }
+            RuleId::NoDoubledConjunction => self.no_doubled_conjunction = enabled(options)?,
+            RuleId::NoDoubledConjunctiveParticleGa => {
+                self.no_doubled_conjunctive_particle_ga = enabled(options)?;
+            }
+            RuleId::NoDoubleNegativeJa => self.no_double_negative_ja = enabled(options)?,
+            RuleId::NoDoubledJoshi => {
+                self.no_doubled_joshi = options.map(NoDoubledJoshi::from_options).transpose()?;
+            }
+            RuleId::NoDroppingTheRa => self.no_dropping_the_ra = enabled(options)?,
+            RuleId::JaNoWeakPhrase => self.ja_no_weak_phrase = enabled(options)?,
+            RuleId::JaNoSuccessiveWord => {
+                self.ja_no_successive_word =
+                    options.map(JaNoSuccessiveWord::from_options).transpose()?;
+            }
+            RuleId::JaNoAbusage => self.ja_no_abusage = enabled(options)?,
+            RuleId::JaNoRedundantExpression => {
+                self.ja_no_redundant_expression = options
+                    .map(JaNoRedundantExpression::from_options)
+                    .transpose()?;
+            }
         }
         Ok(())
     }
@@ -469,6 +516,184 @@ impl JaUnnaturalAlphabet {
             );
         }
         Ok(Self { allow })
+    }
+}
+
+#[derive(Debug)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct MaxTen {
+    pub max: usize,
+    /// 名詞に挟まれた読点も数える
+    pub strict: bool,
+    pub touten: String,
+    pub kuten: String,
+}
+
+impl Default for MaxTen {
+    fn default() -> Self {
+        Self {
+            max: 3,
+            strict: false,
+            touten: "、".to_owned(),
+            kuten: "。".to_owned(),
+        }
+    }
+}
+
+impl MaxTen {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
+    }
+}
+
+#[derive(Debug)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct NoDoubledJoshi {
+    /// 同じ助詞の間にある、数えるトークンの数がこれ以下なら指摘する
+    pub min_interval: usize,
+    /// 例外の規則を使わず、助詞だけを数える
+    pub strict: bool,
+    /// 指摘しない助詞の表層
+    pub allow: Vec<String>,
+    pub separator_characters: Vec<String>,
+    pub comma_characters: Vec<String>,
+}
+
+impl Default for NoDoubledJoshi {
+    fn default() -> Self {
+        let strings = |values: &[&str]| values.iter().map(|&value| value.to_owned()).collect();
+        Self {
+            min_interval: 1,
+            strict: false,
+            allow: Vec::new(),
+            separator_characters: strings(&[".", "．", "。", "?", "!", "？", "！"]),
+            comma_characters: strings(&["、", "，"]),
+        }
+    }
+}
+
+impl NoDoubledJoshi {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
+    }
+}
+
+/// 文体
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[allow(dead_code)] // skeleton: not implemented
+pub enum Style {
+    Dearu,
+    Desumasu,
+}
+
+/// `prefer_*` は、その種類で優先する文体。`None` は、多いほうを優先する
+#[derive(Debug)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct NoMixDearuDesumasu {
+    pub prefer_in_header: Option<Style>,
+    pub prefer_in_body: Option<Style>,
+    pub prefer_in_list: Option<Style>,
+    /// 文末でない「である」「です」「ます」も数える
+    pub strict: bool,
+}
+
+impl Default for NoMixDearuDesumasu {
+    fn default() -> Self {
+        Self {
+            prefer_in_header: None,
+            prefer_in_body: Some(Style::Desumasu),
+            prefer_in_list: Some(Style::Dearu),
+            strict: false,
+        }
+    }
+}
+
+impl NoMixDearuDesumasu {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
+    }
+}
+
+#[derive(Debug)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct JaNoSuccessiveWord {
+    /// カタカナの語の繰り返しを指摘しない
+    pub allow_onomatopee: bool,
+    pub allow: Vec<Regex>,
+}
+
+impl Default for JaNoSuccessiveWord {
+    fn default() -> Self {
+        Self {
+            allow_onomatopee: true,
+            allow: Vec::new(),
+        }
+    }
+}
+
+impl JaNoSuccessiveWord {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
+    }
+}
+
+/// `allowNodeTypes` に書ける要素の型。名前はtextlintのnodeの型と同じである
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[allow(dead_code)] // skeleton: not implemented
+pub enum NodeType {
+    BlockQuote,
+    ListItem,
+    Link,
+    LinkReference,
+    Image,
+    Emphasis,
+    Strong,
+    Delete,
+    /// 書けるが、何も変えない (インラインコードの中身は文の文字列に入らない)
+    Code,
+    /// 書けるが、何も変えない (Markdownに無い型)
+    ReferenceDef,
+}
+
+/// 辞書の1項目への設定
+#[derive(Debug, Default)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct DictOption {
+    pub disabled: bool,
+    /// 一致したトークンの表層をつなげた文字列に当たれば、指摘しない。`None` は辞書の既定値
+    pub allows: Option<Vec<Regex>>,
+}
+
+#[derive(Debug)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct JaNoRedundantExpression {
+    pub allow_node_types: Vec<NodeType>,
+    /// `dict1` から `dict6` の順
+    pub dicts: [DictOption; 6],
+}
+
+impl Default for JaNoRedundantExpression {
+    fn default() -> Self {
+        Self {
+            allow_node_types: vec![
+                NodeType::BlockQuote,
+                NodeType::Link,
+                NodeType::ReferenceDef,
+                NodeType::Code,
+            ],
+            dicts: Default::default(),
+        }
+    }
+}
+
+impl JaNoRedundantExpression {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
     }
 }
 

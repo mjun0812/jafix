@@ -3,6 +3,7 @@ use std::ops::Range;
 use std::sync::LazyLock;
 
 pub mod builtin;
+mod morph;
 mod paragraph;
 mod text;
 
@@ -30,11 +31,22 @@ pub enum RuleId {
     NoHankakuKana,
     JaUnnaturalAlphabet,
     NoUnmatchedPair,
+    MaxTen,
+    NoMixDearuDesumasu,
+    NoDoubledConjunction,
+    NoDoubledConjunctiveParticleGa,
+    NoDoubleNegativeJa,
+    NoDoubledJoshi,
+    NoDroppingTheRa,
+    JaNoWeakPhrase,
+    JaNoSuccessiveWord,
+    JaNoAbusage,
+    JaNoRedundantExpression,
 }
 
 impl RuleId {
     /// 組み込みのルールのすべて。設定の `[builtin]` のキーと、設定の指摘ルールの `id` と重ならないことを確かめるのに使う
-    pub const ALL: [RuleId; 15] = [
+    pub const ALL: [RuleId; 26] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
         RuleId::SpaceBetweenJaAndParen,
@@ -50,6 +62,17 @@ impl RuleId {
         RuleId::NoHankakuKana,
         RuleId::JaUnnaturalAlphabet,
         RuleId::NoUnmatchedPair,
+        RuleId::MaxTen,
+        RuleId::NoMixDearuDesumasu,
+        RuleId::NoDoubledConjunction,
+        RuleId::NoDoubledConjunctiveParticleGa,
+        RuleId::NoDoubleNegativeJa,
+        RuleId::NoDoubledJoshi,
+        RuleId::NoDroppingTheRa,
+        RuleId::JaNoWeakPhrase,
+        RuleId::JaNoSuccessiveWord,
+        RuleId::JaNoAbusage,
+        RuleId::JaNoRedundantExpression,
     ];
 
     /// `check` の出力の `[<rule-id>]` に使う名前
@@ -70,6 +93,17 @@ impl RuleId {
             RuleId::NoHankakuKana => "no-hankaku-kana",
             RuleId::JaUnnaturalAlphabet => "ja-unnatural-alphabet",
             RuleId::NoUnmatchedPair => "no-unmatched-pair",
+            RuleId::MaxTen => "max-ten",
+            RuleId::NoMixDearuDesumasu => "no-mix-dearu-desumasu",
+            RuleId::NoDoubledConjunction => "no-doubled-conjunction",
+            RuleId::NoDoubledConjunctiveParticleGa => "no-doubled-conjunctive-particle-ga",
+            RuleId::NoDoubleNegativeJa => "no-double-negative-ja",
+            RuleId::NoDoubledJoshi => "no-doubled-joshi",
+            RuleId::NoDroppingTheRa => "no-dropping-the-ra",
+            RuleId::JaNoWeakPhrase => "ja-no-weak-phrase",
+            RuleId::JaNoSuccessiveWord => "ja-no-successive-word",
+            RuleId::JaNoAbusage => "ja-no-abusage",
+            RuleId::JaNoRedundantExpression => "ja-no-redundant-expression",
         }
     }
 }
@@ -294,6 +328,7 @@ mod tests {
                 context: Context::default(),
             }],
             paragraphs: Vec::new(),
+            headings: Vec::new(),
         }
     }
 

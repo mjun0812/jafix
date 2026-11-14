@@ -1,0 +1,127 @@
+# no-doubled-conjunctive-particle-ga の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+[[cases]]
+name = "ga-two"
+text = "雨は降ったが、風が強いが、行く。"
+findings = ["1:6"]
+messages = ["1文に逆接の「が」が2回以上ある"]
+
+[[cases]]
+name = "ga-one"
+text = "雨は降ったが、行く。"
+findings = []
+
+[[cases]]
+name = "ga-three"
+text = "雨は降ったが、風が強いが、雪だが、行く。"
+findings = ["1:6"]
+
+[[cases]]
+name = "ga-case-particle"
+text = "私が彼が好きだ。"
+findings = []
+
+[[cases]]
+name = "ga-bracket-kuten"
+text = "彼は「雨は降ったが。風が強いが」と言ったが、行く。"
+findings = ["1:15"]
+
+[[cases]]
+name = "ga-sentences"
+text = "雨は降ったが、行く。風が強いが、行く。"
+findings = []
+
+[[cases]]
+name = "ga-exclamation"
+text = "雨は降ったが！風が強いが、行く。"
+findings = []
+
+[[cases]]
+name = "ga-paragraphs"
+text = "雨は降ったが、行く。\n\n風が強いが、行く。"
+findings = []
+
+[[cases]]
+name = "ga-second-sentence"
+text = "前の文です。雨は降ったが、風が強いが、行く。"
+findings = ["1:12"]
+
+[[cases]]
+name = "ga-list-second-item"
+text = "- あ\n- 雨は降ったが、風が強いが、行く。"
+findings = ["2:8"]
+
+[[cases]]
+name = "ga-footnote"
+text = "本文です[^1]。\n\n[^1]: 雨は降ったが、風が強いが、行く。"
+findings = ["3:12"]
+
+[[cases]]
+name = "ga-quote"
+text = "> 雨は降ったが、風が強いが、行く。"
+findings = []
+
+[[cases]]
+name = "ga-heading"
+text = "# 雨は降ったが、風が強いが、行く。"
+findings = []
+
+[[cases]]
+name = "ga-table"
+text = "| 雨は降ったが、風が強いが、行く。 |\n| --- |"
+findings = []
+
+[[cases]]
+name = "ga-multiline-first"
+text = "雨は降ったが、\n風が強いが、行く。"
+findings = ["1:6"]
+
+[[cases]]
+name = "ga-after-heading"
+note = "textlintは1行目でない段落の2文目で文の先頭を段落の先頭とみなし、`。` に出す (3:6)。jafixは最初の `が` の位置に出す"
+text = "# 見出し\n\n前の文です。雨は降ったが、風が強いが、行く。"
+findings = ["3:12"]
+
+[[cases]]
+name = "ga-list"
+note = "textlintは1行目のリスト項目で、項目の記号の幅だけ右に出す (1:10)。jafixは最初の `が` の位置に出す"
+text = "- 雨は降ったが、風が強いが、行く。"
+findings = ["1:8"]
+
+[[cases]]
+name = "ga-after-strong"
+note = "textlintは前の文の太字の記号の幅だけ右に出す (1:19)。jafixは最初の `が` の位置に出す"
+text = "**重要**です。雨は降ったが、風が強いが、行く。"
+findings = ["1:15"]
+
+[[cases]]
+name = "ga-link"
+note = "textlintはリンクの `[` を二重に足して1文字右に出す (1:8)。jafixはリンクの中の最初の `が` の位置に出す"
+text = "[雨は降ったが、風が強いが、行く](https://example.com)。"
+findings = ["1:7"]
+
+[[cases]]
+name = "ga-multiline"
+note = "textlintは複数行の段落で文書の末尾に出す (5:1)。jafixは最初の `が` の位置に出す"
+text = "# h\n雨は降ったが、風が強いが、\n行く。\nう。"
+findings = ["2:6"]
+
+[[cases]]
+name = "ga-code"
+note = "textlintは記法を含む原文を解析してインラインコードの中の `が` を数える。jafixはインラインコードを `ー` にした文字列を解析するので指摘しない"
+text = "`雨は降ったが、風が強いが、行く`。"
+findings = []
+
+[[cases]]
+name = "ga-surrogate"
+note = "textlintは前にある絵文字の分だけ1文字左に出す (1:5)。jafixは最初の `が` の位置に出す"
+text = "\U0001f600は降ったが、風が強いが、行く。"
+findings = ["1:6"]

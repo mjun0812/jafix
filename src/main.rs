@@ -1,6 +1,7 @@
 mod apply;
 mod config;
 mod hook;
+mod morph;
 mod prose;
 mod rules;
 mod sentence;

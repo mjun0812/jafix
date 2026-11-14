@@ -1,0 +1,270 @@
+# ja-no-abusage の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+[[cases]]
+name = "abusage-string"
+text = "値を返却する。"
+findings = ["1:1"]
+messages = ["誤用の可能性がある: 「値を返却する」は「値を返す」と書く"]
+
+[[cases]]
+name = "abusage-capture-method"
+text = "メソッドの返却値を見る。"
+findings = ["1:1"]
+messages = ["誤用の可能性がある: 「メソッドの返却値」は「メソッドの返り値」と書く"]
+
+[[cases]]
+name = "abusage-capture-function"
+text = "関数の返却値を見る。"
+findings = ["1:1"]
+messages = ["誤用の可能性がある: 「関数の返却値」は「関数の返り値」と書く"]
+
+[[cases]]
+name = "abusage-hosoku"
+text = "例外を補足する。"
+findings = ["1:1"]
+
+[[cases]]
+name = "abusage-konnichiwa"
+text = "こんにちわ。"
+findings = ["1:1"]
+
+[[cases]]
+name = "abusage-aiso"
+text = "愛想をふりまく。"
+findings = ["1:1"]
+messages = ["誤用の可能性がある: 「愛想をふりまく」は「愛嬌をふりまく」と書く"]
+
+[[cases]]
+name = "abusage-kashigeru"
+text = "頭をかしげる。"
+findings = ["1:1"]
+
+[[cases]]
+name = "abusage-hibuta"
+text = "火蓋を切って落とす。"
+findings = ["1:1"]
+messages = ["誤用の可能性がある: 「火蓋を切って落とす」は「火蓋を切る」と書く"]
+
+[[cases]]
+name = "abusage-shima"
+text = "とりつくひまもない。"
+findings = ["1:1"]
+messages = ["誤用の可能性がある: 「とりつくひまもない」は「とりつく島もない」と書く"]
+
+[[cases]]
+name = "abusage-partial"
+text = "目にも止まらない。"
+findings = ["1:1"]
+messages = ["誤用の可能性がある: 「目にも止まら」は「目にも留まら」と書く"]
+
+[[cases]]
+name = "abusage-two-groups"
+text = "耳障りのよい音。"
+findings = ["1:1"]
+messages = ["誤用の可能性がある: 「耳障りのよい」は「耳当たりのよい」と書く"]
+
+[[cases]]
+name = "abusage-optional-group"
+text = "耳障りよい音。"
+findings = ["1:1"]
+messages = ["誤用の可能性がある: 「耳障りよい」は「耳当たりよい」と書く"]
+
+[[cases]]
+name = "abusage-seikon"
+text = "精魂尽きる。"
+findings = ["1:1"]
+messages = ["誤用の可能性がある: 「精魂尽き」は「精根尽き」と書く"]
+
+[[cases]]
+name = "abusage-class"
+text = "案の上だった。"
+findings = ["1:1"]
+
+[[cases]]
+name = "abusage-yojijukugo"
+text = "絶対絶命の危機。"
+findings = ["1:1"]
+
+[[cases]]
+name = "abusage-kanpatsu-miss"
+text = "間髪入れず答える。"
+findings = []
+
+[[cases]]
+name = "abusage-overlap"
+text = "メソッドの返却値を返却する。"
+findings = ["1:1"]
+
+[[cases]]
+name = "abusage-overlap-head"
+text = "口先三寸暇を惜しまず。"
+findings = ["1:1"]
+
+[[cases]]
+name = "abusage-two"
+text = "例外を補足して器管を見る。"
+findings = ["1:1", "1:8"]
+
+[[cases]]
+name = "abusage-tekiou"
+text = "法律を適応する。"
+findings = ["1:3"]
+messages = ["誤用の可能性がある: 「適応」は「適用」と書く"]
+
+[[cases]]
+name = "abusage-tekiou-no-wo"
+text = "環境に適応する。"
+findings = []
+
+[[cases]]
+name = "abusage-kahen"
+text = "長さを可変する。"
+findings = ["1:4"]
+messages = ["「可変する」という使い方は適切でない"]
+
+[[cases]]
+name = "abusage-kahen-adj"
+text = "長さを可変して使う。"
+findings = []
+
+[[cases]]
+name = "abusage-zurai-zu"
+text = "書きずらい。"
+findings = ["1:1"]
+messages = ["誤用の可能性がある: 「書きずらい」は「書きづらい」と書く"]
+
+[[cases]]
+name = "abusage-zurai-zura"
+text = "読みずらい。"
+findings = ["1:1"]
+messages = ["誤用の可能性がある: 「読みずらい」は「読みづらい」と書く"]
+
+[[cases]]
+name = "abusage-zurai-tsukai"
+text = "使いずらい。"
+findings = ["1:1"]
+messages = ["誤用の可能性がある: 「使いずらい」は「使いづらい」と書く"]
+
+[[cases]]
+name = "abusage-zurai-mizenkei"
+text = "見ずらい。"
+findings = []
+
+[[cases]]
+name = "abusage-zurai-correct"
+text = "書きづらい。"
+findings = []
+
+[[cases]]
+name = "abusage-mixed"
+text = "値を返却する。法律を適応する。書きずらい。"
+findings = ["1:1", "1:10", "1:16"]
+
+[[cases]]
+name = "abusage-heading"
+text = "# 値を返却する。法律を適応する。"
+findings = ["1:3", "1:12"]
+
+[[cases]]
+name = "abusage-list"
+text = "- 値を返却する。法律を適応する。"
+findings = ["1:3", "1:12"]
+
+[[cases]]
+name = "abusage-table"
+text = "| a |\n| - |\n| 値を返却する。法律を適応する。 |"
+findings = ["3:3", "3:12"]
+
+[[cases]]
+name = "abusage-strong"
+text = "**値を返却する。法律を適応する。**"
+findings = ["1:3", "1:12"]
+
+[[cases]]
+name = "abusage-delete"
+text = "~~値を返却する。法律を適応する。~~"
+findings = ["1:3", "1:12"]
+
+[[cases]]
+name = "abusage-reference-full"
+text = "[値を返却する。法律を適応する。][r]\n\n[r]: https://example.com"
+findings = ["1:2", "1:11"]
+
+[[cases]]
+name = "abusage-footnote"
+text = "本文[^1]。\n\n[^1]: 値を返却する。法律を適応する。"
+findings = ["3:7", "3:16"]
+
+[[cases]]
+name = "abusage-multiline"
+text = "あ。\n値を返却する。法律を適応する。"
+findings = ["2:1", "2:10"]
+
+[[cases]]
+name = "abusage-quote"
+text = "> 値を返却する。法律を適応する。"
+findings = ["1:12"]
+
+[[cases]]
+name = "abusage-emphasis"
+text = "*値を返却する。法律を適応する。*"
+findings = ["1:11"]
+
+[[cases]]
+name = "abusage-link"
+text = "[値を返却する。法律を適応する。](https://example.com)"
+findings = ["1:11"]
+
+[[cases]]
+name = "abusage-code"
+text = "`値を返却する。法律を適応する。`"
+findings = []
+
+[[cases]]
+name = "abusage-across-strong"
+text = "値を**返却**する。"
+findings = []
+
+[[cases]]
+name = "abusage-surrogate-string"
+text = "\U00020bb7値を返却する。"
+findings = ["1:2"]
+
+[[cases]]
+name = "abusage-surrogate-token"
+note = "textlintは前のサロゲートペアの文字の分だけ1文字前の「律」を指すが、jafixは「を」を指す"
+text = "\U00020bb7法律を適応する。"
+findings = ["1:4"]
+
+[[cases]]
+name = "abusage-surrogate-run"
+note = "textlintは続くサロゲートペアの文字の後ろの「書き」を読み飛ばして指摘しないが、linderaは「書き」「ず」「らい」を残すので当たる"
+text = "\U00020bb7\U00020bb7書きずらい。"
+findings = ["1:3"]
+messages = ["誤用の可能性がある: 「書きずらい」は「書きづらい」と書く"]
+
+[[cases]]
+name = "abusage-across-code"
+note = "textlintは照合の状態をStrをまたいで持ち越して指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "法律を`x`適応する。"
+findings = []
+
+[[cases]]
+name = "abusage-restart"
+note = "textlintは一致の途中で外れた2つ目の「を」を開始位置として試さないが、jafixはすべての位置から試すので「を適応」が一致する"
+text = "法律をを適応する。"
+findings = ["1:4"]
+
+[[cases]]
+name = "abusage-prh-disable"
+note = "textlintはprh:disableのコメントで文字列の一致を無効にするが、jafixはprh:disableを扱わない"
+text = "値を返却する。 prh:disable"
+findings = ["1:1"]

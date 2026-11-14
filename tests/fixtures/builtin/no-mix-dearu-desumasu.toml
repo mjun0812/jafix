@@ -1,0 +1,199 @@
+# no-mix-dearu-desumasu の例。期待値は、textlint 15.8.0 と textlint-rule-preset-ja-technical-writing 12.0.2 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# name:     caseの名前
+# builtin:  設定ファイルの [builtin] の表に書く内容 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+[[cases]]
+name = "dearu-body-mixed"
+text = "これは本です。\n\nこれは本である。"
+findings = ["3:5"]
+messages = ["本文に「である」調が混ざっている"]
+
+[[cases]]
+name = "dearu-body-only-dearu"
+text = "これは本である。これは本である。"
+findings = ["1:5", "1:13"]
+
+[[cases]]
+name = "dearu-body-only-desu"
+text = "これは本です。私は行きます。"
+findings = []
+
+[[cases]]
+name = "dearu-body-auto-majority"
+builtin = 'no-mix-dearu-desumasu = { preferInHeader = "", preferInBody = "", preferInList = "", strict = false }'
+text = "これは本である。これは本である。これは本です。"
+findings = ["1:21"]
+messages = ["本文に「ですます」調が混ざっている"]
+
+[[cases]]
+name = "dearu-body-auto-tie"
+builtin = 'no-mix-dearu-desumasu = { preferInHeader = "", preferInBody = "", preferInList = "", strict = false }'
+text = "これは本です。これは本である。"
+findings = ["1:12"]
+
+[[cases]]
+name = "dearu-body-auto-one-side"
+builtin = 'no-mix-dearu-desumasu = { preferInHeader = "", preferInBody = "", preferInList = "", strict = false }'
+text = "これは本である。\n\nこれは本である。"
+findings = []
+
+[[cases]]
+name = "dearu-body-prefer-dearu"
+builtin = 'no-mix-dearu-desumasu = { preferInHeader = "", preferInBody = "である", preferInList = "である", strict = false }'
+text = "これは本です。これは本である。"
+findings = ["1:5"]
+
+[[cases]]
+name = "dearu-body-multiline"
+text = "これは本です。\nこれは本である。"
+findings = ["2:5"]
+
+[[cases]]
+name = "dearu-list"
+text = "- これは本です。\n- これは本である。"
+findings = ["1:7"]
+messages = ["箇条書きに「ですます」調が混ざっている"]
+
+[[cases]]
+name = "dearu-list-masu"
+text = "- 私は行きます。"
+findings = ["1:7"]
+
+[[cases]]
+name = "dearu-list-prefer-desumasu"
+builtin = 'no-mix-dearu-desumasu = { preferInHeader = "", preferInBody = "ですます", preferInList = "ですます", strict = false }'
+text = "- これは本である。"
+findings = ["1:7"]
+messages = ["箇条書きに「である」調が混ざっている"]
+
+[[cases]]
+name = "dearu-heading-auto"
+text = "# これは本です\n\n## これは本です\n\n### これは本である"
+findings = ["5:9"]
+messages = ["見出しに「である」調が混ざっている"]
+
+[[cases]]
+name = "dearu-heading-tie"
+text = "# これは本です\n\n## これは本である"
+findings = ["3:8"]
+
+[[cases]]
+name = "dearu-heading-one"
+text = "# これは本です"
+findings = []
+
+[[cases]]
+name = "dearu-heading-prefer-dearu"
+builtin = 'no-mix-dearu-desumasu = { preferInHeader = "である", preferInBody = "ですます", preferInList = "である", strict = false }'
+text = "# これは本です"
+findings = ["1:7"]
+messages = ["見出しに「ですます」調が混ざっている"]
+
+[[cases]]
+name = "dearu-kinds"
+text = "# 見出しです\n\nこれは本である。\n\n- 項目です"
+findings = ["3:5", "5:5"]
+
+[[cases]]
+name = "dearu-not-end"
+builtin = 'no-mix-dearu-desumasu = { preferInHeader = "", preferInBody = "", preferInList = "", strict = false }'
+text = "これは本であるが、そうでもない。これは本です。"
+findings = []
+
+[[cases]]
+name = "dearu-not-end-strict"
+builtin = 'no-mix-dearu-desumasu = { preferInHeader = "", preferInBody = "", preferInList = "", strict = true }'
+text = "これは本であるが、そうでもない。これは本です。"
+findings = ["1:5"]
+
+[[cases]]
+name = "dearu-desu-before-noun"
+text = "- これは本です\n  次の行"
+findings = []
+
+[[cases]]
+name = "dearu-desu-end"
+text = "- これは本です"
+findings = ["1:7"]
+
+[[cases]]
+name = "dearu-past"
+builtin = 'no-mix-dearu-desumasu = { preferInHeader = "", preferInBody = "", preferInList = "", strict = false }'
+text = "これは本でした。これは本である。"
+findings = []
+
+[[cases]]
+name = "dearu-exclamation"
+text = "これは本です！これは本である。"
+findings = ["1:12"]
+
+[[cases]]
+name = "dearu-link-counted"
+builtin = 'no-mix-dearu-desumasu = { preferInHeader = "", preferInBody = "", preferInList = "", strict = false }'
+text = "[これは本である。](https://example.com)\n\n[これは本である。](https://example.com)\n\nこれは本です。"
+findings = ["5:5"]
+
+[[cases]]
+name = "dearu-link-not-reported"
+text = "[これは本である。](https://example.com)"
+findings = []
+
+[[cases]]
+name = "dearu-footnote"
+text = "本文です[^1]。\n\n[^1]: これは本である。"
+findings = ["3:11"]
+
+[[cases]]
+name = "dearu-quote"
+text = "> これは本である。"
+findings = []
+
+[[cases]]
+name = "dearu-table"
+text = "| これは本である。 |\n| --- |"
+findings = []
+
+[[cases]]
+name = "dearu-quote-list"
+note = "textlintは引用の中のリスト項目を数えて指摘する (1:9)。jafixは引用の中を数えない"
+text = "> - これは本です。"
+findings = []
+
+[[cases]]
+name = "dearu-quote-heading"
+note = "textlintは引用の中の見出しを数えて指摘する (3:10)。jafixは引用の中を数えない"
+text = "> # これは本です\n>\n> ## これは本である"
+findings = []
+
+[[cases]]
+name = "dearu-nested-list"
+note = "textlintは入れ子の項目を親と子で二重に数え、2対2の同数で「である」を指摘する (3:7と4:7)。jafixは1対2と数えて少ない「です」に出す"
+builtin = 'no-mix-dearu-desumasu = { preferInHeader = "", preferInBody = "", preferInList = "", strict = false }'
+text = "- 親\n  - これは本です。\n- これは本である。\n- これは本である。"
+findings = ["2:9"]
+
+[[cases]]
+name = "dearu-list-code-block"
+note = "textlintは項目の中のコードブロックの「です」も数え、同数で「である」を指摘する (6:7)。jafixはコードブロックを数えず、「である」だけなので指摘しない"
+builtin = 'no-mix-dearu-desumasu = { preferInHeader = "", preferInBody = "", preferInList = "", strict = false }'
+text = "- あ\n\n  ```\n  これは本です。\n  ```\n- これは本である。"
+findings = []
+
+[[cases]]
+name = "dearu-link-markup"
+note = "textlintは記法を含む原文を解析し、`です` の後ろの `](` が名詞の切れ目になって数えない。jafixはリンクの文字列 `これは本です。` で数え、1対1の同数で「である」に出す"
+builtin = 'no-mix-dearu-desumasu = { preferInHeader = "", preferInBody = "", preferInList = "", strict = false }'
+text = "- [これは本です](https://example.com)。\n- これは本である。"
+findings = ["2:7"]
+
+[[cases]]
+name = "dearu-surrogate"
+note = "textlintは前にある絵文字の分だけ1文字左に出す (3:3)。jafixは「である」の `で` の位置に出す"
+text = "これは本です。\n\n\U0001f600は本である。"
+findings = ["3:4"]
