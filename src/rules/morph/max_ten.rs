@@ -12,16 +12,17 @@ pub(super) fn report(sentence: &Analyzed, rule: &MaxTen) -> Vec<Report<'static>>
     for (i, token) in tokens.iter().enumerate() {
         if token.surface == rule.touten && (rule.strict || !between_nouns(tokens, i)) {
             count += 1;
-            if count > rule.max {
-                reports.push(sentence.report(
-                    token,
-                    RuleId::MaxTen,
-                    format!("1文の「{}」が{}個を超えている", rule.touten, rule.max),
-                ));
-                count = 0;
-            }
         }
         if ["?", "!", "？", "！"].contains(&token.surface) || token.surface == rule.kuten {
+            count = 0;
+        }
+        // 数が増えるのは読点のトークンだけなので、上限を超えたときの `token` は最後に数えた読点である
+        if count > rule.max {
+            reports.push(sentence.report(
+                token,
+                RuleId::MaxTen,
+                format!("1文の「{}」が{}個を超えている", rule.touten, rule.max),
+            ));
             count = 0;
         }
     }

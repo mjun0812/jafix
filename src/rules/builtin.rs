@@ -667,7 +667,6 @@ fn prefer(key: &str, value: &Value) -> Result<Option<Style>, String> {
 }
 
 #[derive(Debug)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct JaNoSuccessiveWord {
     /// カタカナの語の繰り返しを指摘しない
     pub allow_onomatopee: bool,
@@ -685,8 +684,15 @@ impl Default for JaNoSuccessiveWord {
 
 impl JaNoSuccessiveWord {
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "allowOnomatopee" => rule.allow_onomatopee = boolean(key, value)?,
+                "allow" => rule.allow = patterns(key, value)?,
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
     }
 }
 

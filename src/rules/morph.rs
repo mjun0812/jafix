@@ -1,13 +1,16 @@
 //! 形態素解析を使う11ルール
 
-// skeleton: not implemented (本文の範囲ごとの5ルールが辞書を使うようになったら、この行と次の行を消す)
-#[allow(dead_code)]
 mod dict;
+mod ja_no_abusage;
 mod ja_no_redundant_expression;
+mod ja_no_successive_word;
+mod ja_no_weak_phrase;
 mod max_ten;
+mod no_double_negative_ja;
 mod no_doubled_conjunction;
 mod no_doubled_conjunctive_particle_ga;
 mod no_doubled_joshi;
+mod no_dropping_the_ra;
 mod no_mix_dearu_desumasu;
 mod pattern;
 mod projection;
@@ -16,7 +19,7 @@ use std::borrow::Cow;
 use std::ops::Range;
 
 use crate::morph::{self, Token};
-use crate::prose::{Document, Inline, InlineKind};
+use crate::prose::{Context, Document, Inline, InlineKind};
 use crate::sentence::{self, Sentence};
 
 use self::no_mix_dearu_desumasu::{Kind, Styles};
@@ -112,8 +115,65 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report<'
         }
         reports.extend(styles.reports(rule));
     }
-    // skeleton: not implemented (本文の範囲ごとの5ルール)
+    let prose_rules = builtin.no_double_negative_ja
+        || builtin.no_dropping_the_ra
+        || builtin.ja_no_weak_phrase
+        || builtin.ja_no_successive_word.is_some()
+        || builtin.ja_no_abusage;
+    if !prose_rules {
+        return reports;
+    }
+    for prose in &document.texts {
+        let text = &src[prose.range.clone()];
+        let tokens = morph::tokenize(text);
+        let analyzed = AnalyzedProse {
+            start: prose.range.start,
+            context: prose.context,
+            text,
+            tokens: &tokens,
+        };
+        if builtin.no_double_negative_ja {
+            reports.extend(no_double_negative_ja::report(&analyzed));
+        }
+        if builtin.no_dropping_the_ra {
+            reports.extend(no_dropping_the_ra::report(&analyzed));
+        }
+        if builtin.ja_no_weak_phrase {
+            reports.extend(ja_no_weak_phrase::report(&analyzed));
+        }
+        if let Some(rule) = &builtin.ja_no_successive_word {
+            reports.extend(ja_no_successive_word::report(&analyzed, rule));
+        }
+        if builtin.ja_no_abusage {
+            reports.extend(ja_no_abusage::report(&analyzed));
+        }
+    }
     reports
+}
+
+/// トークンに分けた本文の範囲。トークンの位置は `text` の中のバイト位置である
+struct AnalyzedProse<'a> {
+    /// `text` の、元のソースでの開始位置
+    start: usize,
+    context: Context,
+    text: &'a str,
+    tokens: &'a [Token<'a>],
+}
+
+impl AnalyzedProse<'_> {
+    /// `range` (`text` の中のバイト範囲) への指摘
+    fn report(&self, range: Range<usize>, rule: RuleId, message: String) -> Report<'static> {
+        Report {
+            range: self.start + range.start..self.start + range.end,
+            rule: rule.name(),
+            message: Cow::Owned(message),
+        }
+    }
+
+    /// textlintの `no-dropping-the-ra` と `ja-no-abusage` の文字列の辞書は、祖先に引用・強調・リンクがある文字列を見ない
+    fn in_quote_emphasis_or_link(&self) -> bool {
+        self.context.blockquote || self.context.emphasis || self.context.link
+    }
 }
 
 /// トークンに分けた文

@@ -627,6 +627,10 @@ fn check_exits_2_on_an_invalid_option_of_a_morphological_builtin_rule() {
             "no-doubled-conjunctive-particle-ga = { separatorChars = [\"。\"] }",
             ["no-doubled-conjunctive-particle-ga", "separatorChars"],
         ),
+        (
+            "ja-no-successive-word = { allow = [\"\"] }",
+            ["ja-no-successive-word", "allow"],
+        ),
     ] {
         assert_check_rejects_builtin(builtin, &expected);
     }
@@ -638,4 +642,99 @@ fn check_exits_2_on_a_rule_named_after_a_morphological_builtin_rule() {
         "[[rules]]\nid = \"max-ten\"\nmessage = \"m\"\nwords = [\"a\"]\n",
         "max-ten",
     );
+}
+
+const MORPHOLOGICAL_RULES: [&str; 11] = [
+    "max-ten",
+    "no-doubled-joshi",
+    "no-doubled-conjunctive-particle-ga",
+    "no-doubled-conjunction",
+    "no-mix-dearu-desumasu",
+    "no-double-negative-ja",
+    "no-dropping-the-ra",
+    "ja-no-weak-phrase",
+    "ja-no-successive-word",
+    "ja-no-abusage",
+    "ja-no-redundant-expression",
+];
+
+/// 形態素解析を使う11ルールのそれぞれに当たり、ほかの組み込みのルールには当たらない文書。
+/// 段落を分けて、ルールどうしの指摘が重ならないようにしている
+const MORPHOLOGICAL_RULES_INPUT: &str = "走って、食べて、寝て、起きて、歩く。
+
+私は本は読む。
+
+雨は降ったが、風が強いが、行く。
+
+雨だ。しかし、行く。しかし、帰る。
+
+これは本である。
+
+知らないこともない。
+
+食べれる。
+
+問題があるかもしれない。
+
+これはは問題です。
+
+法律を適応する。
+
+解析することができます。
+";
+
+#[test]
+fn check_reports_each_morphological_builtin_rule_by_default() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", MORPHOLOGICAL_RULES_INPUT);
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(1));
+    let stdout = stdout(&output);
+    for rule in MORPHOLOGICAL_RULES {
+        let suffix = format!("[{rule}]");
+        assert!(
+            stdout.lines().any(|line| line.ends_with(&suffix)),
+            "{rule}: {stdout}"
+        );
+    }
+}
+
+#[test]
+fn check_reports_nothing_when_every_morphological_builtin_rule_is_disabled() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", MORPHOLOGICAL_RULES_INPUT);
+    let disabled: String = MORPHOLOGICAL_RULES
+        .iter()
+        .map(|rule| format!("{rule} = false\n"))
+        .collect();
+    sandbox.write_xdg_config(&format!("[builtin]\n{disabled}"));
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stdout(&output), "");
+}
+
+#[test]
+fn fix_does_not_change_text_that_only_morphological_builtin_rules_report() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write("t.md", MORPHOLOGICAL_RULES_INPUT);
+    assert_eq!(sandbox.run(&["fix", "t.md"]).status.code(), Some(0));
+    assert_eq!(read(&path), MORPHOLOGICAL_RULES_INPUT);
+}
+
+#[test]
+fn max_ten_resets_the_count_at_the_kuten_before_comparing_it_with_max() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "あ、い。\n");
+    sandbox.write_xdg_config("[builtin]\nmax-ten = { max = 0 }\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(
+        stdout(&output),
+        "t.md:1:2: 1文の「、」が0個を超えている [max-ten]\n"
+    );
+
+    // 読点と句点が同じ文字なら、数えた直後に0に戻るので、上限の0を超えない
+    sandbox.write_xdg_config("[builtin]\nmax-ten = { max = 0, touten = \"。\" }\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stdout(&output), "");
 }

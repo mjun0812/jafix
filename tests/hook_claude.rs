@@ -274,7 +274,7 @@ fn write_long_sentence_file(sandbox: &Sandbox, third_line_prefix: &str) -> std::
         "t.md",
         &format!(
             "短い文です。\n\n{third_line_prefix}{}。\n",
-            "あ".repeat(100)
+            "あいうえ".repeat(25)
         ),
     )
 }
@@ -328,7 +328,7 @@ fn edit_of_a_report_excluded_file_fixes_but_does_not_report_builtin_rules() {
     assert_eq!(stderr(&output), "");
     assert_eq!(
         read(&path),
-        format!("短い文です。\n\nハンカクと{}。\n", "あ".repeat(100))
+        format!("短い文です。\n\nハンカクと{}。\n", "あいうえ".repeat(25))
     );
 }
 

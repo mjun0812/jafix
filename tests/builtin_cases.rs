@@ -163,3 +163,28 @@ fn no_mix_dearu_desumasu() {
 fn ja_no_redundant_expression() {
     assert_cases("ja-no-redundant-expression");
 }
+
+#[test]
+fn no_double_negative_ja() {
+    assert_cases("no-double-negative-ja");
+}
+
+#[test]
+fn no_dropping_the_ra() {
+    assert_cases("no-dropping-the-ra");
+}
+
+#[test]
+fn ja_no_weak_phrase() {
+    assert_cases("ja-no-weak-phrase");
+}
+
+#[test]
+fn ja_no_successive_word() {
+    assert_cases("ja-no-successive-word");
+}
+
+#[test]
+fn ja_no_abusage() {
+    assert_cases("ja-no-abusage");
+}
