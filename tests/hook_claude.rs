@@ -331,3 +331,58 @@ fn edit_of_a_report_excluded_file_fixes_but_does_not_report_builtin_rules() {
         format!("短い文です。\n\nハンカクと{}。\n", "あ".repeat(100))
     );
 }
+
+#[test]
+fn edit_reports_a_doubled_particle_only_on_the_changed_line() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write("t.md", "私は本は読む。\n\n彼は本は読む。\n");
+    let output = sandbox.hook("claude", &edit_changing_line(&path, 3));
+    assert_eq!(output.status.code(), Some(2));
+    let lines: Vec<&str> = stderr(&output).lines().collect();
+    assert_eq!(
+        lines[1..],
+        [format!(
+            "{}:3:4: 同じ助詞「は」が続いている [no-doubled-joshi]",
+            path.display()
+        )],
+        "{lines:?}"
+    );
+}
+
+/// 1行目と3行目が「ですます」、5行目が「である」の文のファイル。本文で多いほうの文体を優先する設定で使う
+fn write_mixed_style_file(sandbox: &Sandbox) -> std::path::PathBuf {
+    sandbox.write_xdg_config("[builtin]\nno-mix-dearu-desumasu = { preferInBody = \"\" }\n");
+    sandbox.write(
+        "t.md",
+        "これは本です。\n\nそれも本です。\n\nあれは本である。\n",
+    )
+}
+
+#[test]
+fn edit_reports_a_mixed_style_counted_over_the_whole_file_on_the_changed_line() {
+    let sandbox = Sandbox::new();
+    let path = write_mixed_style_file(&sandbox);
+    let output = sandbox.hook("claude", &edit_changing_line(&path, 5));
+    assert_eq!(output.status.code(), Some(2));
+    let lines: Vec<&str> = stderr(&output).lines().collect();
+    assert_eq!(
+        lines.get(1).copied(),
+        Some(
+            format!(
+                "{}:5:5: 本文に「である」調が混ざっている [no-mix-dearu-desumasu]",
+                path.display()
+            )
+            .as_str()
+        ),
+        "{lines:?}"
+    );
+}
+
+#[test]
+fn edit_does_not_report_a_mixed_style_outside_the_changed_line() {
+    let sandbox = Sandbox::new();
+    let path = write_mixed_style_file(&sandbox);
+    let output = sandbox.hook("claude", &edit_changing_line(&path, 1));
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stderr(&output), "");
+}

@@ -205,6 +205,20 @@ fn strings<'v>(key: &str, value: &'v Value) -> Result<Vec<&'v str>, String> {
         .ok_or_else(|| format!("`{key}` は文字列の配列で書く"))
 }
 
+fn non_empty_string<'v>(key: &str, value: &'v Value) -> Result<&'v str, String> {
+    Some(string(key, value)?)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| format!("`{key}` は空でない文字列で書く"))
+}
+
+fn non_empty_strings(key: &str, value: &Value) -> Result<Vec<String>, String> {
+    let values = strings(key, value)?;
+    if values.iter().any(|value| value.is_empty()) {
+        return Err(format!("`{key}` の要素は空でない文字列で書く"));
+    }
+    Ok(values.into_iter().map(str::to_owned).collect())
+}
+
 fn patterns(key: &str, value: &Value) -> Result<Vec<Regex>, String> {
     strings(key, value)?
         .into_iter()
@@ -520,7 +534,6 @@ impl JaUnnaturalAlphabet {
 }
 
 #[derive(Debug)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct MaxTen {
     pub max: usize,
     /// 名詞に挟まれた読点も数える
@@ -542,13 +555,21 @@ impl Default for MaxTen {
 
 impl MaxTen {
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "max" => rule.max = integer(key, value, 0)?,
+                "strict" => rule.strict = boolean(key, value)?,
+                "touten" => rule.touten = non_empty_string(key, value)?.to_owned(),
+                "kuten" => rule.kuten = non_empty_string(key, value)?.to_owned(),
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
     }
 }
 
 #[derive(Debug)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct NoDoubledJoshi {
     /// 同じ助詞の間にある、数えるトークンの数がこれ以下なら指摘する
     pub min_interval: usize,
@@ -575,14 +596,23 @@ impl Default for NoDoubledJoshi {
 
 impl NoDoubledJoshi {
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "min_interval" => rule.min_interval = integer(key, value, 1)?,
+                "strict" => rule.strict = boolean(key, value)?,
+                "allow" => rule.allow = non_empty_strings(key, value)?,
+                "separatorCharacters" => rule.separator_characters = non_empty_strings(key, value)?,
+                "commaCharacters" => rule.comma_characters = non_empty_strings(key, value)?,
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
     }
 }
 
 /// 文体
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[allow(dead_code)] // skeleton: not implemented
 pub enum Style {
     Dearu,
     Desumasu,
@@ -590,7 +620,6 @@ pub enum Style {
 
 /// `prefer_*` は、その種類で優先する文体。`None` は、多いほうを優先する
 #[derive(Debug)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct NoMixDearuDesumasu {
     pub prefer_in_header: Option<Style>,
     pub prefer_in_body: Option<Style>,
@@ -612,8 +641,28 @@ impl Default for NoMixDearuDesumasu {
 
 impl NoMixDearuDesumasu {
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "preferInHeader" => rule.prefer_in_header = prefer(key, value)?,
+                "preferInBody" => rule.prefer_in_body = prefer(key, value)?,
+                "preferInList" => rule.prefer_in_list = prefer(key, value)?,
+                "strict" => rule.strict = boolean(key, value)?,
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
+    }
+}
+
+fn prefer(key: &str, value: &Value) -> Result<Option<Style>, String> {
+    match string(key, value)? {
+        "" => Ok(None),
+        "ですます" => Ok(Some(Style::Desumasu)),
+        "である" => Ok(Some(Style::Dearu)),
+        _ => Err(format!(
+            "`{key}` は \"\"・\"ですます\"・\"である\" のどれかで書く"
+        )),
     }
 }
 
@@ -643,7 +692,6 @@ impl JaNoSuccessiveWord {
 
 /// `allowNodeTypes` に書ける要素の型。名前はtextlintのnodeの型と同じである
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[allow(dead_code)] // skeleton: not implemented
 pub enum NodeType {
     BlockQuote,
     ListItem,
@@ -661,7 +709,6 @@ pub enum NodeType {
 
 /// 辞書の1項目への設定
 #[derive(Debug, Default)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct DictOption {
     pub disabled: bool,
     /// 一致したトークンの表層をつなげた文字列に当たれば、指摘しない。`None` は辞書の既定値
@@ -669,7 +716,6 @@ pub struct DictOption {
 }
 
 #[derive(Debug)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct JaNoRedundantExpression {
     pub allow_node_types: Vec<NodeType>,
     /// `dict1` から `dict6` の順
@@ -692,8 +738,67 @@ impl Default for JaNoRedundantExpression {
 
 impl JaNoRedundantExpression {
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "allowNodeTypes" => {
+                    rule.allow_node_types = strings(key, value)?
+                        .into_iter()
+                        .map(|name| {
+                            node_type(name)
+                                .ok_or_else(|| format!("`{key}` の `{name}` は使えない型"))
+                        })
+                        .collect::<Result<_, _>>()?;
+                }
+                "dictOptions" => {
+                    let dicts = value
+                        .as_table()
+                        .ok_or_else(|| format!("`{key}` は表で書く"))?;
+                    for (id, option) in dicts {
+                        let dict = id
+                            .strip_prefix("dict")
+                            .and_then(|n| n.parse::<usize>().ok())
+                            .and_then(|n| rule.dicts.get_mut(n.checked_sub(1)?))
+                            .ok_or_else(|| format!("`{key}` の `{id}` は辞書の項目ではない (`dict1`〜`dict6` を使える)"))?;
+                        *dict = DictOption::from_options(option)
+                            .map_err(|reason| format!("`{key}` の `{id}`: {reason}"))?;
+                    }
+                }
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
+    }
+}
+
+fn node_type(name: &str) -> Option<NodeType> {
+    Some(match name {
+        "BlockQuote" => NodeType::BlockQuote,
+        "ListItem" => NodeType::ListItem,
+        "Link" => NodeType::Link,
+        "LinkReference" => NodeType::LinkReference,
+        "Image" => NodeType::Image,
+        "Emphasis" => NodeType::Emphasis,
+        "Strong" => NodeType::Strong,
+        "Delete" => NodeType::Delete,
+        "Code" => NodeType::Code,
+        "ReferenceDef" => NodeType::ReferenceDef,
+        _ => return None,
+    })
+}
+
+impl DictOption {
+    fn from_options(options: &Value) -> Result<Self, String> {
+        let options = options.as_table().ok_or("値は表で書く")?;
+        let mut option = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "disabled" => option.disabled = boolean(key, value)?,
+                "allows" => option.allows = Some(patterns(key, value)?),
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(option)
     }
 }
 

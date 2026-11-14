@@ -260,3 +260,20 @@ fn apply_patch_reports_a_builtin_report_rule_on_the_plus_line() {
         "{stderr}"
     );
 }
+
+#[test]
+fn apply_patch_reports_a_doubled_particle_only_on_the_added_line() {
+    let (_, output) = run_update(
+        "私は本は読む。\n\n彼は本は読む。\n",
+        "@@\n 私は本は読む。\n \n+彼は本は読む。\n",
+    );
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(
+        stderr
+            .lines()
+            .any(|line| line.ends_with(":3:4: 同じ助詞「は」が続いている [no-doubled-joshi]")),
+        "{stderr}"
+    );
+    assert!(!stderr.contains(":1:4:"), "{stderr}");
+}

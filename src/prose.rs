@@ -98,13 +98,12 @@ pub fn parse(src: &str) -> Document {
     let root = markdown::to_mdast(src, &options).expect("MDXを有効にしない解析は失敗しない");
     let mut texts = Vec::new();
     collect(&root, src, Context::default(), &mut texts);
-    let mut paragraphs = Vec::new();
-    collect_paragraphs(&root, src, false, false, false, &mut paragraphs);
+    let mut blocks = Blocks::default();
+    collect_paragraphs(&root, src, false, false, false, &mut blocks);
     Document {
         texts,
-        paragraphs,
-        // skeleton: not implemented
-        headings: Vec::new(),
+        paragraphs: blocks.paragraphs,
+        headings: blocks.headings,
     }
 }
 
@@ -150,39 +149,50 @@ fn collect(node: &Node, src: &str, context: Context, ranges: &mut Vec<Prose>) {
     }
 }
 
-/// `node` の中の段落を集める。3つのflagは、`node` の祖先に引用・リスト項目・脚注の定義があるかである
+#[derive(Default)]
+struct Blocks {
+    paragraphs: Vec<Paragraph>,
+    headings: Vec<Paragraph>,
+}
+
+/// `node` の中の段落と見出しを集める。3つのflagは、`node` の祖先に引用・リスト項目・脚注の定義があるかである
 fn collect_paragraphs(
     node: &Node,
     src: &str,
     blockquote: bool,
     list_item: bool,
     footnote: bool,
-    paragraphs: &mut Vec<Paragraph>,
+    blocks: &mut Blocks,
 ) {
-    if let Node::Paragraph(paragraph) = node {
-        paragraphs.push(Paragraph {
-            range: node_range(node),
-            blockquote,
-            list_item,
-            footnote,
-            children: paragraph
-                .children
-                .iter()
-                .filter_map(|child| inline(child, src, true))
-                .collect(),
-        });
-        return;
-    }
-    for child in node.children().into_iter().flatten() {
-        collect_paragraphs(
-            child,
-            src,
-            blockquote || matches!(node, Node::Blockquote(_)),
-            list_item || matches!(node, Node::ListItem(_)),
-            footnote || matches!(node, Node::FootnoteDefinition(_)),
-            paragraphs,
-        );
-    }
+    let target = match node {
+        Node::Paragraph(_) => &mut blocks.paragraphs,
+        Node::Heading(_) => &mut blocks.headings,
+        _ => {
+            for child in node.children().into_iter().flatten() {
+                collect_paragraphs(
+                    child,
+                    src,
+                    blockquote || matches!(node, Node::Blockquote(_)),
+                    list_item || matches!(node, Node::ListItem(_)),
+                    footnote || matches!(node, Node::FootnoteDefinition(_)),
+                    blocks,
+                );
+            }
+            return;
+        }
+    };
+    target.push(Paragraph {
+        range: node_range(node),
+        blockquote,
+        list_item,
+        footnote,
+        children: node
+            .children()
+            .into_iter()
+            .flatten()
+            .filter_map(|child| inline(child, src, true))
+            .collect(),
+    });
 }
 
 /// 段落の中のnodeを `Inline` にする。`direct` は、`node` が段落の直下にあるか。
@@ -486,6 +496,31 @@ mod tests {
                 ("引", true, false, false),
                 ("文[^1]", false, false, false),
                 ("脚", false, false, true),
+            ]
+        );
+    }
+
+    #[test]
+    fn collects_atx_and_setext_headings_with_inline_children_and_blockquote_flag() {
+        let src = "# 見 **太**\n\n段\n\n設定\n===\n\n> ## 引\n";
+        let headings: Vec<(&str, bool, Vec<String>)> = parse(src)
+            .headings
+            .into_iter()
+            .map(|h| {
+                let texts = h.children.iter().map(|c| c.text.clone()).collect();
+                (&src[h.range], h.blockquote, texts)
+            })
+            .collect();
+        assert_eq!(
+            headings,
+            vec![
+                (
+                    "# 見 **太**",
+                    false,
+                    vec!["見 ".to_owned(), "太".to_owned()]
+                ),
+                ("設定\n===", false, vec!["設定".to_owned()]),
+                ("## 引", true, vec!["引".to_owned()]),
             ]
         );
     }

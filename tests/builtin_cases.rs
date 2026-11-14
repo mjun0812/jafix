@@ -133,3 +133,33 @@ fn ja_no_mixed_period() {
 fn no_unmatched_pair() {
     assert_cases("no-unmatched-pair");
 }
+
+#[test]
+fn max_ten() {
+    assert_cases("max-ten");
+}
+
+#[test]
+fn no_doubled_joshi() {
+    assert_cases("no-doubled-joshi");
+}
+
+#[test]
+fn no_doubled_conjunctive_particle_ga() {
+    assert_cases("no-doubled-conjunctive-particle-ga");
+}
+
+#[test]
+fn no_doubled_conjunction() {
+    assert_cases("no-doubled-conjunction");
+}
+
+#[test]
+fn no_mix_dearu_desumasu() {
+    assert_cases("no-mix-dearu-desumasu");
+}
+
+#[test]
+fn ja_no_redundant_expression() {
+    assert_cases("ja-no-redundant-expression");
+}

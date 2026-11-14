@@ -584,3 +584,58 @@ fn hook_exits_1_on_an_unknown_builtin_rule_without_changing_files() {
     assert!(stderr.contains("no-such-rule"), "{stderr}");
     assert_eq!(read(&path), "日本語 Rust\n");
 }
+
+#[test]
+fn check_reports_a_morphological_builtin_rule_by_default_and_not_when_disabled() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "私は本は読む。\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        stdout(&output),
+        "t.md:1:4: 同じ助詞「は」が続いている [no-doubled-joshi]\n"
+    );
+
+    sandbox.write_xdg_config("[builtin]\nno-doubled-joshi = false\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stdout(&output), "");
+}
+
+#[test]
+fn check_exits_2_on_an_invalid_option_of_a_morphological_builtin_rule() {
+    for (builtin, expected) in [
+        ("max-ten = { max = -1 }", ["max-ten", "max"]),
+        ("max-ten = { touten = \"\" }", ["max-ten", "touten"]),
+        (
+            "no-doubled-joshi = { min_interval = 0 }",
+            ["no-doubled-joshi", "min_interval"],
+        ),
+        (
+            "no-mix-dearu-desumasu = { preferInBody = \"敬体\" }",
+            ["no-mix-dearu-desumasu", "preferInBody"],
+        ),
+        (
+            "ja-no-redundant-expression = { allowNodeTypes = [\"Str\"] }",
+            ["ja-no-redundant-expression", "allowNodeTypes"],
+        ),
+        (
+            "ja-no-redundant-expression = { dictOptions = { dict7 = { disabled = true } } }",
+            ["ja-no-redundant-expression", "dict7"],
+        ),
+        (
+            "no-doubled-conjunctive-particle-ga = { separatorChars = [\"。\"] }",
+            ["no-doubled-conjunctive-particle-ga", "separatorChars"],
+        ),
+    ] {
+        assert_check_rejects_builtin(builtin, &expected);
+    }
+}
+
+#[test]
+fn check_exits_2_on_a_rule_named_after_a_morphological_builtin_rule() {
+    assert_check_rejects_rule(
+        "[[rules]]\nid = \"max-ten\"\nmessage = \"m\"\nwords = [\"a\"]\n",
+        "max-ten",
+    );
+}

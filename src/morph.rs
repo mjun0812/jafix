@@ -1,6 +1,3 @@
-// skeleton: not implemented (ルールから呼ぶようにしたら、この行と次の行を消す)
-#![allow(dead_code)]
-
 use std::borrow::Cow;
 use std::ops::Range;
 use std::sync::LazyLock;

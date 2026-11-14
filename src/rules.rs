@@ -203,6 +203,7 @@ pub fn report<'r>(
 ) -> Vec<Report<'r>> {
     let mut reports = text::report(src, &document.texts, builtin);
     reports.extend(paragraph::report(src, &document.paragraphs, builtin));
+    reports.extend(morph::report(src, document, builtin));
     let headings = document.texts.iter().filter(|prose| prose.context.heading);
     reports.extend(
         anchor_changing_findings(src, headings, builtin)
