@@ -351,7 +351,7 @@ pub fn report(
     reports.extend(paragraph::report(src, &document.paragraphs, builtin));
     reports.extend(morph::report(src, document, builtin));
     reports.extend(ai_writing::report(src, document, builtin));
-    let texts = target_texts(src, document, builtin, targets);
+    let (texts, alts) = target_texts(src, document, builtin, targets);
     if let Some(rule) = &builtin.textlint_rule_pattern {
         reports.extend(textlint_rule_pattern::report(src, &texts, rule));
     }
@@ -387,7 +387,6 @@ pub fn report(
     reports.extend(spacing::report(src, document, builtin));
     reports.extend(jtf_style::report(src, document, builtin, &texts));
     reports.extend(general::report(src, document, builtin, links, ignored));
-    let alts = target_alts(src, document, builtin, targets);
     reports.extend(english::report(src, document, builtin, &texts, &alts));
     reports.retain(|report| !ignored.covers(&report.range, report.rule));
     reports.sort_by_key(|report| report.range.start);
@@ -411,7 +410,7 @@ pub fn replacements(
     targets: &TargetLines,
     ignored: &Ignored,
 ) -> Vec<Finding> {
-    let texts = target_texts(src, document, builtin, targets);
+    let (texts, _) = target_texts(src, document, builtin, targets);
     user_replacements(src, &texts, builtin, ignored)
         .into_iter()
         .filter(|replacement| unfixable(src, replacement).is_none())
@@ -501,44 +500,41 @@ pub fn fix_rules_hitting(text: &str, builtin: &Builtin) -> Vec<RuleId> {
     rules
 }
 
-/// 利用者の置き換えと辞書の4ルールと `spelling` を当てる本文の範囲。最初の行から最後の行までのどれかが `targets` の
-/// 対象行であるもの。行の索引を1回で作るために、`prh` と `@textlint-rule/pattern` と `terminology` と辞書の4ルールと
-/// `spelling` で共有する。どれも無効なら空
+/// 利用者の置き換えと辞書の4ルールと `spelling` を当てる本文の範囲と、`spelling` が語を取り出すインラインの画像のaltの、
+/// 元のソース上のバイト範囲。どちらも、最初の行から最後の行までのどれかが `targets` の対象行であるもの。行の索引を1回で
+/// 作るために、`prh` と `@textlint-rule/pattern` と `terminology` と辞書の4ルールと `spelling` で共有する。
+/// 本文の範囲は、どれも無効なら空で、altは `spelling` が無効なら空
 fn target_texts<'a>(
     src: &str,
     document: &'a Document,
     builtin: &Builtin,
     targets: &TargetLines,
-) -> Vec<&'a Prose> {
+) -> (Vec<&'a Prose>, Vec<Range<usize>>) {
     if builtin.prh.is_none()
         && builtin.textlint_rule_pattern.is_none()
         && builtin.terminology.is_none()
         && builtin.spelling.is_none()
         && !jtf_style::uses_dictionaries(builtin)
     {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
     }
-    let overlaps = overlaps_targets(src, targets);
-    document
+    let index = matches!(targets, TargetLines::Lines(_)).then(|| LineIndex::new(src));
+    let overlaps = |range: &Range<usize>| {
+        index.as_ref().is_none_or(|index| {
+            let (first, _) = index.line_col(range.start);
+            let (last, _) = index.line_col(range.end);
+            targets.overlaps(first..=last)
+        })
+    };
+    let texts = document
         .texts
         .iter()
         .filter(|prose| overlaps(&prose.range))
-        .collect()
-}
-
-/// `spelling` が語を取り出すインラインの画像のaltの、元のソース上のバイト範囲。最初の行から最後の行までのどれかが
-/// `targets` の対象行であるもの。`spelling` が無効なら空
-fn target_alts(
-    src: &str,
-    document: &Document,
-    builtin: &Builtin,
-    targets: &TargetLines,
-) -> Vec<Range<usize>> {
+        .collect();
     if builtin.spelling.is_none() {
-        return Vec::new();
+        return (texts, Vec::new());
     }
-    let overlaps = overlaps_targets(src, targets);
-    document
+    let alts = document
         .inline_nodes
         .iter()
         .filter_map(|node| match &node.kind {
@@ -546,19 +542,8 @@ fn target_alts(
             _ => None,
         })
         .filter(|alt| overlaps(alt))
-        .collect()
-}
-
-/// `src` の中のバイト範囲の最初の行から最後の行までのどれかが、`targets` の対象行かを返す関数。行の索引は1回だけ作る
-fn overlaps_targets(src: &str, targets: &TargetLines) -> impl Fn(&Range<usize>) -> bool {
-    let index = matches!(targets, TargetLines::Lines(_)).then(|| LineIndex::new(src));
-    move |range| {
-        index.as_ref().is_none_or(|index| {
-            let (first, _) = index.line_col(range.start);
-            let (last, _) = index.line_col(range.end);
-            targets.overlaps(first..=last)
-        })
-    }
+        .collect();
+    (texts, alts)
 }
 
 /// 文面に埋め込む文字列。出力は1件1行なので、改行を `\n` の2文字にする
