@@ -2777,12 +2777,13 @@ fn english_rules_are_off_by_default() {
 
     // 同じ文書に当たることを、有効にして確かめる
     sandbox.write_xdg_config(
-        "[builtin]\nterminology = true\ncommon-misspellings = true\nwrite-good = true\n",
+        "[builtin]\nterminology = true\nspelling = true\ncommon-misspellings = true\nwrite-good = true\n",
     );
     let output = sandbox.run(&["check", "t.md"]);
     let found = stdout(&output);
     for (rule, line) in [
         ("terminology", 1),
+        ("spelling", 3),
         ("common-misspellings", 5),
         ("write-good", 7),
     ] {
@@ -3025,5 +3026,98 @@ fn terminology_user_term_same_as_a_default_term_is_one_fix() {
     assert_eq!(
         fix_with_config(&sandbox, "Use github here.\n"),
         "Use GitHub here.\n"
+    );
+}
+
+#[test]
+fn spelling_rejects_unsupported_options() {
+    for (builtin, expected) in [
+        (
+            "spelling = { language = \"en-GB\" }",
+            ["spelling", "language"],
+        ),
+        (
+            "spelling = { wordDefinitionRegexp = \"[a-z]+\" }",
+            ["spelling", "wordDefinitionRegexp"],
+        ),
+        (
+            "spelling = { wordDefinitionRegexp = \"/[a-z/g\" }",
+            ["spelling", "wordDefinitionRegexp"],
+        ),
+        (
+            "spelling = { wordDefinitionRegexp = \"/[a-z]+/y\" }",
+            ["spelling", "wordDefinitionRegexp"],
+        ),
+        (
+            "spelling = { skipPatterns = [\"/(/\"] }",
+            ["spelling", "skipPatterns"],
+        ),
+    ] {
+        assert_check_rejects_builtin(builtin, &expected);
+    }
+}
+
+#[test]
+fn spelling_skips_identifiers_and_abbreviations() {
+    let (_, found) = check_with_builtin(
+        "spelling = true",
+        "We recieve x86_64 50ms README PostToolUse macOS ruleId.\n",
+    );
+    assert_eq!(
+        findings_of(&found, "spelling"),
+        [
+            "t.md:1:4: 英語の辞書に無い語「recieve」を使っている。候補: receive、relieve、reverie [spelling]"
+        ]
+    );
+}
+
+#[test]
+fn spelling_suggests_candidates() {
+    let input = "Run jafix to recieve it.\n";
+    let (_, found) = check_with_builtin("spelling = { skipPatterns = [\"jafix\"] }", input);
+    assert_eq!(
+        findings_of(&found, "spelling"),
+        [
+            "t.md:1:14: 英語の辞書に無い語「recieve」を使っている。候補: receive、relieve、reverie [spelling]"
+        ]
+    );
+    let (_, found) = check_with_builtin(
+        "spelling = { skipPatterns = [\"jafix\"], suggestCorrections = false }",
+        input,
+    );
+    assert_eq!(
+        findings_of(&found, "spelling"),
+        ["t.md:1:14: 英語の辞書に無い語「recieve」を使っている [spelling]"]
+    );
+}
+
+#[test]
+fn spelling_candidates_are_stable_across_runs() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nspelling = true\n");
+    sandbox.write(
+        "t.md",
+        "Use textlint to seperate the colour of hyperfine untill now.\n",
+    );
+    let first = sandbox.run(&["check", "t.md"]);
+    let second = sandbox.run(&["check", "t.md"]);
+    assert_eq!(
+        findings_of(stdout(&first), "spelling").len(),
+        5,
+        "{}",
+        stdout(&first)
+    );
+    assert_eq!(stdout(&first), stdout(&second));
+}
+
+#[test]
+fn spelling_does_not_report_empty_words() {
+    let (_, found) = check_with_builtin(
+        "spelling = { suggestCorrections = false, wordDefinitionRegexp = \"/[a-z]*/g\" }",
+        "日本語のteh、é\n",
+    );
+    assert_eq!(
+        findings_of(&found, "spelling"),
+        ["t.md:1:5: 英語の辞書に無い語「teh」を使っている [spelling]"]
     );
 }

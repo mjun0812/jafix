@@ -2796,13 +2796,10 @@ fn wrap_term(source: &str) -> String {
 #[derive(Debug)]
 pub struct Spelling {
     /// `skipPatterns`。一致の範囲のどれかと重なる (端が接するものを含む) 語は指摘しない
-    #[allow(dead_code)] // skeleton: not implemented
     pub skip_patterns: Vec<Regex>,
     /// `wordDefinitionRegexp`。重ならない空でない一致の1つずつを1語にする
-    #[allow(dead_code)] // skeleton: not implemented
     pub word_definition: Regex,
     /// `suggestCorrections`。真なら、辞書の候補を文面に含める
-    #[allow(dead_code)] // skeleton: not implemented
     pub suggest_corrections: bool,
 }
 

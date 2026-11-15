@@ -54,11 +54,25 @@ pub fn prh(value: &str) -> (Cow<'_, str>, Flags) {
 /// `@textlint/regexp-string-matcher` の形で読む。`^/(.+)/([guimysd]*)$` に当たれば、書いた `i`・`m`・`s` を付けた
 /// 正規表現、当たらなければ文字列そのものにする。`y` のフラグと、読めない正規表現は理由を返す
 pub fn pattern(value: &str) -> Result<Regex, String> {
+    match slash_form(value, "guimysd", true) {
+        Some((source, flags)) => compile_slash_form(value, source, flags),
+        None => compile(&escape(value), Flags::default())
+            .map_err(|reason| format!("`{value}` を{reason}")),
+    }
+}
+
+/// `/source/flags` の形の文字列だけを正規表現として読む (`spelling` の `wordDefinitionRegexp`)。`i`・`m`・`s` は書いたとおりに
+/// 付け、`g` は書いても書かなくても同じである。`/source/flags` の形でないもの、`y` のフラグ、読めない正規表現は理由を返す
+pub fn slash_regex(value: &str) -> Result<Regex, String> {
     let Some((source, flags)) = slash_form(value, "guimysd", true) else {
-        return compile(&escape(value), Flags::default())
-            .map_err(|reason| format!("`{value}` を{reason}"));
+        return Err(format!("`{value}` は `/source/flags` の形でない"));
     };
-    // textlintでは `matchAll` と組み合わさり、先頭から続く一致だけになるので、書いた意図どおりに働かない
+    compile_slash_form(value, source, flags)
+}
+
+/// `/source/flags` の形の `value` を、`source` に書いた `i`・`m`・`s` を付けて読む
+fn compile_slash_form(value: &str, source: &str, flags: &str) -> Result<Regex, String> {
+    // 一致を繰り返し探すと、`y` は先頭から隙間なく続く一致だけになるので、書いた意図どおりに働かない
     if flags.contains('y') {
         return Err(format!("`{value}` のフラグ `y` は使えない"));
     }
@@ -71,13 +85,6 @@ pub fn pattern(value: &str) -> Result<Regex, String> {
         },
     )
     .map_err(|reason| format!("`{value}` を{reason}"))
-}
-
-/// `/source/flags` の形の文字列だけを正規表現として読む (`spelling` の `wordDefinitionRegexp`)。`i`・`m`・`s` は書いたとおりに
-/// 付け、`g` は書いても書かなくても同じである。`/source/flags` の形でないもの、`y` のフラグ、読めない正規表現は理由を返す
-pub fn slash_regex(value: &str) -> Result<Regex, String> {
-    let _ = value;
-    todo!("skeleton: not implemented")
 }
 
 /// JavaScriptの `String.prototype.replace` の置き換えの記法 (ECMAScriptのGetSubstitution: `$1`〜`$99`・`$&`・`` $` ``・

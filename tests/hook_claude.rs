@@ -3,14 +3,16 @@ mod common;
 use std::path::Path;
 
 use common::{
-    AI_RULES_CONFIG, AI_RULES_INPUT, AI_WORDS_PATTERN, GENERAL_RULES_AND_FILTERS_CONFIG,
+    AI_RULES_CONFIG, AI_RULES_INPUT, AI_WORDS_PATTERN, ENGLISH_RULES_CONFIG,
+    ENGLISH_RULES_HOOK_FIXED, ENGLISH_RULES_HOOK_INPUT, GENERAL_RULES_AND_FILTERS_CONFIG,
     GENERAL_RULES_HOOK_INPUT, HIRAGANA_AND_SYNONYMS_HOOK_INPUT, JTF_STYLE_RULES_CONFIG,
     JTF_STYLE_RULES_HOOK_FIXED, JTF_STYLE_RULES_HOOK_INPUT, SPACING_RULES_CONFIG,
     SPACING_RULES_FIXED, SPACING_RULES_INPUT, Sandbox, USER_REPLACEMENTS_CONFIG,
-    USER_REPLACEMENTS_FIXED, USER_REPLACEMENTS_INPUT, general_rule_lines, general_rule_reports,
-    hiragana_and_synonyms_rule_lines, hiragana_and_synonyms_rule_reports,
-    hiragana_and_synonyms_rules_config, jtf_style_rule_lines, jtf_style_rule_reports, read,
-    spacing_rule_lines, spacing_rule_reports, stdout, user_replacement_reports,
+    USER_REPLACEMENTS_FIXED, USER_REPLACEMENTS_INPUT, english_rule_lines, english_rule_reports,
+    general_rule_lines, general_rule_reports, hiragana_and_synonyms_rule_lines,
+    hiragana_and_synonyms_rule_reports, hiragana_and_synonyms_rules_config, jtf_style_rule_lines,
+    jtf_style_rule_reports, read, spacing_rule_lines, spacing_rule_reports, stdout,
+    user_replacement_reports,
 };
 use serde_json::{Value, json};
 
@@ -483,6 +485,22 @@ fn reports_general_findings_outside_disabled_ranges() {
     assert_eq!(
         general_rule_lines(stderr(&output)),
         general_rule_reports(&path),
+        "{}",
+        stderr(&output)
+    );
+}
+
+#[test]
+fn reports_english_findings_on_target_lines() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(ENGLISH_RULES_CONFIG);
+    let path = sandbox.write("t.md", ENGLISH_RULES_HOOK_INPUT);
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[3, 5]));
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(read(&path), ENGLISH_RULES_HOOK_FIXED);
+    assert_eq!(
+        english_rule_lines(stderr(&output)),
+        english_rule_reports(&path),
         "{}",
         stderr(&output)
     );

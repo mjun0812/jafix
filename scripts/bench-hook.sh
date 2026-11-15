@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # 既定で無効な組み込みのルールもすべて有効にし (`4.3.1.丸かっこ（）` と逆の `fullwidth-paren` は無効にする)、
-# `prh` に1,300ルールの辞書を、`@textlint-rule/pattern` に30語と1つの正規表現の31要素を書き、
+# `prh` に1,300ルールの辞書を、`@textlint-rule/pattern` に30語と1つの正規表現の31要素を、`terminology` に利用者の
+# `terms` を1つ書き、
 # 2つのfilterを有効にした設定で、
-# 約30KBのMarkdownへのEditの入力の `jafix hook claude` をhyperfineで計り、
+# 約39KBのMarkdownへのEditの入力の `jafix hook claude` をhyperfineで計り、
 # 平均が0.05秒未満ならexit 0、以上ならexit 1で終える
 set -euo pipefail
 
@@ -60,6 +61,10 @@ ja-hiragana-daimeishi = true
 no-todo = true
 date-weekday-mismatch = true
 no-dead-link = true
+terminology = { terms = [["colour", "color"]] }
+spelling = true
+common-misspellings = true
+write-good = true
 prh = { rulePaths = ["prh.yml"] }
 TOML
     for word in "${words[@]}"; do
@@ -77,6 +82,8 @@ TOML
 block='## 見出し Rust の使い方
 
 日本語 Rust で （補足） です。サーバー API を使う場合は、設定 (config) を読む。
+
+Use javascript and jafix to recieve teh colour, which is clearly wrong.
 
 - リスト の 項目 A と B を 並べる
 - **強調** の 中 の Rust 1.0 を 書く

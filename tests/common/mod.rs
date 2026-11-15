@@ -423,3 +423,72 @@ pub fn general_rule_lines(stderr: &str) -> Vec<&str> {
         })
         .collect()
 }
+
+/// 英語の4つのルールを有効にし、`terminology` に `colour` を `color` にする利用者の `terms` を書いた設定。`spelling` は、
+/// 候補の並びが辞書の作り方で変わりうるので、候補を文面に出さない
+pub const ENGLISH_RULES_CONFIG: &str = r#"[builtin]
+terminology = { terms = [["colour", "color"]] }
+spelling = { suggestCorrections = false }
+common-misspellings = true
+write-good = true
+"#;
+
+/// 3行目と5行目を対象行にする文書。3行目は利用者の `terms` (`colour`) と組み込みの辞書 (`javascript`) に、5行目は
+/// `spelling` と `common-misspellings` (`recieve`・`teh`) と `write-good` (`clearly`) に当たる。対象行の外の
+/// 1行目と7行目も、同じルールに当たる
+pub const ENGLISH_RULES_HOOK_INPUT: &str = "Use javascript and the colour here.
+
+Use javascript and the colour here.
+
+We recieve teh cat, which is clearly wrong.
+
+We recieve teh cat, which is clearly wrong.
+";
+
+/// `ENGLISH_RULES_HOOK_INPUT` の3行目と5行目を対象行にして直した文書。3行目の利用者の `terms` の箇所だけが直る
+pub const ENGLISH_RULES_HOOK_FIXED: &str = "Use javascript and the colour here.
+
+Use javascript and the color here.
+
+We recieve teh cat, which is clearly wrong.
+
+We recieve teh cat, which is clearly wrong.
+";
+
+/// `ENGLISH_RULES_HOOK_INPUT` の3行目と5行目を対象行にしたhookが、`path` について返す4つのルールの指摘の行。
+/// 直した後の `color` は辞書にあるので、3行目に `spelling` の `colour` の指摘は出ない
+pub fn english_rule_reports(path: &Path) -> Vec<String> {
+    let path = path.display();
+    vec![
+        format!("{path}:3:5: 「javascript」を「JavaScript」にする [terminology]"),
+        format!("{path}:3:5: 英語の辞書に無い語「javascript」を使っている [spelling]"),
+        format!("{path}:5:4: 英語の辞書に無い語「recieve」を使っている [spelling]"),
+        format!(
+            "{path}:5:4: よくある綴りの誤り「recieve」を使っている。正しくは「receive」 [common-misspellings]"
+        ),
+        format!("{path}:5:12: 英語の辞書に無い語「teh」を使っている [spelling]"),
+        format!(
+            "{path}:5:12: よくある綴りの誤り「teh」を使っている。正しくは「the」 [common-misspellings]"
+        ),
+        format!(
+            "{path}:5:30: 「clearly」は曖昧な語、意味を弱める語である(weasel・adverb) [write-good]"
+        ),
+    ]
+}
+
+/// 標準エラーの行のうち、英語の4つのルールの行
+pub fn english_rule_lines(stderr: &str) -> Vec<&str> {
+    stderr
+        .lines()
+        .filter(|line| {
+            [
+                "terminology",
+                "spelling",
+                "common-misspellings",
+                "write-good",
+            ]
+            .iter()
+            .any(|id| line.ends_with(&format!(" [{id}]")))
+        })
+        .collect()
+}

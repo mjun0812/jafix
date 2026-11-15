@@ -18,7 +18,7 @@ use regex::Regex;
 
 use crate::apply::{LineIndex, TargetLines};
 use crate::filter::Ignored;
-use crate::prose::{Context, Document, Prose};
+use crate::prose::{Context, Document, InlineNodeKind, Prose};
 
 pub(crate) use self::prh::dictionary::parse_yaml;
 
@@ -518,17 +518,11 @@ fn target_texts<'a>(
     {
         return Vec::new();
     }
-    let index = matches!(targets, TargetLines::Lines(_)).then(|| LineIndex::new(src));
+    let overlaps = overlaps_targets(src, targets);
     document
         .texts
         .iter()
-        .filter(|prose| {
-            index.as_ref().is_none_or(|index| {
-                let (first, _) = index.line_col(prose.range.start);
-                let (last, _) = index.line_col(prose.range.end);
-                targets.overlaps(first..=last)
-            })
-        })
+        .filter(|prose| overlaps(&prose.range))
         .collect()
 }
 
@@ -543,8 +537,28 @@ fn target_alts(
     if builtin.spelling.is_none() {
         return Vec::new();
     }
-    let _ = (src, document, targets);
-    todo!("skeleton: not implemented")
+    let overlaps = overlaps_targets(src, targets);
+    document
+        .inline_nodes
+        .iter()
+        .filter_map(|node| match &node.kind {
+            InlineNodeKind::Image { alt } => Some(alt.clone()),
+            _ => None,
+        })
+        .filter(|alt| overlaps(alt))
+        .collect()
+}
+
+/// `src` の中のバイト範囲の最初の行から最後の行までのどれかが、`targets` の対象行かを返す関数。行の索引は1回だけ作る
+fn overlaps_targets(src: &str, targets: &TargetLines) -> impl Fn(&Range<usize>) -> bool {
+    let index = matches!(targets, TargetLines::Lines(_)).then(|| LineIndex::new(src));
+    move |range| {
+        index.as_ref().is_none_or(|index| {
+            let (first, _) = index.line_col(range.start);
+            let (last, _) = index.line_col(range.end);
+            targets.overlaps(first..=last)
+        })
+    }
 }
 
 /// 文面に埋め込む文字列。出力は1件1行なので、改行を `\n` の2文字にする

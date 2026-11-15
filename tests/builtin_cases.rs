@@ -603,6 +603,11 @@ fn terminology() {
 }
 
 #[test]
+fn spelling() {
+    assert_cases("spelling");
+}
+
+#[test]
 fn common_misspellings() {
     assert_cases("common-misspellings");
 }

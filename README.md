@@ -1,12 +1,12 @@
 # jafix
 
-jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる範囲で直すCLIです。Markdownの本文にある全角括弧や半角カナなどを直し、日本語と英数字・括弧の間の空白を削除します。機械的に直せない書き方は、指摘ルールで指摘します。ルールは、全角括弧と空白を直す3つ、textlintの5つのpreset(`textlint-rule-preset-ja-technical-writing`・`@textlint-ja/textlint-rule-preset-ai-writing`・`textlint-rule-preset-ai-words-ja`・`textlint-rule-preset-ja-spacing`・`textlint-rule-preset-jtf-style`)と12の単独のルールから移したもの、利用者がprhの辞書やパターンに書いた置き換えです。
+jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる範囲で直すCLIです。Markdownの本文にある全角括弧や半角カナなどを直し、日本語と英数字・括弧の間の空白を削除します。機械的に直せない書き方は、指摘ルールで指摘します。ルールは、全角括弧と空白を直す3つ、textlintの5つのpreset(`textlint-rule-preset-ja-technical-writing`・`@textlint-ja/textlint-rule-preset-ai-writing`・`textlint-rule-preset-ai-words-ja`・`textlint-rule-preset-ja-spacing`・`textlint-rule-preset-jtf-style`)と16の単独のルールから移したもの、利用者がprhの辞書やパターンに書いた置き換えです。
 
 ## 組み込みのルール
 
 組み込みのルールは99あります。`fullwidth-paren`・`space-between-ja-and-alnum`・`space-between-ja-and-paren` の3つはjafix独自の修正ルールで、`prh` と `@textlint-rule/pattern` の2つは、利用者が書いた辞書やパターンで置き換える・指摘するルールです。残りの94ルールはtextlintから移したもので、内訳は、`textlint-rule-preset-ja-technical-writing` の23ルール、`@textlint-ja/textlint-rule-preset-ai-writing` の5ルール(`no-ai-list-formatting` から `ai-tech-writing-guideline` まで)、`textlint-rule-preset-ai-words-ja` の2ルール(`no-ai-words` と `no-short-topic-comma`)、`textlint-rule-preset-ja-spacing` の11ルール(`ja-nakaguro-or-halfwidth-space-between-katakana` から `ja-space-around-strong` まで)、`textlint-rule-preset-jtf-style` の37ルール(`1.1.1.本文` から `4.3.8.一重引用符` まで)、単独のルールの `textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet` と `textlint-rule-no-kangxi-radicals`、ひらがなで書く語・さ入れ言葉・同義語を見る7ルール(`ja-hiragana-hojodoushi` から `@textlint-ja/no-synonyms` まで)、言語によらない3ルール(`no-todo`・`date-weekday-mismatch`・`no-dead-link`)、英語の文章を見る4ルール(`terminology`・`spelling`・`common-misspellings`・`write-good`)です。IDとオプションの名前はtextlintと同じです。ルールの有効・無効とオプションは、設定ファイルの `[builtin]` で変えます(「[設定ファイル](#builtin)」)。
 
-設定に何も書かなければ、jafix独自の3つと `textlint-rule-preset-ja-technical-writing` の23ルールが有効で、オプションの既定値はpresetと同じです。AIらしい書き方を指摘する7ルールは無効です。7ルールには同じ書き方を重ねて見るものがあり、すべてを有効にすると同じ箇所に複数の指摘が出るためです。7ルールは、`[builtin]` にルールのIDかpresetの名前を書いて有効にします(「[presetの名前](#presetの名前)」)。空白と字種を見る13ルール(`textlint-rule-preset-ja-spacing` の11ルールと、`no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals`)も、同じ理由で無効で、同じく `[builtin]` で有効にします。日本語と英数字の間の空白のように、jafix独自の修正ルールと同じ空白を見るものがあるためです。JTF日本語標準スタイルガイドの37ルールも、ほかのルールと同じ箇所を見るものが多いので無効で、同じく `[builtin]` で有効にします(「[JTFスタイルガイドの37ルール](#jtfスタイルガイドの37ルール)」)。ひらがなで書く語・さ入れ言葉・同義語を見る7ルールも無効です。7つを束ねるpresetの名前は無いので、`[builtin]` にルールのIDのキーを書いて有効にします(「[ひらがな・さ入れ・同義語の7ルール](#ひらがなさ入れ同義語の7ルール)」)。TODO・曜日・リンク先を見る3ルールも無効で、presetの名前も無いので、ルールのIDのキーで有効にします。説明は「[言語によらない3ルール](#言語によらない3ルール)」の節です。`prh` と `@textlint-rule/pattern` も無効で、どのpresetにも入りません。辞書かパターンが無いと働かないので、`[builtin]` にオプションの表を書いたときだけ有効になります(「[利用者の置き換え](#利用者の置き換え)」)。
+設定に何も書かなければ、jafix独自の3つと `textlint-rule-preset-ja-technical-writing` の23ルールが有効で、オプションの既定値はpresetと同じです。AIらしい書き方を指摘する7ルールは無効です。7ルールには同じ書き方を重ねて見るものがあり、すべてを有効にすると同じ箇所に複数の指摘が出るためです。7ルールは、`[builtin]` にルールのIDかpresetの名前を書いて有効にします(「[presetの名前](#presetの名前)」)。空白と字種を見る13ルール(`textlint-rule-preset-ja-spacing` の11ルールと、`no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals`)も、同じ理由で無効で、同じく `[builtin]` で有効にします。日本語と英数字の間の空白のように、jafix独自の修正ルールと同じ空白を見るものがあるためです。JTF日本語標準スタイルガイドの37ルールも、ほかのルールと同じ箇所を見るものが多いので無効で、同じく `[builtin]` で有効にします(「[JTFスタイルガイドの37ルール](#jtfスタイルガイドの37ルール)」)。ひらがなで書く語・さ入れ言葉・同義語を見る7ルールも無効です。7つを束ねるpresetの名前は無いので、`[builtin]` にルールのIDのキーを書いて有効にします(「[ひらがな・さ入れ・同義語の7ルール](#ひらがなさ入れ同義語の7ルール)」)。TODO・曜日・リンク先を見る3ルールも無効で、presetの名前も無いので、ルールのIDのキーで有効にします。説明は「[言語によらない3ルール](#言語によらない3ルール)」の節です。英語の文章を見る4ルールも無効で、presetの名前も無いので、ルールのIDのキーで有効にします(「[英語の4ルール](#英語の4ルール)」)。`prh` と `@textlint-rule/pattern` も無効で、どのpresetにも入りません。辞書かパターンが無いと働かないので、`[builtin]` にオプションの表を書いたときだけ有効になります(「[利用者の置き換え](#利用者の置き換え)」)。
 
 `textlint-rule-preset-ja-technical-writing` の23ルールのうち、`max-ten` から `ja-no-redundant-expression` までの11ルールは、文を形態素解析で語(トークン)に分けて判定します。7ルールのうち、`no-ai-colon-continuation`・`no-ai-words`・`no-short-topic-comma` の3つと、ひらがな・さ入れ・同義語の7ルールも形態素解析を使います。形態素解析には [lindera](https://github.com/lindera/lindera) と、binaryに埋め込んだIPADICの辞書を使います。
 
@@ -107,6 +107,10 @@ jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる�
 | `no-todo`                                         | 指摘(既定で無効)       | `TODO:` か、リスト項目の未完了のタスクの記号 `[ ]` が残っている                                                      | なし                                                                                                                                                                                                  |
 | `date-weekday-mismatch`                           | 指摘(既定で無効)       | 日付(`2024年4月23日`・`2024-04-23`・`April 23, 2024` など)の直後の括弧の中の曜日が、日付と食い違う                   | `lang`(なし)、`useCurrentYearIfMissing`(false)、`currentYear`(実行した時点の年)                                                                                                                       |
 | `no-dead-link`                                    | 指摘(既定で無効)       | リンク先のファイルが無いか、URLが届かないかリダイレクトする。外部のURLは `jafix check` だけが確かめる                | `checkRelative`(true)、`ignore`・`preferGET`(いずれも[])、`retry`(3)、`concurrency`(8)、`maxRetryTime`・`maxRetryAfterTime`(いずれも10)など                                                           |
+| `terminology`                                     | 修正と指摘(既定で無効) | 英語の技術語・ブランド・略語の表記が辞書と違う。利用者の `terms` の項目の箇所は直し、組み込みの辞書の箇所は指摘する  | `terms`([])、`skip`(["BlockQuote"])、`defaultTerms`(true)、`exclude`([])                                                                                                                              |
+| `spelling`                                        | 指摘(既定で無効)       | 英単語がen_USのhunspellの辞書に無い。辞書の候補を文面に示す                                                          | `language`("en")、`skipPatterns`([])、`wordDefinitionRegexp`(`/\b[\w']+\b/g`)、`suggestCorrections`(true)                                                                                             |
+| `common-misspellings`                             | 指摘(既定で無効)       | 英語のよくある綴りの誤り(Wikipediaの一覧の4,310件)を使う。正しい語を文面に示す                                       | `ignore`([])                                                                                                                                                                                          |
+| `write-good`                                      | 指摘(既定で無効)       | 英語の曖昧な語・受動態・冗長な句・決まり文句などを使う                                                               | `weasel`・`illusion`・`so`・`thereIs`・`passive`・`adverb`・`tooWordy`・`cliches`(いずれもtrue)、`eprime`(false)、`whitelist`([])                                                                     |
 
 オプションの意味はtextlintのルールと同じです。`sentence-length` の `countBy` は、長さをUTF-16のコードユニットで数える `"codeunits"` か、文字で数える `"codepoints"` です。`sentence-length` の `skipPatterns`、`no-exclamation-question-mark` と `ja-unnatural-alphabet` の `allow` の要素は、「[パターン](#パターン)」の書き方で書きます。`max-kanji-continuous-len` の `allow` の要素は、漢字の連続の全体と一致する文字列で、`no-invalid-control-character` の `allow` の要素は、1文字の文字列です。
 
@@ -333,6 +337,77 @@ no-dead-link = { ignore = ["https://example.com/**"], retry = 1 }
 - `userAgent` は要求の `User-Agent` で、空でない文字列です。書かなければ `jafix-no-dead-link/<jafixのversion>` です
 - `maxRetryTime` と `maxRetryAfterTime` は、再試行の前に待つ時間の上限の秒数で、0以上の整数です。応答に `Retry-After` があればその秒数を `maxRetryAfterTime` まで待ちます。無ければ、`回数 ** 2 * 100` ミリ秒を `maxRetryTime` まで待ちます。上限を超えれば、待たずに再試行します
 - `httpOnly` を `true` にすると、すべての宛先を `baseURI` を基準にURLとして解決します。`baseURI` が無ければ、相対のリンクと `/` で始まる絶対パスを確かめません
+
+### 英語の4ルール
+
+4ルールは、textlintで単独に配られている次の4つのpackageから移したものです。IDは、textlintの設定に書くルールの名前と同じです。
+
+- `terminology`: `textlint-rule-terminology` 5.2.16
+- `spelling`: `textlint-rule-spelling` 0.3.0。辞書は `dictionary-en` 4.0.0のen_USのhunspellの辞書です
+- `common-misspellings`: `textlint-rule-common-misspellings` 1.0.1。誤綴りの一覧は、Wikipediaの一覧から作りました
+- `write-good`: `textlint-rule-write-good` 2.0.0。判定の手順と単語リストは `write-good` 1.0.8と、それが使う6つのpackageから写しています
+
+`jafix fix` とhookが直すのは、`terminology` の `terms` に利用者が書いた項目の箇所だけです。この箇所は、`prh` と同じ利用者の置き換えです(「[利用者の置き換え](#利用者の置き換え)」)。`terminology` の組み込みの辞書の箇所と、ほかの3つのルールは指摘ルールで、置き換え後の語・辞書の候補・正しい語を文面に入れます。textlintは、組み込みの辞書の置き換えと、候補か正しい語が1つの箇所を自動で直します。jafixは、確かめないまま語を書き換えることを避けて、指摘にします。設定を書かなければ4つとも無効で、4つを束ねるpresetの名前もありません。`[builtin]` にルールのIDのキーを書いて有効にします。
+
+```toml
+[builtin]
+terminology = { terms = ["jafix", ["front[- ]end(\\w*)", "frontend$1"]] }
+spelling = { skipPatterns = ["jafix", "npm", "lindera"] }
+common-misspellings = true
+write-good = { passive = false, whitelist = ["read-only"] }
+```
+
+4つが同じ箇所に当たれば、有効なルールがそれぞれ指摘を出します。たとえば `teh` には `spelling` と `common-misspellings` の指摘が、`pacakge` には `terminology` と `spelling` の指摘が出ます。どのルールも、本文でない箇所(裸のURL、自動リンクの文字列、定義を持つ省略形・collapsed形の参照リンクの文字列)を見ません。
+
+`terminology` は、技術語・ブランド・略語の表記を揃えます。`skip` の型の中にない本文の範囲へ、利用者の `terms` の項目と、組み込みの辞書の341項目を、この順に並べて当てます。大文字と小文字は区別しません。項目は、正しい表記を書いた文字列か、正規表現と置き換え後の文字列を並べた2つの文字列の配列です。文字列の項目の置き換え後の語は、小文字にして一致と等しくなる最初の項目です。配列の項目の置き換え後の文字列には、JavaScriptの `replace` と同じく `$1`・`$&` などを書けます。文頭の一致が大文字で始まるなら、置き換え後の語の先頭を大文字にします。置き換え後の語が一致と同じなら、何も出しません。先読みか後読みを持たない項目には、語の前後の条件を付けます。直前が `-`・英数字・`.` でなく、直後が空白・句読点・本文の範囲の末尾か、`’` を除くASCIIでない文字のときだけ当たります。文面は `prh` と同じ `「<一致した文字列>」を「<置き換え後>」にする` です。
+
+- `terms` は、項目の配列か、項目の配列を書いたファイルのパスです。ファイルはJSONか、`//` と `/* */` のコメントを持つJSONで、末尾のカンマは書けません。相対パスは設定ファイルのあるディレクトリから解決し、`~/` で始まればホームディレクトリに展開します。項目の正規表現は、`i`・`m`・`u` を付けたJavaScriptの正規表現として読みます
+- `skip` は、対象から外す型の名前の配列です。型の名前は `@textlint-rule/pattern` の `allowNodeTypes` と同じで、書くと既定の `["BlockQuote"]` を置き換えます
+- `defaultTerms` を `false` にすると、組み込みの辞書を使いません
+- `exclude` は、使わない項目を書いた文字列の配列です。文字列の項目は項目の全体と、配列の項目は1つ目の要素と比べます
+
+`terms` のファイルは、次のように書きます。
+
+```json
+[
+  // 文字列の項目は、正しい表記を書く
+  "jafix",
+  // 配列の項目は、正規表現と置き換え後の文字列を書く
+  ["front[- ]end(\\w*)", "frontend$1"]
+]
+```
+
+日本語の文書では、`terminology` の語の直後の条件で結果が変わります。jafixは、textlintの条件に、`’` を除くASCIIでない文字を足しました。`space-between-ja-and-alnum` が日本語と英数字の間の空白を消すので、直した後の文では語の直後がたいてい日本語の文字になるためです。そのため、`javascriptを使う` の `javascript` にも当たります。
+
+`spelling` は、英単語の綴りを、`dictionary-en` 4.0.0のen_USのhunspellの辞書で確かめます。辞書の `index.aff`・`index.dic` は、中身を変えずにbinaryへ埋め込み、`spellbook` 0.4.2で引きます。辞書は、`spelling` が有効で確かめる語があるときに1回だけ読みます。本文の範囲のすべて(見出し・引用・表のセル・リンクの文字列・強調・太字の中を含む)と、インラインの画像のaltに `wordDefinitionRegexp` を当てて語を取り出し、辞書に無い語を指摘します。範囲は語の全体です。`suggestCorrections` が `true` なら、辞書の候補を文面に入れます。文面は `英語の辞書に無い語「recieve」を使っている。候補: receive、relieve、reverie` で、候補が無ければ `候補は無い` を続けます。候補の並びは、同じ入力と設定なら実行ごとに変わりません。語が正しいかの判定と候補は `spellbook` に従うので、textlintと違うことがあります(「[textlintとの違い](#textlintとの違い)」)。
+
+`spelling` の既定の除外として、ASCIIの数字を含む語(`50ms`・`x86_64`)、`_` を含む語(`node_modules`)、2文字目以降に大文字(`A`〜`Z`)を含む語(`README`・`JSON`・`GitHub`・`macOS`・`ruleId`)を辞書に当てません。綴りの誤りではなく、識別子・略語・固有名詞として書かれた語だからです。この除外は止められません。日本語の技術文書では、除外に当たらない小文字だけの識別子(`jafix`・`npm`・`config` など)と、頭文字だけが大文字の固有名詞(`Sudachi`・`Homebrew` など)が指摘に残ります。綴りの誤りと形で見分けられないので、`skipPatterns` に書いて除きます。
+
+```toml
+[builtin]
+spelling = { skipPatterns = ["jafix", "npm", "/\\b(?:Sudachi|Homebrew)\\b/"] }
+```
+
+- `language` は `"en"` だけを書けます
+- `skipPatterns` の要素は、「[パターン](#パターン)」の書き方で書きます。本文の範囲かaltに当てた一致と重なる語は、端が接するだけでも指摘しません
+- `wordDefinitionRegexp` は、`/source/flags` の形の文字列です。書いたフラグ(`i`・`m`・`s`)のまま当て、`g` の有無は結果を変えません。空の一致は語にしません
+- `suggestCorrections` を `false` にすると、候補を求めず、文面に入れません
+
+`common-misspellings` は、引用の外の本文の範囲に、誤綴りの一覧の4,310件を、語の境界(ASCIIの `\b`)の間で大文字と小文字を区別せずに当てます。同じ位置では最も長い一致を取ります。`ignore` に書いた語は、大文字と小文字を区別せずに比べ、指摘しません。文面は `よくある綴りの誤り「Teh」を使っている。正しくは「The」` で、正しい語には一致の大文字を写します。正しい語が複数ある項目は、`正しくは「a lot」か「allot」` のように、すべてを入れます。一覧は、Wikipediaのページ「Wikipedia:Lists of common misspellings/For machines」のrevision 1199637275 (`oldid=1199637275`)から作り、CC BY-SA 3.0の条件でbinaryに埋め込んでいます。
+
+`write-good` は、段落の直下にあり引用の中でない本文の範囲に、次の9つの判定を当てます。リスト項目の中の段落も見て、見出し・表のセル・リンクの文字列・強調・太字の中は見ません。`eprime` 以外の8つは、設定に書かなくても当てます。判定の名前のキーを `false` にすると、その判定を止めます。
+
+- `weasel`: 曖昧な語(`very`・`clearly` など)
+- `illusion`: 直前の語の繰り返し(`the the`)
+- `so`: 文頭の `so`
+- `thereIs`: 文頭の `there is`・`there are`
+- `passive`: 受動態の形の句(`was done`)
+- `adverb`: 意味を弱める語(`really`・`just` など)
+- `tooWordy`: 冗長か不要な句
+- `cliches`: 決まり文句
+- `eprime`: be動詞の形
+
+同じ範囲に複数の判定が当たれば1件にまとめ、`「clearly」は曖昧な語、意味を弱める語である(weasel・adverb)` のように説明をつなぎます。`whitelist` は空でない文字列の配列で、その文字列の出現と重なる指摘を出しません。大文字と小文字は区別します。
 
 ## 利用者の置き換え
 
@@ -694,6 +769,10 @@ IDは、jafixのルールのID(`sentence-length`)でも、textlintがpresetの�
 - ひらがな系の5ルール・`@textlint-ja/no-insert-dropping-sa`・`@textlint-ja/no-synonyms` のオプションの値が誤っている。`ja-hiragana-hojodoushi` と `ja-hiragana-fukushi` の `rulePath` は空でない文字列、`ja-keishikimeishi` の `detection_hou_kata`・`detection_ue` と、`@textlint-ja/no-synonyms` の `allowAlphabet`・`allowNumber`・`allowLexeme` は真偽値、`allows`・`preferWords` は文字列の配列です。`ja-hiragana-keishikimeishi`・`ja-hiragana-daimeishi`・`@textlint-ja/no-insert-dropping-sa` はオプションを持たないので、表にキーがあれば知らないオプションです
 - `ja-hiragana-hojodoushi` か `ja-hiragana-fukushi` の `rulePath` のファイルが読めないか、YAMLとして読めないか、辞書の形でない。辞書は、空でない文字列の `message` と空でない配列の `dict` を持つ表で、`dict` の各項目は文字列の `expected` と空でない配列の `tokens` を持ちます。`tokens` の要素は `no-ai-words` の利用者の辞書と同じく読むので、トークンの項目の名前でも `_` で始まる名前でもないキー(`word_id`・`word_type`・`word_position` を含む)があれば、これに当たります。理由には `rulePath` とファイルのパスを含めます
 - 言語によらない3ルールのオプションの値が誤っている。`date-weekday-mismatch` の `lang` は `"ja"` か `"en"`、`useCurrentYearIfMissing` は真偽値、`currentYear` は1以上の整数です。`no-dead-link` の `checkRelative`・`ignoreRedirects`・`httpOnly` は真偽値、`baseURI` と `userAgent` は空でない文字列、`ignore` はglobとして読める文字列の配列、`preferGET` はoriginを持つURLの配列です。`retry`・`maxRetryTime`・`maxRetryAfterTime` は0以上の整数、`concurrency` は1以上の整数です。textlintの `dotInIgnore`・`interval`・`intervalCap`・`linkMaxAge` は、jafixが対応しないので、知らないオプションに当たります。`no-todo` はオプションを持たないので、表にキーがあれば知らないオプションです
+- 英語の4ルールのオプションの値が誤っている。`terminology` の `defaultTerms`、`spelling` の `suggestCorrections`、`write-good` の9つの判定の名前のキーは真偽値です。`terminology` の `exclude` と `common-misspellings` の `ignore` は文字列の配列、`write-good` の `whitelist` は空でない文字列の配列、`spelling` の `skipPatterns` はパターンの配列です。textlintの `write-good` の `checks` は、jafixが対応しないので、知らないオプションに当たります
+- `terminology` の `terms` が、項目の配列か空でない文字列でない。項目が、空でない文字列か2つの文字列の配列でないか、`i`・`m`・`u` を付けたJavaScriptの正規表現として読めない。理由には `terms` と何番目の要素かを含めます。`skip` の要素が、`@textlint-rule/pattern` の `allowNodeTypes` と同じ13の型の名前のどれでもないときも不正です
+- `terminology` の `terms` のファイルが読めないか、JSONかコメント付きのJSONとして読めないか、項目の配列でない。理由には `terms` とファイルのパスを含めます
+- `spelling` の `language` が `"en"` でない。`wordDefinitionRegexp` が `/source/flags` の形でないか、正規表現として読めないか、`y` フラグを持つときも不正です
 - `prh` のオプションが誤っている。`rulePaths` と `ruleContents` に辞書が1つも無い(`prh = true` を含む)、`check` で始まるオプションが真偽値でない、`checkCodeComment`・`debug`・知らないオプションがある。理由には `prh` とオプションの名前を含めます
 - `prh` の `rulePaths` か `ruleContents` の辞書が誤っている。理由には `prh`、`rulePaths` か `ruleContents`、辞書のファイルのパス(`ruleContents` では何番目の要素か)を含めます。次のどれかに当たります
   - 辞書のファイルが読めないか、YAMLとして読めない。辞書の値の型が誤っている(`expected` が文字列でない、`rules` が配列でないなど)
@@ -708,7 +787,7 @@ IDは、jafixのルールのID(`sentence-length`)でも、textlintがpresetの�
   - `4.3.1.丸かっこ（）` と `fullwidth-paren`。`fullwidth-paren` は設定を書かなくても有効なので、`preset-jtf-style = true` だけの設定はこの組に当たります
   - `requireOutsideHalfParentheses = true` の `3.3.かっこ類と隣接する文字の間のスペースの有無` と、`space-between-ja-and-paren`
   - `prefer = "全角"` の `no-mixed-zenkaku-and-hankaku-alphabet` と、`2.1.9.アルファベット`。どちらも修正ルールなので、修正を繰り返すたびに英字が全角と半角を行き来します
-- 逆の置き換え。利用者の置き換えの固定の部分を、有効な組み込みの修正ルールが直す場合です。理由にはルールのID、その置き換え(`expected` か `replace`)、組み込みの修正ルールのIDを含めます。同じ箇所に当たる組み込みの修正ルールが2つ以上あれば、重なりを解く前のものをすべて挙げます
+- 逆の置き換え。利用者の置き換えの固定の部分を、有効な組み込みの修正ルールが直す場合です。理由にはルールのID、その置き換え(`expected`・`replace`・`terms` の項目)、組み込みの修正ルールのIDを含めます。同じ箇所に当たる組み込みの修正ルールが2つ以上あれば、重なりを解く前のものをすべて挙げます
 - `[filters]` のキーが、`comments`・`allowlist` のどちらでもない。値が `true`・`false`・表のどれでもない。`comments` に知らないオプションがあるか、`disablingComment`・`enablingComment` が空でない文字列でない。`allowlist` に知らないオプションがあるか、`allow` の要素が「[パターン](#パターン)」のとおりに読めない(空の文字列を含む)。理由には `filters`、filterのID、オプションの名前を含めます
 - `allowlistConfigPaths` が、空でない文字列の配列でない。またはそのファイルが、読めない・拡張子が `.json`・`.yml`・`.yaml` のどれでもない・中身が文字列の配列でない・要素がパターンとして読めない(空の文字列を含む)のどれかに当たる。ファイルの誤りでは、理由にファイルのパスを含めます
 
@@ -840,6 +919,30 @@ JTFスタイルガイドの37ルールも、判定の条件を `textlint-rule-pr
 - `no-dead-link` は、リンクの宛先だけを確かめます。textlintは、文中の `//host.tld/...` の文字列も拾い、ローカルのファイルとして確かめます
 - 3つとも、textlintと違って自動で直さず、指摘だけを出します。曜日とリダイレクト先のURLは文面に入れます
 
+英語の4ルールも、判定の条件を `textlint-rule-terminology` 5.2.16・`textlint-rule-spelling` 0.3.0・`textlint-rule-common-misspellings` 1.0.1・`textlint-rule-write-good` 2.0.0 (`write-good` 1.0.8)から写し、textlintの不具合に近い挙動は写しません。`spelling` と `common-misspellings` のルールのコードはGPLなので、コードは写さず、判定の条件から書き直しました。上の点のうち、列の数え方と文面は4ルールにも当てはまります。ほかに次の点が違います。
+
+- 4つとも、本文でない箇所(裸のURL、自動リンクの文字列、定義を持つ省略形・collapsed形の参照リンクの文字列)を見ません。textlintの `common-misspellings` は、`<https://example.com/teh>` の `teh` も指摘します
+- `terminology` の語の直後の条件に、`’` (U+2019)を除くASCIIでない文字(日本語の文字、全角の記号、アクセント付きのラテン文字)を足します。textlintは、直後が空白・ASCIIの句読点・文字列の末尾のときだけ当てるので、`javascriptを使う`・`javascript、` の `javascript` に当てません。`’` を除くのは、`id’s` に、textlintと同じく `id['’]?s` の項目の1件だけを出すためです
+- `terminology` の組み込みの辞書に、`\bHTTP(?!:)`・`\bHTTPS(?!:)` の2項目を入れません。textlintでは、JSONCの `"\b"` がバックスペースになり、2項目は一度も当たりません
+- `terminology` の置き換え後の語を決められない一致(文字列の項目の `.` が別の文字に当たったもの)は、修正と指摘のどちらにもせずに続けます。textlintは例外を投げて止まります
+- `terminology` の `terms` のファイルのパスは、設定ファイルのあるディレクトリから解決し、npm moduleの名前は読みません。読んだ値が項目の配列でなければ、設定の不正にします。textlintは、配列でない値を空として扱います。項目の正規表現には、textlintと違って `u` を付けます
+- `spelling` は、既定の除外に当たる語を辞書に当てません。textlintは、`123`・`foo_bar`・`README`・`JSON` も指摘します
+- `spelling` の判定と候補は、textlintのnspellではなく `spellbook` に従います。既定の `wordDefinitionRegexp` で取り出し、既定の除外に当たらない語の判定は同じです。`-` か末尾の `.` を語に含める `wordDefinitionRegexp` では、`spellbook` は、ハイフンで分けた語がどれも辞書にある語(`well-known`・`up-to-date`)と、末尾の `.` を除けば辞書にある語(`Mr.`)を正しい語とします。nspellは辞書に無い語とします
+- `spelling` の候補は、`spellbook` の候補をその順で出すので、並びと数がtextlintと違います。語を2つに分けた候補(`text lint`)も出ます。textlintが `textlint` に出す候補 `texting` は出ません
+- `spelling` は、リンクと画像の `title` を見ません
+- `spelling` の `wordDefinitionRegexp` は、READMEの書き方の `/source/flags` で読み、書いたフラグのまま当てます。textlintは、`/` を含む文字列をそのまま正規表現の元の文字列にするので、READMEの書き方では語を取り出せません。また、`g` 以外のフラグを落とします
+- `spelling` は、`wordDefinitionRegexp` の空の一致を語にしません。textlintは、`/[a-z]*/g` のような正規表現で空の語を指摘します
+- `spelling` の指摘の範囲は語の全体で、位置は元のソースでの位置です。textlintは、語の先頭の1文字を範囲にし、エスケープを解いた文字列の中の位置を出します
+- `common-misspellings` の一覧は、textlintが使う `misspellings` 1.1.0の4,273件ではなく、Wikipediaの一覧のrevision 1199637275から作った4,310件です。4,266件は正しい語まで同じです。違いは、Wikipediaの一覧にだけある43件、`misspellings` にだけある6件、正しい語の違う1件です
+- `common-misspellings` は、正しい語が複数ある項目(`alot`)でも、すべての正しい語を文面に入れます
+- `write-good` の `whitelist` は、本文の範囲の先頭の出現を含む、すべての出現を見ます。textlintは、文字列が本文の範囲の先頭にあると、後ろの出現もすべて見ません
+- `write-good` の `so` と `thereIs` は、終わりの記号(`.` `;` `!` `?`)の無い最後の文も見ます。位置は、文頭の空白をすべて飛ばした語の先頭です。textlintは終わりの記号の無い文を見ず、文頭の空白が2つ以上あると位置が空白の上にずれます
+- `write-good` の `weasel` の `too many`・`too few` の例外は、一致の直前の4文字を `too ` と比べます。textlintは、一致が本文の範囲の先頭から4文字未満にあると、本文の範囲の末尾の4文字と比べます
+- `write-good` の指摘の範囲は、当たった文字列の全体です。textlintは先頭の1文字を範囲にします
+- `write-good` の `eprime` は、`‘` `’` を `'` とみなして当て、位置は元のソースの位置です
+- `write-good` の `checks` (判定の一覧の置き換え)は使えません
+- `terminology` の組み込みの辞書の箇所、`spelling`、`common-misspellings` は、textlintと違って自動で直さず、指摘だけを出します
+
 2つのfilterも、外す範囲の求め方を `textlint-filter-rule-comments` 1.3.0と `textlint-filter-rule-allowlist` 4.0.0から写しています。ほかに次の点が違います。
 
 - `comments` の外す範囲は、コメントを含むHTMLのnodeの先頭ではなく、そのコメントの `<!--` から始まります。textlintでは、1つのHTMLのブロックに複数のコメントがあると、どの範囲もブロックの先頭から始まります
@@ -851,4 +954,4 @@ JTFスタイルガイドの37ルールも、判定の条件を `textlint-rule-pr
 
 [MIT License](LICENSE-MIT) と [Apache License 2.0](LICENSE-APACHE) のデュアルライセンスです。
 
-組み込みのルールのうち、textlintと同じIDのものは、textlintのルールとライブラリの挙動に合わせて書き直したもので、正規表現や語の表、辞書の一部をそれらのソースから写しています。`prh` と `@textlint-rule/pattern` は、`textlint-rule-prh`・`prh`・`@textlint-rule/textlint-rule-pattern`・`@textlint/regexp-string-matcher` の判定の条件を写しています。binaryには、MIT Licenseのlinderaと、mecab-ipadicの条件で配られるIPADICの辞書と、CC BY-SAの条件で配られるJTF日本語標準スタイルガイドの4つの辞書(`textlint-rule-preset-jtf-style` の `dict/*.yml`)も入っています。Apache License 2.0で配られる `sudachi-synonyms-dictionary` 20.0.0とSudachiDictの同義語辞書から、`@textlint-ja/no-synonyms` の判定に使う項目だけを取り出したデータも入っています。`no-dead-link` が外部のURLに接続するときのTLSの証明書の検証のために、CDLA-Permissive-2.0で配られる `webpki-roots` 1.0.12の証明書の一覧も入っています。`common-misspellings` が使う誤綴りの一覧は、Wikipediaの「Wikipedia:Lists of common misspellings/For machines」のrevision 1199637275 (`https://en.wikipedia.org/w/index.php?title=Wikipedia:Lists_of_common_misspellings/For_machines&oldid=1199637275`)から作ったもので、CC BY-SA 3.0の条件で入っています。それぞれの名前・version・著作権表示と、MIT License・mecab-ipadic・CC BY-SA・Apache License 2.0・CDLA-Permissive-2.0の条件は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にあります。GitHub Releasesのtarballには、binaryと一緒に `LICENSE-MIT`・`LICENSE-APACHE`・`THIRD_PARTY_NOTICES.md` を入れています。
+組み込みのルールのうち、textlintと同じIDのものは、textlintのルールとライブラリの挙動に合わせて書き直したもので、正規表現や語の表、辞書の一部をそれらのソースから写しています。`prh` と `@textlint-rule/pattern` は、`textlint-rule-prh`・`prh`・`@textlint-rule/textlint-rule-pattern`・`@textlint/regexp-string-matcher` の判定の条件を写しています。binaryには、MIT Licenseのlinderaと、mecab-ipadicの条件で配られるIPADICの辞書と、CC BY-SAの条件で配られるJTF日本語標準スタイルガイドの4つの辞書(`textlint-rule-preset-jtf-style` の `dict/*.yml`)も入っています。Apache License 2.0で配られる `sudachi-synonyms-dictionary` 20.0.0とSudachiDictの同義語辞書から、`@textlint-ja/no-synonyms` の判定に使う項目だけを取り出したデータも入っています。`no-dead-link` が外部のURLに接続するときのTLSの証明書の検証のために、CDLA-Permissive-2.0で配られる `webpki-roots` 1.0.12の証明書の一覧も入っています。`common-misspellings` が使う誤綴りの一覧は、Wikipediaの「Wikipedia:Lists of common misspellings/For machines」のrevision 1199637275 (`https://en.wikipedia.org/w/index.php?title=Wikipedia:Lists_of_common_misspellings/For_machines&oldid=1199637275`)から作ったもので、CC BY-SA 3.0の条件で入っています。`spelling` が使うhunspellの辞書は、`dictionary-en` 4.0.0のen_USの辞書を変えずに入れたもので、SCOWLとIspellの条件(`(MIT AND BSD)`)で配られています。辞書を引く `spellbook` 0.4.2は、MPL-2.0で配られています。`terminology` の辞書と `write-good` の単語リストは、MIT Licenseのpackageから写しています。`spelling` と `common-misspellings` のtextlintのルールはGPLなので、コードを写さず、判定の条件から書き直しました。それぞれの名前・version・著作権表示と、MIT License・mecab-ipadic・CC BY-SA・Apache License 2.0・CDLA-Permissive-2.0・SCOWLとIspell・MPL-2.0の条件は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にあります。GitHub Releasesのtarballには、binaryと一緒に `LICENSE-MIT`・`LICENSE-APACHE`・`THIRD_PARTY_NOTICES.md` を入れています。
