@@ -76,11 +76,12 @@ fn run_check(files: &[PathBuf]) -> ExitCode {
         let document = prose::parse(&src);
         let mut findings =
             rules::replacements(&src, &document, config.builtin(), &TargetLines::All);
-        findings.extend(rules::find(&src, &document, config.builtin()));
+        let fixes = rules::fix_findings(&src, &document, config.builtin());
+        findings.extend(rules::fixable(&fixes));
         let reports = if config.is_report_excluded(path) {
             Vec::new()
         } else {
-            rules::report(&src, &document, config.builtin(), &TargetLines::All)
+            rules::report(&src, &document, config.builtin(), &TargetLines::All, &fixes)
         };
         let mut lines: Vec<(usize, &str, &str)> = findings
             .iter()
@@ -183,9 +184,15 @@ fn run_hook(agent: Agent) -> ExitCode {
             continue;
         }
         // 修正ルールは改行を足し引きしないので、対象行は直した後の内容でも同じ行番号である
-        let index = LineIndex::new(&fixed);
-        let document = prose::parse(&fixed);
-        for report in rules::report(&fixed, &document, config.builtin(), &target.lines) {
+        let index = LineIndex::new(&fixed.content);
+        let reports_in_file = rules::report(
+            &fixed.content,
+            &fixed.document,
+            config.builtin(),
+            &target.lines,
+            &fixed.fixes,
+        );
+        for report in reports_in_file {
             let (line, column) = index.line_col(report.range.start);
             if !target.lines.contains(line) {
                 continue;
@@ -219,9 +226,16 @@ fn run_hook(agent: Agent) -> ExitCode {
     ExitCode::from(2)
 }
 
+/// `fix_file` が直した結果。`document` と `fixes` は `content` のものである
+struct Fixed {
+    content: String,
+    document: prose::Document,
+    fixes: Vec<rules::FixRuleFinding>,
+}
+
 /// 対象行に、利用者の置き換えを1回当て、その結果に組み込みの修正ルールを内容が変わらなくなるまで繰り返し当てた
 /// 内容を返す。変更が無ければ書き戻さない
-fn fix_file(path: &Path, lines: &TargetLines, builtin: &Builtin) -> std::io::Result<String> {
+fn fix_file(path: &Path, lines: &TargetLines, builtin: &Builtin) -> std::io::Result<Fixed> {
     let src = fs::read_to_string(path)?;
     let document = prose::parse(&src);
     let replacements = rules::replacements(&src, &document, builtin, lines);
@@ -235,16 +249,19 @@ fn fix_file(path: &Path, lines: &TargetLines, builtin: &Builtin) -> std::io::Res
     // ある修正ルールの結果に別の修正ルールが当たることがある (全角英字を半角にした後の `日本語 Rust` の空白)。
     // 組み込みの修正ルールは文字を消すか字種を一方向に変え、逆向きの組は設定の不正になるので、繰り返しは止まる
     loop {
-        let findings = rules::find(&fixed, &document, builtin);
-        let next = apply::apply(&fixed, &findings, lines);
+        let fixes = rules::fix_findings(&fixed, &document, builtin);
+        let next = apply::apply(&fixed, &rules::fixable(&fixes), lines);
         if next == fixed {
-            break;
+            if fixed != src {
+                fs::write(path, &fixed)?;
+            }
+            return Ok(Fixed {
+                content: fixed,
+                document,
+                fixes,
+            });
         }
         document = prose::parse(&next);
         fixed = next;
     }
-    if fixed != src {
-        fs::write(path, &fixed)?;
-    }
-    Ok(fixed)
 }

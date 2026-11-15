@@ -10,40 +10,6 @@ use super::super::builtin::{Builtin, JaSpaceAround};
 use super::super::{Finding, FixRuleFinding, Report, RuleId};
 use super::chars::{self, AROUND_NODE};
 
-/// `node` に当てるルールと、そのオプションと、文面に使うnodeの名前。ルールが無効なら `None`
-fn rule_of<'a>(
-    node: &InlineNode,
-    builtin: &'a Builtin,
-) -> Option<(RuleId, &'a JaSpaceAround, &'static str)> {
-    let (rule, options, name) = match node.kind {
-        InlineNodeKind::Code => (
-            RuleId::JaSpaceAroundCode,
-            &builtin.ja_space_around_code,
-            "インラインコード",
-        ),
-        InlineNodeKind::Link => (
-            RuleId::JaSpaceAroundLink,
-            &builtin.ja_space_around_link,
-            "リンク",
-        ),
-        InlineNodeKind::Strong => (
-            RuleId::JaSpaceAroundStrong,
-            &builtin.ja_space_around_strong,
-            "太字",
-        ),
-        InlineNodeKind::Emphasis => (
-            RuleId::JaSpaceAroundEmphasis,
-            &builtin.ja_space_around_emphasis,
-            "強調",
-        ),
-    };
-    Some((rule, options.as_ref()?, name))
-}
-
-fn is_japanese(c: char) -> bool {
-    chars::contains(AROUND_NODE, c)
-}
-
 /// `before`・`after` が `false` の側の修正の箇所。nodeの前か後ろに文字が無い側は判定しない
 pub fn find(src: &str, nodes: &[InlineNode], builtin: &Builtin) -> Vec<FixRuleFinding> {
     let mut findings = Vec::new();
@@ -112,6 +78,40 @@ pub fn report(src: &str, nodes: &[InlineNode], builtin: &Builtin) -> Vec<Report>
         }
     }
     reports
+}
+
+/// `node` に当てるルールと、そのオプションと、文面に使うnodeの名前。ルールが無効なら `None`
+fn rule_of<'a>(
+    node: &InlineNode,
+    builtin: &'a Builtin,
+) -> Option<(RuleId, &'a JaSpaceAround, &'static str)> {
+    let (rule, options, name) = match node.kind {
+        InlineNodeKind::Code => (
+            RuleId::JaSpaceAroundCode,
+            &builtin.ja_space_around_code,
+            "インラインコード",
+        ),
+        InlineNodeKind::Link => (
+            RuleId::JaSpaceAroundLink,
+            &builtin.ja_space_around_link,
+            "リンク",
+        ),
+        InlineNodeKind::Strong => (
+            RuleId::JaSpaceAroundStrong,
+            &builtin.ja_space_around_strong,
+            "太字",
+        ),
+        InlineNodeKind::Emphasis => (
+            RuleId::JaSpaceAroundEmphasis,
+            &builtin.ja_space_around_emphasis,
+            "強調",
+        ),
+    };
+    Some((rule, options.as_ref()?, name))
+}
+
+fn is_japanese(c: char) -> bool {
+    chars::contains(AROUND_NODE, c)
 }
 
 /// 太字か強調の `node` の前か後ろの空白 (`space`、元のソース上のバイト範囲) を消しても、消した後の文字列を

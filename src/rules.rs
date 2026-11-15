@@ -245,12 +245,13 @@ pub struct Report {
 
 /// 指摘ルール (組み込みの指摘ルール、見出しの中で直さない修正ルール、直さない利用者の置き換え、`replace` の無い
 /// `@textlint-rule/pattern` の要素) に当たる箇所を、位置の順に返す。`prh` と `@textlint-rule/pattern` は、
-/// `targets` と重なる本文の範囲だけに当てる
+/// `targets` と重なる本文の範囲だけに当てる。`fixes` は、同じ `src` と `document` の `fix_findings` の結果である
 pub fn report(
     src: &str,
     document: &Document,
     builtin: &Builtin,
     targets: &TargetLines,
+    fixes: &[FixRuleFinding],
 ) -> Vec<Report> {
     let mut reports = text::report(src, &document.texts, builtin);
     reports.extend(paragraph::report(src, &document.paragraphs, builtin));
@@ -279,19 +280,16 @@ pub fn report(
                 })
             }),
     );
-    reports.extend(
-        fix_rule_findings_without_overlaps(src, document, builtin)
-            .into_iter()
-            .filter(|fix| fix.heading)
-            .map(|FixRuleFinding { finding, .. }| Report {
-                range: finding.position..finding.range.end,
-                rule: finding.rule.name(),
-                message: Cow::Owned(format!(
-                    "{}。見出しのアンカーが変わるので、見出しへのリンクも直す",
-                    finding.message
-                )),
-            }),
-    );
+    reports.extend(fixes.iter().filter(|fix| fix.heading).map(
+        |FixRuleFinding { finding, .. }| Report {
+            range: finding.position..finding.range.end,
+            rule: finding.rule.name(),
+            message: Cow::Owned(format!(
+                "{}。見出しのアンカーが変わるので、見出しへのリンクも直す",
+                finding.message
+            )),
+        },
+    ));
     reports.extend(spacing::report(src, document, builtin));
     reports.sort_by_key(|report| report.range.start);
     reports
@@ -428,21 +426,18 @@ static SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new("[ \u{3000}]+").unw
 static JAPANESE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}ー]$").unwrap());
 
-/// 有効な修正ルールに当たる箇所を、重なりを解いて位置の順に返す。見出しの中で直さない箇所は含めない
-pub fn find(src: &str, document: &Document, builtin: &Builtin) -> Vec<Finding> {
-    fix_rule_findings_without_overlaps(src, document, builtin)
-        .into_iter()
+/// `fix_findings` のうち、見出しの中で直さない箇所を除いた、直す箇所を返す
+pub fn fixable(fixes: &[FixRuleFinding]) -> Vec<Finding> {
+    fixes
+        .iter()
         .filter(|fix| !fix.heading)
-        .map(|fix| fix.finding)
+        .map(|fix| fix.finding.clone())
         .collect()
 }
 
-/// `fix_rule_findings` の重なりを解いて、位置の順に返す。範囲が同じ箇所は、`RuleId` で前にあるルールの箇所が残る
-fn fix_rule_findings_without_overlaps(
-    src: &str,
-    document: &Document,
-    builtin: &Builtin,
-) -> Vec<FixRuleFinding> {
+/// 有効な修正ルールに当たる箇所を、見出しの中のものも含めて、重なりを解いて位置の順に返す。範囲が同じ箇所は、
+/// `RuleId` で前にあるルールの箇所が残る
+pub fn fix_findings(src: &str, document: &Document, builtin: &Builtin) -> Vec<FixRuleFinding> {
     let mut findings = fix_rule_findings(src, document, builtin);
     drop_overlaps(&mut findings, |fix| &fix.finding.range);
     findings
@@ -544,7 +539,7 @@ mod tests {
     }
 
     fn find_in(src: &str, range: Range<usize>) -> Vec<Finding> {
-        find(src, &body(range), &Builtin::default())
+        fixable(&fix_findings(src, &body(range), &Builtin::default()))
     }
 
     fn find_all(src: &str) -> Vec<(&str, String, RuleId)> {
