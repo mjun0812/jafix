@@ -1,0 +1,253 @@
+# ja-no-space-between-full-width の例。期待値は、textlint 15.8.0 と textlint-rule-ja-no-space-between-full-width 3.0.4 (textlint-rule-preset-ja-spacing 3.0.4) の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+builtin = '''
+ja-no-space-between-full-width = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+
+[[cases]]
+name = "nf-basic"
+text = "日本語 日本語, ひらがな ひらがな"
+findings = ["1:4", "1:14"]
+messages = ["全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する"]
+fixed = "日本語日本語, ひらがなひらがな"
+
+[[cases]]
+name = "nf-kanji-kana"
+text = "漢字 かな, かな 漢字"
+findings = ["1:3", "1:10"]
+messages = ["全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する"]
+fixed = "漢字かな, かな漢字"
+
+[[cases]]
+name = "nf-katakana-kanji"
+text = "漢字 カタカナ, カタカナ 漢字"
+findings = ["1:3", "1:14"]
+messages = ["全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する"]
+fixed = "漢字カタカナ, カタカナ漢字"
+
+[[cases]]
+name = "nf-hiragana-katakana"
+text = "ひら カナ, カナ ひら"
+findings = ["1:3", "1:10"]
+messages = ["全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する"]
+fixed = "ひらカナ, カナひら"
+
+[[cases]]
+name = "nf-katakana-compound-excluded"
+text = "インターフェース テスト, ア イ, ヴ ヶ"
+findings = []
+fixed = "インターフェース テスト, ア イ, ヴ ヶ"
+
+[[cases]]
+name = "nf-prolonged-mark"
+text = "サーバー ー, ー ー, 日本語 ー, ー 日本語"
+findings = []
+fixed = "サーバー ー, ー ー, 日本語 ー, ー 日本語"
+
+[[cases]]
+name = "nf-iteration-marks"
+text = "人々 日本, 日本 々, 〇 日, 〻 日"
+findings = ["1:3", "1:10", "1:15", "1:20"]
+messages = ["全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する"]
+fixed = "人々日本, 日本々, 〇日, 〻日"
+
+[[cases]]
+name = "nf-fullwidth-space"
+text = "日本語\u3000日本語"
+findings = []
+fixed = "日本語\u3000日本語"
+
+[[cases]]
+name = "nf-two-spaces"
+text = "日本語  日本語, 日本語 \u3000日本語"
+findings = []
+fixed = "日本語  日本語, 日本語 \u3000日本語"
+
+[[cases]]
+name = "nf-halfwidth-kana"
+builtin = '''
+ja-no-space-between-full-width = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+no-hankaku-kana = false
+'''
+text = "ｱ ｲ, 日 ｱ"
+findings = []
+fixed = "ｱ ｲ, 日 ｱ"
+
+[[cases]]
+name = "nf-english-between"
+text = "日本語 Rust 日本語, 日本語 123 日本語"
+findings = []
+fixed = "日本語 Rust 日本語, 日本語 123 日本語"
+
+[[cases]]
+name = "nf-punctuation"
+text = "日本語。 日本語, 日本語、 日本語, 「 日本語」"
+findings = []
+fixed = "日本語。 日本語, 日本語、 日本語, 「 日本語」"
+
+[[cases]]
+name = "nf-range-edges"
+text = "ぁ ぁ\nん ん\nゔ ゔ\nァ 日\n日 ヶ\nヷ 日\n㐀 日\n䶿 日\n䷀ 日\n豈 日\n﫿 日\n日 \U00020000\n日 \U0002ffff\n\U00030000 日"
+findings = ["1:2", "2:2", "4:2", "5:2", "7:2", "8:2", "10:2", "11:2", "12:2", "13:2"]
+messages = ["全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する"]
+fixed = "ぁぁ\nんん\nゔ ゔ\nァ日\n日ヶ\nヷ 日\n㐀日\n䶿日\n䷀ 日\n豈日\n﫿日\n日\U00020000\n日\U0002ffff\n\U00030000 日"
+
+[[cases]]
+name = "nf-surrogate-range-start"
+note = "textlintは空白の位置を、全角文字の長さ1文字として足すので、UTF-16で2単位のサロゲートペアの漢字では、空白でなく下位サロゲートを消して文字を壊す。jafixは文字で数え、空白を消す"
+text = "\U00020000 日"
+findings = ["1:2"]
+messages = ["全角文字どうしの間の空白を削除する"]
+fixed = "\U00020000日"
+
+[[cases]]
+name = "nf-surrogate-before-space"
+note = "textlintは空白の位置を、全角文字の長さ1文字として足すので、UTF-16で2単位のサロゲートペアの漢字では、空白でなく下位サロゲートを消して文字を壊す。jafixは文字で数え、空白を消す"
+text = "\U00020bb7 野"
+findings = ["1:2"]
+messages = ["全角文字どうしの間の空白を削除する"]
+fixed = "\U00020bb7野"
+
+[[cases]]
+name = "nf-surrogate-after-space"
+text = "野 \U00020bb7"
+findings = ["1:2"]
+messages = ["全角文字どうしの間の空白を削除する"]
+fixed = "野\U00020bb7"
+
+[[cases]]
+name = "nf-three-chars"
+note = "当たる空白をすべて指摘する。textlintは一致を重ねずに探すので、`日 本` の `本` を使う2つ目の空白を見落とし、`--fix` の後も `日本 語` が残る"
+text = "日 本 語"
+findings = ["1:2", "1:4"]
+messages = ["全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する"]
+fixed = "日本語"
+
+[[cases]]
+name = "nf-four-chars"
+note = "当たる空白をすべて指摘する。textlintは1つおきの2件だけを指摘する"
+text = "あ い う え"
+findings = ["1:2", "1:4", "1:6"]
+messages = ["全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する"]
+fixed = "あいうえ"
+
+[[cases]]
+name = "nf-chain-mixed-katakana"
+note = "当たる空白をすべて指摘する。textlintは `ア 日` の `日` を消費するので、`日 イ` の空白を見落とす"
+text = "ア 日 イ"
+findings = ["1:2", "1:4"]
+messages = ["全角文字どうしの間の空白を削除する", "全角文字どうしの間の空白を削除する"]
+fixed = "ア日イ"
+
+[[cases]]
+name = "nf-chain-katakana-skipped"
+text = "漢 ア イ"
+findings = ["1:2"]
+messages = ["全角文字どうしの間の空白を削除する"]
+fixed = "漢ア イ"
+
+[[cases]]
+name = "nf-newline"
+text = "日本語\n日本語, 日本語 \n日本語"
+findings = []
+fixed = "日本語\n日本語, 日本語 \n日本語"
+
+[[cases]]
+name = "nf-list"
+text = "- 日本語 日本語"
+findings = ["1:6"]
+messages = ["全角文字どうしの間の空白を削除する"]
+fixed = "- 日本語日本語"
+
+[[cases]]
+name = "nf-list-continuation"
+text = "- 項目\n  日本語 日本語"
+findings = ["2:6"]
+messages = ["全角文字どうしの間の空白を削除する"]
+fixed = "- 項目\n  日本語日本語"
+
+[[cases]]
+name = "nf-after-inline-code"
+text = "`a` 日本語 日本語 `b`"
+findings = ["1:8"]
+messages = ["全角文字どうしの間の空白を削除する"]
+fixed = "`a` 日本語日本語 `b`"
+
+[[cases]]
+name = "nf-heading"
+text = "# 日本語 日本語"
+findings = []
+fixed = "# 日本語 日本語"
+
+[[cases]]
+name = "nf-quote"
+text = "> 日本語 日本語"
+findings = []
+fixed = "> 日本語 日本語"
+
+[[cases]]
+name = "nf-table"
+text = "| a |\n| - |\n| 日本語 日本語 |"
+findings = []
+fixed = "| a |\n| - |\n| 日本語 日本語 |"
+
+[[cases]]
+name = "nf-link-text"
+text = "[日本語 日本語](https://example.com)"
+findings = []
+fixed = "[日本語 日本語](https://example.com)"
+
+[[cases]]
+name = "nf-emphasis"
+text = "*日本語 日本語*, **日本語 日本語**"
+findings = []
+fixed = "*日本語 日本語*, **日本語 日本語**"
+
+[[cases]]
+name = "nf-inline-code"
+text = "`日本語 日本語`, 日本語 日本語"
+findings = ["1:15"]
+messages = ["全角文字どうしの間の空白を削除する"]
+fixed = "`日本語 日本語`, 日本語日本語"
+
+[[cases]]
+name = "nf-across-inline-code"
+text = "日本語 `x` 日本語"
+findings = []
+fixed = "日本語 `x` 日本語"
+
+[[cases]]
+name = "nf-with-default-fix-rules"
+note = "既存の修正ルールと組み合わさる: `space-between-ja-and-alnum` が英字の前後の空白を消し、このルールが日本語どうしの空白を消す。2つの箇所は重ならない"
+builtin = '''
+ja-no-space-between-full-width = true
+'''
+text = "日本語 Rust 日本語, 日本語 日本語"
+findings = ["1:18"]
+messages = ["全角文字どうしの間の空白を削除する"]
+fixed = "日本語Rust日本語, 日本語日本語"
+
+[[cases]]
+name = "nf-repeat-hankaku-kana"
+note = "繰り返し: `no-hankaku-kana` が `ｱ` を `ア` にした結果に、このルールが当たり、1回の `jafix fix` で空白が消える。`jafix check` は元の内容の箇所だけを出す"
+builtin = '''
+ja-no-space-between-full-width = true
+'''
+text = "日 ｱ"
+findings = []
+fixed = "日ア"

@@ -14,7 +14,8 @@ use super::prh::dictionary::{Dictionary, Source};
 /// 組み込みのルールの設定。有効・無効と、オプションを持つルールのオプションである。
 /// 既定では、`preset-ja-technical-writing` の23ルールと修正ルールの3つが有効で、オプションはtextlintの
 /// `preset-ja-technical-writing` と同じである。`@textlint-ja/preset-ai-writing` と `preset-ai-words-ja` の
-/// 7ルールと、利用者の置き換えの2ルール (`prh`・`@textlint-rule/pattern`) は無効である
+/// 7ルール、利用者の置き換えの2ルール (`prh`・`@textlint-rule/pattern`)、`preset-ja-spacing` の11ルール、
+/// `no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals` は無効である
 #[derive(Debug)]
 pub struct Builtin {
     pub fullwidth_paren: bool,
@@ -52,6 +53,19 @@ pub struct Builtin {
     pub no_short_topic_comma: Option<NoShortTopicComma>,
     pub prh: Option<Prh>,
     pub textlint_rule_pattern: Option<TextlintRulePattern>,
+    pub ja_nakaguro_or_halfwidth_space_between_katakana: bool,
+    pub ja_no_space_around_parentheses: bool,
+    pub ja_no_space_around_slash: bool,
+    pub ja_no_space_between_full_width: bool,
+    pub ja_space_between_half_and_full_width: Option<JaSpaceBetweenHalfAndFullWidth>,
+    pub ja_space_after_exclamation: bool,
+    pub ja_space_after_question: bool,
+    pub ja_space_around_code: Option<JaSpaceAround>,
+    pub ja_space_around_emphasis: Option<JaSpaceAround>,
+    pub ja_space_around_link: Option<JaSpaceAround>,
+    pub ja_space_around_strong: Option<JaSpaceAround>,
+    pub no_mixed_zenkaku_and_hankaku_alphabet: Option<NoMixedZenkakuAndHankakuAlphabet>,
+    pub no_kangxi_radicals: bool,
 }
 
 impl Default for Builtin {
@@ -92,6 +106,19 @@ impl Default for Builtin {
             no_short_topic_comma: None,
             prh: None,
             textlint_rule_pattern: None,
+            ja_nakaguro_or_halfwidth_space_between_katakana: false,
+            ja_no_space_around_parentheses: false,
+            ja_no_space_around_slash: false,
+            ja_no_space_between_full_width: false,
+            ja_space_between_half_and_full_width: None,
+            ja_space_after_exclamation: false,
+            ja_space_after_question: false,
+            ja_space_around_code: None,
+            ja_space_around_emphasis: None,
+            ja_space_around_link: None,
+            ja_space_around_strong: None,
+            no_mixed_zenkaku_and_hankaku_alphabet: None,
+            no_kangxi_radicals: false,
         }
     }
 }
@@ -136,6 +163,13 @@ impl Builtin {
         }
         builtin.reject_opposite_replacements()?;
         Ok(builtin)
+    }
+
+    /// `OPPOSITE_RULES` の組のうち、両方のルールが有効なものがあれば、最初の組の理由を返す。
+    /// すべてのキーを当てた後の有効・無効とオプションで判定する
+    #[allow(dead_code)] // skeleton: not implemented
+    fn reject_opposite_rules(&self) -> Result<(), String> {
+        todo!("skeleton: not implemented")
     }
 
     /// 利用者の置き換えの固定の部分に、有効な組み込みの修正ルールが直す箇所があれば理由を返す。
@@ -277,9 +311,77 @@ impl Builtin {
                 self.textlint_rule_pattern =
                     options.map(TextlintRulePattern::from_options).transpose()?;
             }
+            RuleId::JaNakaguroOrHalfwidthSpaceBetweenKatakana => {
+                self.ja_nakaguro_or_halfwidth_space_between_katakana = enabled(options)?;
+            }
+            RuleId::JaNoSpaceAroundParentheses => {
+                self.ja_no_space_around_parentheses = enabled(options)?;
+            }
+            RuleId::JaNoSpaceAroundSlash => self.ja_no_space_around_slash = enabled(options)?,
+            RuleId::JaNoSpaceBetweenFullWidth => {
+                self.ja_no_space_between_full_width = enabled(options)?;
+            }
+            RuleId::JaSpaceBetweenHalfAndFullWidth => {
+                self.ja_space_between_half_and_full_width = options
+                    .map(JaSpaceBetweenHalfAndFullWidth::from_options)
+                    .transpose()?;
+            }
+            RuleId::JaSpaceAfterExclamation => self.ja_space_after_exclamation = enabled(options)?,
+            RuleId::JaSpaceAfterQuestion => self.ja_space_after_question = enabled(options)?,
+            RuleId::JaSpaceAroundCode => {
+                self.ja_space_around_code = options.map(JaSpaceAround::from_options).transpose()?;
+            }
+            RuleId::JaSpaceAroundEmphasis => {
+                self.ja_space_around_emphasis =
+                    options.map(JaSpaceAround::from_options).transpose()?;
+            }
+            RuleId::JaSpaceAroundLink => {
+                self.ja_space_around_link = options.map(JaSpaceAround::from_options).transpose()?;
+            }
+            RuleId::JaSpaceAroundStrong => {
+                self.ja_space_around_strong =
+                    options.map(JaSpaceAround::from_options).transpose()?;
+            }
+            RuleId::NoMixedZenkakuAndHankakuAlphabet => {
+                self.no_mixed_zenkaku_and_hankaku_alphabet = options
+                    .map(NoMixedZenkakuAndHankakuAlphabet::from_options)
+                    .transpose()?;
+            }
+            RuleId::NoKangxiRadicals => self.no_kangxi_radicals = enabled(options)?,
         }
         Ok(())
     }
+}
+
+/// 組み込みのルールどうしで、修正ルールと逆の書き方を求める組。両方が有効なら、hookが直した箇所を
+/// もう一方のルールが指摘し、agentが元に戻す往復になるので、設定の不正にする
+#[allow(dead_code)] // skeleton: not implemented
+struct OppositeRules {
+    /// 設定によって、`fix_rule` と逆の書き方を求めるルール
+    rule: RuleId,
+    /// `rule` が有効で、その設定が逆の書き方を求めるなら、設定と求める書き方の文面を返す
+    /// (`` `space` の "always" は日本語と英数字の間に空白を求め ``)
+    demand: fn(&Builtin) -> Option<String>,
+    fix_rule: RuleId,
+    fix_rule_enabled: fn(&Builtin) -> bool,
+    /// `fix_rule` が直すことの文面 (`その空白を削除する`)
+    fixes: &'static str,
+}
+
+/// 組み込みのルールどうしの逆の書き方の組。4本目以降のルールの組はここに足す
+#[allow(dead_code)] // skeleton: not implemented
+const OPPOSITE_RULES: [OppositeRules; 1] = [OppositeRules {
+    rule: RuleId::JaSpaceBetweenHalfAndFullWidth,
+    demand: half_and_full_width_demands_space,
+    fix_rule: RuleId::SpaceBetweenJaAndAlnum,
+    fix_rule_enabled: |builtin| builtin.space_between_ja_and_alnum,
+    fixes: "その空白を削除する",
+}];
+
+/// `ja-space-between-half-and-full-width` が有効で、`space` が英字か数字の隣に空白を求めるなら、その文面を返す
+fn half_and_full_width_demands_space(builtin: &Builtin) -> Option<String> {
+    let _ = builtin;
+    todo!("skeleton: not implemented")
 }
 
 /// `[builtin]` に名前で書けるpreset。名前はtextlintの設定に書く名前と同じである
@@ -288,13 +390,15 @@ pub enum Preset {
     JaTechnicalWriting,
     AiWriting,
     AiWordsJa,
+    JaSpacing,
 }
 
 impl Preset {
-    pub const ALL: [Preset; 3] = [
+    pub const ALL: [Preset; 4] = [
         Preset::JaTechnicalWriting,
         Preset::AiWriting,
         Preset::AiWordsJa,
+        Preset::JaSpacing,
     ];
 
     /// `[builtin]` のキーに使う名前
@@ -303,6 +407,7 @@ impl Preset {
             Preset::JaTechnicalWriting => "preset-ja-technical-writing",
             Preset::AiWriting => "@textlint-ja/preset-ai-writing",
             Preset::AiWordsJa => "preset-ai-words-ja",
+            Preset::JaSpacing => "preset-ja-spacing",
         }
     }
 
@@ -348,6 +453,20 @@ impl Preset {
             Preset::AiWordsJa => &[
                 (RuleId::NoAiWords, true),
                 (RuleId::NoShortTopicComma, false),
+            ],
+            // presetの既定のオプションは、どれもルールの既定値と同じである
+            Preset::JaSpacing => &[
+                (RuleId::JaNakaguroOrHalfwidthSpaceBetweenKatakana, true),
+                (RuleId::JaNoSpaceAroundParentheses, true),
+                (RuleId::JaNoSpaceAroundSlash, true),
+                (RuleId::JaNoSpaceBetweenFullWidth, true),
+                (RuleId::JaSpaceBetweenHalfAndFullWidth, true),
+                (RuleId::JaSpaceAfterExclamation, true),
+                (RuleId::JaSpaceAfterQuestion, true),
+                (RuleId::JaSpaceAroundCode, true),
+                (RuleId::JaSpaceAroundEmphasis, false),
+                (RuleId::JaSpaceAroundLink, true),
+                (RuleId::JaSpaceAroundStrong, false),
             ],
         }
     }
@@ -1604,6 +1723,78 @@ fn user_pattern(value: &Value) -> Result<UserPattern, String> {
         allows,
         allow_node_types,
     })
+}
+
+#[derive(Debug)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct JaSpaceBetweenHalfAndFullWidth {
+    pub space: Space,
+    /// 段落の直下でない文字列 (見出し・表のセル・引用・リンクの文字列・太字・強調の中) も見る
+    pub lint_styled_node: bool,
+    /// 判定に使った並びの先頭が、一致の範囲の中 (終わりの位置を含まない) にあれば外す
+    pub allows: Vec<Regex>,
+}
+
+impl JaSpaceBetweenHalfAndFullWidth {
+    /// `space` は `"never"`・`"always"`・`"alphabets"` と `"numbers"` と `"punctuation"` の配列のどれか。
+    /// `exceptPunctuation` は受け付けず、知らないオプションとして理由を返す
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
+    }
+}
+
+/// `ja-space-between-half-and-full-width` の `space`。`alphabets` か `numbers` が真なら空白を求め、
+/// どちらも偽なら空白を消す
+#[derive(Debug)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct Space {
+    pub alphabets: bool,
+    pub numbers: bool,
+    /// `、` `。` の隣も見る
+    pub punctuation: bool,
+    /// 設定に書いた値 (`"always"`、`["numbers"]`)。逆の書き方の理由に使う
+    pub written: String,
+}
+
+/// `ja-space-around-code`・`ja-space-around-link`・`ja-space-around-strong`・`ja-space-around-emphasis` の
+/// オプション。`false` の側は空白を消す修正、`true` の側は空白を求める指摘になる
+#[derive(Debug, Default)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct JaSpaceAround {
+    pub before: bool,
+    pub after: bool,
+}
+
+impl JaSpaceAround {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
+    }
+}
+
+#[derive(Debug)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct NoMixedZenkakuAndHankakuAlphabet {
+    pub prefer: AlphabetWidth,
+}
+
+impl NoMixedZenkakuAndHankakuAlphabet {
+    /// `prefer` は `"全角"` か `"半角"` だけを受け付ける
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
+    }
+}
+
+/// `no-mixed-zenkaku-and-hankaku-alphabet` が揃える英字の幅
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[allow(dead_code)] // skeleton: not implemented
+pub enum AlphabetWidth {
+    /// `"全角"`
+    Full,
+    /// `"半角"` (既定)
+    Half,
 }
 
 #[cfg(test)]

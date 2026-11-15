@@ -1,0 +1,570 @@
+# ja-space-around-link の例。期待値は、textlint 15.8.0 と textlint-rule-ja-space-around-link 3.0.4 (textlint-rule-preset-ja-spacing 3.0.4) の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+builtin = '''
+ja-space-around-link = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+
+[[cases]]
+name = "al-basic"
+text = "日本語 [x](https://example.com) 日本語"
+findings = ["1:4", "1:29"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "日本語[x](https://example.com)日本語"
+
+[[cases]]
+name = "al-before-only"
+text = "日本語 [x](https://example.com)日本語"
+findings = ["1:4"]
+messages = ["リンクの前の空白を削除する"]
+fixed = "日本語[x](https://example.com)日本語"
+
+[[cases]]
+name = "al-after-only"
+note = "`after = false` の箇所の位置は、消す空白である。textlintは指摘を空白の次の文字に出す (修正の範囲は空白)"
+text = "日本語[x](https://example.com) 日本語"
+findings = ["1:28"]
+messages = ["リンクの後の空白を削除する"]
+fixed = "日本語[x](https://example.com)日本語"
+
+[[cases]]
+name = "al-no-space"
+text = "日本語[x](https://example.com)日本語"
+findings = []
+fixed = "日本語[x](https://example.com)日本語"
+
+[[cases]]
+name = "al-fullwidth-space"
+text = "日本語\u3000[x](https://example.com)\u3000日本語"
+findings = []
+fixed = "日本語\u3000[x](https://example.com)\u3000日本語"
+
+[[cases]]
+name = "al-two-spaces"
+text = "日本語  [x](https://example.com)  日本語"
+findings = []
+fixed = "日本語  [x](https://example.com)  日本語"
+
+[[cases]]
+name = "al-english-neighbors"
+text = "English [x](https://example.com) English と 123 [x](https://example.com) 456"
+findings = []
+fixed = "English [x](https://example.com) English と 123 [x](https://example.com) 456"
+
+[[cases]]
+name = "al-english-one-side"
+text = "English [x](https://example.com) 日本語 と 日本語 [x](https://example.com) English"
+findings = ["1:33", "1:43"]
+messages = ["リンクの後の空白を削除する", "リンクの前の空白を削除する"]
+fixed = "English [x](https://example.com)日本語 と 日本語[x](https://example.com) English"
+
+[[cases]]
+name = "al-not-japanese-chars"
+text = "ー [x](https://example.com) ー と 々 [x](https://example.com) 々 と 。 [x](https://example.com) 、 と 〇 [x](https://example.com) 〇 と ・ [x](https://example.com) ・"
+findings = []
+fixed = "ー [x](https://example.com) ー と 々 [x](https://example.com) 々 と 。 [x](https://example.com) 、 と 〇 [x](https://example.com) 〇 と ・ [x](https://example.com) ・"
+
+[[cases]]
+name = "al-range-edges"
+text = "ぁ [x](https://example.com)\nん [x](https://example.com)\nゔ [x](https://example.com)\nァ [x](https://example.com)\nヶ [x](https://example.com)\nヷ [x](https://example.com)\n㐀 [x](https://example.com)\n䶿 [x](https://example.com)\n䷀ [x](https://example.com)\n豈 [x](https://example.com)\n﫿 [x](https://example.com)"
+findings = ["1:2", "2:2", "4:2", "5:2", "7:2", "8:2", "10:2", "11:2"]
+messages = ["リンクの前の空白を削除する", "リンクの前の空白を削除する", "リンクの前の空白を削除する", "リンクの前の空白を削除する", "リンクの前の空白を削除する", "リンクの前の空白を削除する", "リンクの前の空白を削除する", "リンクの前の空白を削除する"]
+fixed = "ぁ[x](https://example.com)\nん[x](https://example.com)\nゔ [x](https://example.com)\nァ[x](https://example.com)\nヶ[x](https://example.com)\nヷ [x](https://example.com)\n㐀[x](https://example.com)\n䶿[x](https://example.com)\n䷀ [x](https://example.com)\n豈[x](https://example.com)\n﫿[x](https://example.com)"
+
+[[cases]]
+name = "al-surrogate-kanji"
+note = "文字で日本語かを判定し、U+20000からU+2FFFFの漢字も日本語の文字に数える。textlintはUTF-16の1単位で判定するので、サロゲートペアの漢字の隣を見落とす"
+text = "\U00020bb7 [x](https://example.com) \U00020bb7"
+findings = ["1:2", "1:27"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "\U00020bb7[x](https://example.com)\U00020bb7"
+
+[[cases]]
+name = "al-document-start"
+text = "[x](https://example.com) 日本語"
+findings = ["1:25"]
+messages = ["リンクの後の空白を削除する"]
+fixed = "[x](https://example.com)日本語"
+
+[[cases]]
+name = "al-document-end"
+text = "日本語 [x](https://example.com)"
+findings = ["1:4"]
+messages = ["リンクの前の空白を削除する"]
+fixed = "日本語[x](https://example.com)"
+
+[[cases]]
+name = "al-line-boundaries"
+text = "日本語\n[x](https://example.com) 日本語\n日本語 [x](https://example.com)\n日本語"
+findings = ["2:25", "3:4"]
+messages = ["リンクの後の空白を削除する", "リンクの前の空白を削除する"]
+fixed = "日本語\n[x](https://example.com)日本語\n日本語[x](https://example.com)\n日本語"
+
+[[cases]]
+name = "al-continuation-indent"
+text = "日本語\n  [x](https://example.com) 日本語"
+findings = ["2:27"]
+messages = ["リンクの後の空白を削除する"]
+fixed = "日本語\n  [x](https://example.com)日本語"
+
+[[cases]]
+name = "al-two-nodes"
+text = "日本語 [x](https://example.com) [x](https://example.com) 日本語"
+findings = ["1:4", "1:54"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "日本語[x](https://example.com) [x](https://example.com)日本語"
+
+[[cases]]
+name = "al-list"
+text = "- 日本語 [x](https://example.com) 日本語"
+findings = ["1:6", "1:31"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "- 日本語[x](https://example.com)日本語"
+
+[[cases]]
+name = "al-list-continuation"
+text = "- 項目\n  日本語 [x](https://example.com) 日本語"
+findings = ["2:6", "2:31"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "- 項目\n  日本語[x](https://example.com)日本語"
+
+[[cases]]
+name = "al-quote"
+text = "> 日本語 [x](https://example.com) 日本語"
+findings = ["1:6", "1:31"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "> 日本語[x](https://example.com)日本語"
+
+[[cases]]
+name = "al-table"
+text = "| a |\n| - |\n| 日本語 [x](https://example.com) 日本語 |"
+findings = ["3:6", "3:31"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "| a |\n| - |\n| 日本語[x](https://example.com)日本語 |"
+
+[[cases]]
+name = "al-heading"
+note = "見出しの中のnodeも見るが、見出しの文字を変えるとアンカーが変わるので、直さずに指摘にする。textlintは見出しの空白も消す"
+text = "# 日本語 [x](https://example.com) 日本語"
+findings = ["1:6", "1:31"]
+messages = ["リンクの前の空白を削除する。見出しのアンカーが変わるので、見出しへのリンクも直す", "リンクの後の空白を削除する。見出しのアンカーが変わるので、見出しへのリンクも直す"]
+fixed = "# 日本語 [x](https://example.com) 日本語"
+
+[[cases]]
+name = "al-setext-heading"
+note = "setext形式の見出しも、直さずに指摘にする"
+text = "日本語 [x](https://example.com) 日本語\n==="
+findings = ["1:4", "1:29"]
+messages = ["リンクの前の空白を削除する。見出しのアンカーが変わるので、見出しへのリンクも直す", "リンクの後の空白を削除する。見出しのアンカーが変わるので、見出しへのリンクも直す"]
+fixed = "日本語 [x](https://example.com) 日本語\n==="
+
+[[cases]]
+name = "al-in-strong"
+text = "**日本語 [x](https://example.com) 日本語**"
+findings = ["1:6", "1:31"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "**日本語[x](https://example.com)日本語**"
+
+[[cases]]
+name = "al-in-emphasis"
+text = "*日本語 [x](https://example.com) 日本語*"
+findings = ["1:5", "1:30"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "*日本語[x](https://example.com)日本語*"
+
+[[cases]]
+name = "al-in-delete"
+text = "~~日本語 [x](https://example.com) 日本語~~"
+findings = ["1:6", "1:31"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "~~日本語[x](https://example.com)日本語~~"
+
+[[cases]]
+name = "al-with-default-fix-rules"
+builtin = '''
+ja-space-around-link = true
+'''
+text = "日本語 [x](https://example.com) 日本語"
+findings = ["1:4", "1:29"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "日本語[x](https://example.com)日本語"
+
+[[cases]]
+name = "al-true-basic"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語[x](https://example.com)日本語"
+findings = ["1:3", "1:28"]
+messages = ["リンクの前に半角空白を入れる", "リンクの後に半角空白を入れる"]
+
+[[cases]]
+name = "al-true-spaced"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語 [x](https://example.com) 日本語"
+findings = []
+
+[[cases]]
+name = "al-true-english"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "English[x](https://example.com)English と 日本語[x](https://example.com)English と English[x](https://example.com)日本語"
+findings = ["1:44", "1:110"]
+messages = ["リンクの前に半角空白を入れる", "リンクの後に半角空白を入れる"]
+
+[[cases]]
+name = "al-true-fullwidth-space"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語\u3000[x](https://example.com)\u3000日本語"
+findings = []
+
+[[cases]]
+name = "al-true-not-japanese-chars"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "ー[x](https://example.com)ー と 々[x](https://example.com)々 と 。[x](https://example.com)、"
+findings = []
+
+[[cases]]
+name = "al-true-document-end"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語[x](https://example.com)"
+findings = ["1:3"]
+messages = ["リンクの前に半角空白を入れる"]
+
+[[cases]]
+name = "al-true-document-start-after"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "[x](https://example.com)日本語"
+findings = ["1:25"]
+messages = ["リンクの後に半角空白を入れる"]
+
+[[cases]]
+name = "al-true-surrogate-kanji"
+note = "文字で日本語かを判定し、U+20000からU+2FFFFの漢字も日本語の文字に数える。textlintはUTF-16の1単位で判定するので、サロゲートペアの漢字の隣を見落とす"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "\U00020bb7[x](https://example.com)\U00020bb7"
+findings = ["1:1", "1:26"]
+messages = ["リンクの前に半角空白を入れる", "リンクの後に半角空白を入れる"]
+
+[[cases]]
+name = "al-true-line-boundaries"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語\n[x](https://example.com)日本語\n日本語[x](https://example.com)\n日本語"
+findings = ["2:25", "3:3"]
+messages = ["リンクの後に半角空白を入れる", "リンクの前に半角空白を入れる"]
+
+[[cases]]
+name = "al-true-list"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "- 日本語[x](https://example.com)日本語"
+findings = ["1:5", "1:30"]
+messages = ["リンクの前に半角空白を入れる", "リンクの後に半角空白を入れる"]
+
+[[cases]]
+name = "al-true-quote"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "> 日本語[x](https://example.com)日本語"
+findings = ["1:5", "1:30"]
+messages = ["リンクの前に半角空白を入れる", "リンクの後に半角空白を入れる"]
+
+[[cases]]
+name = "al-true-table"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "| a |\n| - |\n| 日本語[x](https://example.com)日本語 |"
+findings = ["3:5", "3:30"]
+messages = ["リンクの前に半角空白を入れる", "リンクの後に半角空白を入れる"]
+
+[[cases]]
+name = "al-true-heading"
+note = "指摘ルールなので、見出しの中でも `見出しのアンカーが変わるので…` の補足を付けない。textlintも見出しの中のnodeを指摘する"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "# 日本語[x](https://example.com)日本語"
+findings = ["1:5", "1:30"]
+messages = ["リンクの前に半角空白を入れる", "リンクの後に半角空白を入れる"]
+
+[[cases]]
+name = "al-true-in-strong"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "**日本語[x](https://example.com)日本語**"
+findings = ["1:5", "1:30"]
+messages = ["リンクの前に半角空白を入れる", "リンクの後に半角空白を入れる"]
+
+[[cases]]
+name = "al-true-in-emphasis"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "*日本語[x](https://example.com)日本語*"
+findings = ["1:4", "1:29"]
+messages = ["リンクの前に半角空白を入れる", "リンクの後に半角空白を入れる"]
+
+[[cases]]
+name = "al-true-in-delete"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "~~日本語[x](https://example.com)日本語~~"
+findings = ["1:5", "1:30"]
+messages = ["リンクの前に半角空白を入れる", "リンクの後に半角空白を入れる"]
+
+[[cases]]
+name = "al-before-true-only"
+builtin = '''
+ja-space-around-link = { before = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語[x](https://example.com) 日本語 と 日本語 [x](https://example.com)日本語"
+findings = ["1:3", "1:28"]
+messages = ["リンクの前に半角空白を入れる", "リンクの後の空白を削除する"]
+fixed = "日本語[x](https://example.com)日本語 と 日本語 [x](https://example.com)日本語"
+
+[[cases]]
+name = "al-after-true-only"
+builtin = '''
+ja-space-around-link = { after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語[x](https://example.com) 日本語 と 日本語 [x](https://example.com)日本語 と 日本語[x](https://example.com)日本語"
+findings = ["1:38", "1:63", "1:96"]
+messages = ["リンクの前の空白を削除する", "リンクの後に半角空白を入れる", "リンクの後に半角空白を入れる"]
+fixed = "日本語[x](https://example.com) 日本語 と 日本語[x](https://example.com)日本語 と 日本語[x](https://example.com)日本語"
+
+[[cases]]
+name = "al-before-true-after-false"
+builtin = '''
+ja-space-around-link = { before = true, after = false }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語[x](https://example.com) 日本語"
+findings = ["1:3", "1:28"]
+messages = ["リンクの前に半角空白を入れる", "リンクの後の空白を削除する"]
+fixed = "日本語[x](https://example.com)日本語"
+
+[[cases]]
+name = "al-before-false-after-true"
+builtin = '''
+ja-space-around-link = { before = false, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語 [x](https://example.com)日本語"
+findings = ["1:4", "1:29"]
+messages = ["リンクの前の空白を削除する", "リンクの後に半角空白を入れる"]
+fixed = "日本語[x](https://example.com)日本語"
+
+[[cases]]
+name = "al-before-true-after-false-spaced"
+builtin = '''
+ja-space-around-link = { before = true, after = false }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語 [x](https://example.com)日本語"
+findings = []
+fixed = "日本語 [x](https://example.com)日本語"
+
+[[cases]]
+name = "al-document-start-inner-japanese"
+note = "前に文字が無い側は判定しない。textlintは `before: true` で、文書の先頭のリンクにも、リンクの中の文字を前の文字とみなして指摘を出す"
+builtin = '''
+ja-space-around-link = { before = true, after = false }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "[日本](https://example.com)の説明"
+findings = []
+fixed = "[日本](https://example.com)の説明"
+
+[[cases]]
+name = "al-autolink"
+text = "日本語 <https://example.com> 日本語"
+findings = ["1:4", "1:26"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "日本語<https://example.com>日本語"
+
+[[cases]]
+name = "al-autolink-true"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語<https://example.com>日本語"
+findings = ["1:3", "1:25"]
+messages = ["リンクの前に半角空白を入れる", "リンクの後に半角空白を入れる"]
+
+[[cases]]
+name = "al-bare-url"
+note = "裸のURLには当てない。GFMの裸のURLは前が空白か行頭であることを求めるので、前の空白を消すとURLとして読まれず、後ろの空白を消すと続く `です` がURLに入る。textlintは裸のURLの前後の空白も消す"
+text = "詳細は https://example.com/a です"
+findings = []
+fixed = "詳細は https://example.com/a です"
+
+[[cases]]
+name = "al-bare-url-true"
+builtin = '''
+ja-space-around-link = { before = true, after = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "詳細は https://example.com/a です"
+findings = []
+
+[[cases]]
+name = "al-full-reference"
+text = "日本語 [x][r] 日本語\n\n[r]: https://example.com"
+findings = []
+fixed = "日本語 [x][r] 日本語\n\n[r]: https://example.com"
+
+[[cases]]
+name = "al-shortcut-reference"
+text = "日本語 [x] 日本語\n\n[x]: https://example.com"
+findings = []
+fixed = "日本語 [x] 日本語\n\n[x]: https://example.com"
+
+[[cases]]
+name = "al-collapsed-reference"
+text = "日本語 [x][] 日本語\n\n[x]: https://example.com"
+findings = []
+fixed = "日本語 [x][] 日本語\n\n[x]: https://example.com"
+
+[[cases]]
+name = "al-image"
+text = "日本語 ![alt](a.png) 日本語"
+findings = []
+fixed = "日本語 ![alt](a.png) 日本語"
+
+[[cases]]
+name = "al-image-reference"
+text = "日本語 ![alt][r] 日本語\n\n[r]: a.png"
+findings = []
+fixed = "日本語 ![alt][r] 日本語\n\n[r]: a.png"
+
+[[cases]]
+name = "al-image-link"
+text = "日本語 [![alt](a.png)](https://example.com) 日本語"
+findings = ["1:4", "1:41"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "日本語[![alt](a.png)](https://example.com)日本語"
+
+[[cases]]
+name = "al-title"
+text = "日本語 [x](https://example.com \"タイトル\") 日本語"
+findings = ["1:4", "1:36"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "日本語[x](https://example.com \"タイトル\")日本語"
+
+[[cases]]
+name = "al-code-text"
+text = "日本語 [`c`](https://example.com) 日本語"
+findings = ["1:4", "1:31"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "日本語[`c`](https://example.com)日本語"
+
+[[cases]]
+name = "al-japanese-text"
+text = "日本語 [日本語](https://example.com) 日本語"
+findings = ["1:4", "1:31"]
+messages = ["リンクの前の空白を削除する", "リンクの後の空白を削除する"]
+fixed = "日本語[日本語](https://example.com)日本語"
+
+[[cases]]
+name = "al-reference-definition-text"
+text = "日本語 [x] 日本語\n\n[x]: https://example.com \"日本語\""
+findings = []
+fixed = "日本語 [x] 日本語\n\n[x]: https://example.com \"日本語\""

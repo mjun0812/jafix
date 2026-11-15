@@ -1,0 +1,262 @@
+# no-kangxi-radicals の例。期待値は、textlint 15.8.0 と textlint-rule-no-kangxi-radicals 0.2.2 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+builtin = '''
+no-kangxi-radicals = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+
+[[cases]]
+name = "nr-basic"
+text = "⼈⼝は人口"
+findings = ["1:1", "1:2"]
+messages = ["康熙部首「⼈」を漢字「人」にする", "康熙部首「⼝」を漢字「口」にする"]
+fixed = "人口は人口"
+
+[[cases]]
+name = "nr-single"
+text = "日本⼈"
+findings = ["1:3"]
+messages = ["康熙部首「⼈」を漢字「人」にする"]
+fixed = "日本人"
+
+[[cases]]
+name = "nr-consecutive"
+text = "⼈⼈⼈"
+findings = ["1:1", "1:2", "1:3"]
+messages = ["康熙部首「⼈」を漢字「人」にする", "康熙部首「⼈」を漢字「人」にする", "康熙部首「⼈」を漢字「人」にする"]
+fixed = "人人人"
+
+[[cases]]
+name = "nr-spaced"
+text = "⼈ ⼝ ⼀"
+findings = ["1:1", "1:3", "1:5"]
+messages = ["康熙部首「⼈」を漢字「人」にする", "康熙部首「⼝」を漢字「口」にする", "康熙部首「⼀」を漢字「一」にする"]
+fixed = "人 口 一"
+
+[[cases]]
+name = "nr-no-radicals"
+text = "人口 と 日本語 と ⺠⻘"
+findings = []
+fixed = "人口 と 日本語 と ⺠⻘"
+
+[[cases]]
+name = "nr-range-first"
+text = "⼀"
+findings = ["1:1"]
+messages = ["康熙部首「⼀」を漢字「一」にする"]
+fixed = "一"
+
+[[cases]]
+name = "nr-range-last"
+text = "⿕"
+findings = ["1:1"]
+messages = ["康熙部首「⿕」を漢字「龠」にする"]
+fixed = "龠"
+
+[[cases]]
+name = "nr-range-outside"
+text = "\u2eff と \u2fd6 と \u2fdf と ⺠ と ⻘"
+findings = []
+fixed = "\u2eff と \u2fd6 と \u2fdf と ⺠ と ⻘"
+
+[[cases]]
+name = "nr-differs-from-nfkc"
+text = "⼾ と ⿊"
+findings = ["1:1", "1:5"]
+messages = ["康熙部首「⼾」を漢字「戸」にする", "康熙部首「⿊」を漢字「黒」にする"]
+fixed = "戸 と 黒"
+
+[[cases]]
+name = "nr-multiple-lines"
+text = "⼈\nあ⼝\n\n⼀"
+findings = ["1:1", "2:2", "4:1"]
+messages = ["康熙部首「⼈」を漢字「人」にする", "康熙部首「⼝」を漢字「口」にする", "康熙部首「⼀」を漢字「一」にする"]
+fixed = "人\nあ口\n\n一"
+
+[[cases]]
+name = "nr-list"
+text = "- ⼈です"
+findings = ["1:3"]
+messages = ["康熙部首「⼈」を漢字「人」にする"]
+fixed = "- 人です"
+
+[[cases]]
+name = "nr-list-continuation"
+text = "- 項目\n  ⼈です"
+findings = ["2:3"]
+messages = ["康熙部首「⼈」を漢字「人」にする"]
+fixed = "- 項目\n  人です"
+
+[[cases]]
+name = "nr-table"
+text = "| a |\n| - |\n| ⼈ |"
+findings = ["3:3"]
+messages = ["康熙部首「⼈」を漢字「人」にする"]
+fixed = "| a |\n| - |\n| 人 |"
+
+[[cases]]
+name = "nr-strong"
+text = "**⼈** です"
+findings = ["1:3"]
+messages = ["康熙部首「⼈」を漢字「人」にする"]
+fixed = "**人** です"
+
+[[cases]]
+name = "nr-delete"
+text = "~~⼈~~ です"
+findings = ["1:3"]
+messages = ["康熙部首「⼈」を漢字「人」にする"]
+fixed = "~~人~~ です"
+
+[[cases]]
+name = "nr-quote"
+text = "> ⼈です"
+findings = ["1:3"]
+messages = ["康熙部首「⼈」を漢字「人」にする"]
+fixed = "> 人です"
+
+[[cases]]
+name = "nr-link-text"
+text = "[⼈](https://example.com) です"
+findings = ["1:2"]
+messages = ["康熙部首「⼈」を漢字「人」にする"]
+fixed = "[人](https://example.com) です"
+
+[[cases]]
+name = "nr-emphasis"
+text = "*⼈* です"
+findings = ["1:2"]
+messages = ["康熙部首「⼈」を漢字「人」にする"]
+fixed = "*人* です"
+
+[[cases]]
+name = "nr-full-reference"
+text = "[⼈][r] です\n\n[r]: https://example.com"
+findings = ["1:2"]
+messages = ["康熙部首「⼈」を漢字「人」にする"]
+fixed = "[人][r] です\n\n[r]: https://example.com"
+
+[[cases]]
+name = "nr-inline-html"
+text = "<span>⼈</span> です"
+findings = ["1:7"]
+messages = ["康熙部首「⼈」を漢字「人」にする"]
+fixed = "<span>人</span> です"
+
+[[cases]]
+name = "nr-footnote-definition"
+text = "本文[^1]\n\n[^1]: ⼈ です"
+findings = ["3:7"]
+messages = ["康熙部首「⼈」を漢字「人」にする"]
+fixed = "本文[^1]\n\n[^1]: 人 です"
+
+[[cases]]
+name = "nr-heading"
+note = "見出しの中も見る。康熙部首は記号としてアンカーから除かれ、漢字にするとアンカーが変わるので、直さずに指摘にする。textlintは見出しの文字も直す"
+text = "# ⼈です"
+findings = ["1:3"]
+messages = ["康熙部首「⼈」を漢字「人」にする。見出しのアンカーが変わるので、見出しへのリンクも直す"]
+fixed = "# ⼈です"
+
+[[cases]]
+name = "nr-setext-heading"
+note = "setext形式の見出しも、直さずに指摘にする"
+text = "⼈です\n==="
+findings = ["1:1"]
+messages = ["康熙部首「⼈」を漢字「人」にする。見出しのアンカーが変わるので、見出しへのリンクも直す"]
+fixed = "⼈です\n==="
+
+[[cases]]
+name = "nr-heading-and-body"
+note = "見出しの中だけ、直さずに指摘にする"
+text = "# ⼈\n\n⼝"
+findings = ["1:3", "3:1"]
+messages = ["康熙部首「⼈」を漢字「人」にする。見出しのアンカーが変わるので、見出しへのリンクも直す", "康熙部首「⼝」を漢字「口」にする"]
+fixed = "# ⼈\n\n口"
+
+[[cases]]
+name = "nr-inline-code"
+text = "`⼈` と ⼝"
+findings = ["1:7"]
+messages = ["康熙部首「⼝」を漢字「口」にする"]
+fixed = "`⼈` と 口"
+
+[[cases]]
+name = "nr-code-block"
+text = "```\n⼈\n```\n\n    ⼝"
+findings = []
+fixed = "```\n⼈\n```\n\n    ⼝"
+
+[[cases]]
+name = "nr-image-alt"
+text = "![⼈](a.png) と ⼝"
+findings = ["1:15"]
+messages = ["康熙部首「⼝」を漢字「口」にする"]
+fixed = "![⼈](a.png) と 口"
+
+[[cases]]
+name = "nr-link-url-and-title"
+text = "[x](https://example.com/⼈ \"⼝\") と ⼀"
+findings = ["1:34"]
+messages = ["康熙部首「⼀」を漢字「一」にする"]
+fixed = "[x](https://example.com/⼈ \"⼝\") と 一"
+
+[[cases]]
+name = "nr-definition"
+text = "[r]: https://example.com/⼈ \"⼝\"\n\n⼀"
+findings = ["3:1"]
+messages = ["康熙部首「⼀」を漢字「一」にする"]
+fixed = "[r]: https://example.com/⼈ \"⼝\"\n\n一"
+
+[[cases]]
+name = "nr-bare-url"
+note = "裸のURLは本文でないので見ない。textlintは文字列のnodeとして当て、URLの中の康熙部首も漢字にする"
+text = "詳細は https://example.com/⼈ です"
+findings = []
+fixed = "詳細は https://example.com/⼈ です"
+
+[[cases]]
+name = "nr-autolink"
+note = "自動リンクの文字列は本文でないので見ない。textlintは文字列のnodeとして当て、URLの中の康熙部首も漢字にする"
+text = "<https://example.com/⼈> と ⼝"
+findings = ["1:27"]
+messages = ["康熙部首「⼝」を漢字「口」にする"]
+fixed = "<https://example.com/⼈> と 口"
+
+[[cases]]
+name = "nr-shortcut-reference"
+note = "定義を持つ省略形の参照リンクの文字列は本文でないので見ない。textlintは文字列のnodeとして当て、漢字にする"
+text = "[⼈] と ⼝\n\n[⼈]: https://example.com"
+findings = ["1:7"]
+messages = ["康熙部首「⼝」を漢字「口」にする"]
+fixed = "[⼈] と 口\n\n[⼈]: https://example.com"
+
+[[cases]]
+name = "nr-collapsed-reference"
+note = "定義を持つcollapsed形の参照リンクの文字列は本文でないので見ない。textlintは文字列のnodeとして当て、漢字にする"
+text = "[⼈][] と ⼝\n\n[⼈]: https://example.com"
+findings = ["1:9"]
+messages = ["康熙部首「⼝」を漢字「口」にする"]
+fixed = "[⼈][] と 口\n\n[⼈]: https://example.com"
+
+[[cases]]
+name = "nr-with-space-rule"
+note = "同じ回に、このルールが `⼈` を `人` にし、`space-between-ja-and-alnum` が `⼈` と英字の間の空白を消す。`⼈` も日本語の文字なので、`日本語 ⼈` の間の空白は残る"
+builtin = '''
+no-kangxi-radicals = true
+'''
+text = "日本語 ⼈ English"
+findings = ["1:5"]
+messages = ["康熙部首「⼈」を漢字「人」にする"]
+fixed = "日本語 人English"

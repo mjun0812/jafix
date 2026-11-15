@@ -1,0 +1,229 @@
+# ja-no-space-around-slash の例。期待値は、textlint 15.8.0 と textlint-rule-ja-no-space-around-slash 3.0.4 (textlint-rule-preset-ja-spacing 3.0.4) の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+builtin = '''
+ja-no-space-around-slash = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+
+[[cases]]
+name = "ns-basic"
+text = "a / b と 日本語 / 英語"
+findings = ["1:2", "1:12"]
+messages = ["スラッシュの前後の空白を削除する", "スラッシュの前後の空白を削除する"]
+fixed = "a/b と 日本語/英語"
+
+[[cases]]
+name = "ns-before-only"
+text = "a /b"
+findings = ["1:2"]
+messages = ["スラッシュの前後の空白を削除する"]
+fixed = "a/b"
+
+[[cases]]
+name = "ns-after-only"
+note = "空白を消す箇所の位置は、消す空白の並びの先頭 (`/` の前に空白が無ければ、`/` の後ろの空白)。textlintは一致の先頭 (`/`) に出す"
+text = "a/ b"
+findings = ["1:3"]
+messages = ["スラッシュの前後の空白を削除する"]
+fixed = "a/b"
+
+[[cases]]
+name = "ns-both-multi"
+text = "a   /   b"
+findings = ["1:2"]
+messages = ["スラッシュの前後の空白を削除する"]
+fixed = "a/b"
+
+[[cases]]
+name = "ns-fullwidth-space"
+text = "a\u3000/\u3000b"
+findings = ["1:2"]
+messages = ["スラッシュの前後の空白を削除する"]
+fixed = "a/b"
+
+[[cases]]
+name = "ns-no-space"
+text = "a/b と 日本語/英語"
+findings = []
+fixed = "a/b と 日本語/英語"
+
+[[cases]]
+name = "ns-fullwidth-slash"
+text = "a ／ b"
+findings = []
+fixed = "a ／ b"
+
+[[cases]]
+name = "ns-start-and-end"
+note = "空白を消す箇所の位置は、消す空白の並びの先頭 (`/` の前に空白が無ければ、`/` の後ろの空白)。textlintは一致の先頭 (`/`) に出す"
+text = "/ a と b /"
+findings = ["1:2", "1:8"]
+messages = ["スラッシュの前後の空白を削除する", "スラッシュの前後の空白を削除する"]
+fixed = "/a と b/"
+
+[[cases]]
+name = "ns-twice-sharing"
+note = "空白を消す箇所の位置は、消す空白の並びの先頭 (`/` の前に空白が無ければ、`/` の後ろの空白)。textlintは一致の先頭 (`/`) に出す"
+text = "a / / b"
+findings = ["1:2", "1:6"]
+messages = ["スラッシュの前後の空白を削除する", "スラッシュの前後の空白を削除する"]
+fixed = "a//b"
+
+[[cases]]
+name = "ns-chain"
+text = "a / b / c"
+findings = ["1:2", "1:6"]
+messages = ["スラッシュの前後の空白を削除する", "スラッシュの前後の空白を削除する"]
+fixed = "a/b/c"
+
+[[cases]]
+name = "ns-triple"
+note = "空白を消す箇所の位置は、消す空白の並びの先頭 (`/` の前に空白が無ければ、`/` の後ろの空白)。textlintは一致の先頭 (`/`) に出す"
+text = "a /// b"
+findings = ["1:2", "1:6"]
+messages = ["スラッシュの前後の空白を削除する", "スラッシュの前後の空白を削除する"]
+fixed = "a///b"
+
+[[cases]]
+name = "ns-bare-url"
+text = "詳細は https://example.com/a/b です"
+findings = []
+fixed = "詳細は https://example.com/a/b です"
+
+[[cases]]
+name = "ns-bare-url-space"
+text = "see https://example.com/ a"
+findings = []
+fixed = "see https://example.com/ a"
+
+[[cases]]
+name = "ns-autolink"
+text = "<https://example.com/a> / b"
+findings = ["1:24"]
+messages = ["スラッシュの前後の空白を削除する"]
+fixed = "<https://example.com/a>/b"
+
+[[cases]]
+name = "ns-heading"
+text = "# a / b"
+findings = []
+fixed = "# a / b"
+
+[[cases]]
+name = "ns-list"
+text = "- a / b"
+findings = ["1:4"]
+messages = ["スラッシュの前後の空白を削除する"]
+fixed = "- a/b"
+
+[[cases]]
+name = "ns-list-continuation-indent"
+note = "textlintは継続行の字下げも含めて消し、2:1に出す。jafixは行頭から続く空白を消さないので、字下げの後の `/` を残し、`/` の後ろの空白を消す箇所を出す"
+text = "- a\n  / b"
+findings = ["2:4"]
+messages = ["スラッシュの前後の空白を削除する"]
+fixed = "- a\n  /b"
+
+[[cases]]
+name = "ns-line-start"
+note = "空白を消す箇所の位置は、消す空白の並びの先頭 (`/` の前に空白が無ければ、`/` の後ろの空白)。textlintは一致の先頭 (`/`) に出す"
+text = "日本語\n/ English"
+findings = ["2:2"]
+messages = ["スラッシュの前後の空白を削除する"]
+fixed = "日本語\n/English"
+
+[[cases]]
+name = "ns-quote"
+text = "> a / b"
+findings = []
+fixed = "> a / b"
+
+[[cases]]
+name = "ns-table"
+text = "| a |\n| - |\n| b / c |"
+findings = []
+fixed = "| a |\n| - |\n| b / c |"
+
+[[cases]]
+name = "ns-link-text"
+text = "[a / b](https://example.com)"
+findings = []
+fixed = "[a / b](https://example.com)"
+
+[[cases]]
+name = "ns-emphasis"
+text = "*a / b* と **c / d**"
+findings = []
+fixed = "*a / b* と **c / d**"
+
+[[cases]]
+name = "ns-inline-code"
+text = "`a / b` と a / b"
+findings = ["1:12"]
+messages = ["スラッシュの前後の空白を削除する"]
+fixed = "`a / b` と a/b"
+
+[[cases]]
+name = "ns-code-neighbors"
+text = "`x` / `y`"
+findings = ["1:4"]
+messages = ["スラッシュの前後の空白を削除する"]
+fixed = "`x`/`y`"
+
+[[cases]]
+name = "ns-code-block"
+text = "```\na / b\n```"
+findings = []
+fixed = "```\na / b\n```"
+
+[[cases]]
+name = "ns-12-spaces-before"
+note = "textlintは前に最大10文字までの空白を消し、2文字を残して3文字目から指摘する。jafixは並びの長さを問わず、先頭から1件にして消す"
+text = "a            / b"
+findings = ["1:2"]
+messages = ["スラッシュの前後の空白を削除する"]
+fixed = "a/b"
+
+[[cases]]
+name = "ns-12-spaces-after"
+note = "textlintは後ろに最大10文字までの空白を消し、2文字を残す。jafixは並びの長さを問わず消す"
+text = "a /            b"
+findings = ["1:2"]
+messages = ["スラッシュの前後の空白を削除する"]
+fixed = "a/b"
+
+[[cases]]
+name = "ns-with-default-fix-rules"
+builtin = '''
+ja-no-space-around-slash = true
+'''
+text = "日本語 / English"
+findings = ["1:4"]
+messages = ["スラッシュの前後の空白を削除する"]
+fixed = "日本語/English"
+
+[[cases]]
+name = "ns-parentheses-overlap"
+note = "重なり: `/` の一致が括弧の隣の空白を含み、先に始まって長いので `「/」` になる。`ja-no-space-around-parentheses` の箇所は残らない"
+builtin = '''
+ja-no-space-around-slash = true
+ja-no-space-around-parentheses = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "「 / 」"
+findings = ["1:2"]
+messages = ["スラッシュの前後の空白を削除する"]
+fixed = "「/」"

@@ -15,6 +15,29 @@ pub struct Document {
     pub headings: Vec<Paragraph>,
     /// リスト項目。出現順に並び、入れ子の項目は親の項目の後に来る
     pub list_items: Vec<ListItem>,
+    /// 文書のどこにあるかによらない、すべてのインラインコード・リンク・太字・強調。出現順に並び、
+    /// 入れ子のnodeは外側のnodeの後に来る。段落・見出し・表のセル・リンクの文字列・太字の中を含む
+    pub inline_nodes: Vec<InlineNode>,
+}
+
+/// インラインのnodeの前後を見るルールが当てるnode
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct InlineNode {
+    pub kind: InlineNodeKind,
+    /// 元のソース上のバイト範囲。区切りの記号 (`` ` ``・`**`・`[`・`<` など) を含む
+    pub range: Range<usize>,
+    /// 見出しの中
+    pub heading: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[allow(dead_code)] // skeleton: not implemented
+pub enum InlineNodeKind {
+    Code,
+    /// インラインのリンク (`[x](u)`) と自動リンク (`<…>`)。裸のURLと参照形式のリンクは含めない
+    Link,
+    Strong,
+    Emphasis,
 }
 
 /// リスト項目
@@ -120,7 +143,7 @@ pub enum InlineKind {
     FootnoteReference,
 }
 
-/// Markdownを解析し、本文の範囲・段落・見出し・リスト項目を取り出す
+/// Markdownを解析し、本文の範囲・段落・見出し・リスト項目・インラインのnodeを取り出す
 pub fn parse(src: &str) -> Document {
     let options = ParseOptions {
         constructs: Constructs {
@@ -139,7 +162,16 @@ pub fn parse(src: &str) -> Document {
         paragraphs: blocks.paragraphs,
         headings: blocks.headings,
         list_items: blocks.list_items,
+        // skeleton: not implemented (`collect_inline_nodes` で集める)
+        inline_nodes: Vec::new(),
     }
+}
+
+/// `node` の中のインラインコード・リンク・太字・強調を `nodes` に集める。`heading` は、`node` が見出しの中にあるか
+#[allow(dead_code)] // skeleton: not implemented
+fn collect_inline_nodes(node: &Node, src: &str, heading: bool, nodes: &mut Vec<InlineNode>) {
+    let _ = (node, src, heading, nodes);
+    todo!("skeleton: not implemented")
 }
 
 fn node_range(node: &Node) -> Range<usize> {

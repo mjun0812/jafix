@@ -1,0 +1,243 @@
+# ja-no-space-around-parentheses の例。期待値は、textlint 15.8.0 と textlint-rule-ja-no-space-around-parentheses 3.0.4 (textlint-rule-preset-ja-spacing 3.0.4) の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+builtin = '''
+ja-no-space-around-parentheses = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+
+[[cases]]
+name = "np-basic"
+text = "日本語 「引用」 です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語「引用」です"
+
+[[cases]]
+name = "np-inside"
+text = "「 引用 」と『 引用 』"
+findings = ["1:2", "1:5", "1:9", "1:12"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "「引用」と『引用』"
+
+[[cases]]
+name = "np-each-bracket"
+text = "「 a 」\n『 a 』\n（ a ）\n［ a ］\n[ a ]"
+findings = ["1:2", "1:4", "2:2", "2:4", "3:2", "3:4", "4:2", "4:4", "5:2", "5:4"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "「a」\n『a』\n（a）\n［a］\n[a]"
+
+[[cases]]
+name = "np-fullwidth-space"
+text = "日本語\u3000「引用」\u3000です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語「引用」です"
+
+[[cases]]
+name = "np-halfwidth-parentheses"
+text = "日本語 (補足) です と ( 補足 ) と"
+findings = []
+fixed = "日本語 (補足) です と ( 補足 ) と"
+
+[[cases]]
+name = "np-non-japanese-neighbors"
+text = "see [1] here と x （ y ） z"
+findings = ["1:4", "1:8", "1:17", "1:19", "1:21", "1:23"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "see[1]here と x（y）z"
+
+[[cases]]
+name = "np-fullwidth-parentheses"
+text = "日本語 （補足） です と （ 補足 ）"
+findings = ["1:4", "1:9", "1:14", "1:16", "1:19"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語（補足）です と（補足）"
+
+[[cases]]
+name = "np-no-space"
+text = "日本語「引用」です"
+findings = []
+fixed = "日本語「引用」です"
+
+[[cases]]
+name = "np-shared-space"
+text = "「a」 「b」"
+findings = ["1:4"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "「a」「b」"
+
+[[cases]]
+name = "np-closing-then-opening"
+text = "（a） 「b」 『c』 ［d］"
+findings = ["1:4", "1:8", "1:12"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "（a）「b」『c』［d］"
+
+[[cases]]
+name = "np-two-spaces-each-side"
+note = "括弧に隣り合って続く空白は、1件にしてまとめて消す。textlintは括弧に隣り合う1文字だけを指摘し、2文字目の位置に出して、`--fix` の後も1文字が残る"
+text = "日本語  「x」  です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語「x」です"
+
+[[cases]]
+name = "np-three-spaces-inside"
+note = "括弧に隣り合って続く空白は、1件にしてまとめて消す。textlintは1文字だけを消す"
+text = "「   引用   」"
+findings = ["1:2", "1:7"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "「引用」"
+
+[[cases]]
+name = "np-shared-two-spaces"
+note = "2つの括弧に挟まれた空白の並びは、1件にしてまとめて消す。textlintは並びの1文字ずつを2件で指摘する"
+text = "「a」  「b」"
+findings = ["1:4"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "「a」「b」"
+
+[[cases]]
+name = "np-mixed-width-run"
+note = "半角空白と全角空白が続く並びも、1件にしてまとめて消す。textlintは括弧に隣り合う全角空白だけを消す"
+text = "日本語 \u3000「x」"
+findings = ["1:4"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "日本語「x」"
+
+[[cases]]
+name = "np-list-continuation-indent"
+text = "- 項目\n  「続き」"
+findings = []
+fixed = "- 項目\n  「続き」"
+
+[[cases]]
+name = "np-list-continuation-indent-inside"
+text = "- 項目\n  「 続き 」"
+findings = ["2:4", "2:7"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "- 項目\n  「続き」"
+
+[[cases]]
+name = "np-paragraph-continuation-indent"
+text = "日本語\n  「続き」 です"
+findings = ["2:7"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "日本語\n  「続き」です"
+
+[[cases]]
+name = "np-continuation-tab-indent"
+text = "日本語\n\t「続き」"
+findings = []
+fixed = "日本語\n\t「続き」"
+
+[[cases]]
+name = "np-continuation-spaces-then-text"
+text = "日本語\n  x 「続き」"
+findings = ["2:4"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "日本語\n  x「続き」"
+
+[[cases]]
+name = "np-after-inline-code"
+text = "`a` 「x」 `b`"
+findings = ["1:4", "1:8"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "`a`「x」`b`"
+
+[[cases]]
+name = "np-line-start-after-newline"
+text = "日本語\n「x」 です"
+findings = ["2:4"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "日本語\n「x」です"
+
+[[cases]]
+name = "np-list"
+text = "- 日本語 「x」 です"
+findings = ["1:6", "1:10"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "- 日本語「x」です"
+
+[[cases]]
+name = "np-heading"
+text = "# 日本語 「 ダメ 」 です"
+findings = []
+fixed = "# 日本語 「 ダメ 」 です"
+
+[[cases]]
+name = "np-quote"
+text = "> 日本語 「 x 」 です"
+findings = []
+fixed = "> 日本語 「 x 」 です"
+
+[[cases]]
+name = "np-table"
+text = "| a |\n| - |\n| 日本語 「 x 」 |"
+findings = []
+fixed = "| a |\n| - |\n| 日本語 「 x 」 |"
+
+[[cases]]
+name = "np-link-text"
+text = "[「 x 」](https://example.com)"
+findings = []
+fixed = "[「 x 」](https://example.com)"
+
+[[cases]]
+name = "np-emphasis"
+text = "*「 x 」* と **「 y 」**"
+findings = []
+fixed = "*「 x 」* と **「 y 」**"
+
+[[cases]]
+name = "np-inline-code"
+text = "`「 x 」` と 「 y 」"
+findings = ["1:10", "1:12", "1:14"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "`「 x 」` と「y」"
+
+[[cases]]
+name = "np-overlap-fullwidth-paren"
+note = "重なり: 日本語と全角括弧の間の空白は `space-between-ja-and-paren` の箇所が残るので、このルールの箇所は出ない。全角括弧は `fullwidth-paren` が半角にする"
+builtin = '''
+ja-no-space-around-parentheses = true
+'''
+text = "日本語 （補足） です"
+findings = []
+fixed = "日本語(補足)です"
+
+[[cases]]
+name = "np-overlap-inside-remains"
+note = "重なり: 括弧の外側の空白は `space-between-ja-and-paren` の箇所が残り、内側の空白はこのルールの箇所が残る"
+builtin = '''
+ja-no-space-around-parentheses = true
+'''
+text = "日本語 （ 補足 ） です"
+findings = ["1:6", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語(補足)です"
+
+[[cases]]
+name = "np-overlap-slash"
+note = "重なり: `ja-no-space-around-slash` の一致が括弧の隣の空白を含み、先に始まって長いので、このルールの箇所は出ない"
+builtin = '''
+ja-no-space-around-parentheses = true
+ja-no-space-around-slash = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "「 / 」"
+findings = []
+fixed = "「/」"

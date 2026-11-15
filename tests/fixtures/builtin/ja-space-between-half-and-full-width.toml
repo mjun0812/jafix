@@ -1,0 +1,678 @@
+# ja-space-between-half-and-full-width の例。期待値は、textlint 15.8.0 と textlint-rule-ja-space-between-half-and-full-width 3.0.4 (textlint-rule-preset-ja-spacing 3.0.4) の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+builtin = '''
+ja-space-between-half-and-full-width = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+
+[[cases]]
+name = "jb-basic"
+text = "日本語 Rust と 123 です"
+findings = ["1:4", "1:9", "1:11", "1:15"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語Rustと123です"
+
+[[cases]]
+name = "jb-both-orders"
+text = "Rust 日本語 C と 4 言語"
+findings = ["1:5", "1:9", "1:11", "1:13", "1:15"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "Rust日本語Cと4言語"
+
+[[cases]]
+name = "jb-fullwidth-space"
+text = "日本語\u3000Rust"
+findings = ["1:4"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語Rust"
+
+[[cases]]
+name = "jb-two-spaces"
+text = "日本語  Rust と\u3000 123 です"
+findings = ["1:10", "1:17"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語  Rustと\u3000 123です"
+
+[[cases]]
+name = "jb-punctuation-excluded"
+text = "です。 Rust と、 Rust と Rust 。 と Rust 、"
+findings = ["1:9", "1:17", "1:19", "1:28"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "です。 Rustと、 RustとRust 。 とRust 、"
+
+[[cases]]
+name = "jb-explicit-never"
+builtin = '''
+ja-space-between-half-and-full-width = { space = 'never' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語 Rust"
+findings = ["1:4"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語Rust"
+
+[[cases]]
+name = "jb-empty-array-is-never"
+builtin = '''
+ja-space-between-half-and-full-width = { space = [] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語 Rust"
+findings = ["1:4"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語Rust"
+
+[[cases]]
+name = "jb-punctuation-array"
+builtin = '''
+ja-space-between-half-and-full-width = { space = ['punctuation'] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "です。 Rust と、 Rust と Rust 。 と Rust 、 と"
+findings = ["1:4", "1:9", "1:12", "1:17", "1:19", "1:24", "1:28", "1:33"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "です。Rustと、RustとRust。 とRust、 と"
+
+[[cases]]
+name = "jb-prolonged-mark-and-iteration-mark"
+text = "コンピューター Hello 人々 Hello"
+findings = ["1:14"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "コンピューター Hello人々 Hello"
+
+[[cases]]
+name = "jb-not-japanese-chars"
+text = "ー A と 々 B と 〇 C と ・ D と ゝ E と ゔ F"
+findings = ["1:4", "1:10", "1:16", "1:22", "1:28"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "ー Aと 々 Bと 〇 Cと ・ Dと ゝ Eと ゔ F"
+
+[[cases]]
+name = "jb-range-edges"
+text = "ぁ A\nん A\nゔ A\nァ A\nヶ A\nヷ A\n㐀 A\n䶿 A\n䷀ A\n豈 A\n﫿 A"
+findings = ["1:2", "2:2", "4:2", "5:2", "7:2", "8:2", "10:2", "11:2"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "ぁA\nんA\nゔ A\nァA\nヶA\nヷ A\n㐀A\n䶿A\n䷀ A\n豈A\n﫿A"
+
+[[cases]]
+name = "jb-surrogate-kanji-before-space"
+note = "textlintは空白の位置を、全角文字の長さ1文字として足すので、UTF-16で2単位のサロゲートペアの漢字では、空白でなく下位サロゲートを消して文字を壊す。jafixは文字で数え、空白を消す"
+text = "\U00020bb7 A"
+findings = ["1:2"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "\U00020bb7A"
+
+[[cases]]
+name = "jb-surrogate-kanji-after-space"
+text = "B \U00020bb7 と \U00030000 C"
+findings = ["1:2"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "B\U00020bb7 と \U00030000 C"
+
+[[cases]]
+name = "jb-halfwidth-symbols"
+text = "日本語 (English) 日本語 -Rust と ...abc と _x"
+findings = ["1:24", "1:33"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語 (English) 日本語 -Rustと ...abcと _x"
+
+[[cases]]
+name = "jb-fullwidth-alnum"
+text = "日本語 Ｒｕｓｔ と １２３"
+findings = []
+fixed = "日本語 Ｒｕｓｔ と １２３"
+
+[[cases]]
+name = "jb-alnum-mixed"
+text = "日本語 abc123 日本語"
+findings = ["1:4", "1:11"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語abc123日本語"
+
+[[cases]]
+name = "jb-newline-not-space"
+text = "日本語\nRust と\n123"
+findings = ["2:5"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語\nRustと\n123"
+
+[[cases]]
+name = "jb-inline-code-boundary"
+text = "日本語 `code` と Rust と `x` 日本語 Rust"
+findings = ["1:13", "1:18", "1:28"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語 `code` とRustと `x` 日本語Rust"
+
+[[cases]]
+name = "jb-list"
+text = "- 日本語 Rust"
+findings = ["1:6"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "- 日本語Rust"
+
+[[cases]]
+name = "jb-list-continuation"
+text = "- 項目\n  日本語 Rust"
+findings = ["2:6"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "- 項目\n  日本語Rust"
+
+[[cases]]
+name = "jb-heading"
+text = "# 日本語 Rust"
+findings = []
+fixed = "# 日本語 Rust"
+
+[[cases]]
+name = "jb-quote"
+text = "> 日本語 Rust"
+findings = []
+fixed = "> 日本語 Rust"
+
+[[cases]]
+name = "jb-table"
+text = "| a |\n| - |\n| 日本語 Rust |"
+findings = []
+fixed = "| a |\n| - |\n| 日本語 Rust |"
+
+[[cases]]
+name = "jb-link-text"
+text = "[日本語 Rust](https://example.com)"
+findings = []
+fixed = "[日本語 Rust](https://example.com)"
+
+[[cases]]
+name = "jb-strong-emphasis"
+text = "**日本語 Rust** と *日本語 Rust*"
+findings = []
+fixed = "**日本語 Rust** と *日本語 Rust*"
+
+[[cases]]
+name = "jb-styled-heading"
+note = "lintStyledNode では見出しの中も当たる。textlintは見出しの空白も消すが、jafixは直さず、見出しのアンカーが変わるので指摘にする"
+builtin = '''
+ja-space-between-half-and-full-width = { lintStyledNode = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "# 日本語 Rust"
+findings = ["1:6"]
+messages = ["全角文字と半角文字の間の空白を削除する。見出しのアンカーが変わるので、見出しへのリンクも直す"]
+fixed = "# 日本語 Rust"
+
+[[cases]]
+name = "jb-styled-setext-heading"
+note = "setext形式の見出しも同じく指摘にする"
+builtin = '''
+ja-space-between-half-and-full-width = { lintStyledNode = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語 Rust\n==="
+findings = ["1:4"]
+messages = ["全角文字と半角文字の間の空白を削除する。見出しのアンカーが変わるので、見出しへのリンクも直す"]
+fixed = "日本語 Rust\n==="
+
+[[cases]]
+name = "jb-styled-quote"
+builtin = '''
+ja-space-between-half-and-full-width = { lintStyledNode = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "> 日本語 Rust"
+findings = ["1:6"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "> 日本語Rust"
+
+[[cases]]
+name = "jb-styled-table"
+builtin = '''
+ja-space-between-half-and-full-width = { lintStyledNode = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "| a |\n| - |\n| 日本語 Rust |"
+findings = ["3:6"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "| a |\n| - |\n| 日本語Rust |"
+
+[[cases]]
+name = "jb-styled-link-text"
+builtin = '''
+ja-space-between-half-and-full-width = { lintStyledNode = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "[日本語 Rust](https://example.com)"
+findings = ["1:5"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "[日本語Rust](https://example.com)"
+
+[[cases]]
+name = "jb-styled-strong"
+builtin = '''
+ja-space-between-half-and-full-width = { lintStyledNode = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "**日本語 Rust**"
+findings = ["1:6"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "**日本語Rust**"
+
+[[cases]]
+name = "jb-styled-emphasis"
+builtin = '''
+ja-space-between-half-and-full-width = { lintStyledNode = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "*日本語 Rust*"
+findings = ["1:5"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "*日本語Rust*"
+
+[[cases]]
+name = "jb-styled-delete"
+builtin = '''
+ja-space-between-half-and-full-width = { lintStyledNode = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "~~日本語 Rust~~"
+findings = ["1:6"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "~~日本語Rust~~"
+
+[[cases]]
+name = "jb-styled-full-reference"
+builtin = '''
+ja-space-between-half-and-full-width = { lintStyledNode = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "[日本語 Rust][r]\n\n[r]: https://example.com"
+findings = ["1:5"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "[日本語Rust][r]\n\n[r]: https://example.com"
+
+[[cases]]
+name = "jb-styled-shortcut-reference"
+note = "定義を持つ省略形の参照リンクの文字列は本文でないので見ない。textlintは文字列のnodeとして当て、消す"
+builtin = '''
+ja-space-between-half-and-full-width = { lintStyledNode = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "[日本語 Rust]\n\n[日本語 Rust]: https://example.com"
+findings = []
+fixed = "[日本語 Rust]\n\n[日本語 Rust]: https://example.com"
+
+[[cases]]
+name = "jb-styled-paragraph"
+builtin = '''
+ja-space-between-half-and-full-width = { lintStyledNode = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語 Rust と **強調 Rust**"
+findings = ["1:4", "1:9", "1:16"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語Rustと **強調Rust**"
+
+[[cases]]
+name = "jb-always-basic"
+builtin = '''
+ja-space-between-half-and-full-width = { space = 'always' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語Rustと123です"
+findings = ["1:3", "1:7", "1:8", "1:11"]
+messages = ["全角文字と半角文字の間に半角空白を入れる", "全角文字と半角文字の間に半角空白を入れる", "全角文字と半角文字の間に半角空白を入れる", "全角文字と半角文字の間に半角空白を入れる"]
+
+[[cases]]
+name = "jb-always-spaced"
+builtin = '''
+ja-space-between-half-and-full-width = { space = 'always' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語 Rust と 123 です\u3000Rust"
+findings = []
+
+[[cases]]
+name = "jb-always-punctuation-excluded"
+builtin = '''
+ja-space-between-half-and-full-width = { space = 'always' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "です。Rust と、Rust と Rust。と Rust、"
+findings = []
+
+[[cases]]
+name = "jb-always-with-punctuation"
+builtin = '''
+ja-space-between-half-and-full-width = { space = ['alphabets', 'numbers', 'punctuation'] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "です。Rust と、Rust と Rust。と Rust、"
+findings = ["1:3", "1:10", "1:21", "1:28"]
+messages = ["全角文字と半角文字の間に半角空白を入れる", "全角文字と半角文字の間に半角空白を入れる", "全角文字と半角文字の間に半角空白を入れる", "全角文字と半角文字の間に半角空白を入れる"]
+
+[[cases]]
+name = "jb-alphabets-array"
+builtin = '''
+ja-space-between-half-and-full-width = { space = ['alphabets'] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語Rustと123です"
+findings = ["1:3", "1:7"]
+messages = ["全角文字と半角文字の間に半角空白を入れる", "全角文字と半角文字の間に半角空白を入れる"]
+
+[[cases]]
+name = "jb-numbers-array"
+builtin = '''
+ja-space-between-half-and-full-width = { space = ['numbers'] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語Rustと123です"
+findings = ["1:8", "1:11"]
+messages = ["全角文字と半角文字の間に半角空白を入れる", "全角文字と半角文字の間に半角空白を入れる"]
+
+[[cases]]
+name = "jb-alphabets-numbers-array"
+builtin = '''
+ja-space-between-half-and-full-width = { space = ['alphabets', 'numbers'] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語Rustと123です。A"
+findings = ["1:3", "1:7", "1:8", "1:11"]
+messages = ["全角文字と半角文字の間に半角空白を入れる", "全角文字と半角文字の間に半角空白を入れる", "全角文字と半角文字の間に半角空白を入れる", "全角文字と半角文字の間に半角空白を入れる"]
+
+[[cases]]
+name = "jb-always-duplicate-names"
+builtin = '''
+ja-space-between-half-and-full-width = { space = ['numbers', 'numbers'] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語Rustと123"
+findings = ["1:8"]
+messages = ["全角文字と半角文字の間に半角空白を入れる"]
+
+[[cases]]
+name = "jb-always-surrogate-kanji"
+builtin = '''
+ja-space-between-half-and-full-width = { space = 'always' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "\U00020bb7A と B\U00020bb7"
+findings = ["1:1", "1:6"]
+messages = ["全角文字と半角文字の間に半角空白を入れる", "全角文字と半角文字の間に半角空白を入れる"]
+
+[[cases]]
+name = "jb-always-prolonged-mark"
+builtin = '''
+ja-space-between-half-and-full-width = { space = 'always' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "コンピューターHelloと人々Hello"
+findings = ["1:12"]
+messages = ["全角文字と半角文字の間に半角空白を入れる"]
+
+[[cases]]
+name = "jb-always-heading-is-skipped"
+builtin = '''
+ja-space-between-half-and-full-width = { space = 'always' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "# 日本語Rust"
+findings = []
+
+[[cases]]
+name = "jb-always-styled-heading"
+note = "指摘ルールなので、見出しでも `見出しのアンカーが変わるので…` の補足を付けない。textlintも見出しの中を指摘する"
+builtin = '''
+ja-space-between-half-and-full-width = { space = 'always', lintStyledNode = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "# 日本語Rust"
+findings = ["1:5"]
+messages = ["全角文字と半角文字の間に半角空白を入れる"]
+
+[[cases]]
+name = "jb-always-styled-quote-table"
+builtin = '''
+ja-space-between-half-and-full-width = { space = 'always', lintStyledNode = true }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "> 日本語Rust\n\n| a |\n| - |\n| 日本語Rust |\n\n**日本語Rust**"
+findings = ["1:5", "5:5", "7:5"]
+messages = ["全角文字と半角文字の間に半角空白を入れる", "全角文字と半角文字の間に半角空白を入れる", "全角文字と半角文字の間に半角空白を入れる"]
+
+[[cases]]
+name = "jb-always-inline-code-boundary"
+builtin = '''
+ja-space-between-half-and-full-width = { space = 'always' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語`code`と Rust日本語"
+findings = ["1:15"]
+messages = ["全角文字と半角文字の間に半角空白を入れる"]
+
+[[cases]]
+name = "jb-allows-start-inside"
+builtin = '''
+ja-space-between-half-and-full-width = { allows = ['Rust'] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "Rust 日本 と 日本語 Rust と Rust 語"
+findings = ["1:14", "1:21"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "Rust 日本 と 日本語Rust とRust 語"
+
+[[cases]]
+name = "jb-allows-end-boundary"
+note = "allows の一致の終わりの位置は含めない。textlintは含めるので、`Rust` の直後の文字で始まる `日 A` も外し、1件だけを指摘する"
+builtin = '''
+ja-space-between-half-and-full-width = { allows = ['Rust'] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "Rust日 A と 日本語 Rust"
+findings = ["1:6", "1:8", "1:14"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "Rust日Aと 日本語Rust"
+
+[[cases]]
+name = "jb-allows-regex"
+builtin = '''
+ja-space-between-half-and-full-width = { allows = ['/Rust|Go/'] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "Rust 日本 と Go 言語 と C 言語"
+findings = ["1:10", "1:18", "1:20"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "Rust 日本 とGo 言語 とC言語"
+
+[[cases]]
+name = "jb-allows-regex-flag"
+builtin = '''
+ja-space-between-half-and-full-width = { allows = ['/rust/i'] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "Rust 日本 と rust 日本 と Go 日本"
+findings = ["1:10", "1:20", "1:23"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "Rust 日本 とrust 日本 とGo日本"
+
+[[cases]]
+name = "jb-allows-always-prefix"
+builtin = '''
+ja-space-between-half-and-full-width = { space = 'always', allows = ['Eコマース'] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "例外的にEコマースはスペースなしでも通す"
+findings = ["1:4"]
+messages = ["全角文字と半角文字の間に半角空白を入れる"]
+
+[[cases]]
+name = "jb-allows-always-no-prefix"
+builtin = '''
+ja-space-between-half-and-full-width = { space = 'always', allows = ['Eコマース'] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "Eコマースはスペースなしでも通す"
+findings = []
+
+[[cases]]
+name = "jb-allows-always-multiple"
+builtin = '''
+ja-space-between-half-and-full-width = { space = 'always', allows = ['A言語', 'B言語', 'C言語'] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "これは A言語、B言語、C言語です。と Dです"
+findings = ["1:21"]
+messages = ["全角文字と半角文字の間に半角空白を入れる"]
+
+[[cases]]
+name = "jb-allows-with-space"
+builtin = '''
+ja-space-between-half-and-full-width = { allows = ['E コマース'] }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "E コマース と F コマース"
+findings = ["1:9", "1:11"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "E コマース とFコマース"
+
+[[cases]]
+name = "jb-overlap-ja-alnum"
+note = "重なり: `space-between-ja-and-alnum` が同じ空白の箇所を残すので、このルールの箇所は出ない。文書の結果は同じである"
+builtin = '''
+ja-space-between-half-and-full-width = true
+'''
+text = "日本語 Rust と 123 です"
+findings = []
+fixed = "日本語Rustと123です"
+
+[[cases]]
+name = "jb-overlap-wider-japanese-range"
+note = "重なり: `ー` `々` の隣の空白は `space-between-ja-and-alnum` だけが当たり、`Hello 人` の空白は両方が当たって前者を残す。このルールの箇所は出ない"
+builtin = '''
+ja-space-between-half-and-full-width = true
+'''
+text = "コンピューター Hello 人々 Hello"
+findings = []
+fixed = "コンピューターHello人々Hello"
+
+[[cases]]
+name = "jb-overlap-fullwidth-space"
+note = "重なり: 全角空白も `space-between-ja-and-alnum` の箇所が残る"
+builtin = '''
+ja-space-between-half-and-full-width = true
+'''
+text = "日本語\u3000Rust"
+findings = []
+fixed = "日本語Rust"
+
+[[cases]]
+name = "jb-overlap-punctuation-remains"
+note = "`、` `。` の隣の空白は `space-between-ja-and-alnum` が当たらないので、このルールの箇所が残る。`と、 Rust` の `と` と `、` の間は空白でない"
+builtin = '''
+ja-space-between-half-and-full-width = { space = ['punctuation'] }
+'''
+text = "です。 Rust と、 Rust"
+findings = ["1:4", "1:12"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "です。Rustと、Rust"
+
+[[cases]]
+name = "jb-overlap-styled-heading"
+note = "見出しの中で指摘にする箇所も、重なりを解いてから指摘にする。同じ空白の `space-between-ja-and-alnum` の指摘が残り、このルールの指摘は出ない"
+builtin = '''
+ja-space-between-half-and-full-width = { lintStyledNode = true }
+'''
+text = "# 日本語 Rust"
+findings = []
+fixed = "# 日本語 Rust"
+
+[[cases]]
+name = "jb-overlap-styled-quote"
+note = "重なり: 引用の中の空白も `space-between-ja-and-alnum` の箇所が残る"
+builtin = '''
+ja-space-between-half-and-full-width = { lintStyledNode = true }
+'''
+text = "> 日本語 Rust"
+findings = []
+fixed = "> 日本語Rust"

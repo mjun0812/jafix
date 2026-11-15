@@ -7,6 +7,7 @@ pub mod builtin;
 mod morph;
 mod paragraph;
 mod prh;
+mod spacing;
 mod text;
 mod textlint_rule_pattern;
 
@@ -18,8 +19,10 @@ use crate::prose::{Context, Document, Prose};
 use self::builtin::Builtin;
 
 /// 組み込みのルール。全角括弧と空白の3つ以外は、textlintのpreset (`preset-ja-technical-writing`・
-/// `@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`) の中の名前か、textlintの設定に書くルールの名前と同じIDである
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// `@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`・`preset-ja-spacing`) の中の名前か、
+/// textlintの設定に書くルールの名前と同じIDである。宣言の順は `ALL` と同じで、組み込みの修正ルールの箇所の
+/// 範囲が同じときに、前にあるルールの箇所を残すのに使う
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RuleId {
     FullwidthParen,
     SpaceBetweenJaAndAlnum,
@@ -56,11 +59,24 @@ pub enum RuleId {
     NoShortTopicComma,
     Prh,
     TextlintRulePattern,
+    JaNakaguroOrHalfwidthSpaceBetweenKatakana,
+    JaNoSpaceAroundParentheses,
+    JaNoSpaceAroundSlash,
+    JaNoSpaceBetweenFullWidth,
+    JaSpaceBetweenHalfAndFullWidth,
+    JaSpaceAfterExclamation,
+    JaSpaceAfterQuestion,
+    JaSpaceAroundCode,
+    JaSpaceAroundEmphasis,
+    JaSpaceAroundLink,
+    JaSpaceAroundStrong,
+    NoMixedZenkakuAndHankakuAlphabet,
+    NoKangxiRadicals,
 }
 
 impl RuleId {
     /// 組み込みのルールのすべて。設定の `[builtin]` のキーをルールのIDとして読むのに使う
-    pub const ALL: [RuleId; 35] = [
+    pub const ALL: [RuleId; 48] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
         RuleId::SpaceBetweenJaAndParen,
@@ -96,6 +112,19 @@ impl RuleId {
         RuleId::NoShortTopicComma,
         RuleId::Prh,
         RuleId::TextlintRulePattern,
+        RuleId::JaNakaguroOrHalfwidthSpaceBetweenKatakana,
+        RuleId::JaNoSpaceAroundParentheses,
+        RuleId::JaNoSpaceAroundSlash,
+        RuleId::JaNoSpaceBetweenFullWidth,
+        RuleId::JaSpaceBetweenHalfAndFullWidth,
+        RuleId::JaSpaceAfterExclamation,
+        RuleId::JaSpaceAfterQuestion,
+        RuleId::JaSpaceAroundCode,
+        RuleId::JaSpaceAroundEmphasis,
+        RuleId::JaSpaceAroundLink,
+        RuleId::JaSpaceAroundStrong,
+        RuleId::NoMixedZenkakuAndHankakuAlphabet,
+        RuleId::NoKangxiRadicals,
     ];
 
     /// `check` の出力の `[<rule-id>]` に使う名前
@@ -136,6 +165,21 @@ impl RuleId {
             RuleId::NoShortTopicComma => "no-short-topic-comma",
             RuleId::Prh => "prh",
             RuleId::TextlintRulePattern => "@textlint-rule/pattern",
+            RuleId::JaNakaguroOrHalfwidthSpaceBetweenKatakana => {
+                "ja-nakaguro-or-halfwidth-space-between-katakana"
+            }
+            RuleId::JaNoSpaceAroundParentheses => "ja-no-space-around-parentheses",
+            RuleId::JaNoSpaceAroundSlash => "ja-no-space-around-slash",
+            RuleId::JaNoSpaceBetweenFullWidth => "ja-no-space-between-full-width",
+            RuleId::JaSpaceBetweenHalfAndFullWidth => "ja-space-between-half-and-full-width",
+            RuleId::JaSpaceAfterExclamation => "ja-space-after-exclamation",
+            RuleId::JaSpaceAfterQuestion => "ja-space-after-question",
+            RuleId::JaSpaceAroundCode => "ja-space-around-code",
+            RuleId::JaSpaceAroundEmphasis => "ja-space-around-emphasis",
+            RuleId::JaSpaceAroundLink => "ja-space-around-link",
+            RuleId::JaSpaceAroundStrong => "ja-space-around-strong",
+            RuleId::NoMixedZenkakuAndHankakuAlphabet => "no-mixed-zenkaku-and-hankaku-alphabet",
+            RuleId::NoKangxiRadicals => "no-kangxi-radicals",
         }
     }
 }
@@ -180,6 +224,15 @@ pub struct Finding {
     pub position: usize,
     /// `check` の出力に使う文面
     pub message: Cow<'static, str>,
+}
+
+/// 組み込みの修正ルールに当たった1箇所。重なりを解く前の一覧の要素である
+#[allow(dead_code)] // skeleton: not implemented
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FixRuleFinding {
+    pub finding: Finding,
+    /// 見出しの中の箇所で、直さずに `report` で指摘にする。見出しの中でも直す `fullwidth-paren` の箇所は含めない
+    pub heading: bool,
 }
 
 /// 指摘ルールに当たった1箇所。直さずに指摘として出す。`range` は元のソース上のバイト範囲
@@ -324,6 +377,7 @@ pub fn fix_rules_hitting(text: &str, builtin: &Builtin) -> Vec<RuleId> {
         paragraphs: Vec::new(),
         headings: Vec::new(),
         list_items: Vec::new(),
+        inline_nodes: Vec::new(),
     };
     let mut rules: Vec<RuleId> = Vec::new();
     for finding in find(text, &document, builtin) {
@@ -397,6 +451,13 @@ pub fn find(src: &str, document: &Document, builtin: &Builtin) -> Vec<Finding> {
     findings
 }
 
+/// 有効な組み込みの修正ルールの箇所を、見出しの中のものも含めて、重なりを解かずに `RuleId` の順に安定に並べて返す
+#[allow(dead_code)] // skeleton: not implemented
+fn fix_rule_findings(src: &str, document: &Document, builtin: &Builtin) -> Vec<FixRuleFinding> {
+    let _ = (src, document, builtin);
+    todo!("skeleton: not implemented")
+}
+
 /// `fullwidth-paren` 以外の修正ルールの、`texts` の中の箇所。見出しの文字を変えるとアンカーが変わり、
 /// 見出しへのリンクが切れるので、見出しの中の箇所は直さずに `report` で指摘にする。
 /// 全角括弧は、置き換えてもアンカーが変わらないので、見出しの中でも直す
@@ -465,6 +526,7 @@ mod tests {
             paragraphs: Vec::new(),
             headings: Vec::new(),
             list_items: Vec::new(),
+            inline_nodes: Vec::new(),
         }
     }
 

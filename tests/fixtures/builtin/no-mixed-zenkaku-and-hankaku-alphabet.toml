@@ -1,0 +1,457 @@
+# no-mixed-zenkaku-and-hankaku-alphabet の例。期待値は、textlint 15.8.0 と textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet 1.0.1 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+
+[[cases]]
+name = "nm-basic"
+text = "ＡＢＣは全角 ａｂｃ１２３"
+findings = ["1:1", "1:8"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする", "全角のアルファベット「ａｂｃ」を半角にする"]
+fixed = "ABCは全角 abc１２３"
+
+[[cases]]
+name = "nm-explicit-halfwidth"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '半角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "ＡＢＣは全角 ａｂｃ"
+findings = ["1:1", "1:8"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする", "全角のアルファベット「ａｂｃ」を半角にする"]
+fixed = "ABCは全角 abc"
+
+[[cases]]
+name = "nm-mixed-case-run"
+text = "ＡｂＣ と ａＢｃ"
+findings = ["1:1", "1:7"]
+messages = ["全角のアルファベット「ＡｂＣ」を半角にする", "全角のアルファベット「ａＢｃ」を半角にする"]
+fixed = "AbC と aBc"
+
+[[cases]]
+name = "nm-halfwidth-only"
+text = "ABC abc と 123"
+findings = []
+fixed = "ABC abc と 123"
+
+[[cases]]
+name = "nm-digits-and-symbols"
+text = "１２３ ＆ ＠ ！ ＋"
+findings = []
+fixed = "１２３ ＆ ＠ ！ ＋"
+
+[[cases]]
+name = "nm-run-boundaries"
+text = "ＡＢＣ，ＤＥＦ\u3000ＧＨＩ"
+findings = ["1:1", "1:5", "1:9"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする", "全角のアルファベット「ＤＥＦ」を半角にする", "全角のアルファベット「ＧＨＩ」を半角にする"]
+fixed = "ABC，DEF\u3000GHI"
+
+[[cases]]
+name = "nm-adjacent-halfwidth"
+text = "ＡＢＣabcＤＥＦ"
+findings = ["1:1", "1:7"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする", "全角のアルファベット「ＤＥＦ」を半角にする"]
+fixed = "ABCabcDEF"
+
+[[cases]]
+name = "nm-surrogate-before"
+text = "\U00020bb7ＡＢＣ と \U00020bb7ａ"
+findings = ["1:2", "1:9"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする", "全角のアルファベット「ａ」を半角にする"]
+fixed = "\U00020bb7ABC と \U00020bb7a"
+
+[[cases]]
+name = "nm-japanese-neighbors"
+text = "日本語Ｒｕｓｔ日本語"
+findings = ["1:4"]
+messages = ["全角のアルファベット「Ｒｕｓｔ」を半角にする"]
+fixed = "日本語Rust日本語"
+
+[[cases]]
+name = "nm-multiple-lines"
+text = "ＡＢＣ\nあいうＤＥＦ\n\nＧＨＩ"
+findings = ["1:1", "2:4", "4:1"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする", "全角のアルファベット「ＤＥＦ」を半角にする", "全角のアルファベット「ＧＨＩ」を半角にする"]
+fixed = "ABC\nあいうDEF\n\nGHI"
+
+[[cases]]
+name = "nm-list"
+text = "- ＡＢＣ です"
+findings = ["1:3"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "- ABC です"
+
+[[cases]]
+name = "nm-list-continuation"
+text = "- 項目\n  ＡＢＣ です"
+findings = ["2:3"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "- 項目\n  ABC です"
+
+[[cases]]
+name = "nm-table"
+text = "| a |\n| - |\n| ＡＢＣ |"
+findings = ["3:3"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "| a |\n| - |\n| ABC |"
+
+[[cases]]
+name = "nm-strong"
+text = "**ＡＢＣ** です"
+findings = ["1:3"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "**ABC** です"
+
+[[cases]]
+name = "nm-delete"
+text = "~~ＡＢＣ~~ です"
+findings = ["1:3"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "~~ABC~~ です"
+
+[[cases]]
+name = "nm-full-reference"
+text = "[ＡＢＣ][r] です\n\n[r]: https://example.com"
+findings = ["1:2"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "[ABC][r] です\n\n[r]: https://example.com"
+
+[[cases]]
+name = "nm-inline-html"
+text = "<span>ＡＢＣ</span> です"
+findings = ["1:7"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "<span>ABC</span> です"
+
+[[cases]]
+name = "nm-footnote-definition"
+text = "本文[^1]\n\n[^1]: ＡＢＣ です"
+findings = ["3:7"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "本文[^1]\n\n[^1]: ABC です"
+
+[[cases]]
+name = "nm-emphasis-in-strong"
+text = "**ＡＢＣ *ＤＥＦ***"
+findings = ["1:3"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "**ABC *ＤＥＦ***"
+
+[[cases]]
+name = "nm-heading"
+note = "見出しの中も見る。見出しの文字を変えるとアンカーが変わるので、直さずに指摘にする。textlintは見出しの文字も半角にする"
+text = "# ＡＢＣ です"
+findings = ["1:3"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする。見出しのアンカーが変わるので、見出しへのリンクも直す"]
+fixed = "# ＡＢＣ です"
+
+[[cases]]
+name = "nm-setext-heading"
+note = "setext形式の見出しも、直さずに指摘にする"
+text = "ＡＢＣ です\n==="
+findings = ["1:1"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする。見出しのアンカーが変わるので、見出しへのリンクも直す"]
+fixed = "ＡＢＣ です\n==="
+
+[[cases]]
+name = "nm-heading-and-body"
+note = "見出しの中だけ、直さずに指摘にする"
+text = "# ＡＢＣ\n\nＡＢＣ"
+findings = ["1:3", "3:1"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする。見出しのアンカーが変わるので、見出しへのリンクも直す", "全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "# ＡＢＣ\n\nABC"
+
+[[cases]]
+name = "nm-quote"
+text = "> ＡＢＣ です"
+findings = []
+fixed = "> ＡＢＣ です"
+
+[[cases]]
+name = "nm-link-text"
+text = "[ＡＢＣ](https://example.com) です"
+findings = []
+fixed = "[ＡＢＣ](https://example.com) です"
+
+[[cases]]
+name = "nm-strong-in-link"
+text = "[**ＡＢＣ**](https://example.com)"
+findings = []
+fixed = "[**ＡＢＣ**](https://example.com)"
+
+[[cases]]
+name = "nm-emphasis"
+text = "*ＡＢＣ* です"
+findings = []
+fixed = "*ＡＢＣ* です"
+
+[[cases]]
+name = "nm-strong-in-emphasis"
+text = "*ＡＢＣ **ＤＥＦ***"
+findings = []
+fixed = "*ＡＢＣ **ＤＥＦ***"
+
+[[cases]]
+name = "nm-inline-code"
+text = "`ＡＢＣ` と ＡＢＣ"
+findings = ["1:9"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "`ＡＢＣ` と ABC"
+
+[[cases]]
+name = "nm-code-block"
+text = "```\nＡＢＣ\n```"
+findings = []
+fixed = "```\nＡＢＣ\n```"
+
+[[cases]]
+name = "nm-image-alt"
+text = "![ＡＢＣ](a.png) と ＤＥＦ"
+findings = ["1:17"]
+messages = ["全角のアルファベット「ＤＥＦ」を半角にする"]
+fixed = "![ＡＢＣ](a.png) と DEF"
+
+[[cases]]
+name = "nm-link-url-and-title"
+text = "[x](https://example.com/ＡＢＣ \"ＤＥＦ\") と ＧＨＩ"
+findings = ["1:38"]
+messages = ["全角のアルファベット「ＧＨＩ」を半角にする"]
+fixed = "[x](https://example.com/ＡＢＣ \"ＤＥＦ\") と GHI"
+
+[[cases]]
+name = "nm-autolink"
+text = "<https://example.com/ＡＢＣ> と ＤＥＦ"
+findings = ["1:29"]
+messages = ["全角のアルファベット「ＤＥＦ」を半角にする"]
+fixed = "<https://example.com/ＡＢＣ> と DEF"
+
+[[cases]]
+name = "nm-shortcut-reference"
+note = "定義を持つ省略形の参照リンクの文字列は本文でないので見ない。textlintは文字列のnodeとして当て、半角にする"
+text = "[ＡＢＣ] と ＤＥＦ\n\n[ＡＢＣ]: https://example.com"
+findings = ["1:9"]
+messages = ["全角のアルファベット「ＤＥＦ」を半角にする"]
+fixed = "[ＡＢＣ] と DEF\n\n[ＡＢＣ]: https://example.com"
+
+[[cases]]
+name = "nm-collapsed-reference"
+note = "定義を持つcollapsed形の参照リンクの文字列は本文でないので見ない。textlintは文字列のnodeとして当て、半角にする"
+text = "[ＡＢＣ][] と ＤＥＦ\n\n[ＡＢＣ]: https://example.com"
+findings = ["1:11"]
+messages = ["全角のアルファベット「ＤＥＦ」を半角にする"]
+fixed = "[ＡＢＣ][] と DEF\n\n[ＡＢＣ]: https://example.com"
+
+[[cases]]
+name = "nm-full-basic"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "ABCは半角 abc 123"
+findings = ["1:1", "1:8"]
+messages = ["半角のアルファベット「ABC」を全角にする", "半角のアルファベット「abc」を全角にする"]
+fixed = "ＡＢＣは半角 ａｂｃ 123"
+
+[[cases]]
+name = "nm-full-words"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "Hello World と Rust"
+findings = ["1:1", "1:7", "1:15"]
+messages = ["半角のアルファベット「Hello」を全角にする", "半角のアルファベット「World」を全角にする", "半角のアルファベット「Rust」を全角にする"]
+fixed = "Ｈｅｌｌｏ Ｗｏｒｌｄ と Ｒｕｓｔ"
+
+[[cases]]
+name = "nm-full-digits-and-symbols"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "123 + 45 - _ ! ABC"
+findings = ["1:16"]
+messages = ["半角のアルファベット「ABC」を全角にする"]
+fixed = "123 + 45 - _ ! ＡＢＣ"
+
+[[cases]]
+name = "nm-full-fullwidth-only"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "ＡＢＣ と 日本語"
+findings = []
+fixed = "ＡＢＣ と 日本語"
+
+[[cases]]
+name = "nm-full-japanese-neighbors"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語Rust日本語"
+findings = ["1:4"]
+messages = ["半角のアルファベット「Rust」を全角にする"]
+fixed = "日本語Ｒｕｓｔ日本語"
+
+[[cases]]
+name = "nm-full-list"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "- Rust です"
+findings = ["1:3"]
+messages = ["半角のアルファベット「Rust」を全角にする"]
+fixed = "- Ｒｕｓｔ です"
+
+[[cases]]
+name = "nm-full-table"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "| a |\n| - |\n| Rust |"
+findings = ["1:3", "3:3"]
+messages = ["半角のアルファベット「a」を全角にする", "半角のアルファベット「Rust」を全角にする"]
+fixed = "| ａ |\n| - |\n| Ｒｕｓｔ |"
+
+[[cases]]
+name = "nm-full-strong"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "**Rust** です"
+findings = ["1:3"]
+messages = ["半角のアルファベット「Rust」を全角にする"]
+fixed = "**Ｒｕｓｔ** です"
+
+[[cases]]
+name = "nm-full-heading"
+note = "見出しの中も見る。見出しの文字を変えるとアンカーが変わるので、直さずに指摘にする。textlintは見出しの文字も全角にする"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "# Rust です"
+findings = ["1:3"]
+messages = ["半角のアルファベット「Rust」を全角にする。見出しのアンカーが変わるので、見出しへのリンクも直す"]
+fixed = "# Rust です"
+
+[[cases]]
+name = "nm-full-quote"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "> Rust です"
+findings = []
+fixed = "> Rust です"
+
+[[cases]]
+name = "nm-full-link-text"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "[Rust](https://example.com) です"
+findings = []
+fixed = "[Rust](https://example.com) です"
+
+[[cases]]
+name = "nm-full-emphasis"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "*Rust* です"
+findings = []
+fixed = "*Rust* です"
+
+[[cases]]
+name = "nm-full-inline-code"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "`Rust` と 日本語"
+findings = []
+fixed = "`Rust` と 日本語"
+
+[[cases]]
+name = "nm-full-urls-and-images"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "<https://example.com> と https://example.com と ![alt](a.png) と [Rust](https://example.com \"title\")"
+findings = []
+fixed = "<https://example.com> と https://example.com と ![alt](a.png) と [Rust](https://example.com \"title\")"
+
+[[cases]]
+name = "nm-repeat-ja-and-alnum"
+note = "繰り返し: 全角英字を半角にした結果の `日本語 Rust` の空白に、`space-between-ja-and-alnum` が当たる。1回の `jafix fix` で直り、`jafix check` は元の内容の箇所だけを出す"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = true
+'''
+text = "日本語 Ｒｕｓｔ です"
+findings = ["1:5"]
+messages = ["全角のアルファベット「Ｒｕｓｔ」を半角にする"]
+fixed = "日本語Rustです"
+
+[[cases]]
+name = "nm-repeat-fullwidth-first-pass"
+note = "同じ回に、`space-between-ja-and-alnum` が空白を消し、このルールが英字を全角にする。全角にした英字には、`space-between-ja-and-alnum` が当たらないので、2回目で止まる"
+builtin = '''
+no-mixed-zenkaku-and-hankaku-alphabet = { prefer = '全角' }
+'''
+text = "日本語 Rust です"
+findings = ["1:5"]
+messages = ["半角のアルファベット「Rust」を全角にする"]
+fixed = "日本語Ｒｕｓｔです"

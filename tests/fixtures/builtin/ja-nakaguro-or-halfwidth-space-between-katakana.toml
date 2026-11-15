@@ -1,0 +1,138 @@
+# ja-nakaguro-or-halfwidth-space-between-katakana の例。期待値は、textlint 15.8.0 と textlint-rule-ja-nakaguro-or-halfwidth-space-between-katakana 3.0.4 (textlint-rule-preset-ja-spacing 3.0.4) の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+builtin = '''
+ja-nakaguro-or-halfwidth-space-between-katakana = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+
+[[cases]]
+name = "nk-basic"
+text = "サーバー\u3000クライアント"
+findings = ["1:5"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "nk-multiple"
+note = "すべての全角空白を指摘する。textlintは一致を重ねずに探すので、`ア\u3000イ` の `イ` を使う2つ目の全角空白を見落とす"
+text = "ア\u3000イ\u3000ウ"
+findings = ["1:2", "1:4"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る", "カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "nk-four-words"
+text = "サーバー\u3000クライアント\u3000データ\u3000ベース"
+findings = ["1:5", "1:12", "1:16"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る", "カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る", "カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "nk-two-fullwidth-spaces"
+text = "サーバー\u3000\u3000クライアント"
+findings = []
+
+[[cases]]
+name = "nk-halfwidth-space"
+text = "サーバー クライアント と サーバー・クライアント"
+findings = []
+
+[[cases]]
+name = "nk-fullwidth-space-with-halfwidth"
+text = "サーバー\u3000 クライアント と サーバー \u3000クライアント"
+findings = []
+
+[[cases]]
+name = "nk-katakana-kanji"
+text = "インターフェース\u3000日本語 と 日本語\u3000インターフェース"
+findings = []
+
+[[cases]]
+name = "nk-katakana-hiragana"
+text = "ア\u3000あ と あ\u3000ア"
+findings = []
+
+[[cases]]
+name = "nk-prolonged-mark"
+text = "ー\u3000ー と ー\u3000ア と ア\u3000ー と サーバー\u3000日本語"
+findings = ["1:2", "1:8", "1:14"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る", "カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る", "カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "nk-range-edges"
+text = "ァ\u3000ァ\nヶ\u3000ヶ\nヷ\u3000ヷ\nヴ\u3000ヴ\nヽ\u3000ヽ\n・\u3000・"
+findings = ["1:2", "2:2", "4:2"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る", "カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る", "カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "nk-halfwidth-kana"
+builtin = '''
+ja-nakaguro-or-halfwidth-space-between-katakana = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+no-hankaku-kana = false
+'''
+text = "ｻｰﾊﾞｰ\u3000ｸﾗｲｱﾝﾄ"
+findings = []
+
+[[cases]]
+name = "nk-newline"
+text = "ア\nイ と ア\u3000\nイ"
+findings = []
+
+[[cases]]
+name = "nk-across-inline-code"
+text = "ア\u3000`x`\u3000イ"
+findings = []
+
+[[cases]]
+name = "nk-list"
+text = "- サーバー\u3000クライアント"
+findings = ["1:7"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "nk-list-continuation"
+text = "- 項目\n  サーバー\u3000クライアント"
+findings = ["2:7"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "nk-heading"
+text = "# サーバー\u3000クライアント"
+findings = []
+
+[[cases]]
+name = "nk-quote"
+text = "> サーバー\u3000クライアント"
+findings = []
+
+[[cases]]
+name = "nk-table"
+text = "| a |\n| - |\n| サーバー\u3000クライアント |"
+findings = []
+
+[[cases]]
+name = "nk-link-text"
+text = "[サーバー\u3000クライアント](https://example.com)"
+findings = []
+
+[[cases]]
+name = "nk-emphasis"
+text = "*サーバー\u3000クライアント* と **サーバー\u3000クライアント**"
+findings = []
+
+[[cases]]
+name = "nk-inline-code"
+text = "`サーバー\u3000クライアント` と サーバー\u3000クライアント"
+findings = ["1:21"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]

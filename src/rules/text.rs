@@ -2,6 +2,8 @@ use std::borrow::Cow;
 use std::ops::Range;
 use std::sync::LazyLock;
 
+mod kangxi;
+
 use regex::Regex;
 use unicode_normalization::UnicodeNormalization;
 
@@ -11,7 +13,7 @@ use super::builtin::Builtin;
 use super::{Finding, Report, RuleId};
 
 /// 本文の範囲ごとに当てる修正ルール (`no-nfd`、`no-hankaku-kana`、`no-zero-width-spaces`、
-/// `no-invalid-control-character`) の箇所を返す。見出しの中の箇所も返し、指摘にするかは呼び出し側が決める。
+/// `no-invalid-control-character`、`no-mixed-zenkaku-and-hankaku-alphabet`、`no-kangxi-radicals`) の箇所を返す。見出しの中の箇所も返し、指摘にするかは呼び出し側が決める。
 /// `no-nfd` は、前の文字と合成して1文字になる組み合わせだけを返す
 pub fn find<'a>(
     src: &str,
@@ -87,6 +89,17 @@ pub fn find<'a>(
                     ));
                 }
             }
+        }
+        // textlintは、祖先に引用・強調・リンクがある文字列の英字を見ない
+        if let Some(rule) = &builtin.no_mixed_zenkaku_and_hankaku_alphabet
+            && !(context.blockquote || context.emphasis || context.link)
+        {
+            let _ = rule;
+            todo!("skeleton: not implemented")
+        }
+        if builtin.no_kangxi_radicals {
+            let _ = (kangxi::FIRST, kangxi::KANJI);
+            todo!("skeleton: not implemented")
         }
     }
     findings
