@@ -34,16 +34,23 @@ pub fn report(src: &str, document: &Document) -> Vec<Report> {
             });
         }
     }
-    for (index, item) in document.list_items.iter().enumerate() {
-        let task = task_marker(src, item).or_else(|| {
-            document
-                .paragraphs
-                .iter()
-                .filter(|paragraph| paragraph.list_item_index == Some(index))
-                .flat_map(|paragraph| &paragraph.children)
-                .filter(|inline| inline.kind == InlineKind::Text)
-                .find_map(|inline| unchecked_box(src, inline.range.clone()))
-        });
+    // 項目の直下の段落の最初の記号を、項目ごとに1回の走査で集める
+    let mut paragraph_boxes = vec![None; document.list_items.len()];
+    for paragraph in &document.paragraphs {
+        let Some(index) = paragraph.list_item_index else {
+            continue;
+        };
+        if paragraph_boxes[index].is_some() {
+            continue;
+        }
+        paragraph_boxes[index] = paragraph
+            .children
+            .iter()
+            .filter(|inline| inline.kind == InlineKind::Text)
+            .find_map(|inline| unchecked_box(src, inline.range.clone()));
+    }
+    for (item, paragraph_box) in document.list_items.iter().zip(paragraph_boxes) {
+        let task = task_marker(src, item).or(paragraph_box);
         if let Some(range) = task {
             reports.push(Report {
                 range,

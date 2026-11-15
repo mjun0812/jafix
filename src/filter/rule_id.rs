@@ -61,16 +61,23 @@ fn preset_key(name: &str) -> Cow<'_, str> {
 /// textlintの `removePrefixFromPackageName` と同じく、前置きを除いた名前を `name` の部分の文字列で返す。`@` で
 /// 始まる名前は、最初の `/` の後の部分から除き、除いたときは2つ目の `/` から後ろを捨てる
 fn remove_prefix<'a>(prefixes: &[&str], name: &'a str) -> Cow<'a, str> {
-    for prefix in prefixes {
-        if let Some(scoped) = name.strip_prefix('@') {
-            let mut parts = scoped.split('/');
-            let namespace = parts.next().unwrap_or_default();
-            if let Some(rest) = parts.next().and_then(|part| part.strip_prefix(prefix)) {
-                return Cow::Owned(format!("@{namespace}/{rest}"));
-            }
-        } else if let Some(rest) = name.strip_prefix(prefix) {
-            return Cow::Borrowed(rest);
-        }
-    }
-    Cow::Borrowed(name)
+    let Some(scoped) = name.strip_prefix('@') else {
+        return Cow::Borrowed(
+            prefixes
+                .iter()
+                .find_map(|prefix| name.strip_prefix(prefix))
+                .unwrap_or(name),
+        );
+    };
+    let mut parts = scoped.split('/');
+    let namespace = parts.next().unwrap_or_default();
+    let Some(part) = parts.next() else {
+        return Cow::Borrowed(name);
+    };
+    prefixes
+        .iter()
+        .find_map(|prefix| part.strip_prefix(prefix))
+        .map_or(Cow::Borrowed(name), |rest| {
+            Cow::Owned(format!("@{namespace}/{rest}"))
+        })
 }
