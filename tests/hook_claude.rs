@@ -3,8 +3,10 @@ mod common;
 use std::path::Path;
 
 use common::{
-    AI_RULES_CONFIG, AI_RULES_INPUT, AI_WORDS_PATTERN, Sandbox, USER_REPLACEMENTS_CONFIG,
-    USER_REPLACEMENTS_FIXED, USER_REPLACEMENTS_INPUT, read, stdout, user_replacement_reports,
+    AI_RULES_CONFIG, AI_RULES_INPUT, AI_WORDS_PATTERN, SPACING_RULES_CONFIG, SPACING_RULES_FIXED,
+    SPACING_RULES_INPUT, Sandbox, USER_REPLACEMENTS_CONFIG, USER_REPLACEMENTS_FIXED,
+    USER_REPLACEMENTS_INPUT, read, spacing_rule_lines, spacing_rule_reports, stdout,
+    user_replacement_reports,
 };
 use serde_json::{Value, json};
 
@@ -415,4 +417,20 @@ fn fixes_user_replacements_on_target_lines() {
     assert_eq!(read(&path), USER_REPLACEMENTS_FIXED);
     let lines: Vec<&str> = stderr(&output).lines().collect();
     assert_eq!(lines[1..], user_replacement_reports(&path), "{lines:?}");
+}
+
+#[test]
+fn fixes_spacing_rules_on_target_lines() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(SPACING_RULES_CONFIG);
+    let path = sandbox.write("t.md", SPACING_RULES_INPUT);
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[1, 5]));
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(read(&path), SPACING_RULES_FIXED);
+    assert_eq!(
+        spacing_rule_lines(stderr(&output)),
+        spacing_rule_reports(&path),
+        "{}",
+        stderr(&output)
+    );
 }

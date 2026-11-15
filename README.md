@@ -1,52 +1,65 @@
 # jafix
 
-jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる範囲で直すCLIです。Markdownの本文にある全角括弧や半角カナなどを直し、日本語と英数字・括弧の間の空白を削除します。機械的に直せない書き方は、指摘ルールで指摘します。ルールは、全角括弧と空白を直す3つ、textlintの3つのpreset(`textlint-rule-preset-ja-technical-writing`・`@textlint-ja/textlint-rule-preset-ai-writing`・`textlint-rule-preset-ai-words-ja`)から移したもの、利用者がprhの辞書やパターンに書いた置き換えです。
+jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる範囲で直すCLIです。Markdownの本文にある全角括弧や半角カナなどを直し、日本語と英数字・括弧の間の空白を削除します。機械的に直せない書き方は、指摘ルールで指摘します。ルールは、全角括弧と空白を直す3つ、textlintの4つのpreset(`textlint-rule-preset-ja-technical-writing`・`@textlint-ja/textlint-rule-preset-ai-writing`・`textlint-rule-preset-ai-words-ja`・`textlint-rule-preset-ja-spacing`)と2つのルールから移したもの、利用者がprhの辞書やパターンに書いた置き換えです。
 
 ## 組み込みのルール
 
-組み込みのルールは35あります。`fullwidth-paren`・`space-between-ja-and-alnum`・`space-between-ja-and-paren` の3つはjafix独自の修正ルールで、`prh` と `@textlint-rule/pattern` の2つは、利用者が書いた辞書やパターンで置き換える・指摘するルールです。残りの30ルールはtextlintのpresetから移したもので、内訳は、`textlint-rule-preset-ja-technical-writing` の23ルール、`@textlint-ja/textlint-rule-preset-ai-writing` の5ルール(`no-ai-list-formatting` から `ai-tech-writing-guideline` まで)、`textlint-rule-preset-ai-words-ja` の2ルール(`no-ai-words` と `no-short-topic-comma`)で、IDとオプションの名前はtextlintと同じです。ルールの有効・無効とオプションは、設定ファイルの `[builtin]` で変えます(「[設定ファイル](#builtin)」)。
+組み込みのルールは48あります。`fullwidth-paren`・`space-between-ja-and-alnum`・`space-between-ja-and-paren` の3つはjafix独自の修正ルールで、`prh` と `@textlint-rule/pattern` の2つは、利用者が書いた辞書やパターンで置き換える・指摘するルールです。残りの43ルールはtextlintから移したもので、内訳は、`textlint-rule-preset-ja-technical-writing` の23ルール、`@textlint-ja/textlint-rule-preset-ai-writing` の5ルール(`no-ai-list-formatting` から `ai-tech-writing-guideline` まで)、`textlint-rule-preset-ai-words-ja` の2ルール(`no-ai-words` と `no-short-topic-comma`)、`textlint-rule-preset-ja-spacing` の11ルール(`ja-nakaguro-or-halfwidth-space-between-katakana` から `ja-space-around-strong` まで)、単独のルールの `textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet` と `textlint-rule-no-kangxi-radicals` です。IDとオプションの名前はtextlintと同じです。ルールの有効・無効とオプションは、設定ファイルの `[builtin]` で変えます(「[設定ファイル](#builtin)」)。
 
-設定に何も書かなければ、jafix独自の3つと `textlint-rule-preset-ja-technical-writing` の23ルールが有効で、オプションの既定値はpresetと同じです。AIらしい書き方を指摘する残りの7ルールは無効です。7ルールには同じ書き方を重ねて見るものがあり、すべてを有効にすると同じ箇所に複数の指摘が出るためです。7ルールは、`[builtin]` にルールのIDかpresetの名前を書いて有効にします(「[presetの名前](#presetの名前)」)。`prh` と `@textlint-rule/pattern` も無効で、どのpresetにも入りません。辞書かパターンが無いと働かないので、`[builtin]` にオプションの表を書いたときだけ有効になります(「[利用者の置き換え](#利用者の置き換え)」)。
+設定に何も書かなければ、jafix独自の3つと `textlint-rule-preset-ja-technical-writing` の23ルールが有効で、オプションの既定値はpresetと同じです。AIらしい書き方を指摘する7ルールは無効です。7ルールには同じ書き方を重ねて見るものがあり、すべてを有効にすると同じ箇所に複数の指摘が出るためです。7ルールは、`[builtin]` にルールのIDかpresetの名前を書いて有効にします(「[presetの名前](#presetの名前)」)。空白と字種を見る13ルール(`textlint-rule-preset-ja-spacing` の11ルールと、`no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals`)も、同じ理由で無効で、同じく `[builtin]` で有効にします。日本語と英数字の間の空白のように、jafix独自の修正ルールと同じ空白を見るものがあるためです。`prh` と `@textlint-rule/pattern` も無効で、どのpresetにも入りません。辞書かパターンが無いと働かないので、`[builtin]` にオプションの表を書いたときだけ有効になります(「[利用者の置き換え](#利用者の置き換え)」)。
 
 `textlint-rule-preset-ja-technical-writing` の23ルールのうち、`max-ten` から `ja-no-redundant-expression` までの11ルールは、文を形態素解析で語(トークン)に分けて判定します。7ルールのうち、`no-ai-colon-continuation`・`no-ai-words`・`no-short-topic-comma` の3つも形態素解析を使います。形態素解析には [lindera](https://github.com/lindera/lindera) と、binaryに埋め込んだIPADICの辞書を使います。
 
-| ルールのID                           | 種類             | 内容                                                                                         | オプション(既定値)                                                                                                                                                                                    |
-| ------------------------------------ | ---------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fullwidth-paren`                    | 修正             | 全角括弧を半角の `(` と `)` に置き換える                                                     | なし                                                                                                                                                                                                  |
-| `space-between-ja-and-alnum`         | 修正             | 日本語の文字と半角英数字の間の空白を削除する                                                 | なし                                                                                                                                                                                                  |
-| `space-between-ja-and-paren`         | 修正             | 日本語の文字と開き括弧の間、閉じ括弧と日本語の文字の間の空白を削除する                       | なし                                                                                                                                                                                                  |
-| `sentence-length`                    | 指摘             | 1文の長さが `max` を超える                                                                   | `max`(100)、`skipPatterns`([])、`skipUrlStringLink`(true)、`countBy`("codeunits")                                                                                                                     |
-| `max-comma`                          | 指摘             | 1文の `,` の数が `max` を超える                                                              | `max`(3)                                                                                                                                                                                              |
-| `max-kanji-continuous-len`           | 指摘             | 漢字が `max` 文字を超えて続く                                                                | `max`(6)、`allow`([])                                                                                                                                                                                 |
-| `arabic-kanji-numbers`               | 指摘             | 算用数字と漢数字を使い分ける(JTFスタイルガイドの2.2.2)                                       | なし                                                                                                                                                                                                  |
-| `ja-no-mixed-period`                 | 指摘             | 段落の末尾が句点で終わらない                                                                 | `periodMark`("。")、`allowPeriodMarks`([])、`allowEmojiAtEnd`(false)                                                                                                                                  |
-| `no-nfd`                             | 修正と指摘       | 濁点・半濁点を前の文字と合成する。合成できない組み合わせは指摘する                           | なし                                                                                                                                                                                                  |
-| `no-invalid-control-character`       | 修正             | 制御文字を削除する                                                                           | `allow`([])                                                                                                                                                                                           |
-| `no-zero-width-spaces`               | 修正             | ゼロ幅スペース(U+200B)を削除する                                                             | なし                                                                                                                                                                                                  |
-| `no-exclamation-question-mark`       | 指摘             | `!` `?` `！` `？` を使わない                                                                 | `allow`([])、`allowHalfWidthExclamation`・`allowFullWidthExclamation`・`allowHalfWidthQuestion`・`allowFullWidthQuestion`(いずれもfalse)                                                              |
-| `no-hankaku-kana`                    | 修正             | 半角カナを全角にする                                                                         | なし                                                                                                                                                                                                  |
-| `ja-unnatural-alphabet`              | 指摘             | 日本語に挟まれた1文字のアルファベットを使わない                                              | `allow`(["a", "i", "u", "e", "o", "n", "/[A-Z]/"])、`allowCommonCase`(true)                                                                                                                           |
-| `no-unmatched-pair`                  | 指摘             | 対になる括弧や引用符が閉じていない                                                           | なし                                                                                                                                                                                                  |
-| `max-ten`                            | 指摘             | 1文の読点の数が `max` を超える                                                               | `max`(3)、`strict`(false)、`touten`("、")、`kuten`("。")                                                                                                                                              |
-| `no-doubled-joshi`                   | 指摘             | 1文の中で、同じ助詞が近くに続く                                                              | `min_interval`(1)、`strict`(false)、`allow`([])、`separatorCharacters`([".", "．", "。", "?", "!", "？", "！"])、`commaCharacters`(["、", "，"])                                                      |
-| `no-doubled-conjunctive-particle-ga` | 指摘             | 1文に逆接の接続助詞「が」が2回以上ある                                                       | なし                                                                                                                                                                                                  |
-| `no-doubled-conjunction`             | 指摘             | 段落の中で、文の最初の接続詞が、それより前で接続詞を持つ最後の文と同じ                       | なし                                                                                                                                                                                                  |
-| `no-mix-dearu-desumasu`              | 指摘             | 見出し・本文・箇条書きのそれぞれで、「である」調と「ですます」調を併用する                   | `preferInHeader`("")、`preferInBody`("ですます")、`preferInList`("である")、`strict`(false)                                                                                                           |
-| `no-double-negative-ja`              | 指摘             | 「ないこともない」などの二重否定を使う                                                       | なし                                                                                                                                                                                                  |
-| `no-dropping-the-ra`                 | 指摘             | ら抜き言葉を使う                                                                             | なし                                                                                                                                                                                                  |
-| `ja-no-weak-phrase`                  | 指摘             | 「かも」「思う」などの弱い表現を使う                                                         | なし                                                                                                                                                                                                  |
-| `ja-no-successive-word`              | 指摘             | 同じ語が2回続く                                                                              | `allowOnomatopee`(true)、`allow`([])                                                                                                                                                                  |
-| `ja-no-abusage`                      | 指摘             | 「値を返却する」などの誤用を使う                                                             | なし                                                                                                                                                                                                  |
-| `ja-no-redundant-expression`         | 指摘             | 「することができる」などの冗長な表現を使う                                                   | `allowNodeTypes`(["BlockQuote", "Link", "ReferenceDef", "Code"])、`dictOptions`({})                                                                                                                   |
-| `no-ai-list-formatting`              | 指摘(既定で無効) | リスト項目の先頭で太字とコロン・ハイフン・ダッシュを組み合わせるか、リスト項目で絵文字を使う | `allows`([])、`disableBoldListItems`・`disableEmojiListItems`(いずれもfalse)                                                                                                                          |
-| `no-ai-hype-expressions`             | 指摘(既定で無効) | 誇張した表現(25語)を使う                                                                     | `allows`([])、`disableAbsolutenessPatterns`・`disableAbstractPatterns`・`disabledPredictivePatterns`(いずれもfalse)                                                                                   |
-| `no-ai-emphasis-patterns`            | 指摘(既定で無効) | 絵文字と太字を組み合わせるか、太字の情報プレフィックスか、見出しの中で太字を使う             | `allows`([])、`disableEmojiEmphasisPatterns`・`disableInfoPatterns`・`disableHeadingEmphasisPatterns`(いずれもfalse)                                                                                  |
-| `no-ai-colon-continuation`           | 指摘(既定で無効) | 述語とコロンで終わる段落の後に、コードブロック・リスト・引用・表を続ける                     | `allows`([])、`disableCodeBlock`・`disableList`・`disableQuote`・`disableTable`(いずれもfalse)                                                                                                        |
-| `ai-tech-writing-guideline`          | 指摘(既定で無効) | 冗長な表現・受け身・具体性の無い語・表記の揺れ・箇条書きにできる列挙を使う                   | `allows`([])、`disableRedundancyGuidance`・`disableVoiceGuidance`・`disableClarityGuidance`・`disableConsistencyGuidance`・`disableStructureGuidance`(いずれもfalse)、`enableDocumentAnalysis`(false) |
-| `no-ai-words`                        | 指摘(既定で無効) | AIが多用する語を使う。語は品詞と原形で見分ける                                               | `allows`([])、`dictionaryPath`(なし)、`dictionaryMode`("append")                                                                                                                                      |
-| `no-short-topic-comma`               | 指摘(既定で無効) | 短い主題を示す「は」の直後に読点を打つ                                                       | `maxLength`(5)                                                                                                                                                                                        |
-| `prh`                                | 修正と指摘(既定で無効) | 利用者のprhの辞書に書いた置き換えで本文を直す | `rulePaths`・`ruleContents`(いずれもなし。合わせて1つ以上)、`checkLink`・`checkBlockQuote`・`checkEmphasis`(いずれもfalse)、`checkHeader`・`checkParagraph`(いずれもtrue) |
-| `@textlint-rule/pattern`             | 修正と指摘(既定で無効) | 利用者のパターンの一致を、`replace` があれば直し、無ければ指摘する | `patterns`(なし。要素は `message`・`pattern`・`replace`・`allows`・`allowNodeTypes`) |
+| ルールのID                                        | 種類                   | 内容                                                                                                         | オプション(既定値)                                                                                                                                                                                    |
+| ------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fullwidth-paren`                                 | 修正                   | 全角括弧を半角の `(` と `)` に置き換える                                                                     | なし                                                                                                                                                                                                  |
+| `space-between-ja-and-alnum`                      | 修正                   | 日本語の文字と半角英数字の間の空白を削除する                                                                 | なし                                                                                                                                                                                                  |
+| `space-between-ja-and-paren`                      | 修正                   | 日本語の文字と開き括弧の間、閉じ括弧と日本語の文字の間の空白を削除する                                       | なし                                                                                                                                                                                                  |
+| `sentence-length`                                 | 指摘                   | 1文の長さが `max` を超える                                                                                   | `max`(100)、`skipPatterns`([])、`skipUrlStringLink`(true)、`countBy`("codeunits")                                                                                                                     |
+| `max-comma`                                       | 指摘                   | 1文の `,` の数が `max` を超える                                                                              | `max`(3)                                                                                                                                                                                              |
+| `max-kanji-continuous-len`                        | 指摘                   | 漢字が `max` 文字を超えて続く                                                                                | `max`(6)、`allow`([])                                                                                                                                                                                 |
+| `arabic-kanji-numbers`                            | 指摘                   | 算用数字と漢数字を使い分ける(JTFスタイルガイドの2.2.2)                                                       | なし                                                                                                                                                                                                  |
+| `ja-no-mixed-period`                              | 指摘                   | 段落の末尾が句点で終わらない                                                                                 | `periodMark`("。")、`allowPeriodMarks`([])、`allowEmojiAtEnd`(false)                                                                                                                                  |
+| `no-nfd`                                          | 修正と指摘             | 濁点・半濁点を前の文字と合成する。合成できない組み合わせは指摘する                                           | なし                                                                                                                                                                                                  |
+| `no-invalid-control-character`                    | 修正                   | 制御文字を削除する                                                                                           | `allow`([])                                                                                                                                                                                           |
+| `no-zero-width-spaces`                            | 修正                   | ゼロ幅スペース(U+200B)を削除する                                                                             | なし                                                                                                                                                                                                  |
+| `no-exclamation-question-mark`                    | 指摘                   | `!` `?` `！` `？` を使わない                                                                                 | `allow`([])、`allowHalfWidthExclamation`・`allowFullWidthExclamation`・`allowHalfWidthQuestion`・`allowFullWidthQuestion`(いずれもfalse)                                                              |
+| `no-hankaku-kana`                                 | 修正                   | 半角カナを全角にする                                                                                         | なし                                                                                                                                                                                                  |
+| `ja-unnatural-alphabet`                           | 指摘                   | 日本語に挟まれた1文字のアルファベットを使わない                                                              | `allow`(["a", "i", "u", "e", "o", "n", "/[A-Z]/"])、`allowCommonCase`(true)                                                                                                                           |
+| `no-unmatched-pair`                               | 指摘                   | 対になる括弧や引用符が閉じていない                                                                           | なし                                                                                                                                                                                                  |
+| `max-ten`                                         | 指摘                   | 1文の読点の数が `max` を超える                                                                               | `max`(3)、`strict`(false)、`touten`("、")、`kuten`("。")                                                                                                                                              |
+| `no-doubled-joshi`                                | 指摘                   | 1文の中で、同じ助詞が近くに続く                                                                              | `min_interval`(1)、`strict`(false)、`allow`([])、`separatorCharacters`([".", "．", "。", "?", "!", "？", "！"])、`commaCharacters`(["、", "，"])                                                      |
+| `no-doubled-conjunctive-particle-ga`              | 指摘                   | 1文に逆接の接続助詞「が」が2回以上ある                                                                       | なし                                                                                                                                                                                                  |
+| `no-doubled-conjunction`                          | 指摘                   | 段落の中で、文の最初の接続詞が、それより前で接続詞を持つ最後の文と同じ                                       | なし                                                                                                                                                                                                  |
+| `no-mix-dearu-desumasu`                           | 指摘                   | 見出し・本文・箇条書きのそれぞれで、「である」調と「ですます」調を併用する                                   | `preferInHeader`("")、`preferInBody`("ですます")、`preferInList`("である")、`strict`(false)                                                                                                           |
+| `no-double-negative-ja`                           | 指摘                   | 「ないこともない」などの二重否定を使う                                                                       | なし                                                                                                                                                                                                  |
+| `no-dropping-the-ra`                              | 指摘                   | ら抜き言葉を使う                                                                                             | なし                                                                                                                                                                                                  |
+| `ja-no-weak-phrase`                               | 指摘                   | 「かも」「思う」などの弱い表現を使う                                                                         | なし                                                                                                                                                                                                  |
+| `ja-no-successive-word`                           | 指摘                   | 同じ語が2回続く                                                                                              | `allowOnomatopee`(true)、`allow`([])                                                                                                                                                                  |
+| `ja-no-abusage`                                   | 指摘                   | 「値を返却する」などの誤用を使う                                                                             | なし                                                                                                                                                                                                  |
+| `ja-no-redundant-expression`                      | 指摘                   | 「することができる」などの冗長な表現を使う                                                                   | `allowNodeTypes`(["BlockQuote", "Link", "ReferenceDef", "Code"])、`dictOptions`({})                                                                                                                   |
+| `no-ai-list-formatting`                           | 指摘(既定で無効)       | リスト項目の先頭で太字とコロン・ハイフン・ダッシュを組み合わせるか、リスト項目で絵文字を使う                 | `allows`([])、`disableBoldListItems`・`disableEmojiListItems`(いずれもfalse)                                                                                                                          |
+| `no-ai-hype-expressions`                          | 指摘(既定で無効)       | 誇張した表現(25語)を使う                                                                                     | `allows`([])、`disableAbsolutenessPatterns`・`disableAbstractPatterns`・`disabledPredictivePatterns`(いずれもfalse)                                                                                   |
+| `no-ai-emphasis-patterns`                         | 指摘(既定で無効)       | 絵文字と太字を組み合わせるか、太字の情報プレフィックスか、見出しの中で太字を使う                             | `allows`([])、`disableEmojiEmphasisPatterns`・`disableInfoPatterns`・`disableHeadingEmphasisPatterns`(いずれもfalse)                                                                                  |
+| `no-ai-colon-continuation`                        | 指摘(既定で無効)       | 述語とコロンで終わる段落の後に、コードブロック・リスト・引用・表を続ける                                     | `allows`([])、`disableCodeBlock`・`disableList`・`disableQuote`・`disableTable`(いずれもfalse)                                                                                                        |
+| `ai-tech-writing-guideline`                       | 指摘(既定で無効)       | 冗長な表現・受け身・具体性の無い語・表記の揺れ・箇条書きにできる列挙を使う                                   | `allows`([])、`disableRedundancyGuidance`・`disableVoiceGuidance`・`disableClarityGuidance`・`disableConsistencyGuidance`・`disableStructureGuidance`(いずれもfalse)、`enableDocumentAnalysis`(false) |
+| `no-ai-words`                                     | 指摘(既定で無効)       | AIが多用する語を使う。語は品詞と原形で見分ける                                                               | `allows`([])、`dictionaryPath`(なし)、`dictionaryMode`("append")                                                                                                                                      |
+| `no-short-topic-comma`                            | 指摘(既定で無効)       | 短い主題を示す「は」の直後に読点を打つ                                                                       | `maxLength`(5)                                                                                                                                                                                        |
+| `prh`                                             | 修正と指摘(既定で無効) | 利用者のprhの辞書に書いた置き換えで本文を直す                                                                | `rulePaths`・`ruleContents`(いずれもなし。合わせて1つ以上)、`checkLink`・`checkBlockQuote`・`checkEmphasis`(いずれもfalse)、`checkHeader`・`checkParagraph`(いずれもtrue)                             |
+| `@textlint-rule/pattern`                          | 修正と指摘(既定で無効) | 利用者のパターンの一致を、`replace` があれば直し、無ければ指摘する                                           | `patterns`(なし。要素は `message`・`pattern`・`replace`・`allows`・`allowNodeTypes`)                                                                                                                  |
+| `ja-nakaguro-or-halfwidth-space-between-katakana` | 指摘(既定で無効)       | カタカナ語の間を全角空白で区切る                                                                             | なし                                                                                                                                                                                                  |
+| `ja-no-space-around-parentheses`                  | 修正(既定で無効)       | 括弧(`[` `]` `（` `）` `［` `］` `「` `」` `『` `』`)の外側と内側の空白を削除する                            | なし                                                                                                                                                                                                  |
+| `ja-no-space-around-slash`                        | 修正(既定で無効)       | `/` の前後の空白を削除する                                                                                   | なし                                                                                                                                                                                                  |
+| `ja-no-space-between-full-width`                  | 修正(既定で無効)       | 全角文字どうしの間の半角空白を削除する                                                                       | なし                                                                                                                                                                                                  |
+| `ja-space-between-half-and-full-width`            | 修正と指摘(既定で無効) | 全角文字と半角英数字の間の空白を、`space` に合わせて削除するか、空白が無い箇所を指摘する                     | `space`("never")、`lintStyledNode`(false)、`allows`([])                                                                                                                                               |
+| `ja-space-after-exclamation`                      | 指摘(既定で無効)       | 文末の `！` の後に別の文が続くのに、直後が半角空白である                                                     | なし                                                                                                                                                                                                  |
+| `ja-space-after-question`                         | 指摘(既定で無効)       | 文末の `？` の後に別の文が続くのに、直後が半角空白である                                                     | なし                                                                                                                                                                                                  |
+| `ja-space-around-code`                            | 修正と指摘(既定で無効) | インラインコードと日本語の文字の間の空白を、`before`・`after` に合わせて削除するか、空白が無い箇所を指摘する | `before`・`after`(いずれもfalse)                                                                                                                                                                      |
+| `ja-space-around-emphasis`                        | 修正と指摘(既定で無効) | 強調(`*x*`)と日本語の文字の間の空白を、`ja-space-around-code` と同じく削除するか指摘する                     | `before`・`after`(いずれもfalse)                                                                                                                                                                      |
+| `ja-space-around-link`                            | 修正と指摘(既定で無効) | リンクと日本語の文字の間の空白を、`ja-space-around-code` と同じく削除するか指摘する                          | `before`・`after`(いずれもfalse)                                                                                                                                                                      |
+| `ja-space-around-strong`                          | 修正と指摘(既定で無効) | 太字(`**x**`)と日本語の文字の間の空白を、`ja-space-around-code` と同じく削除するか指摘する                   | `before`・`after`(いずれもfalse)                                                                                                                                                                      |
+| `no-mixed-zenkaku-and-hankaku-alphabet`           | 修正(既定で無効)       | アルファベットを、`prefer` に合わせて半角か全角に揃える                                                      | `prefer`("半角")                                                                                                                                                                                      |
+| `no-kangxi-radicals`                              | 修正(既定で無効)       | 康熙部首(U+2F00からU+2FD5)を、同じ形の漢字にする                                                             | なし                                                                                                                                                                                                  |
 
 オプションの意味はtextlintのルールと同じです。`sentence-length` の `countBy` は、長さをUTF-16のコードユニットで数える `"codeunits"` か、文字で数える `"codepoints"` です。`sentence-length` の `skipPatterns`、`no-exclamation-question-mark` と `ja-unnatural-alphabet` の `allow` の要素は、「[パターン](#パターン)」の書き方で書きます。`max-kanji-continuous-len` の `allow` の要素は、漢字の連続の全体と一致する文字列で、`no-invalid-control-character` の `allow` の要素は、1文字の文字列です。
 
@@ -78,6 +91,36 @@ AIらしい書き方を指摘する7ルールのオプションは、次のと�
 ```
 
 `entries` の各項目は、指摘の文面の `message` (空でない文字列)と、期待するトークンの並びの `tokens` (空でない配列)を持ちます。項目のほかのキーは読みません。`tokens` の要素は、トークンの項目の名前をキーにした表で、値は文字列か文字列の配列(どれかに一致)です。キーには `surface_form`・`pos`・`pos_detail_1`・`pos_detail_2`・`pos_detail_3`・`conjugated_type`・`conjugated_form`・`basic_form`・`reading`・`pronunciation` を書けます。`_` で始まるキーは一致を調べるときに使わず、`_skippable` (真偽値)が `true` のトークンは、一致しなければ飛ばして次のトークンを当てます。
+
+### 空白と字種の13ルール
+
+`textlint-rule-preset-ja-spacing` の11ルールと、`no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals` は、空白を削除する箇所と字種を置き換える箇所を修正ルールとして直し、空白を入れる箇所と空白の種類を変える箇所を指摘ルールとして指摘します。hookは、agentが変えた行を確かめずに書き換えるので、自動で直すのは、文意を変えない置き換えだけです。空白を足すか、空白の種類を変えるかは、文書ごとの表記の方針に関わるので、agentに判断させます。同じルールでも、オプションの値と前後の側によって、修正と指摘に分かれます。
+
+- `ja-space-between-half-and-full-width` は、`space` が空白を求めない設定(`"never"` か、`"alphabets"` と `"numbers"` のどちらも含まない配列)なら、間の空白を削除する修正ルールです。空白を求める設定(`"always"` か、`"alphabets"` か `"numbers"` を含む配列)なら、空白の無い箇所を指摘する指摘ルールです
+- `ja-space-around-code`・`ja-space-around-link`・`ja-space-around-strong`・`ja-space-around-emphasis` は、`before` と `after` のうち `false` の側の空白を削除し、`true` の側で空白の無い箇所を指摘します
+- `ja-space-after-exclamation` と `ja-space-after-question` は、直後の半角空白を全角空白にするよう指摘します。textlintは置き換えますが、空白の種類を変えるので直しません。`ja-nakaguro-or-halfwidth-space-between-katakana` は、textlintでも直しません
+- `no-mixed-zenkaku-and-hankaku-alphabet` は `prefer` の向きに英字の字種を揃え、`no-kangxi-radicals` は康熙部首を同じ形の漢字に置き換えます。どちらも修正ルールです
+
+オプションは、次のとおりです。
+
+- `ja-space-between-half-and-full-width` の `space` は、`"never"`・`"always"` か、`"alphabets"`・`"numbers"`・`"punctuation"` からなる配列(空の配列を含む)です。`"always"` は `["alphabets", "numbers"]` と同じで、`"punctuation"` を含めると、`、` `。` と半角英数字の間も見ます。`lintStyledNode` を `true` にすると、段落の直下の文字列に加えて、見出し・表のセル・引用・リンクの文字列・太字・強調の中も見ます。`allows` の要素は「[パターン](#パターン)」の書き方で書きます。判定に使った文字の並び(空白を削除する側は前の文字・空白・後ろの文字、空白を求める側は隣り合う2文字)の先頭が、どれかの一致の範囲の中にあれば、その箇所を外します
+- 4つの `ja-space-around-*` の `before` と `after` は真偽値です。`before` はnodeの前、`after` はnodeの後ろの空白を決めます
+- `no-mixed-zenkaku-and-hankaku-alphabet` の `prefer` は、全角英字を半角にする `"半角"` か、半角英字を全角にする `"全角"` です。`"全角"` は、インラインコードとURLを除く本文の英字をすべて全角にします。元のソースの英字を置き換えるので、`&amp;` のような文字参照の英字も全角になり、文字参照として読まれなくなります
+- textlintの `ja-space-between-half-and-full-width` の `exceptPunctuation` は使えません。同じ設定は `space` の配列で書けます
+
+日本語の文字の範囲と、ルールが見る範囲は、ルールごとにtextlintと同じです。jafix独自の修正ルールの日本語の文字(「[修正ルール](#修正ルール)」)とは違います。下の漢字は、U+3400からU+4DBF、U+4E00からU+9FFF、U+F900からU+FAFF、U+20000からU+2FFFFの文字で、ひらがなは `ぁ` から `ん`、カタカナは `ァ` から `ヶ` です。
+
+- `ja-space-between-half-and-full-width`: 日本語の文字は `、` `。`・漢字・ひらがな・カタカナです。段落の直下の文字列(引用の中を除く)を見て、`lintStyledNode = true` なら本文のすべてを見ます
+- `ja-no-space-between-full-width`: 日本語の文字は `々` `〇` `〻`・漢字・ひらがな・カタカナで、前後がどちらもカタカナの空白は外します。段落の直下の文字列(引用の中を除く)を見ます
+- `ja-nakaguro-or-halfwidth-space-between-katakana`: 前後がカタカナか `ー` の全角空白に当たります。段落の直下の文字列(引用の中を除く)を見ます
+- `ja-no-space-around-parentheses`・`ja-no-space-around-slash`・`ja-space-after-exclamation`・`ja-space-after-question`: 日本語の文字かを見ません。段落の直下の文字列(引用の中を除く)を見ます
+- 4つの `ja-space-around-*`: 日本語の文字は漢字・ひらがな・カタカナです。インラインコード・リンク・太字・強調の前後を見て、見出し・表のセル・リンクの文字列・太字の中のnodeも見ます。リンクは、インラインのリンクと自動リンク(`<…>`)で、裸のURLと参照形式のリンクを含めません
+- `no-mixed-zenkaku-and-hankaku-alphabet`: 日本語の文字かを見ません。本文のうち、引用・リンク・強調の中を除くものを見ます。見出し・表のセル・太字・取り消し線の中は見ます
+- `no-kangxi-radicals`: 日本語の文字かを見ません。本文のすべてを見ます
+
+`ー`・`々`・`・` は `ja-space-between-half-and-full-width` の日本語の文字に入らないので、`コンピューター Hello` の空白はこのルールに当たりません(`space-between-ja-and-alnum` には当たります)。`ja-space-between-half-and-full-width` は間の空白が1文字のときだけ当たり、`ja-no-space-between-full-width` は半角空白だけに当たります。`ja-no-space-around-parentheses` と `ja-no-space-around-slash` は、括弧と `/` に隣り合って続く空白をまとめて削除し、行頭の字下げは削除しません。
+
+見出しの中では、13ルールの修正の箇所を直さず、指摘にします(「[修正ルール](#修正ルール)」)。空白を求める側の `ja-space-between-half-and-full-width` と、4つの `ja-space-around-*` の `true` の側は、もともと指摘ルールなので、見出しの中でもアンカーの補足を付けずに指摘します。
 
 ## 利用者の置き換え
 
@@ -149,7 +192,7 @@ patterns = [
 
 ### 修正の順と直さない箇所
 
-`jafix fix` とhookは、利用者の置き換えを組み込みの修正ルールより先に当てます。置き換えた内容を解析し直してから、組み込みの修正ルールを当てるので、置き換えが生んだ全角括弧や日本語と英数字の間の空白は、同じ実行で直ります。
+`jafix fix` とhookは、利用者の置き換えを組み込みの修正ルールより先に、1回だけ当てます。置き換えた内容を解析し直してから、組み込みの修正ルールを繰り返し当てる(「[修正ルール](#修正ルール)」)ので、置き換えが生んだ全角括弧や日本語と英数字の間の空白は、同じ実行で直ります。
 
 利用者の置き換えの箇所が重なるときは、先に始まる箇所を残します。同じ位置で始まるなら長い箇所を、範囲も同じなら `prh` の箇所を、それも同じなら `patterns` の前にある要素の箇所を残します。残した箇所と重なる箇所は直しません。`jafix check` は、重なりを解いた後の箇所だけを出します。
 
@@ -158,21 +201,25 @@ patterns = [
 - 見出しの中の箇所。見出しのアンカーが変わり、見出しへのリンクが切れるためです。文面の後に「見出しのアンカーが変わるので、見出しへのリンクも直す」を続けます。アンカーが変わらない置き換えを見分けることはしません
 - 一致した文字列か置き換え後の文字列が、改行を含む箇所。hookは、直した後の行の番号が変わらないことを前提にするためです。文面の後に「改行を含むので直さない」を続けます
 
-置き換えの固定の部分(`prh` の `expected` と `replace` から `$1` などを除いた部分)を有効な組み込みの修正ルールが直すときは、設定ファイルが不正です。たとえば `expected: （$1）` は、`fullwidth-paren` が `（` を `(` に戻すので、置き換えを当てても次の段で戻されます。理由に置き換えと組み込みの修正ルールのIDを書くので、どちらかを無効にするか、置き換えを辞書から外してください。`imports` の `ignoreRules` で外したルールと、無効にした組み込みのルールは、この判定に入りません。
+置き換えの固定の部分(`prh` の `expected` と `replace` から `$1` などを除いた部分)を有効な組み込みの修正ルールが直すときは、設定ファイルが不正です。たとえば `expected: （$1）` は、`fullwidth-paren` が `（` を `(` に戻すので、置き換えを当てても次の段で戻されます。理由に置き換えと組み込みの修正ルールのIDを書くので、どちらかを無効にするか、置き換えを辞書から外してください。`imports` の `ignoreRules` で外したルールと、無効にした組み込みのルールは、この判定に入りません。空白と字種の13ルールのうち有効な修正ルールは、この判定に入ります。`no-mixed-zenkaku-and-hankaku-alphabet` を有効にした設定では、`expected` に全角英字を含む辞書が不正になります。
 
 ## 修正ルール
 
 修正ルールは、Markdownの本文にだけ適用します。`jafix fix` とhookが直し、`jafix check` は直す箇所を指摘として出します。
 
-日本語の文字は、漢字・ひらがな・カタカナと長音符 `ー` です。句読点(`。` `、`)は日本語の文字に含めないので、`です。 Rust` の空白は残ります。空白は半角空白と全角空白で、続けて並んだものはまとめて削除します。
+`space-between-ja-and-alnum` と `space-between-ja-and-paren` の日本語の文字は、漢字・ひらがな・カタカナと長音符 `ー` です。句読点(`。` `、`)は日本語の文字に含めないので、`です。 Rust` の空白は残ります。空白は半角空白と全角空白で、続けて並んだものはまとめて削除します。textlintから移したルールの日本語の文字は、ルールごとにtextlintと同じ範囲です(「[空白と字種の13ルール](#空白と字種の13ルール)」)。
 
 `no-nfd` は、結合文字の濁点・半濁点や単独の `゛` `゜` を前の文字と合成して、1文字にします。合成して1文字にならない組み合わせ(`あ` と濁点など)は、直さずに指摘します。`no-invalid-control-character` が削除するのは、タブ・改行・復帰を除く制御文字と、U+202AからU+202Eの方向制御文字です。`no-nfd` は引用・強調・リンクの中の文字列を見ません。`no-hankaku-kana` は、段落の直下の文字列だけを直します。表のセル・強調・太字・リンク・引用・見出しの中の半角カナは、直さず指摘もしません。
 
-本文は、段落・リスト・見出し・表のセル・強調・取り消し線・リンクの文字列・引用・脚注の本文と、インラインのHTMLのタグに挟まれた文字列です。コードブロック、インラインコード、画像、URL、front matter、HTMLのタグとHTMLブロックは直しません。インラインコード・強調・リンク・HTMLのタグとの境目の空白(`` `code` の `` や `**強調** の`)も残します。
+本文は、段落・リスト・見出し・表のセル・強調・取り消し線・リンクの文字列・引用・脚注の本文と、インラインのHTMLのタグに挟まれた文字列です。コードブロック、インラインコード、画像、URL、front matter、HTMLのタグとHTMLブロックは直しません。`space-between-ja-and-alnum`・`space-between-ja-and-paren` と、本文の範囲に当てる13ルールの修正は、インラインコード・強調・リンク・HTMLのタグとの境目の空白(`` `code` の `` や `**強調** の`)を残します。インラインコード・リンク・太字・強調との境目の空白を削除するのは、`ja-space-around-code`・`ja-space-around-link`・`ja-space-around-strong`・`ja-space-around-emphasis` を有効にしたときだけです。HTMLのタグとの境目の空白は、どのルールも削除しません。
 
 参照形式のリンクのうち、定義を持つ省略形(`[設定 API]`)とcollapsed形(`[設定 API][]`)の文字列は、直さず指摘もしません。この文字列は定義のラベルを兼ねるので、書き換えると定義との対応が切れるためです。full形(`[設定 API][api]`)の文字列は、他の本文と同じく直します。
 
-見出しの本文では、アンカーが変わる修正ルール(空白を削除する2つ、`no-nfd`、`no-zero-width-spaces`、`no-invalid-control-character`)に当たる箇所を直さず、指摘にします(「[指摘ルール](#指摘ルール)」)。見出しの文字を変えると自動で付くアンカーが変わり、見出しへのリンクが切れるためです。たとえば `## API の設計` のアンカーは `api-の設計` で、空白を消すと `apiの設計` になります。全角括弧は置き換えてもアンカーが変わらないので、見出しでも直します。
+見出しの本文では、アンカーが変わる修正ルール(空白を削除する2つ、`no-nfd`、`no-zero-width-spaces`、`no-invalid-control-character`、空白と字種の13ルールの修正)に当たる箇所を直さず、指摘にします(「[指摘ルール](#指摘ルール)」)。見出しの文字を変えると自動で付くアンカーが変わり、見出しへのリンクが切れるためです。たとえば `## API の設計` のアンカーは `api-の設計` で、空白を消すと `apiの設計` になります。全角括弧は置き換えてもアンカーが変わらないので、見出しでも直します。
+
+組み込みの修正ルールの箇所どうしが重なるときは、1件だけを残して直し、`jafix check` もその1件だけを出します。先に始まる箇所を残し、同じ位置で始まるなら長い箇所を、範囲も同じなら「[組み込みのルール](#組み込みのルール)」の表で前にあるルールの箇所を残します。たとえば `preset-ja-spacing = true` では、`日本語 Rust と語 （補足） です` の `Rust` の前後の空白が `space-between-ja-and-alnum` の箇所、`（` の前と `）` の後の空白が `space-between-ja-and-paren` の箇所になり、`ja-space-between-half-and-full-width` と `ja-no-space-around-parentheses` の箇所は出ません。各ルールの判定はそれぞれのままなので、jafix独自のルールが当たらない空白には、移したルールの箇所が出ます。`space = ["punctuation"]` の `ja-space-between-half-and-full-width` が当たる `です。 Rust` の空白がその例です。見出しの中で指摘にする箇所も、重なりを解いてから指摘にします。
+
+`jafix fix` とhookは、組み込みの修正ルールを、対象行の内容が変わらなくなるまで繰り返し当てます。ある修正ルールの結果に別の修正ルールが当たる箇所も、1回の実行で直ります。たとえば `no-mixed-zenkaku-and-hankaku-alphabet` が `日本語 Ｒｕｓｔ` を `日本語 Rust` にすると、その空白を `space-between-ja-and-alnum` が削除して、`日本語Rust` になります。設定を書かない場合も、この繰り返しで修正の結果の変わる組があります。`日本語 Rust` の空白の後にゼロ幅スペースがある箇所は、ゼロ幅スペースを削除する `no-zero-width-spaces` の後に、空白を削除する `space-between-ja-and-alnum` も当たるので、1回で `日本語Rust` になります。`か` と結合文字の濁点の後に空白と英字が続く箇所も、`no-nfd` が濁点を合成した後の空白まで1回で削除します。`jafix check` が出すのは、元の内容に当たる箇所だけで、繰り返しの2回目以降に当たる箇所は出しません。
 
 ## 指摘ルール
 
@@ -180,7 +227,8 @@ patterns = [
 
 組み込みの指摘ルールは、ルールごとに当てる単位が違います。
 
-- 本文の範囲ごとに当てるルール: `max-kanji-continuous-len`・`arabic-kanji-numbers`・`no-exclamation-question-mark`・`ja-unnatural-alphabet`・`no-double-negative-ja`・`no-dropping-the-ra`・`ja-no-weak-phrase`・`ja-no-successive-word`・`ja-no-abusage`・`no-ai-hype-expressions`・`no-ai-words`・`no-short-topic-comma`・`@textlint-rule/pattern` です。形態素解析を使うルールは、本文の範囲を1つずつトークンへ分けます。本文の範囲は、インラインコード・強調・リンク・HTMLのタグで区切られるので、境目をまたいでは一致せず、`照**合**` は `照合` に当たりません。長さ0の一致は指摘にしません。組み込みのルールは、引用・強調・リンクの中、段落の直下でない範囲を、ルールごとにtextlintと同じ文脈で対象から外します。`@textlint-rule/pattern` は、`allowNodeTypes` に書いた型の中だけを対象から外します
+- 本文の範囲ごとに当てるルール: `max-kanji-continuous-len`・`arabic-kanji-numbers`・`no-exclamation-question-mark`・`ja-unnatural-alphabet`・`no-double-negative-ja`・`no-dropping-the-ra`・`ja-no-weak-phrase`・`ja-no-successive-word`・`ja-no-abusage`・`no-ai-hype-expressions`・`no-ai-words`・`no-short-topic-comma`・`ja-nakaguro-or-halfwidth-space-between-katakana`・`ja-space-after-exclamation`・`ja-space-after-question`・空白を求める側の `ja-space-between-half-and-full-width`・`@textlint-rule/pattern` です。形態素解析を使うルールは、本文の範囲を1つずつトークンへ分けます。本文の範囲は、インラインコード・強調・リンク・HTMLのタグで区切られるので、境目をまたいでは一致せず、`照**合**` は `照合` に当たりません。長さ0の一致は指摘にしません。組み込みのルールは、引用・強調・リンクの中、段落の直下でない範囲を、ルールごとにtextlintと同じ文脈で対象から外します。`@textlint-rule/pattern` は、`allowNodeTypes` に書いた型の中だけを対象から外します
+- インラインコード・リンク・太字・強調の前後に当てるルール: 4つの `ja-space-around-*` の `true` の側です。nodeの直前か直後の文字が日本語の文字で、間に空白が無ければ指摘します。nodeの前か後ろに文字が無い側(文書の先頭か末尾)は見ません
 - 段落と文の単位で当てるルール: `sentence-length`・`max-comma`・`ja-no-mixed-period`・`no-unmatched-pair`・`max-ten`・`no-doubled-joshi`・`no-doubled-conjunctive-particle-ga`・`no-doubled-conjunction`・`ja-no-redundant-expression` です。Markdownの解析結果のままの段落を見ます。リスト項目・引用・脚注の定義の中の段落も見ますが、`ja-no-mixed-period` はこの3つの中の段落を対象にせず、`sentence-length` は引用の中の段落と、子がリンク1つだけの段落を対象にしません。段落の文字列には、本文のほかにインラインコードの中身と画像のaltも入ります。文は、`。` `.` `?` `!` などで区切り、括弧と引用符が開いている間と、`Mr.` のような英語の略語の `.` では区切りません。形態素解析を使うルールは、引用の中の段落を対象にしません(`ja-no-redundant-expression` は `allowNodeTypes` で決まります)。また、インラインコードを中身と同じ文字数の `ー` に置き換えてから文をトークンに分けるので、コードの中身を判定に入れません
 - リスト項目・見出し・段落の元の文字列に当てるルール: `no-ai-list-formatting` はリスト項目ごとに、項目の先頭の太字の型と、項目の範囲にある段落(入れ子の項目の段落を含む)の最初の絵文字を見ます。`no-ai-emphasis-patterns` は段落と見出しごとに見ます。どちらも、インラインコードとHTMLのタグの中で始まるか終わる一致を捨てるので、コードの中の `**` や絵文字には当たりません。リスト項目の中のコードブロックも見ません
 - 段落の全体の文字列に当てるルール: `ai-tech-writing-guideline` です。リスト項目・引用・脚注の定義の中の段落も見ます。段落の文字列は、段落の単位のルールと同じ作り方で、インラインコードだけを中身と同じ文字数の半角空白に置き換えます。コードを挟んだ語はつながりません
@@ -290,7 +338,7 @@ print -r -- "$input" | jafix hook claude
 
 ## 設定ファイル
 
-設定ファイルは `$XDG_CONFIG_HOME/jafix/config.toml` です。`XDG_CONFIG_HOME` が未設定なら `~/.config/jafix/config.toml` を読みます。設定ファイルが無ければ、組み込みのルールを既定の設定にし(AIらしい書き方を指摘する7ルールと、`prh`・`@textlint-rule/pattern` は無効、ほかは有効)、何も除外しません。
+設定ファイルは `$XDG_CONFIG_HOME/jafix/config.toml` です。`XDG_CONFIG_HOME` が未設定なら `~/.config/jafix/config.toml` を読みます。設定ファイルが無ければ、組み込みのルールを既定の設定にし(AIらしい書き方を指摘する7ルール、空白と字種の13ルール、`prh`・`@textlint-rule/pattern` は無効、ほかは有効)、何も除外しません。
 
 ```toml
 exclude = ["~/.dotfiles/docs/bad-examples.md", "**/drafts/**"]
@@ -321,7 +369,7 @@ pattern = "/[!！]/"
 
 ### `[builtin]`
 
-`[builtin]` の表は、組み込みのルールを1つずつか、presetの名前でまとめて設定します。ルールのIDのキー(「[組み込みのルール](#組み込みのルール)」の表)の値は、次のどれかです。書かなかったルールは既定の設定のままで、AIらしい書き方を指摘する7ルールと、`prh`・`@textlint-rule/pattern` は無効、ほかのルールは有効です。
+`[builtin]` の表は、組み込みのルールを1つずつか、presetの名前でまとめて設定します。ルールのIDのキー(「[組み込みのルール](#組み込みのルール)」の表)の値は、次のどれかです。書かなかったルールは既定の設定のままで、AIらしい書き方を指摘する7ルール、空白と字種の13ルール、`prh`・`@textlint-rule/pattern` は無効、ほかのルールは有効です。
 
 | 値                            | 意味                                                           |
 | ----------------------------- | -------------------------------------------------------------- |
@@ -343,13 +391,14 @@ ja-no-redundant-expression = { dictOptions = { dict5 = { disabled = true } } }
 
 `[builtin]` のキーには、ルールのIDのほかに、textlintのpresetの名前を書けます。値は `true` か `false` です。`@` と `/` を含む名前は、TOMLのキーとして引用符で囲みます。
 
-| presetの名前                     | 束ねるルール                                                                                 |
-| -------------------------------- | -------------------------------------------------------------------------------------------- |
-| `preset-ja-technical-writing`    | `sentence-length` から `ja-no-redundant-expression` までの23ルール(jafix独自の3つは含まない) |
-| `@textlint-ja/preset-ai-writing` | `no-ai-list-formatting` から `ai-tech-writing-guideline` までの5ルール                       |
-| `preset-ai-words-ja`             | `no-ai-words` と `no-short-topic-comma`                                                      |
+| presetの名前                     | 束ねるルール                                                                                                                                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `preset-ja-technical-writing`    | `sentence-length` から `ja-no-redundant-expression` までの23ルール(jafix独自の3つは含まない)                                                                                                 |
+| `@textlint-ja/preset-ai-writing` | `no-ai-list-formatting` から `ai-tech-writing-guideline` までの5ルール                                                                                                                       |
+| `preset-ai-words-ja`             | `no-ai-words` と `no-short-topic-comma`                                                                                                                                                      |
+| `preset-ja-spacing`              | `ja-nakaguro-or-halfwidth-space-between-katakana` から `ja-space-around-strong` までの11ルール。presetが有効にするのは、`ja-space-around-emphasis` と `ja-space-around-strong` を除く9ルール |
 
-`true` は、presetのルールを、presetの既定の有効・無効とオプションで有効にします。`preset-ai-words-ja` の既定の設定は `no-short-topic-comma` を無効にするので、`preset-ai-words-ja = true` で有効になるのは `no-ai-words` だけです。`false` は、presetのルールをすべて無効にします。
+`true` は、presetのルールを、presetの既定の有効・無効とオプションで有効にします。`preset-ai-words-ja` の既定の設定は `no-short-topic-comma` を無効にするので、`preset-ai-words-ja = true` で有効になるのは `no-ai-words` だけです。`preset-ja-spacing = true` は、`ja-space-around-emphasis` と `ja-space-around-strong` を除く9ルールを、ルールの既定のオプションで有効にします(`ja-space-between-half-and-full-width` は `space = "never"`)。2つは、`ja-space-around-strong = true` のようにルールのIDのキーを書くと有効になります。`preset-ja-spacing` は、`no-mixed-zenkaku-and-hankaku-alphabet` と `no-kangxi-radicals` を含みません。`false` は、presetのルールをすべて無効にします。
 
 ```toml
 [builtin]
@@ -378,6 +427,7 @@ presetの名前のキーと、そのpresetのルールのIDのキーを同じ表
 - オプションの値の型か値が誤っている。`sentence-length` と `max-ten` の `max` は0以上の整数、`max-comma` と `max-kanji-continuous-len` の `max` と `no-doubled-joshi` の `min_interval` は1以上の整数、`countBy` は `"codeunits"` か `"codepoints"`、`no-invalid-control-character` の `allow` の要素は1文字の文字列、パターンは「[パターン](#パターン)」のとおりに読めるもの
 - 形態素解析を使うルールのオプションの値が誤っている。`max-ten` の `touten` と `kuten` は空でない文字列、`no-doubled-joshi` の `allow`・`separatorCharacters`・`commaCharacters` の要素は空でない文字列、`no-mix-dearu-desumasu` の `prefer` で始まる3つは `""`・`"ですます"`・`"である"` のどれか、`allowNodeTypes` の要素は「[組み込みのルール](#組み込みのルール)」に挙げた10の型のどれか、`dictOptions` のキーは `dict1` から `dict6` のどれかで、値は `disabled` と `allows` だけを持つ表
 - AIらしい書き方を指摘する7ルールのオプションの値が誤っている。`disable` で始まるオプションと `enableDocumentAnalysis` は真偽値、`allows` はパターンの配列、`no-ai-words` の `dictionaryPath` は空でない文字列で `dictionaryMode` は `"append"` か `"override"`、`no-short-topic-comma` の `maxLength` は1以上の整数。textlintの `severity` は、jafixが対応しないので、知らないオプションに当たります
+- 空白と字種の13ルールのオプションの値が誤っている。`ja-space-between-half-and-full-width` の `space` は `"never"`・`"always"` か、`"alphabets"`・`"numbers"`・`"punctuation"` からなる配列、`lintStyledNode` と4つの `ja-space-around-*` の `before`・`after` は真偽値、`allows` はパターンの配列、`no-mixed-zenkaku-and-hankaku-alphabet` の `prefer` は `"全角"` か `"半角"`。`exceptPunctuation` は、知らないオプションに当たります
 - `no-ai-words` の `dictionaryPath` のファイルが読めないか、JSONとして読めないか、利用者の辞書の形でない。`tokens` の要素に、上に挙げたトークンの項目の名前でも `_` で始まる名前でもないキー(kuromojiの `word_id`・`word_type`・`word_position` を含む)があるときも、これに当たります。理由には `dictionaryPath` とファイルのパスを含めます
 - `no-ai-words` の `dictionaryMode` が `"override"` なのに、`dictionaryPath` が無い
 - `prh` のオプションが誤っている。`rulePaths` と `ruleContents` に辞書が1つも無い(`prh = true` を含む)、`check` で始まるオプションが真偽値でない、`checkCodeComment`・`debug`・知らないオプションがある。理由には `prh` とオプションの名前を含めます
@@ -388,7 +438,8 @@ presetの名前のキーと、そのpresetのルールのIDのキーを同じ表
   - `specs` の要素の `from` と `to` のどちらかが空、またはルールを `from` に当てた結果が `to` と違う。理由には、そのルールの `expected`、`from`、`to`、当てた結果を含めます
   - `imports` が循環する
 - `@textlint-rule/pattern` のオプションが誤っている。`patterns` が無いか空(`"@textlint-rule/pattern" = true` を含む)、要素に `message` か `pattern` が無い、要素の知らないキー(`forceCode` を含む)がある、`allowNodeTypes` の型の名前が上に挙げたもの以外、`pattern` と `allows` が正規表現として読めない、`y` フラグがある。理由にはルールのID、オプションの名前、何番目の要素かを含めます
-- 逆の置き換え。利用者の置き換えの固定の部分を、有効な組み込みの修正ルールが直す場合です。理由にはルールのID、その置き換え(`expected` か `replace`)、組み込みの修正ルールのIDを含めます
+- 逆の書き方の設定。`ja-space-between-half-and-full-width` の `space` が空白を求める設定(`"always"` か、`"alphabets"` か `"numbers"` を含む配列)で、`space-between-ja-and-alnum` も有効な場合です。hookが削除した空白を、`ja-space-between-half-and-full-width` が入れるよう指摘し続けるためです。理由には2つのルールのIDと `space` を含めるので、どちらかを無効にしてください。4つの `ja-space-around-*` の `true` の側は、どの修正ルールともnodeとの境目の空白を取り合わないので、組み合わせを問わず読み込めます
+- 逆の置き換え。利用者の置き換えの固定の部分を、有効な組み込みの修正ルールが直す場合です。理由にはルールのID、その置き換え(`expected` か `replace`)、組み込みの修正ルールのIDを含めます。同じ箇所に当たる組み込みの修正ルールが2つ以上あれば、重なりを解く前のものをすべて挙げます
 
 ## textlintとの違い
 
@@ -447,6 +498,23 @@ AIらしい書き方を指摘する7ルールも、判定の条件(何を指摘�
 - 見出しの中の箇所と、改行を含む箇所は、直さず指摘だけを出します
 - 組み込みの修正ルールと逆の置き換えは、設定の不正にします
 - 位置は元のソースでの位置で、列は文字で数えます
+
+空白と字種の13ルールも、判定の条件を `textlint-rule-preset-ja-spacing` 3.0.4・`textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet` 1.0.1・`textlint-rule-no-kangxi-radicals` 0.2.2から写し、textlintの不具合に近い挙動は写しません。上の点のうち、列の数え方、パターン、文面は13ルールにも当てはまります。ほかに次の点が違います。
+
+- 当たる箇所をすべて指摘します。textlintは一致を重ねずに探すので、`ja-no-space-between-full-width` の `日 本 語`、`ja-nakaguro-or-halfwidth-space-between-katakana` の `ア　イ　ウ`、`ja-space-after-exclamation` の `あ！ ！ これ` で、2件のうち1件だけを指摘します
+- `ja-no-space-around-parentheses` は括弧に隣り合って続く空白を、`ja-no-space-around-slash` は `/` の前後に続く空白を、まとめて1件にして削除します。textlintは、括弧では1文字だけを、`/` では前後それぞれ10文字までを削除するので、1回の修正で消し切りません。行頭から続く空白(リストの継続行の字下げ)は、括弧と同じく `/` の前でも削除しません
+- 4つの `ja-space-around-*` は、文字で日本語かを判定し、U+20000からU+2FFFFの漢字も日本語の文字に数えます。textlintはUTF-16のコードユニットで判定するので、サロゲートペアの漢字を日本語の文字とみなしません
+- `ja-space-between-half-and-full-width` と `ja-no-space-between-full-width` は、U+20000からU+2FFFFの漢字の直後の空白を、その空白の位置で削除します。textlintは、一致の位置にUTF-16のコードユニット1つ分を足して空白の位置とするので、`𠮷 A` では漢字の後半を削除して文字を壊します
+- `ja-no-space-around-slash` の位置は、削除する空白の並びの先頭です。`/` の前に空白が無ければ、`/` の後ろの空白の先頭です。textlintは一致の先頭に出すので、`/` の前に空白が無いと `/` に出します
+- 4つの `ja-space-around-*` は、nodeの前か後ろに文字が無ければ、その側を判定しません。textlintの `before: true` は、文書の先頭のインラインコードにも指摘を出します。`after: false` の位置は、削除する空白です。textlintは空白の次の文字に出します
+- `ja-space-around-link` は、裸のURLに当てません。textlintは裸のURLの前後の空白も削除するので、前の空白を消すとURLとして読まれなくなり、後ろの空白を消すと続く文字がURLに入ります。自動リンク(`<…>`)とインラインのリンクには当てます
+- `ja-space-around-strong` と `ja-space-around-emphasis` は、空白を削除すると強調として読まれなくなる箇所(区切りが `_` のときや、区切りの内側の文字が句読点か記号のとき)を判定しません。textlintは削除して強調を壊します
+- `ja-space-between-half-and-full-width` の `allows` は、判定で見た並びの先頭が、一致の範囲の中(終わりの位置を含まない)にあれば外します。textlintは終わりの位置も含めるので、許した文字列の直後の文字で始まる並びも外します。`allows` の要素は、JavaScriptの正規表現ではなく「[パターン](#パターン)」の書き方で読みます
+- `no-mixed-zenkaku-and-hankaku-alphabet` の `prefer` は、`"全角"` か `"半角"` だけを受け付けます。textlintは `"半角"` 以外のすべての値を `"全角"` とみなします
+- 本文でない箇所(裸のURL、自動リンクの文字列、定義を持つ省略形とcollapsed形の参照リンクの文字列)を見ません。textlintでは、これらも文字列のnodeです。そのため `no-kangxi-radicals` と `lintStyledNode = true` の `ja-space-between-half-and-full-width` が当たり、`no-mixed-zenkaku-and-hankaku-alphabet` は参照リンクの文字列を直して定義との対応を切ります
+- 見出しの中の修正の箇所は直さず、指摘として出します
+- 組み込みの修正ルールの箇所の重なりを1件にし、修正を繰り返し当てます。textlintは、ルールごとに修正を当て、同じ空白に2つのルールの指摘を出します
+- `ja-space-between-half-and-full-width` の `exceptPunctuation` は使えません
 
 ## ライセンス
 

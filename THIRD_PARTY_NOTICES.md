@@ -9,41 +9,57 @@ jafixのbinaryは、形態素解析のライブラリのlinderaと、linderaが�
 
 jafixの組み込みのルールのうち、textlintと同じIDのものは、次のtextlintのルールとライブラリの挙動に合わせて書き直したものです。正規表現、語の表、辞書、判定の手順の一部を、これらのソースから写しています。どれもMIT Licenseで公開されています。
 
-| package                                                   | version | 著作権表示                       |
-| --------------------------------------------------------- | ------- | -------------------------------- |
-| sentence-splitter                                         | 5.0.1   | Copyright (c) 2015 azu           |
-| textlint-rule-sentence-length                             | 5.2.1   | Copyright (c) 2015 azu           |
-| textlint-rule-max-comma                                   | 4.0.0   | Copyright (c) 2016 azu           |
-| textlint-rule-max-kanji-continuous-len                    | 1.1.1   | Copyright (c) 2016 azu           |
-| textlint-rule-preset-jtf-style                            | 3.0.3   | Copyright (c) 2015 azu           |
-| textlint-rule-ja-no-mixed-period                          | 3.0.2   | Copyright (c) 2016 azu           |
-| check-ends-with-period                                    | 3.0.2   | Copyright (c) 2017 azu           |
-| textlint-rule-no-nfd                                      | 2.0.2   | Copyright (c) 2016 azu           |
-| @textlint-rule/textlint-rule-no-invalid-control-character | 3.0.0   | Copyright (c) 2017 azu           |
-| textlint-rule-no-zero-width-spaces                        | 1.0.1   | Copyright (c) 2021 Tomoyuki Hata |
-| textlint-rule-no-exclamation-question-mark                | 1.1.0   | Copyright (c) 2016 azu           |
-| textlint-rule-no-hankaku-kana                             | 2.0.1   | Copyright (c) 2016 azu           |
-| textlint-rule-ja-unnatural-alphabet                       | 2.0.1   | Copyright (c) 2017 azu           |
-| @textlint-rule/textlint-rule-no-unmatched-pair            | 2.0.4   | Copyright (c) 2018 azu           |
-| textlint-rule-max-ten                                     | 5.0.0   | Copyright (c) 2015 azu           |
-| textlint-rule-no-doubled-joshi                            | 5.1.1   | Copyright (c) 2015 azu           |
-| textlint-rule-no-doubled-conjunctive-particle-ga          | 3.0.0   | Copyright (c) 2016 takahashim    |
-| textlint-rule-no-doubled-conjunction                      | 3.0.1   | Copyright (c) 2016 takahashim    |
-| textlint-rule-no-mix-dearu-desumasu                       | 6.0.4   | Copyright (c) 2015 azu           |
-| analyze-desumasu-dearu                                    | 5.0.2   | Copyright (c) 2015 azu           |
-| textlint-rule-no-double-negative-ja                       | 2.0.1   | Copyright (c) 2015 azu           |
-| textlint-rule-no-dropping-the-ra                          | 3.0.0   | Copyright (c) 2015 azu           |
-| textlint-rule-ja-no-weak-phrase                           | 2.0.0   | Copyright (c) 2016 azu           |
-| textlint-rule-ja-no-successive-word                       | 2.0.1   | Copyright (c) 2016 azu           |
-| textlint-rule-ja-no-abusage                               | 3.0.0   | Copyright (c) 2016 azu           |
-| textlint-rule-ja-no-redundant-expression                  | 4.0.1   | Copyright (c) 2016 azu           |
-| morpheme-match                                            | 2.0.4   | Copyright (c) 2016 azu           |
-| @textlint-ja/textlint-rule-preset-ai-writing              | 1.7.0   | Copyright (c) 2025 azu           |
-| textlint-rule-preset-ai-words-ja                          | 1.2.1   | Copyright (c) 2026 p1ass         |
-| textlint-rule-prh                                         | 6.1.1   | Copyright (c) 2015 azu           |
-| prh                                                       | 6.1.0   | Copyright (c) 2026 vvakame       |
-| @textlint-rule/textlint-rule-pattern                      | 2.0.2   | Copyright (c) 2022 azu           |
-| @textlint/regexp-string-matcher                           | 2.0.2   | Copyright (c) 2018 azu           |
+| package                                                       | version | 著作権表示                       |
+| ------------------------------------------------------------- | ------- | -------------------------------- |
+| sentence-splitter                                             | 5.0.1   | Copyright (c) 2015 azu           |
+| textlint-rule-sentence-length                                 | 5.2.1   | Copyright (c) 2015 azu           |
+| textlint-rule-max-comma                                       | 4.0.0   | Copyright (c) 2016 azu           |
+| textlint-rule-max-kanji-continuous-len                        | 1.1.1   | Copyright (c) 2016 azu           |
+| textlint-rule-preset-jtf-style                                | 3.0.3   | Copyright (c) 2015 azu           |
+| textlint-rule-ja-no-mixed-period                              | 3.0.2   | Copyright (c) 2016 azu           |
+| check-ends-with-period                                        | 3.0.2   | Copyright (c) 2017 azu           |
+| textlint-rule-no-nfd                                          | 2.0.2   | Copyright (c) 2016 azu           |
+| @textlint-rule/textlint-rule-no-invalid-control-character     | 3.0.0   | Copyright (c) 2017 azu           |
+| textlint-rule-no-zero-width-spaces                            | 1.0.1   | Copyright (c) 2021 Tomoyuki Hata |
+| textlint-rule-no-exclamation-question-mark                    | 1.1.0   | Copyright (c) 2016 azu           |
+| textlint-rule-no-hankaku-kana                                 | 2.0.1   | Copyright (c) 2016 azu           |
+| textlint-rule-ja-unnatural-alphabet                           | 2.0.1   | Copyright (c) 2017 azu           |
+| @textlint-rule/textlint-rule-no-unmatched-pair                | 2.0.4   | Copyright (c) 2018 azu           |
+| textlint-rule-max-ten                                         | 5.0.0   | Copyright (c) 2015 azu           |
+| textlint-rule-no-doubled-joshi                                | 5.1.1   | Copyright (c) 2015 azu           |
+| textlint-rule-no-doubled-conjunctive-particle-ga              | 3.0.0   | Copyright (c) 2016 takahashim    |
+| textlint-rule-no-doubled-conjunction                          | 3.0.1   | Copyright (c) 2016 takahashim    |
+| textlint-rule-no-mix-dearu-desumasu                           | 6.0.4   | Copyright (c) 2015 azu           |
+| analyze-desumasu-dearu                                        | 5.0.2   | Copyright (c) 2015 azu           |
+| textlint-rule-no-double-negative-ja                           | 2.0.1   | Copyright (c) 2015 azu           |
+| textlint-rule-no-dropping-the-ra                              | 3.0.0   | Copyright (c) 2015 azu           |
+| textlint-rule-ja-no-weak-phrase                               | 2.0.0   | Copyright (c) 2016 azu           |
+| textlint-rule-ja-no-successive-word                           | 2.0.1   | Copyright (c) 2016 azu           |
+| textlint-rule-ja-no-abusage                                   | 3.0.0   | Copyright (c) 2016 azu           |
+| textlint-rule-ja-no-redundant-expression                      | 4.0.1   | Copyright (c) 2016 azu           |
+| morpheme-match                                                | 2.0.4   | Copyright (c) 2016 azu           |
+| @textlint-ja/textlint-rule-preset-ai-writing                  | 1.7.0   | Copyright (c) 2025 azu           |
+| textlint-rule-preset-ai-words-ja                              | 1.2.1   | Copyright (c) 2026 p1ass         |
+| textlint-rule-prh                                             | 6.1.1   | Copyright (c) 2015 azu           |
+| prh                                                           | 6.1.0   | Copyright (c) 2026 vvakame       |
+| @textlint-rule/textlint-rule-pattern                          | 2.0.2   | Copyright (c) 2022 azu           |
+| @textlint/regexp-string-matcher                               | 2.0.2   | Copyright (c) 2018 azu           |
+| textlint-rule-preset-ja-spacing                               | 3.0.4   | Copyright (c) 2024 azu           |
+| textlint-rule-ja-nakaguro-or-halfwidth-space-between-katakana | 3.0.4   | Copyright (c) 2024 azu           |
+| textlint-rule-ja-no-space-around-parentheses                  | 3.0.4   | Copyright (c) 2024 azu           |
+| textlint-rule-ja-no-space-around-slash                        | 3.0.4   | Copyright (c) azu                |
+| textlint-rule-ja-no-space-between-full-width                  | 3.0.4   | Copyright (c) 2024 azu           |
+| textlint-rule-ja-space-between-half-and-full-width            | 3.0.4   | Copyright (c) 2024 azu           |
+| textlint-rule-ja-space-after-exclamation                      | 3.0.4   | Copyright (c) 2024 azu           |
+| textlint-rule-ja-space-after-question                         | 3.0.4   | Copyright (c) 2024 azu           |
+| textlint-rule-ja-space-around-code                            | 3.0.4   | Copyright (c) 2024 azu           |
+| textlint-rule-ja-space-around-emphasis                        | 3.0.4   | Copyright (c) azu                |
+| textlint-rule-ja-space-around-link                            | 3.0.4   | Copyright (c) 2024 azu           |
+| textlint-rule-ja-space-around-strong                          | 3.0.4   | Copyright (c) azu                |
+| textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet           | 1.0.1   | Copyright (c) 2017 azu           |
+| textlint-rule-no-kangxi-radicals                              | 0.2.2   | 著作権表示なし(作者は xl1)       |
+
+`textlint-rule-no-kangxi-radicals` は、LICENSEのファイルを持たず、`package.json` に作者 `xl1` とMIT Licenseを書いています。
 
 ## MIT License
 

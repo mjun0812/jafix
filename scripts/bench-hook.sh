@@ -37,6 +37,11 @@ words=(
 "@textlint-ja/preset-ai-writing" = true
 preset-ai-words-ja = true
 no-short-topic-comma = true
+preset-ja-spacing = true
+ja-space-around-emphasis = true
+ja-space-around-strong = true
+no-mixed-zenkaku-and-hankaku-alphabet = true
+no-kangxi-radicals = true
 prh = { rulePaths = ["prh.yml"] }
 TOML
     for word in "${words[@]}"; do

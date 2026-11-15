@@ -174,3 +174,72 @@ pub fn user_replacement_reports(path: &Path) -> Vec<String> {
         format!("{path}:5:13: 「FIXME」: FIXMEを残さない [@textlint-rule/pattern]"),
     ]
 }
+
+/// `preset-ja-spacing` と、presetに入らない `no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals` を有効にする設定
+pub const SPACING_RULES_CONFIG: &str = "[builtin]
+preset-ja-spacing = true
+no-mixed-zenkaku-and-hankaku-alphabet = true
+no-kangxi-radicals = true
+";
+
+/// 見出し・本文・`！ ` の後に文が続く行・インラインコードの前後に空白のある行を持ち、
+/// `SPACING_RULES_CONFIG` の修正ルールに当たる箇所が各行にある文書
+pub const SPACING_RULES_INPUT: &str = "# Ｒｕｓｔの⼊門
+
+本文の Ｒｕｓｔ と 日本 語 を読む。
+
+すごい！ これは Ｇｏ で書く `code` を読む。
+
+別の行も `code` を書く。
+";
+
+/// `SPACING_RULES_INPUT` の1行目と5行目を対象行にして直した文書。見出しの1行目は直さず、
+/// 全角英字を半角にした後の空白も同じ実行で消える
+pub const SPACING_RULES_FIXED: &str = "# Ｒｕｓｔの⼊門
+
+本文の Ｒｕｓｔ と 日本 語 を読む。
+
+すごい！ これはGoで書く`code`を読む。
+
+別の行も `code` を書く。
+";
+
+/// `SPACING_RULES_INPUT` の1行目と5行目を対象行にしたhookが、`path` について返す13ルールの指摘の行
+pub fn spacing_rule_reports(path: &Path) -> Vec<String> {
+    let path = path.display();
+    vec![
+        format!(
+            "{path}:1:3: 全角のアルファベット「Ｒｕｓｔ」を半角にする。見出しのアンカーが変わるので、見出しへのリンクも直す [no-mixed-zenkaku-and-hankaku-alphabet]"
+        ),
+        format!(
+            "{path}:1:8: 康熙部首「⼊」を漢字「入」にする。見出しのアンカーが変わるので、見出しへのリンクも直す [no-kangxi-radicals]"
+        ),
+        format!(
+            "{path}:5:5: 文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする [ja-space-after-exclamation]"
+        ),
+    ]
+}
+
+/// 標準エラーの行のうち、`preset-ja-spacing` の11ルールと `no-mixed-zenkaku-and-hankaku-alphabet`・
+/// `no-kangxi-radicals` の行
+pub fn spacing_rule_lines(stderr: &str) -> Vec<&str> {
+    const IDS: [&str; 13] = [
+        "ja-nakaguro-or-halfwidth-space-between-katakana",
+        "ja-no-space-around-parentheses",
+        "ja-no-space-around-slash",
+        "ja-no-space-between-full-width",
+        "ja-space-between-half-and-full-width",
+        "ja-space-after-exclamation",
+        "ja-space-after-question",
+        "ja-space-around-code",
+        "ja-space-around-emphasis",
+        "ja-space-around-link",
+        "ja-space-around-strong",
+        "no-mixed-zenkaku-and-hankaku-alphabet",
+        "no-kangxi-radicals",
+    ];
+    stderr
+        .lines()
+        .filter(|line| IDS.iter().any(|id| line.ends_with(&format!(" [{id}]"))))
+        .collect()
+}
