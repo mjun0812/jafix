@@ -1,7 +1,7 @@
-use crate::prose::{Inline, InlineKind};
+use crate::prose::{Inline, InlineKind, Paragraph};
 use crate::sentence::Sentence;
 
-/// 文の文字列と、元のソースへの位置の対応。文の文字列は、文の子の `Inline` から作る。
+/// 文か段落の文字列と、元のソースへの位置の対応。文字列は、文か段落の子の `Inline` から作る。
 /// 段落の直下の文字列は元のソースのまま、インラインコードは中身と同じ文字数の `ー`、画像はalt、
 /// リンクや強調は中の文字列で、HTMLのタグ・ハード改行・脚注への参照は入らない
 pub struct Projection {
@@ -23,6 +23,13 @@ impl Projection {
             .positions
             .push((projection.text.len(), sentence.range.end));
         projection
+    }
+
+    /// 段落の全体を、文と同じ作り方で1つの文字列にする。インラインコードは、中身と同じ文字数の `code` にする
+    #[allow(dead_code)] // skeleton: not implemented
+    pub fn paragraph(src: &str, paragraph: &Paragraph, code: char) -> Self {
+        let _ = (src, paragraph, code);
+        todo!("skeleton: not implemented")
     }
 
     fn push_inlines(&mut self, src: &str, children: &[Inline]) {

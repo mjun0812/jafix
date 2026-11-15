@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::ops::Range;
 use std::sync::LazyLock;
 
+mod ai_writing;
 pub mod builtin;
 mod morph;
 mod paragraph;
@@ -13,7 +14,8 @@ use crate::prose::{Document, Prose};
 
 use self::builtin::Builtin;
 
-/// 組み込みのルール。全角括弧と空白の3つ以外は、textlintの `preset-ja-technical-writing` と同じIDである
+/// 組み込みのルール。全角括弧と空白の3つ以外は、textlintのpreset (`preset-ja-technical-writing`・
+/// `@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`) の中の名前と同じIDである
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuleId {
     FullwidthParen,
@@ -42,11 +44,18 @@ pub enum RuleId {
     JaNoSuccessiveWord,
     JaNoAbusage,
     JaNoRedundantExpression,
+    NoAiListFormatting,
+    NoAiHypeExpressions,
+    NoAiEmphasisPatterns,
+    NoAiColonContinuation,
+    AiTechWritingGuideline,
+    NoAiWords,
+    NoShortTopicComma,
 }
 
 impl RuleId {
     /// 組み込みのルールのすべて。設定の `[builtin]` のキーと、設定の指摘ルールの `id` と重ならないことを確かめるのに使う
-    pub const ALL: [RuleId; 26] = [
+    pub const ALL: [RuleId; 33] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
         RuleId::SpaceBetweenJaAndParen,
@@ -73,6 +82,13 @@ impl RuleId {
         RuleId::JaNoSuccessiveWord,
         RuleId::JaNoAbusage,
         RuleId::JaNoRedundantExpression,
+        RuleId::NoAiListFormatting,
+        RuleId::NoAiHypeExpressions,
+        RuleId::NoAiEmphasisPatterns,
+        RuleId::NoAiColonContinuation,
+        RuleId::AiTechWritingGuideline,
+        RuleId::NoAiWords,
+        RuleId::NoShortTopicComma,
     ];
 
     /// `check` の出力の `[<rule-id>]` に使う名前
@@ -104,6 +120,13 @@ impl RuleId {
             RuleId::JaNoSuccessiveWord => "ja-no-successive-word",
             RuleId::JaNoAbusage => "ja-no-abusage",
             RuleId::JaNoRedundantExpression => "ja-no-redundant-expression",
+            RuleId::NoAiListFormatting => "no-ai-list-formatting",
+            RuleId::NoAiHypeExpressions => "no-ai-hype-expressions",
+            RuleId::NoAiEmphasisPatterns => "no-ai-emphasis-patterns",
+            RuleId::NoAiColonContinuation => "no-ai-colon-continuation",
+            RuleId::AiTechWritingGuideline => "ai-tech-writing-guideline",
+            RuleId::NoAiWords => "no-ai-words",
+            RuleId::NoShortTopicComma => "no-short-topic-comma",
         }
     }
 }
@@ -204,6 +227,7 @@ pub fn report<'r>(
     let mut reports = text::report(src, &document.texts, builtin);
     reports.extend(paragraph::report(src, &document.paragraphs, builtin));
     reports.extend(morph::report(src, document, builtin));
+    reports.extend(ai_writing::report(src, document, builtin));
     let headings = document.texts.iter().filter(|prose| prose.context.heading);
     reports.extend(
         anchor_changing_findings(src, headings, builtin)
@@ -330,6 +354,7 @@ mod tests {
             }],
             paragraphs: Vec::new(),
             headings: Vec::new(),
+            list_items: Vec::new(),
         }
     }
 

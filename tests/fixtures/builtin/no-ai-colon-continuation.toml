@@ -1,0 +1,734 @@
+# no-ai-colon-continuation の例。期待値は、textlint 15.8.0、@textlint-ja/textlint-rule-preset-ai-writing 1.7.0、
+# textlint-rule-preset-ai-words-ja 1.2.1 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭の builtin は全caseに当たり、caseに builtin があればその代わりに使う (省略可)
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+builtin = 'no-ai-colon-continuation = true'
+
+[[cases]]
+name = "next-code-block"
+text = "次のコマンドを実行します:\n\n```sh\nnpm test\n```"
+findings = ["1:13"]
+messages = ["述語の後のコロンでコードブロックを続けている"]
+
+[[cases]]
+name = "next-list"
+text = "次のコマンドを実行します:\n\n- a\n- b"
+findings = ["1:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "next-ordered-list"
+text = "次のコマンドを実行します:\n\n1. a\n2. b"
+findings = ["1:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "next-quote"
+text = "次のコマンドを実行します:\n\n> a"
+findings = ["1:13"]
+messages = ["述語の後のコロンで引用を続けている"]
+
+[[cases]]
+name = "next-table"
+text = "次のコマンドを実行します:\n\n| a |\n| - |\n| b |"
+findings = ["1:13"]
+messages = ["述語の後のコロンで表を続けている"]
+
+[[cases]]
+name = "next-list-tight"
+text = "次のコマンドを実行します:\n- a\n- b"
+findings = ["1:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "next-code-block-tight"
+text = "次のコマンドを実行します:\n```sh\nnpm test\n```"
+findings = ["1:13"]
+messages = ["述語の後のコロンでコードブロックを続けている"]
+
+[[cases]]
+name = "next-quote-tight"
+text = "次のコマンドを実行します:\n> a"
+findings = ["1:13"]
+messages = ["述語の後のコロンで引用を続けている"]
+
+[[cases]]
+name = "next-tilde-code-block"
+text = "次のコマンドを実行します:\n\n~~~\nnpm test\n~~~"
+findings = ["1:13"]
+messages = ["述語の後のコロンでコードブロックを続けている"]
+
+[[cases]]
+name = "next-indented-code-block"
+text = "次のコマンドを実行します:\n\n    npm test"
+findings = ["1:13"]
+messages = ["述語の後のコロンでコードブロックを続けている"]
+
+[[cases]]
+name = "next-star-list"
+text = "次のコマンドを実行します:\n\n* a"
+findings = ["1:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "next-task-list"
+text = "次のコマンドを実行します:\n\n- [ ] a"
+findings = ["1:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "next-paragraph"
+text = "次のコマンドを実行します:\n\nこれは段落です。"
+findings = []
+
+[[cases]]
+name = "next-heading"
+text = "次のコマンドを実行します:\n\n# 見出し"
+findings = []
+
+[[cases]]
+name = "next-thematic-break"
+text = "次のコマンドを実行します:\n\n---"
+findings = []
+
+[[cases]]
+name = "next-html"
+text = "次のコマンドを実行します:\n\n<div>a</div>"
+findings = []
+
+[[cases]]
+name = "next-nothing"
+text = "次のコマンドを実行します:"
+findings = []
+
+[[cases]]
+name = "next-after-two-blank-lines"
+text = "次のコマンドを実行します:\n\n\n- a"
+findings = ["1:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "next-paragraph-then-list"
+text = "次のコマンドを実行します:\n\nこれは段落です。\n\n- a"
+findings = []
+
+[[cases]]
+name = "colon-fullwidth"
+text = "次のコマンドを実行します：\n\n- a\n- b"
+findings = ["1:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "colon-space-before"
+text = "次のコマンドを実行します :\n\n- a\n- b"
+findings = ["1:14"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "colon-trailing-spaces"
+text = "次のコマンドを実行します:  \n\n- a\n- b"
+findings = ["1:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "colon-double"
+text = "次のコマンドを実行します::\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "colon-not-at-end"
+text = "次のコマンドを実行します: す\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "colon-period-after"
+text = "次のコマンドを実行します:。\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "colon-none"
+text = "次のコマンドを実行します\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "colon-period"
+text = "次のコマンドを実行します。\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "colon-semicolon"
+text = "次のコマンドを実行します;\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "colon-position-second-line"
+text = "あいう\n次のコマンドを実行します:\n\n- a\n- b"
+findings = ["2:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "colon-position-after-astral"
+text = "\U00020bb7を実行します:\n\n- a\n- b"
+findings = ["1:8"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "colon-in-the-middle-too"
+text = "例: 次のコマンドを実行します:\n\n- a\n- b"
+findings = ["1:16"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "colon-time-like"
+text = "実行時刻は12:30です:\n\n- a\n- b"
+findings = ["1:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-auxiliary-masu"
+text = "次のように実行します:\n\n- a\n- b"
+findings = ["1:11"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-verb-iru"
+text = "次の設定を使っている:\n\n- a\n- b"
+findings = ["1:11"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-verb-base"
+text = "次のコマンドを実行する:\n\n- a\n- b"
+findings = ["1:12"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-verb-te"
+text = "次のコマンドを実行して:\n\n- a\n- b"
+findings = ["1:12"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-auxiliary-ta"
+text = "次のコマンドを実行した:\n\n- a\n- b"
+findings = ["1:12"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-auxiliary-desu"
+text = "設定は次のとおりです:\n\n- a\n- b"
+findings = ["1:11"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-auxiliary-da"
+text = "設定は次のとおりだ:\n\n- a\n- b"
+findings = ["1:10"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-adjective"
+text = "次のように設定すると美しい:\n\n- a\n- b"
+findings = ["1:14"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-adjective-2"
+text = "この設定は少ない:\n\n- a\n- b"
+findings = ["1:9"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-particle-wo"
+text = "次の設定を:\n\n- a\n- b"
+findings = ["1:6"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-particle-ha"
+text = "使い方は:\n\n- a\n- b"
+findings = ["1:5"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-particle-de"
+text = "次のコマンドで:\n\n- a\n- b"
+findings = ["1:8"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-conjunction"
+text = "設定を変更する。しかし:\n\n- a\n- b"
+findings = ["1:12"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-conjunction-2"
+text = "例えば:\n\n- a\n- b"
+findings = ["1:4"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-adverb"
+text = "設定を非常に:\n\n- a\n- b"
+findings = ["1:7"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-adnominal"
+text = "あらゆる:\n\n- a\n- b"
+findings = ["1:5"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-symbol-before"
+text = "次のコマンドを実行します!:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "pos-symbol-paren"
+text = "次のコマンドを実行します（推奨）:\n\n- a\n- b"
+findings = ["1:17"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-verb-shimasu-english"
+text = "curl を実行します:\n\n- a\n- b"
+findings = ["1:12"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-verb-english-japanese"
+text = "npm install を行います:\n\n- a\n- b"
+findings = ["1:18"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "pos-verb-in-english-sentence-with-ja"
+text = "Run the コマンド して:\n\n- a\n- b"
+findings = ["1:16"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "noun-method"
+text = "使用方法:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "noun-procedure"
+text = "手順:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "noun-example"
+text = "設定例:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "noun-long"
+text = "インストールと設定の手順:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "noun-katakana"
+text = "コマンドライン引数:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "noun-sahen"
+text = "次の設定を確認:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "noun-number"
+text = "対象のバージョンは3:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "noun-fullwidth"
+text = "使用方法：\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "noun-with-bold"
+text = "**使用方法**:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "noun-with-link"
+text = "[使用方法](https://example.com):\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "noun-with-inline-code"
+text = "次の`設定ファイル`:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "noun-heading-like-text"
+text = "手順その1:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "english-sentence"
+text = "Run the following command:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "english-with-digits"
+text = "Step 1:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "english-with-hyphen-underscore-dot"
+text = "my-file_name.txt:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "english-digits-only-ish"
+text = "v1.2.3:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "english-fullwidth-colon"
+text = "Run the following command：\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "english-with-comma"
+text = "Run this, then that:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "english-with-japanese"
+text = "curl を使って:\n\n- a\n- b"
+findings = ["1:10"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "short-two-chars-verb"
+text = "する:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "short-two-chars-aux"
+text = "した:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "short-two-chars-particle"
+text = "では:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "short-one-char"
+text = "は:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "short-three-chars-aux"
+text = "します:\n\n- a\n- b"
+findings = ["1:4"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "short-three-chars-verb"
+text = "行った:\n\n- a\n- b"
+findings = ["1:4"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "short-three-chars-particle"
+text = "次では:\n\n- a\n- b"
+findings = ["1:4"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "short-empty"
+text = ":\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "short-only-fullwidth-colon"
+text = "：\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "nested-in-quote"
+text = "> 次のコマンドを実行します:\n>\n> - a"
+findings = []
+
+[[cases]]
+name = "nested-in-quote-then-list-outside"
+text = "> 次のコマンドを実行します:\n\n- a"
+findings = []
+
+[[cases]]
+name = "nested-in-list-item"
+text = "- 次のコマンドを実行します:\n\n  ```sh\n  npm test\n  ```"
+findings = []
+
+[[cases]]
+name = "nested-in-list-item-nested-list"
+text = "- 次のコマンドを実行します:\n  - a"
+findings = []
+
+[[cases]]
+name = "nested-in-ordered-item"
+text = "1. 次のコマンドを実行します:\n\n   > a"
+findings = []
+
+[[cases]]
+name = "nested-in-footnote"
+text = "本文[^1]。\n\n[^1]: 次のコマンドを実行します:\n\n    - a"
+findings = []
+
+[[cases]]
+name = "nested-heading-with-colon"
+text = "# 次のコマンドを実行します:\n\n- a"
+findings = []
+
+[[cases]]
+name = "nested-table-cell-with-colon"
+text = "| 次のコマンドを実行します: |\n| - |\n| a |"
+findings = []
+
+[[cases]]
+name = "nested-second-paragraph-direct"
+text = "あいう。\n\n次のコマンドを実行します:\n\n- a"
+findings = ["3:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "nested-after-list"
+text = "- a\n\n次のコマンドを実行します:\n\n- b"
+findings = ["3:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "nested-after-quote"
+text = "> a\n\n次のコマンドを実行します:\n\n> b"
+findings = ["3:13"]
+messages = ["述語の後のコロンで引用を続けている"]
+
+[[cases]]
+name = "nested-many-in-document"
+text = "次を実行します:\n\n- a\n\nさらに実行します:\n\n```\nb\n```"
+findings = ["1:8", "5:9"]
+messages = ["述語の後のコロンでリストを続けている", "述語の後のコロンでコードブロックを続けている"]
+
+[[cases]]
+name = "nested-two-in-row"
+text = "次を実行します:\n\n次に実行します:\n\n- a"
+findings = ["3:8"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "inline-strong-verb"
+text = "**実行します**:\n\n- a\n- b"
+findings = ["1:10"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "inline-strong-part"
+text = "次のコマンドを**実行します**:\n\n- a\n- b"
+findings = ["1:17"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "inline-emphasis-verb"
+text = "*実行します*:\n\n- a\n- b"
+findings = ["1:8"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "inline-link-verb"
+text = "[実行します](https://example.com):\n\n- a\n- b"
+findings = ["1:29"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "inline-code-in-the-middle"
+text = "`npm test` を実行します:\n\n- a\n- b"
+findings = ["1:18"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "inline-code-in-the-middle-2"
+text = "次の `npm test` コマンドを実行します:\n\n- a\n- b"
+findings = ["1:25"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "inline-multi-line-paragraph"
+text = "次のコマンドを\n実行します:\n\n- a\n- b"
+findings = ["2:6"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "inline-code-at-end"
+text = "次のコマンドを実行します `npm test`:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "inline-colon-inside-strong"
+text = "**実行します:**\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "inline-colon-after-strong"
+text = "次のコマンドを**実行**します:\n\n- a\n- b"
+findings = ["1:17"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "inline-html-at-end"
+text = "次のコマンドを実行します:<br>\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "opt-disable-code-block"
+builtin = 'no-ai-colon-continuation = { disableCodeBlock = true }'
+text = "次のコマンドを実行します:\n\n```sh\nnpm test\n```"
+findings = []
+
+[[cases]]
+name = "opt-disable-code-block-keeps-list"
+builtin = 'no-ai-colon-continuation = { disableCodeBlock = true }'
+text = "次のコマンドを実行します:\n\n- a\n- b"
+findings = ["1:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "opt-disable-list"
+builtin = 'no-ai-colon-continuation = { disableList = true }'
+text = "次のコマンドを実行します:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "opt-disable-list-ordered"
+builtin = 'no-ai-colon-continuation = { disableList = true }'
+text = "次のコマンドを実行します:\n\n1. a"
+findings = []
+
+[[cases]]
+name = "opt-disable-list-keeps-quote"
+builtin = 'no-ai-colon-continuation = { disableList = true }'
+text = "次のコマンドを実行します:\n\n> a"
+findings = ["1:13"]
+messages = ["述語の後のコロンで引用を続けている"]
+
+[[cases]]
+name = "opt-disable-quote"
+builtin = 'no-ai-colon-continuation = { disableQuote = true }'
+text = "次のコマンドを実行します:\n\n> a"
+findings = []
+
+[[cases]]
+name = "opt-disable-quote-keeps-table"
+builtin = 'no-ai-colon-continuation = { disableQuote = true }'
+text = "次のコマンドを実行します:\n\n| a |\n| - |\n| b |"
+findings = ["1:13"]
+messages = ["述語の後のコロンで表を続けている"]
+
+[[cases]]
+name = "opt-disable-table"
+builtin = 'no-ai-colon-continuation = { disableTable = true }'
+text = "次のコマンドを実行します:\n\n| a |\n| - |\n| b |"
+findings = []
+
+[[cases]]
+name = "opt-disable-table-keeps-code"
+builtin = 'no-ai-colon-continuation = { disableTable = true }'
+text = "次のコマンドを実行します:\n\n```sh\nnpm test\n```"
+findings = ["1:13"]
+messages = ["述語の後のコロンでコードブロックを続けている"]
+
+[[cases]]
+name = "opt-disable-all-four"
+builtin = 'no-ai-colon-continuation = { disableCodeBlock = true, disableList = true, disableQuote = true, disableTable = true }'
+text = "次のコマンドを実行します:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "opt-disable-all-four-for-each-block"
+builtin = 'no-ai-colon-continuation = { disableCodeBlock = true, disableList = true, disableQuote = true, disableTable = true }'
+text = "次を実行します:\n\n```\na\n```\n\n次を実行します:\n\n- a\n\n次を実行します:\n\n> a\n\n次を実行します:\n\n| a |\n| - |\n| b |"
+findings = []
+
+[[cases]]
+name = "opt-explicit-false"
+builtin = 'no-ai-colon-continuation = { disableCodeBlock = false, disableList = false, disableQuote = false, disableTable = false }'
+text = "次を実行します:\n\n```\na\n```\n\n次を実行します:\n\n- a\n\n次を実行します:\n\n> a\n\n次を実行します:\n\n| a |\n| - |\n| b |"
+findings = ["1:8", "7:8", "11:8", "15:8"]
+messages = ["述語の後のコロンでコードブロックを続けている", "述語の後のコロンでリストを続けている", "述語の後のコロンで引用を続けている", "述語の後のコロンで表を続けている"]
+
+[[cases]]
+name = "opt-each-block-default"
+text = "次を実行します:\n\n```\na\n```\n\n次を実行します:\n\n- a\n\n次を実行します:\n\n> a\n\n次を実行します:\n\n| a |\n| - |\n| b |"
+findings = ["1:8", "7:8", "11:8", "15:8"]
+messages = ["述語の後のコロンでコードブロックを続けている", "述語の後のコロンでリストを続けている", "述語の後のコロンで引用を続けている", "述語の後のコロンで表を続けている"]
+
+[[cases]]
+name = "allows-string"
+builtin = 'no-ai-colon-continuation = { allows = ["許可"] }'
+text = "許可された手順を実行します:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "allows-regex"
+builtin = 'no-ai-colon-continuation = { allows = ["/実行.*/"] }'
+text = "次のコマンドを実行します:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "allows-regex-flag-i"
+builtin = 'no-ai-colon-continuation = { allows = ["/run/i"] }'
+text = "Run を使って実行します:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "allows-no-match"
+builtin = 'no-ai-colon-continuation = { allows = ["許可", "/v\\d+/"] }'
+text = "次のコマンドを実行します:\n\n- a\n- b"
+findings = ["1:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "allows-other-paragraph-still-checked"
+builtin = 'no-ai-colon-continuation = { allows = ["許可"] }'
+text = "許可です。\n\n次のコマンドを実行します:\n\n- a"
+findings = ["3:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "allows-in-list-not-paragraph"
+builtin = 'no-ai-colon-continuation = { allows = ["許可"] }'
+text = "次のコマンドを実行します:\n\n- 許可\n- b"
+findings = ["1:13"]
+messages = ["述語の後のコロンでリストを続けている"]
+
+[[cases]]
+name = "allows-on-noun-case"
+builtin = 'no-ai-colon-continuation = { allows = ["使用方法"] }'
+text = "使用方法:\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "trim-noun-then-space"
+note = "textlintはコロンの前の空白を除かずに解析し、最後のトークンが空白(記号)になって指摘するが、jafixはコロンを除いた文字列の前後の空白を除いて解析するので、名詞で終わる文字列は指摘しない"
+text = "使用方法 :\n\n- a\n- b"
+findings = []
+
+[[cases]]
+name = "trim-short-then-space"
+note = "textlintはコロンの前の空白を除かずに文字数を数え(3文字)、最後のトークンが空白(記号)になって指摘するが、jafixはコロンを除いた文字列の前後の空白を除いてから2文字以下かを判定するので指摘しない"
+text = "した :\n\n- a\n- b"
+findings = []

@@ -10,8 +10,18 @@ pub struct Document {
     pub texts: Vec<Prose>,
     /// 段落。文に区切るルールと、段落の末尾を見るルールが使う。見出しと表のセルは段落ではない
     pub paragraphs: Vec<Paragraph>,
-    /// 見出し。段落と同じ形で持つ。`list_item` と `footnote` は使わない。`paragraphs` には入らない
+    /// 見出し。段落と同じ形で持つ。`list_item`・`footnote`・`list_item_index`・`next_block` は使わない。
+    /// `paragraphs` には入らない
     pub headings: Vec<Paragraph>,
+    /// リスト項目。出現順に並び、入れ子の項目は親の項目の後に来る
+    pub list_items: Vec<ListItem>,
+}
+
+/// リスト項目
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ListItem {
+    /// 元のソース上のバイト範囲。リストの記号から、入れ子の項目と継続行を含む項目の終わりまでである
+    pub range: Range<usize>,
 }
 
 /// 本文の1つの範囲
@@ -47,7 +57,22 @@ pub struct Paragraph {
     pub list_item: bool,
     /// 脚注の定義の中
     pub footnote: bool,
+    /// 段落を含むリスト項目のうち、最も内側のものの `Document::list_items` での番号
+    pub list_item_index: Option<usize>,
+    /// 文書の直下の段落で、次のブロックが `BlockKind` のどれかなら、その種類
+    pub next_block: Option<BlockKind>,
     pub children: Vec<Inline>,
+}
+
+/// 文書の直下の段落の次に来るブロックのうち、ルールが見る種類
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[allow(dead_code)] // skeleton: not implemented
+pub enum BlockKind {
+    /// コードブロック (フェンスとインデントの両方)
+    CodeBlock,
+    List,
+    Blockquote,
+    Table,
 }
 
 /// 段落の中のインラインの要素。`range` は元のソース上のバイト範囲
@@ -86,7 +111,7 @@ pub enum InlineKind {
     FootnoteReference,
 }
 
-/// Markdownを解析し、本文の範囲と段落を取り出す
+/// Markdownを解析し、本文の範囲・段落・見出し・リスト項目を取り出す
 pub fn parse(src: &str) -> Document {
     let options = ParseOptions {
         constructs: Constructs {
@@ -104,6 +129,7 @@ pub fn parse(src: &str) -> Document {
         texts,
         paragraphs: blocks.paragraphs,
         headings: blocks.headings,
+        list_items: Vec::new(),
     }
 }
 
@@ -186,6 +212,8 @@ fn collect_paragraphs(
         blockquote,
         list_item,
         footnote,
+        list_item_index: None,
+        next_block: None,
         children: node
             .children()
             .into_iter()

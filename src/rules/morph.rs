@@ -1,4 +1,4 @@
-//! 形態素解析を使う11ルール
+//! 形態素解析を使う13ルール
 
 mod dict;
 mod ja_no_abusage;
@@ -6,14 +6,16 @@ mod ja_no_redundant_expression;
 mod ja_no_successive_word;
 mod ja_no_weak_phrase;
 mod max_ten;
+mod no_ai_words;
 mod no_double_negative_ja;
 mod no_doubled_conjunction;
 mod no_doubled_conjunctive_particle_ga;
 mod no_doubled_joshi;
 mod no_dropping_the_ra;
 mod no_mix_dearu_desumasu;
-mod pattern;
-mod projection;
+mod no_short_topic_comma;
+pub(super) mod pattern;
+pub(super) mod projection;
 
 use std::borrow::Cow;
 use std::ops::Range;
@@ -105,7 +107,9 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report<'
         || builtin.no_dropping_the_ra
         || builtin.ja_no_weak_phrase
         || builtin.ja_no_successive_word.is_some()
-        || builtin.ja_no_abusage;
+        || builtin.ja_no_abusage
+        || builtin.no_ai_words.is_some()
+        || builtin.no_short_topic_comma.is_some();
     if !prose_rules {
         return reports;
     }
@@ -132,6 +136,12 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report<'
         }
         if builtin.ja_no_abusage {
             reports.extend(ja_no_abusage::report(&analyzed));
+        }
+        if let Some(rule) = &builtin.no_ai_words {
+            reports.extend(no_ai_words::report(&analyzed, rule));
+        }
+        if let Some(rule) = &builtin.no_short_topic_comma {
+            reports.extend(no_short_topic_comma::report(&analyzed, rule));
         }
     }
     reports

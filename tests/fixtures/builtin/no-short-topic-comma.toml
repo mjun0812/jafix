@@ -1,0 +1,596 @@
+# no-short-topic-comma の例。期待値は、textlint 15.8.0、@textlint-ja/textlint-rule-preset-ai-writing 1.7.0、
+# textlint-rule-preset-ai-words-ja 1.2.1 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭の builtin は全caseに当たり、caseに builtin があればその代わりに使う (省略可)
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+builtin = 'no-short-topic-comma = true'
+
+[[cases]]
+name = "basic-3chars"
+text = "今日は、晴れです。"
+findings = ["1:4"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-5chars"
+text = "ポイントは、次の3つです。"
+findings = ["1:6"]
+messages = ["主題を5文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-6chars-boundary"
+text = "重要な点は、次の3つです。"
+findings = ["1:6"]
+messages = ["主題を5文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-2chars-kare"
+text = "彼は、笑った。"
+findings = ["1:3"]
+messages = ["主題を2文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-2chars-watashi"
+text = "私は、笑った。"
+findings = ["1:3"]
+messages = ["主題を2文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-4chars"
+text = "本日は、晴天です。"
+findings = ["1:4"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-4chars-b"
+text = "この点は、重要です。"
+findings = ["1:5"]
+messages = ["主題を4文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-5chars-b"
+text = "この結果は、良好です。"
+findings = ["1:6"]
+messages = ["主題を5文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-5chars-c"
+text = "今回の結果は、良好です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "basic-only-wa-comma"
+text = "は、笑った。"
+findings = ["1:2"]
+messages = ["主題を1文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-english-topic"
+text = "API は、便利です。"
+findings = ["1:6"]
+messages = ["主題を5文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-english-topic-long"
+text = "The API は、便利です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "basic-digits"
+text = "2026年は、晴れです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "basic-halfwidth-comma-is-not-touten"
+text = "今日は,晴れです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "basic-no-comma"
+text = "今日は晴れです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "basic-comma-without-wa"
+text = "今日、晴れです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "basic-mo-instead-of-wa"
+text = "今日も、晴れです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "basic-ga-instead-of-wa"
+text = "今日が、晴れです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "basic-wa-not-before-comma"
+text = "今日はよく、晴れです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "basic-dewa"
+text = "今日では、晴れです。"
+findings = ["1:5"]
+messages = ["主題を4文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-niwa"
+text = "今日には、晴れです。"
+findings = ["1:5"]
+messages = ["主題を4文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-towa"
+text = "今日とは、違います。"
+findings = ["1:5"]
+messages = ["主題を4文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-two-wa"
+text = "今日は、明日は、晴れです。"
+findings = ["1:4"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-wa-noun-end"
+text = "これは、ペンです。"
+findings = ["1:4"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-period-fullwidth-comma"
+text = "今日は，晴れです。"
+findings = ["1:4"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "basic-false-positive-ahaha"
+text = "あははは、笑った。"
+findings = ["1:5"]
+messages = ["主題を4文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "start-after-period"
+text = "晴れです。今日は、雨です。"
+findings = ["1:9"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "start-after-period-long-before"
+text = "とても長い文章がここまで続きます。今日は、雨です。"
+findings = ["1:21"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "start-after-exclamation"
+text = "晴れです！今日は、雨です。"
+findings = ["1:9"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "start-after-question"
+text = "晴れですか？今日は、雨です。"
+findings = ["1:10"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "start-after-halfwidth-exclamation-is-not-a-start"
+text = "晴れです!今日は、雨です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "start-after-halfwidth-question-is-not-a-start"
+text = "晴れですか?今日は、雨です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "start-after-halfwidth-period"
+text = "晴れです. 今日は、雨です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "start-after-comma-is-not-a-start"
+text = "晴れです、今日は、雨です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "start-after-newline"
+text = "長い前置きの文章がここで続く\n今日は、雨です。"
+findings = ["2:4"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "start-after-newline-wa-first-line"
+text = "今日は、晴れです。\n明日は、雨です。"
+findings = ["1:4", "2:4"]
+messages = ["主題を3文字示しただけで読点を打っている", "主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "start-without-reset-long"
+text = "長い前置きの文章がここで続く今日は、雨です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "start-after-space"
+text = "晴れです 今日は、雨です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "start-after-closing-bracket"
+text = "「晴れです」今日は、雨です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "start-after-colon"
+text = "例: 今日は、雨です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "start-after-two-periods"
+text = "あ。。今日は、雨です。"
+findings = ["1:7"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "start-after-period-then-space"
+text = "あ。 今日は、雨です。"
+findings = ["1:7"]
+messages = ["主題を4文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "start-two-sentences-both"
+text = "今日は、雨です。明日は、晴れです。"
+findings = ["1:4", "1:12"]
+messages = ["主題を3文字示しただけで読点を打っている", "主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "start-first-long-second-short"
+text = "長い長い長い長い話をします。今日は、雨です。"
+findings = ["1:18"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "start-second-long"
+text = "今日は、雨です。長い長い長い話をしますのは、晴れです。"
+findings = ["1:4"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "start-second-line-position"
+text = "あ\nい\n今日は、雨です。"
+findings = ["3:4"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "start-newline-in-the-sentence"
+text = "今日の\n天気は、雨です。"
+findings = ["2:4"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "start-newline-reset-then-long"
+text = "あいうえお\nかきくけこ天気は、雨です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "pos-second-line"
+text = "あ\nポイントは、次です。"
+findings = ["2:6"]
+messages = ["主題を5文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "pos-after-fullwidth"
+text = "ＡＢＣは、次です。"
+findings = ["1:5"]
+messages = ["主題を4文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "pos-comma-after-emoji"
+text = "✅は、次です。"
+findings = ["1:3"]
+messages = ["主題を2文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-heading"
+text = "# 今日は、晴れです"
+findings = ["1:6"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-list"
+text = "- 今日は、晴れです"
+findings = ["1:6"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-ordered-list"
+text = "1. 今日は、晴れです"
+findings = ["1:7"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-nested-list"
+text = "- あ\n  - 今日は、晴れです"
+findings = ["2:8"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-quote"
+text = "> 今日は、晴れです"
+findings = ["1:6"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-table"
+text = "| a |\n| - |\n| 今日は、晴れです |"
+findings = ["3:6"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-table-header"
+text = "| 今日は、晴れです |\n| - |\n| a |"
+findings = ["1:6"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-emphasis"
+text = "*今日は、晴れです*。"
+findings = ["1:5"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-strong"
+text = "**今日は、晴れです**。"
+findings = ["1:6"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-link-text"
+text = "[今日は、晴れです](https://example.com)。"
+findings = ["1:5"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-footnote"
+text = "本文[^1]。\n\n[^1]: 今日は、晴れです。"
+findings = ["3:10"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-link-url"
+text = "[リンク](https://example.com/今日は、)。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-image-alt"
+text = "![今日は、](a.png)"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-inline-code"
+text = "`今日は、`晴れです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-code-block"
+text = "```\n今日は、晴れです\n```"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-indented-code"
+text = "    今日は、晴れです"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-html-block"
+text = "<div>\n今日は、晴れです\n</div>"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-two-paragraphs"
+text = "今日は、晴れです。\n\n明日は、雨です。"
+findings = ["1:4", "3:4"]
+messages = ["主題を3文字示しただけで読点を打っている", "主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-wa-in-strong-comma-outside"
+text = "**今日は**、晴れです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-wa-after-strong"
+text = "**今日**は、晴れです。"
+findings = ["1:8"]
+messages = ["主題を1文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-wa-after-code"
+text = "`x`は、晴れです。"
+findings = ["1:5"]
+messages = ["主題を1文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-wa-after-link"
+text = "[今日](https://example.com)は、晴れです。"
+findings = ["1:27"]
+messages = ["主題を1文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-sentence-spans-strong"
+text = "今日の**天気**は、雨です。"
+findings = ["1:11"]
+messages = ["主題を1文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "ctx-english-text"
+text = "Today is sunny, and it is warm."
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-english-with-wa"
+text = "This is a pen, は、だ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "max-3-hit"
+builtin = 'no-short-topic-comma = { maxLength = 3 }'
+text = "今日は、晴れです。"
+findings = ["1:4"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "max-3-boundary-over"
+builtin = 'no-short-topic-comma = { maxLength = 3 }'
+text = "本日は、晴れです。"
+findings = ["1:4"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "max-2-miss"
+builtin = 'no-short-topic-comma = { maxLength = 2 }'
+text = "今日は、晴れです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "max-2-hit"
+builtin = 'no-short-topic-comma = { maxLength = 2 }'
+text = "私は、晴れです。"
+findings = ["1:3"]
+messages = ["主題を2文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "max-1-hit"
+builtin = 'no-short-topic-comma = { maxLength = 1 }'
+text = "は、晴れです。"
+findings = ["1:2"]
+messages = ["主題を1文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "max-1-miss"
+builtin = 'no-short-topic-comma = { maxLength = 1 }'
+text = "私は、晴れです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "max-5-explicit"
+builtin = 'no-short-topic-comma = { maxLength = 5 }'
+text = "ポイントは、次です。"
+findings = ["1:6"]
+messages = ["主題を5文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "max-6"
+builtin = 'no-short-topic-comma = { maxLength = 6 }'
+text = "重要な点は、次の3つです。"
+findings = ["1:6"]
+messages = ["主題を5文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "max-6-miss-7chars"
+builtin = 'no-short-topic-comma = { maxLength = 6 }'
+text = "最も重要な点は、次です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "max-10"
+builtin = 'no-short-topic-comma = { maxLength = 10 }'
+text = "今回の結果は、良好です。"
+findings = ["1:7"]
+messages = ["主題を6文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "max-10-sentence-start"
+builtin = 'no-short-topic-comma = { maxLength = 10 }'
+text = "晴れです。今回の結果は、良好です。"
+findings = ["1:12"]
+messages = ["主題を6文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "max-20"
+builtin = 'no-short-topic-comma = { maxLength = 20 }'
+text = "長い長い長い話をしますのは、晴れです。"
+findings = ["1:14"]
+messages = ["主題を13文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "max-3-two"
+builtin = 'no-short-topic-comma = { maxLength = 3 }'
+text = "今日は、雨です。明日は、晴れです。"
+findings = ["1:4", "1:12"]
+messages = ["主題を3文字示しただけで読点を打っている", "主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "max-3-mixed"
+builtin = 'no-short-topic-comma = { maxLength = 3 }'
+text = "今日は、雨です。来週の月曜日は、晴れです。"
+findings = ["1:4"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "max-2-mixed"
+builtin = 'no-short-topic-comma = { maxLength = 2 }'
+text = "今日は、雨です。私は、晴れです。"
+findings = ["1:11"]
+messages = ["主題を2文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "true-enables"
+note = "textlint 15.8.0は `true` ではルールを有効にしない (`{}` か `maxLength` を渡すと有効になる)が、jafixは `no-short-topic-comma = true` で有効にし、`maxLength` は既定の5である"
+builtin = 'no-short-topic-comma = true'
+text = "今日は、晴れです。"
+findings = ["1:4"]
+messages = ["主題を3文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "surrogate-counts-chars"
+note = "textlintは文頭から読点までの長さをUTF-16の単位で数え(サロゲートペアの文字は2、`は` は1で合わせて3)、`maxLength = 2` では指摘しないが、jafixは文字で数える(サロゲートペアの文字は1、合わせて2)ので指摘する"
+builtin = 'no-short-topic-comma = { maxLength = 2 }'
+text = "\U00020bb7は、晴れです。"
+findings = ["1:3"]
+messages = ["主題を2文字示しただけで読点を打っている"]
+
+[[cases]]
+name = "surrogate-position"
+note = "指摘の位置はtextlintと同じだが、文面の文字数がtextlintと違う。textlintは文頭から読点までの長さをUTF-16の単位で数えて3文字と言うが、jafixは文字で数えて2文字と言う"
+text = "\U00020bb7は、晴れです。"
+findings = ["1:3"]
+messages = ["主題を2文字示しただけで読点を打っている"]

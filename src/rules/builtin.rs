@@ -1,12 +1,16 @@
 use std::borrow::Cow;
+use std::path::Path;
 
 use regex::{Regex, RegexBuilder};
 use toml::{Table, Value};
 
 use super::RuleId;
+use super::morph::pattern::{Expect, OwnedFields};
 
 /// 組み込みのルールの設定。有効・無効と、オプションを持つルールのオプションである。
-/// 既定では、どのルールも有効で、オプションはtextlintの `preset-ja-technical-writing` と同じである
+/// 既定では、`preset-ja-technical-writing` の23ルールと修正ルールの3つが有効で、オプションはtextlintの
+/// `preset-ja-technical-writing` と同じである。`@textlint-ja/preset-ai-writing` と `preset-ai-words-ja` の
+/// 7ルールは無効である
 #[derive(Debug)]
 pub struct Builtin {
     pub fullwidth_paren: bool,
@@ -35,6 +39,13 @@ pub struct Builtin {
     pub ja_no_successive_word: Option<JaNoSuccessiveWord>,
     pub ja_no_abusage: bool,
     pub ja_no_redundant_expression: Option<JaNoRedundantExpression>,
+    pub no_ai_list_formatting: Option<NoAiListFormatting>,
+    pub no_ai_hype_expressions: Option<NoAiHypeExpressions>,
+    pub no_ai_emphasis_patterns: Option<NoAiEmphasisPatterns>,
+    pub no_ai_colon_continuation: Option<NoAiColonContinuation>,
+    pub ai_tech_writing_guideline: Option<AiTechWritingGuideline>,
+    pub no_ai_words: Option<NoAiWords>,
+    pub no_short_topic_comma: Option<NoShortTopicComma>,
 }
 
 impl Default for Builtin {
@@ -66,18 +77,37 @@ impl Default for Builtin {
             ja_no_successive_word: Some(JaNoSuccessiveWord::default()),
             ja_no_abusage: true,
             ja_no_redundant_expression: Some(JaNoRedundantExpression::default()),
+            no_ai_list_formatting: None,
+            no_ai_hype_expressions: None,
+            no_ai_emphasis_patterns: None,
+            no_ai_colon_continuation: None,
+            ai_tech_writing_guideline: None,
+            no_ai_words: None,
+            no_short_topic_comma: None,
         }
     }
 }
 
 impl Builtin {
-    /// 設定の `[builtin]` の表から作る。キーはルールのID、値は `false` (無効)・`true` (既定のオプションで有効)・
-    /// オプションの表 (有効) である。未知のID、boolでも表でもない値、未知のオプション、値の誤りは、
-    /// IDとオプションの名前を含む理由を返す
-    pub fn from_table(table: &Table) -> Result<Self, String> {
+    /// 設定の `[builtin]` の表から作る。キーはルールのIDかpresetの名前である。ルールのIDの値は `false` (無効)・
+    /// `true` (既定のオプションで有効)・オプションの表 (有効)、presetの名前の値は `true` か `false` である。
+    /// `config_dir` は設定ファイルのあるディレクトリで、オプションの相対パスをここから解決する。
+    /// 未知のキー、値の型の誤り、未知のオプション、値の誤りは、キーとオプションの名前を含む理由を返す
+    pub fn from_table(table: &Table, config_dir: &Path) -> Result<Self, String> {
         let mut builtin = Builtin::default();
-        let defaults = Table::new();
+        // presetの名前のキーを先に当て、ルールのIDのキーで上書きする。TOMLの表は順を持たないので、書いた順によらない
         for (key, value) in table {
+            if let Some(preset) = Preset::from_name(key) {
+                builtin
+                    .apply_preset(preset, value, config_dir)
+                    .map_err(|reason| format!("`{key}`: {reason}"))?;
+            }
+        }
+        let defaults = Table::new();
+        for (key, value) in table
+            .iter()
+            .filter(|(key, _)| Preset::from_name(key).is_none())
+        {
             let id = RuleId::ALL
                 .into_iter()
                 .find(|id| id.name() == key)
@@ -93,14 +123,31 @@ impl Builtin {
                 }
             };
             builtin
-                .set(id, options)
+                .set(id, options, config_dir)
                 .map_err(|reason| format!("`{key}`: {reason}"))?;
         }
         Ok(builtin)
     }
 
+    /// `preset` のルールを、`value` が `true` ならpresetの既定の有効・無効とオプションにし、`false` ならすべて無効にする。
+    /// `value` が `true` でも `false` でもなければ理由を返す
+    fn apply_preset(
+        &mut self,
+        preset: Preset,
+        value: &Value,
+        config_dir: &Path,
+    ) -> Result<(), String> {
+        let _ = (preset, value, config_dir);
+        todo!("skeleton: not implemented")
+    }
+
     /// `id` のルールを、`options` が無ければ無効にし、あればそのオプションで有効にする
-    fn set(&mut self, id: RuleId, options: Option<&Table>) -> Result<(), String> {
+    fn set(
+        &mut self,
+        id: RuleId,
+        options: Option<&Table>,
+        config_dir: &Path,
+    ) -> Result<(), String> {
         match id {
             RuleId::FullwidthParen => self.fullwidth_paren = enabled(options)?,
             RuleId::SpaceBetweenJaAndAlnum => self.space_between_ja_and_alnum = enabled(options)?,
@@ -161,8 +208,112 @@ impl Builtin {
                     .map(JaNoRedundantExpression::from_options)
                     .transpose()?;
             }
+            RuleId::NoAiListFormatting => {
+                self.no_ai_list_formatting =
+                    options.map(NoAiListFormatting::from_options).transpose()?;
+            }
+            RuleId::NoAiHypeExpressions => {
+                self.no_ai_hype_expressions =
+                    options.map(NoAiHypeExpressions::from_options).transpose()?;
+            }
+            RuleId::NoAiEmphasisPatterns => {
+                self.no_ai_emphasis_patterns = options
+                    .map(NoAiEmphasisPatterns::from_options)
+                    .transpose()?;
+            }
+            RuleId::NoAiColonContinuation => {
+                self.no_ai_colon_continuation = options
+                    .map(NoAiColonContinuation::from_options)
+                    .transpose()?;
+            }
+            RuleId::AiTechWritingGuideline => {
+                self.ai_tech_writing_guideline = options
+                    .map(AiTechWritingGuideline::from_options)
+                    .transpose()?;
+            }
+            RuleId::NoAiWords => {
+                self.no_ai_words = options
+                    .map(|options| NoAiWords::from_options(options, config_dir))
+                    .transpose()?;
+            }
+            RuleId::NoShortTopicComma => {
+                self.no_short_topic_comma =
+                    options.map(NoShortTopicComma::from_options).transpose()?;
+            }
         }
         Ok(())
+    }
+}
+
+/// `[builtin]` に名前で書けるpreset。名前はtextlintの設定に書く名前と同じである
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Preset {
+    JaTechnicalWriting,
+    AiWriting,
+    AiWordsJa,
+}
+
+impl Preset {
+    pub const ALL: [Preset; 3] = [
+        Preset::JaTechnicalWriting,
+        Preset::AiWriting,
+        Preset::AiWordsJa,
+    ];
+
+    /// `[builtin]` のキーに使う名前
+    pub fn name(self) -> &'static str {
+        match self {
+            Preset::JaTechnicalWriting => "preset-ja-technical-writing",
+            Preset::AiWriting => "@textlint-ja/preset-ai-writing",
+            Preset::AiWordsJa => "preset-ai-words-ja",
+        }
+    }
+
+    fn from_name(name: &str) -> Option<Preset> {
+        Preset::ALL.into_iter().find(|preset| preset.name() == name)
+    }
+
+    /// presetが束ねるルールと、presetの既定で有効か。`preset-ja-technical-writing` は、jafix独自の修正ルール3つを含まない
+    #[allow(dead_code)] // skeleton: not implemented
+    fn rules(self) -> &'static [(RuleId, bool)] {
+        match self {
+            Preset::JaTechnicalWriting => &[
+                (RuleId::SentenceLength, true),
+                (RuleId::MaxComma, true),
+                (RuleId::MaxKanjiContinuousLen, true),
+                (RuleId::ArabicKanjiNumbers, true),
+                (RuleId::JaNoMixedPeriod, true),
+                (RuleId::NoNfd, true),
+                (RuleId::NoInvalidControlCharacter, true),
+                (RuleId::NoZeroWidthSpaces, true),
+                (RuleId::NoExclamationQuestionMark, true),
+                (RuleId::NoHankakuKana, true),
+                (RuleId::JaUnnaturalAlphabet, true),
+                (RuleId::NoUnmatchedPair, true),
+                (RuleId::MaxTen, true),
+                (RuleId::NoMixDearuDesumasu, true),
+                (RuleId::NoDoubledConjunction, true),
+                (RuleId::NoDoubledConjunctiveParticleGa, true),
+                (RuleId::NoDoubleNegativeJa, true),
+                (RuleId::NoDoubledJoshi, true),
+                (RuleId::NoDroppingTheRa, true),
+                (RuleId::JaNoWeakPhrase, true),
+                (RuleId::JaNoSuccessiveWord, true),
+                (RuleId::JaNoAbusage, true),
+                (RuleId::JaNoRedundantExpression, true),
+            ],
+            Preset::AiWriting => &[
+                (RuleId::NoAiListFormatting, true),
+                (RuleId::NoAiHypeExpressions, true),
+                (RuleId::NoAiEmphasisPatterns, true),
+                (RuleId::NoAiColonContinuation, true),
+                (RuleId::AiTechWritingGuideline, true),
+            ],
+            Preset::AiWordsJa => &[
+                (RuleId::NoAiWords, true),
+                (RuleId::NoShortTopicComma, false),
+            ],
+        }
     }
 }
 
@@ -805,6 +956,164 @@ impl DictOption {
             }
         }
         Ok(option)
+    }
+}
+
+#[derive(Debug, Default)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct NoAiListFormatting {
+    /// リスト項目の元の文字列のどこかに当たれば、その項目を指摘しない
+    pub allows: Vec<Regex>,
+    pub disable_bold_list_items: bool,
+    pub disable_emoji_list_items: bool,
+}
+
+impl NoAiListFormatting {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
+    }
+}
+
+#[derive(Debug, Default)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct NoAiHypeExpressions {
+    /// 本文の範囲の元の文字列のどこかに当たれば、その範囲を指摘しない
+    pub allows: Vec<Regex>,
+    pub disable_absoluteness_patterns: bool,
+    pub disable_abstract_patterns: bool,
+    /// textlintのオプションの名前は、他の2つと違い `disabled` で始まる
+    pub disabled_predictive_patterns: bool,
+}
+
+impl NoAiHypeExpressions {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
+    }
+}
+
+#[derive(Debug, Default)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct NoAiEmphasisPatterns {
+    /// 段落・見出しの元の文字列のどこかに当たれば、その段落・見出しを指摘しない
+    pub allows: Vec<Regex>,
+    pub disable_emoji_emphasis_patterns: bool,
+    pub disable_info_patterns: bool,
+    pub disable_heading_emphasis_patterns: bool,
+}
+
+impl NoAiEmphasisPatterns {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
+    }
+}
+
+#[derive(Debug, Default)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct NoAiColonContinuation {
+    /// 段落の元の文字列のどこかに当たれば、その段落を指摘しない
+    pub allows: Vec<Regex>,
+    pub disable_code_block: bool,
+    pub disable_list: bool,
+    pub disable_quote: bool,
+    pub disable_table: bool,
+}
+
+impl NoAiColonContinuation {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
+    }
+}
+
+/// `disable_*` は、カテゴリごとにパターンを止める。名前はtextlintのオプションと同じで、
+/// `disable_voice_guidance` は明確性、`disable_clarity_guidance` は具体性を止める
+#[derive(Debug, Default)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct AiTechWritingGuideline {
+    /// 段落の文字列のどこかに当たれば、その段落を指摘しない
+    pub allows: Vec<Regex>,
+    pub disable_redundancy_guidance: bool,
+    pub disable_voice_guidance: bool,
+    pub disable_clarity_guidance: bool,
+    pub disable_consistency_guidance: bool,
+    pub disable_structure_guidance: bool,
+    /// 文書の先頭に、件数とカテゴリ別の内訳の指摘を足す。textlintと違い、既定は `false` である
+    pub enable_document_analysis: bool,
+}
+
+impl AiTechWritingGuideline {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
+    }
+}
+
+#[derive(Debug, Default)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct NoAiWords {
+    /// 一致した範囲の元の文字列に当たれば、指摘しない
+    pub allows: Vec<Regex>,
+    /// `dictionaryPath` のファイルから読んだ項目
+    pub user_words: Vec<UserWord>,
+    pub dictionary_mode: DictionaryMode,
+}
+
+impl NoAiWords {
+    /// `config_dir` は、`dictionaryPath` の相対パスを解決するディレクトリである
+    fn from_options(options: &Table, config_dir: &Path) -> Result<Self, String> {
+        let _ = (options, config_dir);
+        todo!("skeleton: not implemented")
+    }
+}
+
+/// 組み込みの辞書と利用者の辞書の使い方
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[allow(dead_code)] // skeleton: not implemented
+pub enum DictionaryMode {
+    /// 両方を使う
+    #[default]
+    Append,
+    /// 利用者の辞書だけを使う
+    Override,
+}
+
+/// 利用者の辞書の1項目
+#[derive(Debug)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct UserWord {
+    /// 指摘の文面
+    pub message: String,
+    pub pattern: Vec<Expect<OwnedFields>>,
+}
+
+/// `path` の利用者の辞書 (`{ "entries": [{ "message": …, "tokens": [...] }] }` のJSON) を読む。
+/// 読めない、JSONとして読めない、形の誤りは、理由を返す
+#[allow(dead_code)] // skeleton: not implemented
+fn user_dictionary(path: &Path) -> Result<Vec<UserWord>, String> {
+    let _ = path;
+    todo!("skeleton: not implemented")
+}
+
+#[derive(Debug)]
+#[allow(dead_code)] // skeleton: not implemented
+pub struct NoShortTopicComma {
+    /// 文頭から読点の手前までの文字数がこれ以下なら指摘する
+    pub max_length: usize,
+}
+
+impl Default for NoShortTopicComma {
+    fn default() -> Self {
+        Self { max_length: 5 }
+    }
+}
+
+impl NoShortTopicComma {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
     }
 }
 

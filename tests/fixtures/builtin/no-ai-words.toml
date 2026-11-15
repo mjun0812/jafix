@@ -1,0 +1,1159 @@
+# no-ai-words の例。期待値は、textlint 15.8.0、@textlint-ja/textlint-rule-preset-ai-writing 1.7.0、
+# textlint-rule-preset-ai-words-ja 1.2.1 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭の builtin は全caseに当たり、caseに builtin があればその代わりに使う (省略可)
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+builtin = 'no-ai-words = true'
+
+[[cases]]
+name = "verb-01-kiku"
+text = "この薬は頭痛によく効く。"
+findings = ["1:10"]
+messages = ["AIが多用する語「効く」を使っている"]
+
+[[cases]]
+name = "verb-02-kowareru"
+text = "機械が壊れる。"
+findings = ["1:4"]
+messages = ["AIが多用する語「壊れる」を使っている"]
+
+[[cases]]
+name = "verb-03-hashiru"
+text = "犬が公園を走る。"
+findings = ["1:6"]
+messages = ["AIが多用する語「走る」を使っている"]
+
+[[cases]]
+name = "verb-04-yaku"
+text = "魚を焼く。"
+findings = ["1:3"]
+messages = ["AIが多用する語「焼く」を使っている"]
+
+[[cases]]
+name = "verb-05-damaru"
+text = "黙って聞いている。"
+findings = ["1:1"]
+messages = ["AIが多用する語「黙っ」を使っている"]
+
+[[cases]]
+name = "pair-06-ni-ochiru"
+text = "腑に落ちる。"
+findings = ["1:2"]
+messages = ["AIが多用する語「に落ちる」を使っている"]
+
+[[cases]]
+name = "verb-07-kuzusu"
+text = "体勢を崩す。"
+findings = ["1:4"]
+messages = ["AIが多用する語「崩す」を使っている"]
+
+[[cases]]
+name = "pair-08-atai-wo-ugokasu"
+text = "値を動かす。"
+findings = ["1:1"]
+messages = ["AIが多用する語「値を動かす」を使っている"]
+
+[[cases]]
+name = "pair-09-kara-hiku"
+text = "リストから引く。"
+findings = ["1:4"]
+messages = ["AIが多用する語「から引く」を使っている"]
+
+[[cases]]
+name = "noun-10-keiro"
+text = "通信経路を確認する。"
+findings = ["1:3"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "noun-11-shikatsu"
+text = "死活監視を行う。"
+findings = ["1:1"]
+messages = ["AIが多用する語「死活」を使っている"]
+
+[[cases]]
+name = "noun-12-more"
+text = "情報漏れを防ぐ。"
+findings = ["1:3"]
+messages = ["AIが多用する語「漏れ」を使っている"]
+
+[[cases]]
+name = "noun-13-kiketsu"
+text = "当然の帰結である。"
+findings = ["1:4"]
+messages = ["AIが多用する語「帰結」を使っている"]
+
+[[cases]]
+name = "noun-14-gensho"
+text = "原初の姿に戻る。"
+findings = ["1:1"]
+messages = ["AIが多用する語「原初」を使っている"]
+
+[[cases]]
+name = "noun-15-ana"
+text = "壁に穴を開ける。"
+findings = ["1:3"]
+messages = ["AIが多用する語「穴」を使っている"]
+
+[[cases]]
+name = "prefix-16-musabetsu"
+text = "無差別に攻撃する。"
+findings = ["1:1"]
+messages = ["AIが多用する語「無差別」を使っている"]
+
+[[cases]]
+name = "noun-17-shouhon"
+text = "正本を保管する。"
+findings = ["1:1"]
+messages = ["AIが多用する語「正本」を使っている"]
+
+[[cases]]
+name = "noun-18-buhin"
+text = "部品を交換する。"
+findings = ["1:1"]
+messages = ["AIが多用する語「部品」を使っている"]
+
+[[cases]]
+name = "noun-19-kensa"
+text = "検査を実施する。"
+findings = ["1:1"]
+messages = ["AIが多用する語「検査」を使っている"]
+
+[[cases]]
+name = "prefix-20-seiten"
+text = "それは正典とされている。"
+findings = ["1:4"]
+messages = ["AIが多用する語「正典」を使っている"]
+
+[[cases]]
+name = "pair-21-ni-haisen-suru"
+text = "基板に配線する。"
+findings = ["1:3"]
+messages = ["AIが多用する語「に配線する」を使っている"]
+
+[[cases]]
+name = "verb-22-futoru"
+text = "猫が太る。"
+findings = ["1:3"]
+messages = ["AIが多用する語「太る」を使っている"]
+
+[[cases]]
+name = "verb-23-miharu"
+text = "目を見張る。"
+findings = ["1:3"]
+messages = ["AIが多用する語「見張る」を使っている"]
+
+[[cases]]
+name = "noun-24-genryou"
+text = "原料を仕入れる。"
+findings = ["1:1"]
+messages = ["AIが多用する語「原料」を使っている"]
+
+[[cases]]
+name = "noun-25-jissoku"
+text = "実測値を記録する。"
+findings = ["1:1"]
+messages = ["AIが多用する語「実測」を使っている"]
+
+[[cases]]
+name = "verb-26-utagau"
+text = "結果を疑う。"
+findings = ["1:4"]
+messages = ["AIが多用する語「疑う」を使っている"]
+
+[[cases]]
+name = "noun-27-shougou"
+text = "データを照合する。"
+findings = ["1:5"]
+messages = ["AIが多用する語「照合」を使っている"]
+
+[[cases]]
+name = "verb-28-miotosu"
+text = "エラーを見落とす。"
+findings = ["1:5"]
+messages = ["AIが多用する語「見落とす」を使っている"]
+
+[[cases]]
+name = "verb-29-tsukiawaseru"
+text = "記録を突き合わせる。"
+findings = ["1:4"]
+messages = ["AIが多用する語「突き合わせる」を使っている"]
+
+[[cases]]
+name = "noun-30-dantei"
+text = "原因を断定する。"
+findings = ["1:4"]
+messages = ["AIが多用する語「断定」を使っている"]
+
+[[cases]]
+name = "noun-31-iriguchi"
+text = "入口で待つ。"
+findings = ["1:1"]
+messages = ["AIが多用する語「入口」を使っている"]
+
+[[cases]]
+name = "noun-32-dodai"
+text = "土台を作る。"
+findings = ["1:1"]
+messages = ["AIが多用する語「土台」を使っている"]
+
+[[cases]]
+name = "noun-33-dougu"
+text = "道具を使う。"
+findings = ["1:1"]
+messages = ["AIが多用する語「道具」を使っている"]
+
+[[cases]]
+name = "noun-34-kakushin"
+text = "核心に迫る。"
+findings = ["1:1"]
+messages = ["AIが多用する語「核心」を使っている"]
+
+[[cases]]
+name = "noun-35-kozu"
+text = "対立の構図が見える。"
+findings = ["1:4"]
+messages = ["AIが多用する語「構図」を使っている"]
+
+[[cases]]
+name = "noun-36-senbiki"
+text = "線引きが難しい。"
+findings = ["1:1"]
+messages = ["AIが多用する語「線引き」を使っている"]
+
+[[cases]]
+name = "noun-37-jiko"
+text = "事故が起きた。"
+findings = ["1:1"]
+messages = ["AIが多用する語「事故」を使っている"]
+
+[[cases]]
+name = "verb-38-mazaru"
+text = "色が混ざる。"
+findings = ["1:3"]
+messages = ["AIが多用する語「混ざる」を使っている"]
+
+[[cases]]
+name = "noun-39-otoshiana"
+text = "思わぬ落とし穴がある。"
+findings = ["1:4"]
+messages = ["AIが多用する語「落とし穴」を使っている"]
+
+[[cases]]
+name = "noun-40-hatan"
+text = "計画が破綻する。"
+findings = ["1:4"]
+messages = ["AIが多用する語「破綻」を使っている"]
+
+[[cases]]
+name = "noun-41-sudoori"
+text = "そのまま素通りする。"
+findings = ["1:5"]
+messages = ["AIが多用する語「素通り」を使っている"]
+
+[[cases]]
+name = "verb-42-kirihakeru"
+text = "問題を切り分ける。"
+findings = ["1:4"]
+messages = ["AIが多用する語「切り分ける」を使っている"]
+
+[[cases]]
+name = "verb-43-tsubusu"
+text = "時間を潰す。"
+findings = ["1:4"]
+messages = ["AIが多用する語「潰す」を使っている"]
+
+[[cases]]
+name = "verb-44-fumikomu"
+text = "深く踏み込む。"
+findings = ["1:3"]
+messages = ["AIが多用する語「踏み込む」を使っている"]
+
+[[cases]]
+name = "verb-45-tokasu"
+text = "砂糖を溶かす。"
+findings = ["1:4"]
+messages = ["AIが多用する語「溶かす」を使っている"]
+
+[[cases]]
+name = "pair-46-kitei-de-ha"
+text = "既定では無効になる。"
+findings = ["1:1"]
+messages = ["AIが多用する語「既定で」を使っている"]
+
+[[cases]]
+name = "noun-47-teiban"
+text = "定番の手法である。"
+findings = ["1:1"]
+messages = ["AIが多用する語「定番」を使っている"]
+
+[[cases]]
+name = "noun-48-joseki"
+text = "定石どおりに進める。"
+findings = ["1:1"]
+messages = ["AIが多用する語「定石」を使っている"]
+
+[[cases]]
+name = "pair-49-ta-shunkan"
+text = "押した瞬間に反応する。"
+findings = ["1:3"]
+messages = ["AIが多用する語「た瞬間」を使っている"]
+
+[[cases]]
+name = "shizuka-50-kowareru"
+text = "静かに壊れる。"
+findings = ["1:1", "1:4"]
+messages = ["AIが多用する語「静かに壊れる」を使っている", "AIが多用する語「壊れる」を使っている"]
+
+[[cases]]
+name = "shizuka-50-ochiru"
+text = "静かに落ちる。"
+findings = ["1:1"]
+messages = ["AIが多用する語「静かに落ちる」を使っている"]
+
+[[cases]]
+name = "shizuka-50-tomaru-ni-is-case-particle"
+text = "静かに止まる。"
+findings = []
+
+[[cases]]
+name = "shizuka-50-kieru"
+text = "静かに消える。"
+findings = ["1:1"]
+messages = ["AIが多用する語「静かに消える」を使っている"]
+
+[[cases]]
+name = "shizuka-50-suteru"
+text = "静かに捨てる。"
+findings = ["1:1"]
+messages = ["AIが多用する語「静かに捨てる」を使っている"]
+
+[[cases]]
+name = "shizuka-50-ushinau"
+text = "静かに失う。"
+findings = ["1:1"]
+messages = ["AIが多用する語「静かに失う」を使っている"]
+
+[[cases]]
+name = "shizuka-50-moreru"
+text = "静かに漏れる。"
+findings = ["1:1"]
+messages = ["AIが多用する語「静かに漏れる」を使っている"]
+
+[[cases]]
+name = "shizuka-51-sahen-reru"
+text = "静かに無視される。"
+findings = ["1:1"]
+messages = ["AIが多用する語「静かに無視される」を使っている"]
+
+[[cases]]
+name = "shizuka-51-sahen-rareru"
+text = "静かに更新される。"
+findings = ["1:1"]
+messages = ["AIが多用する語「静かに更新される」を使っている"]
+
+[[cases]]
+name = "noun-52-mugon"
+text = "無言で去る。"
+findings = ["1:1"]
+messages = ["AIが多用する語「無言」を使っている"]
+
+[[cases]]
+name = "noun-53-mon"
+text = "門を閉める。"
+findings = ["1:1"]
+messages = ["AIが多用する語「門」を使っている"]
+
+[[cases]]
+name = "noun-54-gate"
+text = "ゲートを通る。"
+findings = ["1:1"]
+messages = ["AIが多用する語「ゲート」を使っている"]
+
+[[cases]]
+name = "hashiru-surface-hashiru"
+text = "犬が走る。"
+findings = ["1:3"]
+messages = ["AIが多用する語「走る」を使っている"]
+
+[[cases]]
+name = "hashiru-surface-hashit"
+text = "犬が走った。"
+findings = ["1:3"]
+messages = ["AIが多用する語「走っ」を使っている"]
+
+[[cases]]
+name = "hashiru-surface-hashiri"
+text = "犬が走り、止まる。"
+findings = ["1:3"]
+messages = ["AIが多用する語「走り」を使っている"]
+
+[[cases]]
+name = "hashiru-near-hashiridasu"
+text = "走り出す。"
+findings = []
+
+[[cases]]
+name = "hashiru-surface-hashira"
+text = "犬は走らない。"
+findings = ["1:3"]
+messages = ["AIが多用する語「走ら」を使っている"]
+
+[[cases]]
+name = "hashiru-surface-hashire"
+text = "走れば間に合う。"
+findings = ["1:1"]
+messages = ["AIが多用する語「走れ」を使っている"]
+
+[[cases]]
+name = "hashiru-surface-hashiro"
+text = "走ろうとする。"
+findings = ["1:1"]
+messages = ["AIが多用する語「走ろ」を使っている"]
+
+[[cases]]
+name = "hashiru-near-jisou"
+text = "自走する。"
+findings = []
+
+[[cases]]
+name = "hashiru-near-noun"
+text = "走者が先頭に立つ。"
+findings = []
+
+[[cases]]
+name = "verb-conj-kiita"
+text = "薬が効いた。"
+findings = ["1:3"]
+messages = ["AIが多用する語「効い」を使っている"]
+
+[[cases]]
+name = "verb-conj-kowarete"
+text = "機械が壊れて止まる。"
+findings = ["1:4"]
+messages = ["AIが多用する語「壊れ」を使っている"]
+
+[[cases]]
+name = "verb-conj-yaita"
+text = "魚を焼いた。"
+findings = ["1:3"]
+messages = ["AIが多用する語「焼い」を使っている"]
+
+[[cases]]
+name = "verb-conj-kuzushita"
+text = "体勢を崩した。"
+findings = ["1:4"]
+messages = ["AIが多用する語「崩し」を使っている"]
+
+[[cases]]
+name = "verb-conj-mazatte"
+text = "色が混ざって見える。"
+findings = ["1:3"]
+messages = ["AIが多用する語「混ざっ」を使っている"]
+
+[[cases]]
+name = "verb-conj-tsubushite"
+text = "時間を潰して待つ。"
+findings = ["1:4"]
+messages = ["AIが多用する語「潰し」を使っている"]
+
+[[cases]]
+name = "verb-conj-utagawanai"
+text = "結果を疑わない。"
+findings = ["1:4"]
+messages = ["AIが多用する語「疑わ」を使っている"]
+
+[[cases]]
+name = "verb-conj-miotoshita"
+text = "エラーを見落とした。"
+findings = ["1:5"]
+messages = ["AIが多用する語「見落とし」を使っている"]
+
+[[cases]]
+name = "verb-near-yakeru"
+text = "家が焼ける。"
+findings = []
+
+[[cases]]
+name = "verb-near-kuzureru"
+text = "山が崩れる。"
+findings = []
+
+[[cases]]
+name = "verb-near-tokeru"
+text = "氷が溶ける。"
+findings = []
+
+[[cases]]
+name = "verb-near-tsubureru"
+text = "店が潰れる。"
+findings = []
+
+[[cases]]
+name = "verb-near-majiru"
+text = "色が混じる。"
+findings = []
+
+[[cases]]
+name = "verb-near-kowasu"
+text = "機械を壊す。"
+findings = []
+
+[[cases]]
+name = "verb-near-utagashii"
+text = "結果が疑わしい。"
+findings = []
+
+[[cases]]
+name = "verb-near-futoi"
+text = "太い線を引く。"
+findings = []
+
+[[cases]]
+name = "verb-near-miharashi"
+text = "見晴らしがよい。"
+findings = []
+
+[[cases]]
+name = "verb-near-kiki-me"
+text = "効き目がある。"
+findings = []
+
+[[cases]]
+name = "noun-near-more-verb"
+text = "水が漏れている。"
+findings = []
+
+[[cases]]
+name = "noun-near-more-verb-base"
+text = "水が漏れる。"
+findings = []
+
+[[cases]]
+name = "noun-near-fushiana"
+text = "節穴を通す。"
+findings = []
+
+[[cases]]
+name = "noun-near-anaume"
+text = "穴埋めを行う。"
+findings = []
+
+[[cases]]
+name = "noun-near-senmon"
+text = "専門家に聞く。"
+findings = []
+
+[[cases]]
+name = "noun-near-kenshin"
+text = "検診を受ける。"
+findings = []
+
+[[cases]]
+name = "noun-near-shinkeiro"
+text = "神経路が伸びる。"
+findings = []
+
+[[cases]]
+name = "noun-more-ga-aru"
+text = "漏れがある。"
+findings = ["1:1"]
+messages = ["AIが多用する語「漏れ」を使っている"]
+
+[[cases]]
+name = "noun-keiro-and-shougou"
+text = "経路と照合を行う。"
+findings = ["1:1", "1:4"]
+messages = ["AIが多用する語「経路」を使っている", "AIが多用する語「照合」を使っている"]
+
+[[cases]]
+name = "noun-gateway-known-false-positive"
+text = "ゲートウェイを設定する。"
+findings = ["1:1"]
+messages = ["AIが多用する語「ゲート」を使っている"]
+
+[[cases]]
+name = "noun-near-komon"
+text = "校門の前で待つ。"
+findings = []
+
+[[cases]]
+name = "pair-ni-ochiru-heya"
+text = "部屋に落ちる。"
+findings = ["1:3"]
+messages = ["AIが多用する語「に落ちる」を使っている"]
+
+[[cases]]
+name = "pair-ni-ochiru-near-kara"
+text = "木から落ちる。"
+findings = []
+
+[[cases]]
+name = "pair-ni-ochiru-near-ga"
+text = "石が落ちる。"
+findings = []
+
+[[cases]]
+name = "pair-ni-ochiru-near-wo"
+text = "財布を落ちる。"
+findings = []
+
+[[cases]]
+name = "pair-ni-ochiru-and-ana"
+text = "穴に落ちる。"
+findings = ["1:1", "1:2"]
+messages = ["AIが多用する語「穴」を使っている", "AIが多用する語「に落ちる」を使っている"]
+
+[[cases]]
+name = "pair-atai-wo-ugokasu-sentence"
+text = "設定の値を動かす。"
+findings = ["1:4"]
+messages = ["AIが多用する語「値を動かす」を使っている"]
+
+[[cases]]
+name = "pair-atai-wo-ugokasu-near-server"
+text = "サーバを動かす。"
+findings = []
+
+[[cases]]
+name = "pair-atai-wo-ugokasu-near-ha"
+text = "値は動かす。"
+findings = []
+
+[[cases]]
+name = "pair-atai-wo-ugokasu-near-ni"
+text = "値に動かす。"
+findings = []
+
+[[cases]]
+name = "pair-atai-wo-ugokasu-near-noun"
+text = "値段を動かす。"
+findings = []
+
+[[cases]]
+name = "pair-kara-hiku-jisho"
+text = "辞書から引く。"
+findings = ["1:3"]
+messages = ["AIが多用する語「から引く」を使っている"]
+
+[[cases]]
+name = "pair-kara-hiku-near-sen"
+text = "線を引く。"
+findings = []
+
+[[cases]]
+name = "pair-kara-hiku-near-kaze"
+text = "風邪を引く。"
+findings = []
+
+[[cases]]
+name = "pair-kara-hiku-near-wo"
+text = "ここを引く。"
+findings = []
+
+[[cases]]
+name = "pair-ni-haisen-suru-kiban"
+text = "壁に配線する。"
+findings = ["1:2"]
+messages = ["AIが多用する語「に配線する」を使っている"]
+
+[[cases]]
+name = "pair-ni-haisen-suru-near-kou"
+text = "光配線方式を採用する。"
+findings = []
+
+[[cases]]
+name = "pair-ni-haisen-suru-near-wo"
+text = "配線を確認する。"
+findings = []
+
+[[cases]]
+name = "pair-ni-haisen-suru-near-wo-suru"
+text = "基板に配線をする。"
+findings = []
+
+[[cases]]
+name = "pair-ni-haisen-suru-near-de"
+text = "基板で配線する。"
+findings = []
+
+[[cases]]
+name = "pair-kitei-de-sentence"
+text = "既定で有効になる。"
+findings = ["1:1"]
+messages = ["AIが多用する語「既定で」を使っている"]
+
+[[cases]]
+name = "pair-kitei-near-rosen"
+text = "既定路線を進む。"
+findings = []
+
+[[cases]]
+name = "pair-kitei-near-no"
+text = "既定の値を使う。"
+findings = []
+
+[[cases]]
+name = "pair-kitei-near-wo"
+text = "既定を使う。"
+findings = []
+
+[[cases]]
+name = "pair-ta-shunkan-owatta"
+text = "終わった瞬間に気づく。"
+findings = ["1:4"]
+messages = ["AIが多用する語「た瞬間」を使っている"]
+
+[[cases]]
+name = "pair-ta-shunkan-near-sono"
+text = "その瞬間に気づく。"
+findings = []
+
+[[cases]]
+name = "pair-ta-shunkan-near-isshun"
+text = "一瞬間の出来事。"
+findings = []
+
+[[cases]]
+name = "pair-ta-shunkan-near-su"
+text = "押す瞬間に反応する。"
+findings = []
+
+[[cases]]
+name = "pair-ta-shunkan-near-wo"
+text = "瞬間を捉える。"
+findings = []
+
+[[cases]]
+name = "shizuka-near-hanasu"
+text = "静かに話す。"
+findings = []
+
+[[cases]]
+name = "shizuka-near-aruku"
+text = "静かに歩く。"
+findings = []
+
+[[cases]]
+name = "shizuka-near-na-only-the-verb-entry"
+text = "静かな部屋で壊れる。"
+findings = ["1:7"]
+messages = ["AIが多用する語「壊れる」を使っている"]
+
+[[cases]]
+name = "shizuka-near-jikkou-suru"
+text = "静かに実行する。"
+findings = []
+
+[[cases]]
+name = "shizuka-near-mushi-shita"
+text = "静かに無視した。"
+findings = []
+
+[[cases]]
+name = "shizuka-sahen-reta"
+text = "静かに無視された。"
+findings = ["1:1"]
+messages = ["AIが多用する語「静かに無視され」を使っている"]
+
+[[cases]]
+name = "shizuka-two-verbs"
+text = "静かに壊れ、静かに消える。"
+findings = ["1:1", "1:4", "1:7"]
+messages = ["AIが多用する語「静かに壊れ」を使っている", "AIが多用する語「壊れ」を使っている", "AIが多用する語「静かに消える」を使っている"]
+
+[[cases]]
+name = "prefix-near-sabetsu"
+text = "差別を禁止する。"
+findings = []
+
+[[cases]]
+name = "prefix-near-mu"
+text = "無を意味する。"
+findings = []
+
+[[cases]]
+name = "prefix-near-sei-ten"
+text = "正と典を並べる。"
+findings = []
+
+[[cases]]
+name = "prefix-near-musabetsu-na"
+text = "無差別な攻撃を防ぐ。"
+findings = []
+
+[[cases]]
+name = "multi-two-words"
+text = "経路と照合を確認する。"
+findings = ["1:1", "1:4"]
+messages = ["AIが多用する語「経路」を使っている", "AIが多用する語「照合」を使っている"]
+
+[[cases]]
+name = "multi-same-word-twice"
+text = "経路を変え、別の経路を使う。"
+findings = ["1:1", "1:9"]
+messages = ["AIが多用する語「経路」を使っている", "AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "multi-three-kinds"
+text = "壁の穴に落ちる事故があった。"
+findings = ["1:3", "1:4", "1:8"]
+messages = ["AIが多用する語「穴」を使っている", "AIが多用する語「に落ちる」を使っている", "AIが多用する語「事故」を使っている"]
+
+[[cases]]
+name = "multi-two-lines"
+text = "経路を確認する。\n照合を行う。"
+findings = ["1:1", "2:1"]
+messages = ["AIが多用する語「経路」を使っている", "AIが多用する語「照合」を使っている"]
+
+[[cases]]
+name = "multi-two-paragraphs"
+text = "経路を確認する。\n\n照合を行う。"
+findings = ["1:1", "3:1"]
+messages = ["AIが多用する語「経路」を使っている", "AIが多用する語「照合」を使っている"]
+
+[[cases]]
+name = "multi-position-on-second-line"
+text = "あ\n通信経路を確認する。"
+findings = ["2:3"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "multi-all-in-one-sentence"
+text = "経路の死活と漏れを断定する。"
+findings = ["1:1", "1:4", "1:7", "1:10"]
+messages = ["AIが多用する語「経路」を使っている", "AIが多用する語「死活」を使っている", "AIが多用する語「漏れ」を使っている", "AIが多用する語「断定」を使っている"]
+
+[[cases]]
+name = "ctx-heading"
+text = "# 経路の確認"
+findings = ["1:3"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "ctx-list"
+text = "- 経路の確認"
+findings = ["1:3"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "ctx-ordered-list"
+text = "1. 経路の確認"
+findings = ["1:4"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "ctx-nested-list"
+text = "- あ\n  - 経路の確認"
+findings = ["2:5"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "ctx-quote"
+text = "> 経路の確認"
+findings = ["1:3"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "ctx-table"
+text = "| a |\n| - |\n| 経路の確認 |"
+findings = ["3:3"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "ctx-table-header"
+text = "| 経路 |\n| - |\n| a |"
+findings = ["1:3"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "ctx-emphasis"
+text = "*経路*を確認する。"
+findings = ["1:2"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "ctx-strong"
+text = "**経路**を確認する。"
+findings = ["1:3"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "ctx-link-text"
+text = "[経路の確認](https://example.com)。"
+findings = ["1:2"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "ctx-footnote"
+text = "本文[^1]。\n\n[^1]: 経路の確認。"
+findings = ["3:7"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "ctx-link-url"
+text = "[リンク](https://example.com/経路)。"
+findings = []
+
+[[cases]]
+name = "ctx-image-alt"
+text = "![経路](a.png)"
+findings = []
+
+[[cases]]
+name = "ctx-inline-code"
+text = "`経路`を確認する。"
+findings = []
+
+[[cases]]
+name = "ctx-code-block"
+text = "```\n経路\n```"
+findings = []
+
+[[cases]]
+name = "ctx-indented-code"
+text = "    経路"
+findings = []
+
+[[cases]]
+name = "ctx-html-block"
+text = "<div>\n経路\n</div>"
+findings = []
+
+[[cases]]
+name = "ctx-after-inline-code"
+text = "`x`の経路を確認する。"
+findings = ["1:5"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "ctx-after-strong"
+text = "**a**の経路を確認する。"
+findings = ["1:7"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "ctx-english-mixed"
+text = "The 経路 is wrong."
+findings = ["1:5"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "ctx-english-only"
+text = "The route is wrong."
+findings = []
+
+[[cases]]
+name = "ctx-empty-like"
+text = "あ"
+findings = []
+
+[[cases]]
+name = "split-by-strong"
+text = "経**路**を確認する。"
+findings = []
+
+[[cases]]
+name = "split-by-code"
+text = "経`x`路を確認する。"
+findings = []
+
+[[cases]]
+name = "split-by-soft-break"
+text = "経\n路を確認する。"
+findings = []
+
+[[cases]]
+name = "split-pair-by-soft-break"
+text = "腑に\n落ちる。"
+findings = []
+
+[[cases]]
+name = "split-pair-by-space"
+text = "腑に 落ちる。"
+findings = []
+
+[[cases]]
+name = "split-pair-by-comma"
+text = "腑に、落ちる。"
+findings = []
+
+[[cases]]
+name = "pos-after-astral-char-plain"
+note = "textlintはサロゲートペアの文字の分だけ前にずれた位置を指摘するが、jafixは元のソースの位置(文字で数える)を指摘する"
+text = "\U00020bb7の死活を確認する。"
+findings = ["1:3"]
+messages = ["AIが多用する語「死活」を使っている"]
+
+[[cases]]
+name = "pos-after-astral-char-pair"
+note = "textlintはサロゲートペアの文字の分だけ前にずれた位置を指摘するが、jafixは元のソースの位置(文字で数える)を指摘する"
+text = "\U00020bb7は腑に落ちる。"
+findings = ["1:4"]
+messages = ["AIが多用する語「に落ちる」を使っている"]
+
+[[cases]]
+name = "pos-after-bmp-emoji"
+text = "✅の後に死活を確認する。"
+findings = ["1:5"]
+messages = ["AIが多用する語「死活」を使っている"]
+
+[[cases]]
+name = "pos-after-fullwidth"
+text = "ＡＢＣの後に死活を確認する。"
+findings = ["1:7"]
+messages = ["AIが多用する語「死活」を使っている"]
+
+[[cases]]
+name = "allows-string"
+builtin = 'no-ai-words = { allows = ["経路"] }'
+text = "経路は許可されている。"
+findings = []
+
+[[cases]]
+name = "allows-string-other-word-still-reported"
+builtin = 'no-ai-words = { allows = ["経路"] }'
+text = "経路と照合を確認する。"
+findings = ["1:4"]
+messages = ["AIが多用する語「照合」を使っている"]
+
+[[cases]]
+name = "allows-no-match"
+builtin = 'no-ai-words = { allows = ["許可", "/v\\d+/"] }'
+text = "経路を確認する。"
+findings = ["1:1"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "allows-regex"
+builtin = 'no-ai-words = { allows = ["/経.*/"] }'
+text = "経路を確認する。"
+findings = []
+
+[[cases]]
+name = "allows-regex-flag-i"
+builtin = 'no-ai-words = { allows = ["/ゲ/i"] }'
+text = "ゲートを確認する。"
+findings = []
+
+[[cases]]
+name = "allows-substring-of-the-match"
+builtin = 'no-ai-words = { allows = ["落ちる"] }'
+text = "腑に落ちる。"
+findings = []
+
+[[cases]]
+name = "allows-the-whole-match-of-a-pair"
+builtin = 'no-ai-words = { allows = ["に落ちる"] }'
+text = "腑に落ちる。"
+findings = []
+
+[[cases]]
+name = "allows-text-around-the-match-is-not-checked"
+builtin = 'no-ai-words = { allows = ["許可"] }'
+text = "許可された経路を確認する。"
+findings = ["1:6"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "allows-regex-around-the-match-is-not-checked"
+builtin = 'no-ai-words = { allows = ["/v\\d+/"] }'
+text = "v12の経路を確認する。"
+findings = ["1:5"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "allows-long-match-allowed-short-match-reported"
+builtin = 'no-ai-words = { allows = ["静かに壊れる"] }'
+text = "静かに壊れる。"
+findings = ["1:4"]
+messages = ["AIが多用する語「壊れる」を使っている"]
+
+[[cases]]
+name = "allows-two-patterns"
+builtin = 'no-ai-words = { allows = ["経路", "照合"] }'
+text = "経路と照合を確認する。"
+findings = []
+
+[[cases]]
+name = "allows-checked-per-word"
+builtin = 'no-ai-words = { allows = ["照合"] }'
+text = "経路と照合を確認する。"
+findings = ["1:1"]
+messages = ["AIが多用する語「経路」を使っている"]
+
+[[cases]]
+name = "carry-over-paragraphs"
+note = "textlintは照合の状態を本文の範囲(Str)をまたいで持ち越し、段落の境目の `腑に` と `落ちる` を「〜に落ちる」として指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "腑に\n\n落ちる。"
+findings = []
+messages = []
+
+[[cases]]
+name = "carry-over-heading-paragraph"
+note = "textlintは照合の状態を本文の範囲をまたいで持ち越して指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "# 腑に\n\n落ちる。"
+findings = []
+messages = []
+
+[[cases]]
+name = "carry-over-list-items"
+note = "textlintは照合の状態をリスト項目の境目をまたいで持ち越して指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "- 腑に\n- 落ちる"
+findings = []
+messages = []
+
+[[cases]]
+name = "carry-over-strong"
+note = "textlintは照合の状態を太字の境目をまたいで持ち越して指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "腑に**落ちる**。"
+findings = []
+messages = []
+
+[[cases]]
+name = "carry-over-strong-first"
+note = "textlintは照合の状態を太字の境目をまたいで持ち越して指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "**腑に**落ちる。"
+findings = []
+messages = []
+
+[[cases]]
+name = "carry-over-inline-code"
+note = "textlintは照合の状態をインラインコードの境目をまたいで持ち越して指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "腑に`x`落ちる。"
+findings = []
+messages = []
+
+[[cases]]
+name = "carry-over-link"
+note = "textlintは照合の状態をリンクの境目をまたいで持ち越して指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "腑に[落ちる](https://example.com)。"
+findings = []
+messages = []
+
+[[cases]]
+name = "restart-value-wo-value-wo"
+note = "textlintは一致の途中で外れた2つ目の `値` を開始位置として試さないので指摘しないが、jafixはすべての位置から試すので `値を動かす` が一致する"
+text = "値を値を動かす。"
+findings = ["1:3"]
+messages = ["AIが多用する語「値を動かす」を使っている"]
+
+[[cases]]
+name = "restart-ni-ni-ochiru"
+note = "textlintは一致の途中で外れた2つ目の `に` を開始位置として試さないので指摘しないが、jafixはすべての位置から試すので `に落ちる` が一致する"
+text = "部屋にに落ちる。"
+findings = ["1:4"]
+messages = ["AIが多用する語「に落ちる」を使っている"]
+
+[[cases]]
+name = "restart-ta-ta-shunkan"
+note = "textlintは一致の途中で外れた2つ目の `た` を開始位置として試さないので指摘しないが、jafixはすべての位置から試すので `た瞬間` が一致する"
+text = "押したた瞬間。"
+findings = ["1:4"]
+messages = ["AIが多用する語「た瞬間」を使っている"]

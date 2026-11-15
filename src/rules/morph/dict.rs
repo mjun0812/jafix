@@ -1167,3 +1167,387 @@ pub const REDUNDANTS: [Redundant; 6] = [
         ],
     },
 ];
+
+/// `no-ai-words` の辞書。textlint-rule-preset-ai-words-ja 1.2.1 の `src/dictionary.ts` から作った。
+/// `name` は、textlintの文面の見出しの語である
+pub const AI_WORDS: [Phrase; 54] = [
+    Phrase {
+        name: "効く",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["効く"]),
+        ])],
+    },
+    Phrase {
+        name: "壊れる",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["壊れる"]),
+        ])],
+    },
+    Phrase {
+        name: "走る",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (Surface, &["走る", "走っ", "走り", "走ら", "走れ", "走ろ"]),
+        ])],
+    },
+    Phrase {
+        name: "焼く",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["焼く"]),
+        ])],
+    },
+    Phrase {
+        name: "黙って",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["黙る"]),
+        ])],
+    },
+    Phrase {
+        name: "〜に落ちる",
+        pattern: &[
+            expect(&[
+                (Pos, &["助詞"]),
+                (PosDetail1, &["格助詞"]),
+                (Surface, &["に"]),
+            ]),
+            expect(&[
+                (Pos, &["動詞"]),
+                (PosDetail1, &["自立"]),
+                (BasicForm, &["落ちる"]),
+            ]),
+        ],
+    },
+    Phrase {
+        name: "崩す",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["崩す"]),
+        ])],
+    },
+    Phrase {
+        name: "値を動かす",
+        pattern: &[
+            expect(&[(Pos, &["名詞"]), (Surface, &["値"])]),
+            expect(&[(Pos, &["助詞"]), (Surface, &["を"])]),
+            expect(&[
+                (Pos, &["動詞"]),
+                (PosDetail1, &["自立"]),
+                (BasicForm, &["動かす"]),
+            ]),
+        ],
+    },
+    Phrase {
+        name: "〜から引く",
+        pattern: &[
+            expect(&[
+                (Pos, &["助詞"]),
+                (PosDetail1, &["格助詞"]),
+                (Surface, &["から"]),
+            ]),
+            expect(&[
+                (Pos, &["動詞"]),
+                (PosDetail1, &["自立"]),
+                (BasicForm, &["引く"]),
+            ]),
+        ],
+    },
+    Phrase {
+        name: "経路",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["経路"])])],
+    },
+    Phrase {
+        name: "死活",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["死活"])])],
+    },
+    Phrase {
+        name: "漏れ",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["漏れ"])])],
+    },
+    Phrase {
+        name: "帰結",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["帰結"])])],
+    },
+    Phrase {
+        name: "原初",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["原初"])])],
+    },
+    Phrase {
+        name: "穴",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["穴"])])],
+    },
+    Phrase {
+        name: "無差別",
+        pattern: &[
+            expect(&[(Pos, &["接頭詞"]), (Surface, &["無"])]),
+            expect(&[(Pos, &["名詞"]), (BasicForm, &["差別"])]),
+        ],
+    },
+    Phrase {
+        name: "正本",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["正本"])])],
+    },
+    Phrase {
+        name: "部品",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["部品"])])],
+    },
+    Phrase {
+        name: "検査",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["検査"])])],
+    },
+    Phrase {
+        name: "正典",
+        pattern: &[
+            expect(&[(Pos, &["接頭詞"]), (Surface, &["正"])]),
+            expect(&[(Pos, &["名詞"]), (Surface, &["典"])]),
+        ],
+    },
+    Phrase {
+        name: "配線する",
+        pattern: &[
+            expect(&[
+                (Pos, &["助詞"]),
+                (PosDetail1, &["格助詞"]),
+                (Surface, &["に"]),
+            ]),
+            expect(&[(Pos, &["名詞"]), (BasicForm, &["配線"])]),
+            expect(&[
+                (Pos, &["動詞"]),
+                (PosDetail1, &["自立"]),
+                (BasicForm, &["する"]),
+            ]),
+        ],
+    },
+    Phrase {
+        name: "太る",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["太る"]),
+        ])],
+    },
+    Phrase {
+        name: "見張る",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["見張る"]),
+        ])],
+    },
+    Phrase {
+        name: "原料",
+        pattern: &[expect(&[(Pos, &["名詞"]), (Surface, &["原料"])])],
+    },
+    Phrase {
+        name: "実測",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["実測"])])],
+    },
+    Phrase {
+        name: "疑う",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["疑う"]),
+        ])],
+    },
+    Phrase {
+        name: "照合",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["照合"])])],
+    },
+    Phrase {
+        name: "見落とす",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["見落とす"]),
+        ])],
+    },
+    Phrase {
+        name: "突き合わせる",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["突き合わせる"]),
+        ])],
+    },
+    Phrase {
+        name: "断定",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["断定"])])],
+    },
+    Phrase {
+        name: "入口",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["入口"])])],
+    },
+    Phrase {
+        name: "土台",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["土台"])])],
+    },
+    Phrase {
+        name: "道具",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["道具"])])],
+    },
+    Phrase {
+        name: "核心",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["核心"])])],
+    },
+    Phrase {
+        name: "構図",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["構図"])])],
+    },
+    Phrase {
+        name: "線引き",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["線引き"])])],
+    },
+    Phrase {
+        name: "事故",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["事故"])])],
+    },
+    Phrase {
+        name: "混ざる",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["混ざる"]),
+        ])],
+    },
+    Phrase {
+        name: "落とし穴",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["落とし穴"])])],
+    },
+    Phrase {
+        name: "破綻",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["破綻"])])],
+    },
+    Phrase {
+        name: "素通り",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["素通り"])])],
+    },
+    Phrase {
+        name: "切り分ける",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["切り分ける"]),
+        ])],
+    },
+    Phrase {
+        name: "潰す",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["潰す"]),
+        ])],
+    },
+    Phrase {
+        name: "踏み込む",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["踏み込む"]),
+        ])],
+    },
+    Phrase {
+        name: "溶かす",
+        pattern: &[expect(&[
+            (Pos, &["動詞"]),
+            (PosDetail1, &["自立"]),
+            (BasicForm, &["溶かす"]),
+        ])],
+    },
+    Phrase {
+        name: "既定では",
+        pattern: &[
+            expect(&[(Pos, &["名詞"]), (BasicForm, &["既定"])]),
+            expect(&[
+                (Pos, &["助詞"]),
+                (PosDetail1, &["格助詞"]),
+                (Surface, &["で"]),
+            ]),
+        ],
+    },
+    Phrase {
+        name: "定番",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["定番"])])],
+    },
+    Phrase {
+        name: "定石",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["定石"])])],
+    },
+    Phrase {
+        name: "〜した瞬間",
+        pattern: &[
+            expect(&[(Pos, &["助動詞"]), (Surface, &["た"])]),
+            expect(&[(Pos, &["名詞"]), (BasicForm, &["瞬間"])]),
+        ],
+    },
+    Phrase {
+        name: "静かに",
+        pattern: &[
+            expect(&[(Pos, &["名詞"]), (Surface, &["静か"])]),
+            expect(&[
+                (Pos, &["助詞"]),
+                (PosDetail1, &["副詞化"]),
+                (Surface, &["に"]),
+            ]),
+            expect(&[
+                (Pos, &["動詞"]),
+                (PosDetail1, &["自立"]),
+                (
+                    BasicForm,
+                    &[
+                        "壊れる",
+                        "落ちる",
+                        "止まる",
+                        "消える",
+                        "捨てる",
+                        "失う",
+                        "漏れる",
+                    ],
+                ),
+            ]),
+        ],
+    },
+    Phrase {
+        name: "静かに",
+        pattern: &[
+            expect(&[(Pos, &["名詞"]), (Surface, &["静か"])]),
+            expect(&[
+                (Pos, &["助詞"]),
+                (PosDetail1, &["副詞化"]),
+                (Surface, &["に"]),
+            ]),
+            expect(&[(Pos, &["名詞"]), (PosDetail1, &["サ変接続"])]),
+            expect(&[
+                (Pos, &["動詞"]),
+                (PosDetail1, &["自立"]),
+                (BasicForm, &["する"]),
+            ]),
+            expect(&[
+                (Pos, &["動詞"]),
+                (PosDetail1, &["接尾"]),
+                (BasicForm, &["れる", "られる"]),
+            ]),
+        ],
+    },
+    Phrase {
+        name: "無言",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["無言"])])],
+    },
+    Phrase {
+        name: "門",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["門"])])],
+    },
+    Phrase {
+        name: "ゲート",
+        pattern: &[expect(&[(Pos, &["名詞"]), (BasicForm, &["ゲート"])])],
+    },
+];

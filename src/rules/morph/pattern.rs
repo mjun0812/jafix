@@ -16,12 +16,45 @@ pub enum Field {
 }
 
 /// 期待するトークン。`fields` のすべての項目が、値のどれかと完全に一致するトークンに一致する。
-/// `fields` が空なら、どのトークンにも一致する
+/// `fields` が空なら、どのトークンにも一致する。`F` は項目と値の持ち方で、組み込みの辞書は定数の表
+/// (`StaticFields`)、利用者の辞書は実行時に読んだ表 (`OwnedFields`) である
 #[derive(Debug)]
-pub struct Expect {
-    pub fields: &'static [(Field, &'static [&'static str])],
+pub struct Expect<F = StaticFields> {
+    pub fields: F,
     /// 一致しなければ、トークンを進めずに飛ばしてよい
     pub skippable: bool,
+}
+
+/// 組み込みの辞書の、定数で書いた項目と値
+pub type StaticFields = &'static [(Field, &'static [&'static str])];
+
+/// 利用者の辞書から読んだ項目と値
+pub type OwnedFields = Vec<(Field, Vec<String>)>;
+
+/// 期待するトークンの項目と値の持ち方。照合はどの持ち方でも `matches_all` で行う
+pub trait Fields {
+    fn matches(&self, token: &Token) -> bool;
+}
+
+impl Fields for StaticFields {
+    fn matches(&self, token: &Token) -> bool {
+        matches_all(self, token)
+    }
+}
+
+impl Fields for OwnedFields {
+    fn matches(&self, token: &Token) -> bool {
+        matches_all(self, token)
+    }
+}
+
+fn matches_all<V: AsRef<[S]>, S: AsRef<str>>(fields: &[(Field, V)], token: &Token) -> bool {
+    fields.iter().all(|(field, values)| {
+        values
+            .as_ref()
+            .iter()
+            .any(|value| value.as_ref() == self::value(token, *field))
+    })
 }
 
 /// 期待するトークンの並びに一致した箇所
@@ -32,19 +65,19 @@ pub struct Match {
 }
 
 /// `pattern` を、`tokens` のすべての位置を開始位置として当て、一致を開始位置の順に返す
-pub fn find(tokens: &[Token], pattern: &[Expect]) -> Vec<Match> {
+pub fn find<F: Fields>(tokens: &[Token], pattern: &[Expect<F>]) -> Vec<Match> {
     (0..tokens.len())
         .filter_map(|start| match_at(tokens, pattern, start))
         .collect()
 }
 
 /// `start` のトークンから `pattern` を当てる。一致の途中で外れても、ほかの開始位置の結果には影響しない
-fn match_at(tokens: &[Token], pattern: &[Expect], start: usize) -> Option<Match> {
+fn match_at<F: Fields>(tokens: &[Token], pattern: &[Expect<F>], start: usize) -> Option<Match> {
     let mut next = start;
     let mut matched = Vec::with_capacity(pattern.len());
     for expect in pattern {
         match tokens.get(next) {
-            Some(token) if expect.matches(token) => {
+            Some(token) if expect.fields.matches(token) => {
                 matched.push(Some(next));
                 next += 1;
             }
@@ -56,11 +89,12 @@ fn match_at(tokens: &[Token], pattern: &[Expect], start: usize) -> Option<Match>
     Some(Match { tokens: matched })
 }
 
-impl Expect {
-    fn matches(&self, token: &Token) -> bool {
-        self.fields
-            .iter()
-            .all(|&(field, values)| values.contains(&value(token, field)))
+impl Field {
+    /// 利用者の辞書に書く、kuromojiのトークンの項目の名前から引く
+    #[allow(dead_code)] // skeleton: not implemented
+    pub fn from_kuromoji_name(name: &str) -> Option<Field> {
+        let _ = name;
+        todo!("skeleton: not implemented")
     }
 }
 
@@ -108,7 +142,7 @@ mod tests {
 
     #[test]
     fn requires_every_written_field_to_equal_one_of_its_values() {
-        let pattern = [Expect {
+        let pattern: [Expect; 1] = [Expect {
             fields: &[(Field::Surface, &["a", "b"]), (Field::Pos, &["名詞"])],
             skippable: false,
         }];
@@ -121,7 +155,7 @@ mod tests {
 
     #[test]
     fn retries_from_a_token_where_a_previous_attempt_failed() {
-        let pattern = [
+        let pattern: [Expect; 2] = [
             Expect {
                 fields: &[(Field::Surface, &["x"])],
                 skippable: false,
@@ -137,7 +171,7 @@ mod tests {
 
     #[test]
     fn skips_a_skippable_expect_without_consuming_the_token() {
-        let pattern = [
+        let pattern: [Expect; 3] = [
             Expect {
                 fields: &[(Field::Surface, &["x"])],
                 skippable: false,
@@ -169,7 +203,7 @@ mod tests {
 
     #[test]
     fn drops_a_trailing_skippable_expect_but_not_a_required_one_at_the_end() {
-        let pattern = [
+        let pattern: [Expect; 2] = [
             Expect {
                 fields: &[(Field::Surface, &["x"])],
                 skippable: false,
@@ -183,7 +217,7 @@ mod tests {
             matches(&[token("x", "*")], &pattern),
             vec![vec![Some(0), None]]
         );
-        let required = [
+        let required: [Expect; 2] = [
             Expect {
                 fields: &[(Field::Surface, &["x"])],
                 skippable: false,

@@ -53,7 +53,8 @@ pub fn load() -> Result<Config, String> {
             None => return Ok(Config::default()),
         },
     };
-    let path = config_dir.join("jafix/config.toml");
+    let dir = config_dir.join("jafix");
+    let path = dir.join("config.toml");
     let text = match std::fs::read_to_string(&path) {
         Ok(text) => text,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Config::default()),
@@ -75,7 +76,7 @@ pub fn load() -> Result<Config, String> {
         rules.push(rule);
     }
     let builtin = match &raw.builtin {
-        Some(table) => Builtin::from_table(table)
+        Some(table) => Builtin::from_table(table, &dir)
             .map_err(|reason| format!("{}: [builtin]: {reason}", path.display()))?,
         None => Builtin::default(),
     };

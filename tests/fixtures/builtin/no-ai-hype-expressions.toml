@@ -1,0 +1,566 @@
+# no-ai-hype-expressions の例。期待値は、textlint 15.8.0、@textlint-ja/textlint-rule-preset-ai-writing 1.7.0、
+# textlint-rule-preset-ai-words-ja 1.2.1 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭の builtin は全caseに当たり、caseに builtin があればその代わりに使う (省略可)
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+builtin = 'no-ai-hype-expressions = true'
+
+[[cases]]
+name = "word-革命的な"
+text = "これは革命的なです。"
+findings = ["1:4"]
+messages = ["誇張した表現「革命的な」を使っている"]
+
+[[cases]]
+name = "word-ゲームチェンジャー"
+text = "これはゲームチェンジャーです。"
+findings = ["1:4"]
+messages = ["誇張した表現「ゲームチェンジャー」を使っている"]
+
+[[cases]]
+name = "word-世界初の"
+text = "これは世界初のです。"
+findings = ["1:4"]
+messages = ["誇張した表現「世界初の」を使っている"]
+
+[[cases]]
+name = "word-究極の"
+text = "これは究極のです。"
+findings = ["1:4"]
+messages = ["誇張した表現「究極の」を使っている"]
+
+[[cases]]
+name = "word-完全に"
+text = "これは完全にです。"
+findings = ["1:4"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "word-完璧な"
+text = "これは完璧なです。"
+findings = ["1:4"]
+messages = ["誇張した表現「完璧な」を使っている"]
+
+[[cases]]
+name = "word-最高の"
+text = "これは最高のです。"
+findings = ["1:4"]
+messages = ["誇張した表現「最高の」を使っている"]
+
+[[cases]]
+name = "word-最先端の"
+text = "これは最先端のです。"
+findings = ["1:4"]
+messages = ["誇張した表現「最先端の」を使っている"]
+
+[[cases]]
+name = "word-大幅に"
+text = "これは大幅にです。"
+findings = ["1:4"]
+messages = ["誇張した表現「大幅に」を使っている"]
+
+[[cases]]
+name = "word-魔法のように"
+text = "これは魔法のようにです。"
+findings = ["1:4"]
+messages = ["誇張した表現「魔法のように」を使っている"]
+
+[[cases]]
+name = "word-奇跡的な"
+text = "これは奇跡的なです。"
+findings = ["1:4"]
+messages = ["誇張した表現「奇跡的な」を使っている"]
+
+[[cases]]
+name = "word-驚異的な"
+text = "これは驚異的なです。"
+findings = ["1:4"]
+messages = ["誇張した表現「驚異的な」を使っている"]
+
+[[cases]]
+name = "word-可能性を解き放つ"
+text = "これは可能性を解き放つです。"
+findings = ["1:4"]
+messages = ["誇張した表現「可能性を解き放つ」を使っている"]
+
+[[cases]]
+name = "word-潜在能力を引き出す"
+text = "これは潜在能力を引き出すです。"
+findings = ["1:4"]
+messages = ["誇張した表現「潜在能力を引き出す」を使っている"]
+
+[[cases]]
+name = "word-民主化する"
+text = "これは民主化するです。"
+findings = ["1:4"]
+messages = ["誇張した表現「民主化する」を使っている"]
+
+[[cases]]
+name = "word-スーパーチャージ"
+text = "これはスーパーチャージです。"
+findings = ["1:4"]
+messages = ["誇張した表現「スーパーチャージ」を使っている"]
+
+[[cases]]
+name = "word-驚嘆させ"
+text = "これは驚嘆させです。"
+findings = ["1:4"]
+messages = ["誇張した表現「驚嘆させ」を使っている"]
+
+[[cases]]
+name = "word-業界を再定義"
+text = "これは業界を再定義です。"
+findings = ["1:4"]
+messages = ["誇張した表現「業界を再定義」を使っている"]
+
+[[cases]]
+name = "word-未来を変える"
+text = "これは未来を変えるです。"
+findings = ["1:4"]
+messages = ["誇張した表現「未来を変える」を使っている"]
+
+[[cases]]
+name = "word-パラダイムシフト"
+text = "これはパラダイムシフトです。"
+findings = ["1:4"]
+messages = ["誇張した表現「パラダイムシフト」を使っている"]
+
+[[cases]]
+name = "word-不可避の"
+text = "これは不可避のです。"
+findings = ["1:4"]
+messages = ["誇張した表現「不可避の」を使っている"]
+
+[[cases]]
+name = "word-新たな基準を設定"
+text = "これは新たな基準を設定です。"
+findings = ["1:4"]
+messages = ["誇張した表現「新たな基準を設定」を使っている"]
+
+[[cases]]
+name = "word-次世代の"
+text = "これは次世代のです。"
+findings = ["1:4"]
+messages = ["誇張した表現「次世代の」を使っている"]
+
+[[cases]]
+name = "word-フロンティアを開拓"
+text = "これはフロンティアを開拓です。"
+findings = ["1:4"]
+messages = ["誇張した表現「フロンティアを開拓」を使っている"]
+
+[[cases]]
+name = "word-根本的に変革"
+text = "これは根本的に変革です。"
+findings = ["1:4"]
+messages = ["誇張した表現「根本的に変革」を使っている"]
+
+[[cases]]
+name = "near-kakumeiteki"
+text = "これは革命的です。"
+findings = []
+
+[[cases]]
+name = "near-kanzen"
+text = "これは完全です。"
+findings = []
+
+[[cases]]
+name = "near-kanpeki"
+text = "これは完璧です。"
+findings = []
+
+[[cases]]
+name = "near-saiko"
+text = "これは最高です。"
+findings = []
+
+[[cases]]
+name = "near-taihaba"
+text = "これは大幅な変更です。"
+findings = []
+
+[[cases]]
+name = "near-saisentan"
+text = "これは最先端です。"
+findings = []
+
+[[cases]]
+name = "near-kyukyoku"
+text = "これは究極です。"
+findings = []
+
+[[cases]]
+name = "near-jisedai"
+text = "これは次世代です。"
+findings = []
+
+[[cases]]
+name = "word-then-suru"
+text = "業界を再定義する。"
+findings = ["1:1"]
+messages = ["誇張した表現「業界を再定義」を使っている"]
+
+[[cases]]
+name = "word-then-ru"
+text = "人を驚嘆させる。"
+findings = ["1:3"]
+messages = ["誇張した表現「驚嘆させ」を使っている"]
+
+[[cases]]
+name = "near-minshuka"
+text = "民主化した。"
+findings = []
+
+[[cases]]
+name = "near-kanou-sei"
+text = "可能性を解き放った。"
+findings = []
+
+[[cases]]
+name = "near-hiragana"
+text = "かくめいてきな変化です。"
+findings = []
+
+[[cases]]
+name = "near-spaced"
+text = "完 全 に実行する。"
+findings = []
+
+[[cases]]
+name = "near-english"
+text = "This is a game changer."
+findings = []
+
+[[cases]]
+name = "mixed-english"
+text = "This is 究極の tool."
+findings = ["1:9"]
+messages = ["誇張した表現「究極の」を使っている"]
+
+[[cases]]
+name = "repeat-same-word"
+text = "完全に動き、完全に止まる。"
+findings = ["1:1", "1:7"]
+messages = ["誇張した表現「完全に」を使っている", "誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "repeat-adjacent"
+text = "完全に完全に動く。"
+findings = ["1:1", "1:4"]
+messages = ["誇張した表現「完全に」を使っている", "誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "many-words"
+text = "革命的な技術で、完全に変わり、魔法のように動き、次世代の基準です。"
+findings = ["1:1", "1:9", "1:16", "1:25"]
+messages = ["誇張した表現「革命的な」を使っている", "誇張した表現「完全に」を使っている", "誇張した表現「魔法のように」を使っている", "誇張した表現「次世代の」を使っている"]
+
+[[cases]]
+name = "many-words-reverse-order"
+text = "次世代の基準は、魔法のように動き、完全に変わる。"
+findings = ["1:1", "1:9", "1:18"]
+messages = ["誇張した表現「次世代の」を使っている", "誇張した表現「魔法のように」を使っている", "誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "words-in-two-lines"
+text = "最高の結果です。\n完璧な仕上がりです。"
+findings = ["1:1", "2:1"]
+messages = ["誇張した表現「最高の」を使っている", "誇張した表現「完璧な」を使っている"]
+
+[[cases]]
+name = "words-in-two-paragraphs"
+text = "最高の結果です。\n\n完璧な仕上がりです。"
+findings = ["1:1", "3:1"]
+messages = ["誇張した表現「最高の」を使っている", "誇張した表現「完璧な」を使っている"]
+
+[[cases]]
+name = "word-after-astral"
+text = "\U00020bb7の完全に動く。"
+findings = ["1:3"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "word-after-emoji"
+text = "\U0001f680\U0001f680完全に動く。"
+findings = ["1:3"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "word-multiline-position"
+text = "あいう\nえお完全に動く。"
+findings = ["2:3"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "ctx-heading"
+text = "# 完全に動く"
+findings = ["1:3"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "ctx-list"
+text = "- 完全に動く"
+findings = ["1:3"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "ctx-ordered-list"
+text = "1. 完全に動く"
+findings = ["1:4"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "ctx-nested-list"
+text = "- a\n  - 完全に動く"
+findings = ["2:5"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "ctx-quote"
+text = "> 完全に動く"
+findings = ["1:3"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "ctx-table"
+text = "| a |\n| - |\n| 完全に動く |"
+findings = ["3:3"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "ctx-table-header"
+text = "| 完全に |\n| - |\n| a |"
+findings = ["1:3"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "ctx-emphasis"
+text = "*完全に*動く。"
+findings = ["1:2"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "ctx-strong"
+text = "**完全に**動く。"
+findings = ["1:3"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "ctx-link-text"
+text = "[完全に動く](https://example.com)。"
+findings = ["1:2"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "ctx-link-url"
+text = "[リンク](https://example.com/完全に)。"
+findings = []
+
+[[cases]]
+name = "ctx-image-alt"
+text = "![完全に](a.png)"
+findings = []
+
+[[cases]]
+name = "ctx-inline-code"
+text = "`完全に`動く。"
+findings = []
+
+[[cases]]
+name = "ctx-code-block"
+text = "```\n完全に\n```"
+findings = []
+
+[[cases]]
+name = "ctx-indented-code"
+text = "    完全に"
+findings = []
+
+[[cases]]
+name = "ctx-html-block"
+text = "<div>\n完全に\n</div>"
+findings = []
+
+[[cases]]
+name = "ctx-footnote"
+text = "本文[^1]。\n\n[^1]: 完全に動く。"
+findings = ["3:7"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "ctx-split-by-strong"
+text = "完**全に**動く。"
+findings = []
+
+[[cases]]
+name = "ctx-split-by-strong-2"
+text = "革命的**な**技術。"
+findings = []
+
+[[cases]]
+name = "ctx-split-by-code"
+text = "完`x`全に動く。"
+findings = []
+
+[[cases]]
+name = "ctx-split-by-soft-break"
+text = "完\n全に動く。"
+findings = []
+
+[[cases]]
+name = "ctx-word-after-code"
+text = "`x`完全に動く。"
+findings = ["1:4"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "ctx-word-after-strong"
+text = "**a**完全に動く。"
+findings = ["1:6"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "cat-default-all"
+text = "完全に、魔法のように、次世代の。"
+findings = ["1:1", "1:5", "1:12"]
+messages = ["誇張した表現「完全に」を使っている", "誇張した表現「魔法のように」を使っている", "誇張した表現「次世代の」を使っている"]
+
+[[cases]]
+name = "cat-disable-absoluteness"
+builtin = 'no-ai-hype-expressions = { disableAbsolutenessPatterns = true }'
+text = "完全に、魔法のように、次世代の。"
+findings = ["1:5", "1:12"]
+messages = ["誇張した表現「魔法のように」を使っている", "誇張した表現「次世代の」を使っている"]
+
+[[cases]]
+name = "cat-disable-abstract"
+builtin = 'no-ai-hype-expressions = { disableAbstractPatterns = true }'
+text = "完全に、魔法のように、次世代の。"
+findings = ["1:1", "1:12"]
+messages = ["誇張した表現「完全に」を使っている", "誇張した表現「次世代の」を使っている"]
+
+[[cases]]
+name = "cat-disable-predictive"
+builtin = 'no-ai-hype-expressions = { disabledPredictivePatterns = true }'
+text = "完全に、魔法のように、次世代の。"
+findings = ["1:1", "1:5"]
+messages = ["誇張した表現「完全に」を使っている", "誇張した表現「魔法のように」を使っている"]
+
+[[cases]]
+name = "cat-disable-two"
+builtin = 'no-ai-hype-expressions = { disableAbsolutenessPatterns = true, disableAbstractPatterns = true }'
+text = "完全に、魔法のように、次世代の。"
+findings = ["1:12"]
+messages = ["誇張した表現「次世代の」を使っている"]
+
+[[cases]]
+name = "cat-disable-all"
+builtin = 'no-ai-hype-expressions = { disableAbsolutenessPatterns = true, disableAbstractPatterns = true, disabledPredictivePatterns = true }'
+text = "完全に、魔法のように、次世代の。"
+findings = []
+
+[[cases]]
+name = "cat-enable-explicit-false"
+builtin = 'no-ai-hype-expressions = { disableAbsolutenessPatterns = false, disableAbstractPatterns = false, disabledPredictivePatterns = false }'
+text = "完全に、魔法のように、次世代の。"
+findings = ["1:1", "1:5", "1:12"]
+messages = ["誇張した表現「完全に」を使っている", "誇張した表現「魔法のように」を使っている", "誇張した表現「次世代の」を使っている"]
+
+[[cases]]
+name = "cat-disable-absoluteness-keeps-same-category-word-off"
+builtin = 'no-ai-hype-expressions = { disableAbsolutenessPatterns = true }'
+text = "最高の、大幅に。"
+findings = []
+
+[[cases]]
+name = "cat-disable-abstract-all-eight"
+builtin = 'no-ai-hype-expressions = { disableAbstractPatterns = true }'
+text = "魔法のように、奇跡的な、驚異的な、可能性を解き放つ、潜在能力を引き出す、民主化する、スーパーチャージ、驚嘆させ。"
+findings = []
+
+[[cases]]
+name = "cat-disable-predictive-all-eight"
+builtin = 'no-ai-hype-expressions = { disabledPredictivePatterns = true }'
+text = "業界を再定義、未来を変える、パラダイムシフト、不可避の、新たな基準を設定、次世代の、フロンティアを開拓、根本的に変革。"
+findings = []
+
+[[cases]]
+name = "allows-string"
+builtin = 'no-ai-hype-expressions = { allows = ["許可"] }'
+text = "完全に許可された。"
+findings = []
+
+[[cases]]
+name = "allows-regex"
+builtin = 'no-ai-hype-expressions = { allows = ["/v\\d+/"] }'
+text = "完全にv12で動く。"
+findings = []
+
+[[cases]]
+name = "allows-no-match"
+builtin = 'no-ai-hype-expressions = { allows = ["許可", "/v\\d+/"] }'
+text = "完全に動く。"
+findings = ["1:1"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "allows-skips-every-hit-in-the-range"
+builtin = 'no-ai-hype-expressions = { allows = ["許可"] }'
+text = "完全に許可された。魔法のように動く。"
+findings = []
+
+[[cases]]
+name = "allows-other-range-still-checked"
+builtin = 'no-ai-hype-expressions = { allows = ["許可"] }'
+text = "完全に**許可**する。"
+findings = ["1:1"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "allows-other-paragraph-still-checked"
+builtin = 'no-ai-hype-expressions = { allows = ["許可"] }'
+text = "許可された。\n\n完全に動く。"
+findings = ["3:1"]
+messages = ["誇張した表現「完全に」を使っている"]
+
+[[cases]]
+name = "allows-in-the-hit-word"
+builtin = 'no-ai-hype-expressions = { allows = ["完全"] }'
+text = "完全に動く。"
+findings = []
+
+[[cases]]
+name = "allows-regex-flag-i"
+builtin = 'no-ai-hype-expressions = { allows = ["/allowed/i"] }'
+text = "完全にAllowed動く。"
+findings = []
+
+[[cases]]
+name = "allows-with-disabled-category"
+builtin = 'no-ai-hype-expressions = { allows = ["許可"], disableAbstractPatterns = true }'
+text = "完全に許可。魔法のように。"
+findings = []
+
+[[cases]]
+name = "allows-in-heading"
+builtin = 'no-ai-hype-expressions = { allows = ["許可"] }'
+text = "# 許可 完全に"
+findings = []
+
+[[cases]]
+name = "overlap-different-words"
+text = "大幅に向上する。"
+findings = ["1:1"]
+messages = ["誇張した表現「大幅に」を使っている"]
+
+[[cases]]
+name = "overlap-word-inside-longer-hit"
+text = "根本的に変革し、完全に完璧な形にする。"
+findings = ["1:1", "1:9", "1:12"]
+messages = ["誇張した表現「根本的に変革」を使っている", "誇張した表現「完全に」を使っている", "誇張した表現「完璧な」を使っている"]

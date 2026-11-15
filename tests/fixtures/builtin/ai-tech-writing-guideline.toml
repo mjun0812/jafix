@@ -1,0 +1,1596 @@
+# ai-tech-writing-guideline の例。期待値は、textlint 15.8.0、@textlint-ja/textlint-rule-preset-ai-writing 1.7.0、
+# textlint-rule-preset-ai-words-ja 1.2.1 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭の builtin は全caseに当たり、caseに builtin があればその代わりに使う (省略可)
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+builtin = 'ai-tech-writing-guideline = true'
+
+[[cases]]
+name = "redundancy-mazu-saisho-ni"
+text = "まず最初に確認します。"
+findings = ["1:1"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる"]
+
+[[cases]]
+name = "redundancy-arakajime-yosoku"
+text = "あらかじめ予測して備えます。"
+findings = ["1:1"]
+messages = ["簡潔性: 「あらかじめ予測」は「予測」にできる"]
+
+[[cases]]
+name = "redundancy-surukotogadekimasu"
+text = "設定を変更することができます。"
+findings = ["1:6"]
+messages = ["簡潔性: 「することができます」は「できます」か「します」にできる"]
+
+[[cases]]
+name = "redundancy-suruhitsuyougaarimasu"
+text = "設定を変更する必要があります。"
+findings = ["1:6"]
+messages = ["簡潔性: 「する必要があります」は「してください」か「します」にできる"]
+
+[[cases]]
+name = "redundancy-iumadenaku"
+text = "言うまでもなく重要です。"
+findings = ["1:1"]
+messages = ["簡潔性: 前置きの「言うまでもなく」は省いて、要点から書ける"]
+
+[[cases]]
+name = "redundancy-near-mazu"
+text = "まず確認します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "redundancy-near-saisho-ni"
+text = "最初に確認します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "redundancy-near-surukotogadekiru"
+text = "設定を変更することができる。"
+findings = []
+messages = []
+
+[[cases]]
+name = "redundancy-near-surukotogadekimasu-split"
+text = "設定を変更すること、できます。"
+findings = []
+messages = []
+
+[[cases]]
+name = "redundancy-near-hitsuyou-ga-aru"
+text = "設定を変更する必要がある。"
+findings = []
+messages = []
+
+[[cases]]
+name = "redundancy-near-hitsuyou-ga-arimasen"
+text = "設定を変更する必要がありません。"
+findings = []
+messages = []
+
+[[cases]]
+name = "redundancy-near-iumadenai"
+text = "言うまでもない。"
+findings = []
+messages = []
+
+[[cases]]
+name = "redundancy-near-yosoku"
+text = "予測して備えます。"
+findings = []
+messages = []
+
+[[cases]]
+name = "voice-ga-okonawarete"
+text = "処理が行われています。"
+findings = ["1:3"]
+messages = ["明確性: 受け身の「が行われる」は、「実行する」「処理する」のような具体的な動詞の能動態にできる"]
+
+[[cases]]
+name = "voice-ga-okonawareru"
+text = "処理が行われる。"
+findings = ["1:3"]
+messages = ["明確性: 受け身の「が行われる」は、「実行する」「処理する」のような具体的な動詞の能動態にできる"]
+
+[[cases]]
+name = "voice-ga-okonawaremasu"
+text = "処理が行われます。"
+findings = ["1:3"]
+messages = ["明確性: 受け身の「が行われる」は、「実行する」「処理する」のような具体的な動詞の能動態にできる"]
+
+[[cases]]
+name = "voice-near-ga-okonawareta"
+text = "処理が行われた。"
+findings = []
+messages = []
+
+[[cases]]
+name = "voice-near-wo-okonau"
+text = "処理を行います。"
+findings = []
+messages = []
+
+[[cases]]
+name = "voice-near-ga-okonawarenai"
+text = "処理が行われない。"
+findings = []
+messages = []
+
+[[cases]]
+name = "voice-no-henkou-wo-okonau"
+text = "設定の変更を行う。"
+findings = ["1:3"]
+messages = ["明確性: 「の変更を行う」は「を変更する」にできる"]
+
+[[cases]]
+name = "voice-near-henkou-wo-suru"
+text = "設定の変更をする。"
+findings = []
+messages = []
+
+[[cases]]
+name = "voice-no-jissou-wo-jisshi"
+text = "機能の実装を実施する。"
+findings = ["1:3"]
+messages = ["明確性: 「の実装を実施する」は「を実装する」にできる"]
+
+[[cases]]
+name = "voice-near-jissou-wo-suru"
+text = "機能の実装をする。"
+findings = []
+messages = []
+
+[[cases]]
+name = "voice-near-niyotte-shori-sare"
+text = "ジョブによって処理される。"
+findings = []
+messages = []
+
+[[cases]]
+name = "voice-near-niyotte-jisshi-sare"
+text = "ジョブによって実施される。"
+findings = []
+messages = []
+
+[[cases]]
+name = "voice-niyotte-gyou-sare"
+text = "ジョブによって行され。"
+findings = ["1:4"]
+messages = ["明確性: 受け身の「によって実行される」は、「AがBを実行する」のような能動態にできる"]
+
+[[cases]]
+name = "voice-niyotte-shori-char-class"
+text = "ジョブによって処され。"
+findings = ["1:4"]
+messages = ["明確性: 受け身の「によって実行される」は、「AがBを実行する」のような能動態にできる"]
+
+[[cases]]
+name = "voice-niyotte-ri-char-class"
+text = "ジョブによって理され。"
+findings = ["1:4"]
+messages = ["明確性: 受け身の「によって実行される」は、「AがBを実行する」のような能動態にできる"]
+
+[[cases]]
+name = "voice-niyotte-hodokosare"
+text = "ジョブによって施される。"
+findings = ["1:4"]
+messages = ["明確性: 受け身の「によって実行される」は、「AがBを実行する」のような能動態にできる"]
+
+[[cases]]
+name = "voice-niyotte-jikkou-char-class"
+text = "ジョブによって実され。"
+findings = ["1:4"]
+messages = ["明確性: 受け身の「によって実行される」は、「AがBを実行する」のような能動態にできる"]
+
+[[cases]]
+name = "voice-niyotte-kouryo-sare"
+text = "ジョブによって考慮される。"
+findings = []
+messages = []
+
+[[cases]]
+name = "voice-ga-system-niyotte-jikkou"
+text = "処理がシステムによって実行される。"
+findings = ["1:3", "1:8"]
+messages = ["明確性: 受け身の「がシステムによって実行される」は、「システムがAを実行する」のような能動態にできる", "明確性: 受け身の「によって実行され」は、「システムがAを実行する」のような能動態にできる"]
+
+[[cases]]
+name = "voice-niyotte-jikkou"
+text = "ジョブによって実行される。"
+findings = ["1:4"]
+messages = ["明確性: 受け身の「によって実行され」は、「システムがAを実行する」のような能動態にできる"]
+
+[[cases]]
+name = "voice-near-niyotte-jikkou-suru"
+text = "ジョブによって実行する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "voice-near-system-ga-jikkou"
+text = "システムが実行する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "clarity-kousoku-performance"
+text = "高速なパフォーマンスです。"
+findings = ["1:1"]
+messages = ["具体性: 「高速な」は、「50ms未満の応答時間」のような数値の基準にできる"]
+
+[[cases]]
+name = "clarity-kousoku-shori"
+text = "高速な処理です。"
+findings = ["1:1"]
+messages = ["具体性: 「高速な」は、「50ms未満の応答時間」のような数値の基準にできる"]
+
+[[cases]]
+name = "clarity-kousoku-dousa"
+text = "高速な動作です。"
+findings = ["1:1"]
+messages = ["具体性: 「高速な」は、「50ms未満の応答時間」のような数値の基準にできる"]
+
+[[cases]]
+name = "clarity-near-kousoku-other"
+text = "高速な通信です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "clarity-taihaba-koujou"
+text = "大幅に向上します。"
+findings = ["1:1"]
+messages = ["具体性: 「大幅に」は、変化の数値か割合にできる"]
+
+[[cases]]
+name = "clarity-taihaba-kaizen"
+text = "大幅に改善します。"
+findings = ["1:1"]
+messages = ["具体性: 「大幅に」は、変化の数値か割合にできる"]
+
+[[cases]]
+name = "clarity-taihaba-sakugen"
+text = "大幅に削減します。"
+findings = ["1:1"]
+messages = ["具体性: 「大幅に」は、変化の数値か割合にできる"]
+
+[[cases]]
+name = "clarity-near-taihaba-zouka"
+text = "大幅に増加します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "clarity-near-taihaba-split"
+text = "大幅に、向上します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "clarity-koritsuteki"
+text = "効率的な方法です。"
+findings = ["1:1"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "clarity-near-koritsu"
+text = "効率を上げます。"
+findings = []
+messages = []
+
+[[cases]]
+name = "clarity-tekisetsu"
+text = "適切な値を設定します。"
+findings = ["1:1"]
+messages = ["具体性: 「適切な」は、何を基準に適切かの条件を具体的に書ける"]
+
+[[cases]]
+name = "clarity-near-tekisetsu-ni"
+text = "適切に設定します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "clarity-hitsuyou-ni-oujite"
+text = "必要に応じて設定します。"
+findings = ["1:1"]
+messages = ["具体性: 「必要に応じて」は、どの状況で必要かの判断基準を具体的に書ける"]
+
+[[cases]]
+name = "clarity-near-hitsuyou-ni-shitagatte"
+text = "必要に従って設定します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "consistency-user-client"
+text = "ユーザーとクライアントを区別します。"
+findings = ["1:1"]
+messages = ["一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている"]
+
+[[cases]]
+name = "consistency-client-user"
+text = "クライアントとユーザーを区別します。"
+findings = ["1:1"]
+messages = ["一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている"]
+
+[[cases]]
+name = "consistency-user-customer"
+text = "ユーザーと顧客を区別します。"
+findings = ["1:1"]
+messages = ["一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている"]
+
+[[cases]]
+name = "consistency-customer-user"
+text = "顧客とユーザーを区別します。"
+findings = ["1:1"]
+messages = ["一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている"]
+
+[[cases]]
+name = "consistency-user-client-far"
+text = "ユーザーが設定を開き、長い説明をしたあとで、クライアントに渡す。"
+findings = ["1:1"]
+messages = ["一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている"]
+
+[[cases]]
+name = "consistency-user-client-adjacent"
+text = "ユーザークライアント"
+findings = ["1:1"]
+messages = ["一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている"]
+
+[[cases]]
+name = "consistency-near-user-only"
+text = "ユーザーを区別します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "consistency-near-client-only"
+text = "クライアントを区別します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "consistency-near-user-and-user"
+text = "ユーザーとユーザーを区別します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "consistency-user-client-across-lines"
+text = "ユーザーを\nクライアントと区別します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "consistency-user-client-across-sentences"
+text = "ユーザーを開きます。クライアントを閉じます。"
+findings = ["1:1"]
+messages = ["一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている"]
+
+[[cases]]
+name = "consistency-setting-screen-page"
+text = "設定画面から設定ページへ移動します。"
+findings = ["1:1"]
+messages = ["一貫性: 同じ機能を指す「設定画面」と「設定ページ」か「環境設定」が混ざっている"]
+
+[[cases]]
+name = "consistency-setting-screen-env"
+text = "設定画面から環境設定へ移動します。"
+findings = ["1:1"]
+messages = ["一貫性: 同じ機能を指す「設定画面」と「設定ページ」か「環境設定」が混ざっている"]
+
+[[cases]]
+name = "consistency-setting-page-screen"
+text = "設定ページから設定画面へ移動します。"
+findings = ["1:1"]
+messages = ["一貫性: 同じ機能を指す「設定画面」と「設定ページ」か「環境設定」が混ざっている"]
+
+[[cases]]
+name = "consistency-env-screen"
+text = "環境設定から設定画面へ移動します。"
+findings = ["1:1"]
+messages = ["一貫性: 同じ機能を指す「設定画面」と「設定ページ」か「環境設定」が混ざっている"]
+
+[[cases]]
+name = "consistency-near-setting-screen-only"
+text = "設定画面へ移動します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "consistency-near-setting-page-env"
+text = "設定ページと環境設定を比べます。"
+findings = []
+messages = []
+
+[[cases]]
+name = "consistency-desu-dearu"
+text = "これは問題です。仕様である。"
+findings = ["1:6"]
+messages = ["一貫性: 「です・ます」調と「だ・である」調が混ざっている"]
+
+[[cases]]
+name = "consistency-dearu-desu"
+text = "これは問題である。仕様です。"
+findings = ["1:6"]
+messages = ["一貫性: 「です・ます」調と「だ・である」調が混ざっている"]
+
+[[cases]]
+name = "consistency-desu-dearu-far"
+text = "これは問題です。長い説明が続く。さらに続く。仕様である。"
+findings = ["1:6"]
+messages = ["一貫性: 「です・ます」調と「だ・である」調が混ざっている"]
+
+[[cases]]
+name = "consistency-desu-dearu-across-lines"
+text = "これは問題です。\n仕様である。"
+findings = []
+messages = []
+
+[[cases]]
+name = "consistency-near-desu-only"
+text = "これは問題です。仕様です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "consistency-near-dearu-only"
+text = "これは問題である。仕様である。"
+findings = []
+messages = []
+
+[[cases]]
+name = "consistency-near-desu-masu-dearu-no-period"
+text = "これは問題です、仕様である。"
+findings = []
+messages = []
+
+[[cases]]
+name = "consistency-near-dearu-desu-no-period"
+text = "これは問題である、仕様です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "structure-mata-mata"
+text = "また、aです。また、bです。"
+findings = ["1:1"]
+messages = ["構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "structure-mata-mata-far"
+text = "また、aです。長い説明が続きます。さらに続きます。また、bです。"
+findings = ["1:1"]
+messages = ["構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "structure-near-mata-once"
+text = "また、aです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "structure-near-mata-no-comma"
+text = "またaです。またbです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "structure-mata-across-lines"
+text = "また、aです。\nまた、bです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "structure-mata-three-times"
+text = "また、aです。また、bです。また、cです。"
+findings = ["1:1"]
+messages = ["構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "structure-mata-four-times"
+text = "また、aです。また、bです。また、cです。また、dです。"
+findings = ["1:1", "1:15"]
+messages = ["構造化: 「また、」が続くので、箇条書きか段落分けで整理できる", "構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "structure-mata-adjacent"
+text = "また、また、"
+findings = ["1:1"]
+messages = ["構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "structure-first-second-third"
+text = "第一に準備します。第二に実行します。第三に確認します。"
+findings = ["1:1"]
+messages = ["構造化: 順に述べる手順は、番号付きリストか見出しで整理できる"]
+
+[[cases]]
+name = "structure-mazu-tsugi-ni-saigo-ni"
+text = "あ。まず準備します。次に実行します。最後に確認します。"
+findings = ["1:3"]
+messages = ["構造化: 順に述べる手順は、番号付きリストか見出しで整理できる"]
+
+[[cases]]
+name = "structure-mazu-daini-daisan"
+text = "まず準備します。第二に実行します。第三に確認します。"
+findings = ["1:1"]
+messages = ["構造化: 順に述べる手順は、番号付きリストか見出しで整理できる"]
+
+[[cases]]
+name = "structure-daiichi-tsugi-ni-saigo-ni"
+text = "第一に準備します。次に実行します。最後に確認します。"
+findings = ["1:1"]
+messages = ["構造化: 順に述べる手順は、番号付きリストか見出しで整理できる"]
+
+[[cases]]
+name = "structure-mazu-tsugi-ni-daisan"
+text = "まず準備します。次に実行します。第三に確認します。"
+findings = ["1:1"]
+messages = ["構造化: 順に述べる手順は、番号付きリストか見出しで整理できる"]
+
+[[cases]]
+name = "structure-near-missing-second"
+text = "まず準備します。最後に確認します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "structure-near-wrong-order"
+text = "最後に確認します。次に実行します。まず準備します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "structure-near-missing-first"
+text = "次に実行します。最後に確認します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "structure-near-saisho-ni-only"
+text = "最初に準備します。次に実行します。最後に確認します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "structure-sequence-across-lines"
+text = "まず準備します。\n次に実行します。\n最後に確認します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "structure-sequence-twice"
+text = "あ。まず準備します。次に実行します。最後に確認します。い。第一に準備します。第二に実行します。第三に確認します。"
+findings = ["1:3", "1:30"]
+messages = ["構造化: 順に述べる手順は、番号付きリストか見出しで整理できる", "構造化: 順に述べる手順は、番号付きリストか見出しで整理できる"]
+
+[[cases]]
+name = "structure-mata-and-sequence"
+text = "あ。また、aです。また、bです。い。まず準備します。次に実行します。最後に確認します。"
+findings = ["1:3", "1:19"]
+messages = ["構造化: 「また、」が続くので、箇条書きか段落分けで整理できる", "構造化: 順に述べる手順は、番号付きリストか見出しで整理できる"]
+
+[[cases]]
+name = "multi-two-patterns"
+text = "あ。まず最初に確認します。効率的な方法です。"
+findings = ["1:3", "1:14"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "multi-same-pattern-twice"
+text = "効率的な方法と効率的な手順です。"
+findings = ["1:1", "1:8"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "multi-in-two-lines"
+text = "あ\n効率的な方法です。\n適切な値です。"
+findings = ["2:1", "3:1"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける", "具体性: 「適切な」は、何を基準に適切かの条件を具体的に書ける"]
+
+[[cases]]
+name = "multi-in-two-paragraphs"
+text = "あ。\n\n効率的な方法です。\n\n適切な値です。"
+findings = ["3:1", "5:1"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける", "具体性: 「適切な」は、何を基準に適切かの条件を具体的に書ける"]
+
+[[cases]]
+name = "multi-each-category"
+text = "まず最初に確認します。\n\n処理が行われます。\n\n効率的な方法です。\n\nユーザーとクライアントです。\n\nまた、a。また、b。"
+findings = ["1:1", "3:3", "5:1", "7:1", "9:1"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる", "明確性: 受け身の「が行われる」は、「実行する」「処理する」のような具体的な動詞の能動態にできる", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける", "一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている", "構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "multi-voice-and-system"
+text = "処理がシステムによって実行される。"
+findings = ["1:3", "1:8"]
+messages = ["明確性: 受け身の「がシステムによって実行される」は、「システムがAを実行する」のような能動態にできる", "明確性: 受け身の「によって実行され」は、「システムがAを実行する」のような能動態にできる"]
+
+[[cases]]
+name = "multi-after-astral"
+text = "\U00020bb7の効率的な方法です。"
+findings = ["1:3"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "multi-after-emoji"
+text = "\U0001f680\U0001f680適切な値です。"
+findings = ["1:3"]
+messages = ["具体性: 「適切な」は、何を基準に適切かの条件を具体的に書ける"]
+
+[[cases]]
+name = "multi-english-text"
+text = "This is 効率的な method."
+findings = ["1:9"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-list"
+text = "- 効率的な方法です。"
+findings = ["1:3"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-ordered-list"
+text = "1. 効率的な方法です。"
+findings = ["1:4"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-nested-list"
+text = "- あ\n  - 効率的な方法です。"
+findings = ["2:5"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-quote"
+text = "> 効率的な方法です。"
+findings = ["1:3"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-nested-quote"
+text = "> > 効率的な方法です。"
+findings = ["1:5"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-list-in-quote"
+text = "> - 効率的な方法です。"
+findings = ["1:5"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-footnote"
+text = "本文[^1]。\n\n[^1]: 効率的な方法です。"
+findings = ["3:7"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-second-paragraph-in-item"
+text = "- あ\n\n  効率的な方法です。"
+findings = ["3:3"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-heading"
+text = "# 効率的な方法"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-setext-heading"
+text = "効率的な方法\n========"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-table"
+text = "| a |\n| - |\n| 効率的な方法 |"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-table-header"
+text = "| 効率的な方法 |\n| - |\n| a |"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-code-block"
+text = "```\n効率的な方法\n```"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-indented-code"
+text = "    効率的な方法"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-html-block"
+text = "<div>\n効率的な方法\n</div>"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-inline-code"
+text = "`効率的な方法`です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-inline-code-then-real"
+text = "`効率的な` と効率的な方法です。"
+findings = ["1:9"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-after-inline-code"
+text = "`x`効率的な方法です。"
+findings = ["1:4"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-after-inline-code-with-space"
+text = "`x` まず最初に確認します。"
+findings = ["1:5"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる"]
+
+[[cases]]
+name = "ctx-strong"
+text = "**効率的な**方法です。"
+findings = ["1:3"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-strong-whole"
+text = "**効率的な方法です。**"
+findings = ["1:3"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-emphasis"
+text = "*効率的な*方法です。"
+findings = ["1:2"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-link-text"
+text = "[効率的な方法](https://example.com)です。"
+findings = ["1:2"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "ctx-link-url"
+text = "[リンク](https://example.com/効率的な)です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-across-strong"
+text = "**まず**最初に確認します。"
+findings = ["1:3"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる"]
+
+[[cases]]
+name = "ctx-across-strong-middle"
+text = "まず**最**初に確認します。"
+findings = ["1:1"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる"]
+
+[[cases]]
+name = "ctx-across-link"
+text = "[まず](https://example.com)最初に確認します。"
+findings = ["1:2"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる"]
+
+[[cases]]
+name = "ctx-across-emphasis"
+text = "*まず*最初に確認します。"
+findings = ["1:2"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる"]
+
+[[cases]]
+name = "ctx-across-soft-break"
+text = "まず\n最初に確認します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-pattern-across-inline-code-consistency"
+text = "ユーザー`x`クライアント"
+findings = ["1:1"]
+messages = ["一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている"]
+
+[[cases]]
+name = "ctx-pattern-code-after-user-without-long-vowel"
+text = "ユーザ`root`と顧客"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-pattern-code-with-long-vowel-after-user"
+text = "ユーザ`ー`と顧客"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-pattern-user-code-customer"
+text = "ユーザー`root`と顧客"
+findings = ["1:1"]
+messages = ["一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている"]
+
+[[cases]]
+name = "ctx-pattern-sequence-across-inline-code"
+text = "まず`a`次に`b`最後に`c`確認します。"
+findings = ["1:1"]
+messages = ["構造化: 順に述べる手順は、番号付きリストか見出しで整理できる"]
+
+[[cases]]
+name = "ctx-pattern-across-strong-consistency"
+text = "ユーザー**と**クライアント"
+findings = ["1:1"]
+messages = ["一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている"]
+
+[[cases]]
+name = "ctx-pattern-across-link-consistency"
+text = "ユーザーと[クライアント](https://example.com)"
+findings = ["1:1"]
+messages = ["一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている"]
+
+[[cases]]
+name = "ctx-english-sentence"
+text = "Run the command efficiently."
+findings = []
+messages = []
+
+[[cases]]
+name = "opt-default-all"
+text = "まず最初に確認します。\n\n処理が行われます。\n\n効率的な方法です。\n\nユーザーとクライアントです。\n\nまた、a。また、b。"
+findings = ["1:1", "3:3", "5:1", "7:1", "9:1"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる", "明確性: 受け身の「が行われる」は、「実行する」「処理する」のような具体的な動詞の能動態にできる", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける", "一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている", "構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "opt-disable-redundancy"
+builtin = 'ai-tech-writing-guideline = { disableRedundancyGuidance = true }'
+text = "まず最初に確認します。\n\n処理が行われます。\n\n効率的な方法です。\n\nユーザーとクライアントです。\n\nまた、a。また、b。"
+findings = ["3:3", "5:1", "7:1", "9:1"]
+messages = ["明確性: 受け身の「が行われる」は、「実行する」「処理する」のような具体的な動詞の能動態にできる", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける", "一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている", "構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "opt-disable-voice"
+builtin = 'ai-tech-writing-guideline = { disableVoiceGuidance = true }'
+text = "まず最初に確認します。\n\n処理が行われます。\n\n効率的な方法です。\n\nユーザーとクライアントです。\n\nまた、a。また、b。"
+findings = ["1:1", "5:1", "7:1", "9:1"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける", "一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている", "構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "opt-disable-clarity"
+builtin = 'ai-tech-writing-guideline = { disableClarityGuidance = true }'
+text = "まず最初に確認します。\n\n処理が行われます。\n\n効率的な方法です。\n\nユーザーとクライアントです。\n\nまた、a。また、b。"
+findings = ["1:1", "3:3", "7:1", "9:1"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる", "明確性: 受け身の「が行われる」は、「実行する」「処理する」のような具体的な動詞の能動態にできる", "一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている", "構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "opt-disable-consistency"
+builtin = 'ai-tech-writing-guideline = { disableConsistencyGuidance = true }'
+text = "まず最初に確認します。\n\n処理が行われます。\n\n効率的な方法です。\n\nユーザーとクライアントです。\n\nまた、a。また、b。"
+findings = ["1:1", "3:3", "5:1", "9:1"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる", "明確性: 受け身の「が行われる」は、「実行する」「処理する」のような具体的な動詞の能動態にできる", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける", "構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "opt-disable-structure"
+builtin = 'ai-tech-writing-guideline = { disableStructureGuidance = true }'
+text = "まず最初に確認します。\n\n処理が行われます。\n\n効率的な方法です。\n\nユーザーとクライアントです。\n\nまた、a。また、b。"
+findings = ["1:1", "3:3", "5:1", "7:1"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる", "明確性: 受け身の「が行われる」は、「実行する」「処理する」のような具体的な動詞の能動態にできる", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける", "一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている"]
+
+[[cases]]
+name = "opt-disable-two"
+builtin = 'ai-tech-writing-guideline = { disableRedundancyGuidance = true, disableVoiceGuidance = true }'
+text = "まず最初に確認します。\n\n処理が行われます。\n\n効率的な方法です。\n\nユーザーとクライアントです。\n\nまた、a。また、b。"
+findings = ["5:1", "7:1", "9:1"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける", "一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている", "構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "opt-disable-four-keeps-structure"
+builtin = 'ai-tech-writing-guideline = { disableRedundancyGuidance = true, disableVoiceGuidance = true, disableClarityGuidance = true, disableConsistencyGuidance = true }'
+text = "まず最初に確認します。\n\n処理が行われます。\n\n効率的な方法です。\n\nユーザーとクライアントです。\n\nまた、a。また、b。"
+findings = ["9:1"]
+messages = ["構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "opt-disable-all"
+builtin = 'ai-tech-writing-guideline = { disableRedundancyGuidance = true, disableVoiceGuidance = true, disableClarityGuidance = true, disableConsistencyGuidance = true, disableStructureGuidance = true }'
+text = "まず最初に確認します。\n\n処理が行われます。\n\n効率的な方法です。\n\nユーザーとクライアントです。\n\nまた、a。また、b。"
+findings = []
+messages = []
+
+[[cases]]
+name = "opt-explicit-false"
+builtin = 'ai-tech-writing-guideline = { disableRedundancyGuidance = false, disableVoiceGuidance = false, disableClarityGuidance = false, disableConsistencyGuidance = false, disableStructureGuidance = false }'
+text = "まず最初に確認します。\n\n処理が行われます。\n\n効率的な方法です。\n\nユーザーとクライアントです。\n\nまた、a。また、b。"
+findings = ["1:1", "3:3", "5:1", "7:1", "9:1"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる", "明確性: 受け身の「が行われる」は、「実行する」「処理する」のような具体的な動詞の能動態にできる", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける", "一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている", "構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "opt-disable-redundancy-only-pattern-of-category"
+builtin = 'ai-tech-writing-guideline = { disableRedundancyGuidance = true }'
+text = "まず最初に確認します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "opt-disable-voice-only-pattern-of-category"
+builtin = 'ai-tech-writing-guideline = { disableVoiceGuidance = true }'
+text = "処理が行われます。"
+findings = []
+messages = []
+
+[[cases]]
+name = "opt-disable-clarity-only-pattern-of-category"
+builtin = 'ai-tech-writing-guideline = { disableClarityGuidance = true }'
+text = "効率的な方法です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "opt-disable-consistency-only-pattern-of-category"
+builtin = 'ai-tech-writing-guideline = { disableConsistencyGuidance = true }'
+text = "ユーザーとクライアントです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "opt-disable-structure-only-pattern-of-category"
+builtin = 'ai-tech-writing-guideline = { disableStructureGuidance = true }'
+text = "また、a。また、b。"
+findings = []
+messages = []
+
+[[cases]]
+name = "opt-disable-clarity-keeps-taihaba-in-hype-category-word"
+builtin = 'ai-tech-writing-guideline = { disableClarityGuidance = true }'
+text = "大幅に向上します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "allows-string"
+builtin = 'ai-tech-writing-guideline = { allows = ["許可"] }'
+text = "効率的な許可の方法です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "allows-regex"
+builtin = 'ai-tech-writing-guideline = { allows = ["/v\\d+/"] }'
+text = "効率的な方法v12です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "allows-no-match"
+builtin = 'ai-tech-writing-guideline = { allows = ["許可", "/v\\d+/"] }'
+text = "効率的な方法です。"
+findings = ["1:1"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "allows-skips-whole-paragraph"
+builtin = 'ai-tech-writing-guideline = { allows = ["許可"] }'
+text = "効率的な許可の方法で、適切な値です。まず最初に確認します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "allows-other-paragraph-still-checked"
+builtin = 'ai-tech-writing-guideline = { allows = ["許可"] }'
+text = "許可です。\n\n効率的な方法です。"
+findings = ["3:1"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "allows-in-heading-is-not-paragraph"
+builtin = 'ai-tech-writing-guideline = { allows = ["許可"] }'
+text = "# 許可\n\n効率的な方法です。"
+findings = ["3:1"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "allows-the-matched-word-itself"
+builtin = 'ai-tech-writing-guideline = { allows = ["効率的"] }'
+text = "効率的な方法です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "allows-regex-flag-i"
+builtin = 'ai-tech-writing-guideline = { allows = ["/allowed/i"] }'
+text = "効率的な Allowed 方法です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "allows-in-list-item"
+builtin = 'ai-tech-writing-guideline = { allows = ["許可"] }'
+text = "- 効率的な許可の方法です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "allows-in-quote"
+builtin = 'ai-tech-writing-guideline = { allows = ["許可"] }'
+text = "> 効率的な許可の方法です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "allows-in-strong"
+builtin = 'ai-tech-writing-guideline = { allows = ["許可"] }'
+text = "効率的な**許可**の方法です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-tatoeba"
+text = "例えば。\n\n- a\n- b"
+findings = ["1:1"]
+messages = ["構造化: 段落を「例えば。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-gutaiteki-ni-ha"
+text = "具体的には。\n\n- a\n- b"
+findings = ["1:1"]
+messages = ["構造化: 段落を「具体的には。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-shousai-ni-ha"
+text = "詳細には。\n\n- a\n- b"
+findings = ["1:1"]
+messages = ["構造化: 段落を「詳細には。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-ika"
+text = "以下。\n\n- a\n- b"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-tsugi-ni"
+text = "次に。\n\n- a\n- b"
+findings = ["1:1"]
+messages = ["構造化: 段落を「次に。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-mata"
+text = "また。\n\n- a\n- b"
+findings = ["1:1"]
+messages = ["構造化: 段落を「また。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-after-text"
+text = "対象は以下。\n\n- a\n- b"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-after-text-tatoeba"
+text = "設定の項目は、例えば。\n\n- a\n- b"
+findings = ["1:1"]
+messages = ["構造化: 段落を「例えば。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-ordered-list"
+text = "以下。\n\n1. a\n2. b"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-star-list"
+text = "以下。\n\n* a"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-task-list"
+text = "以下。\n\n- [ ] a"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-tight-list"
+text = "以下。\n- a\n- b"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-trailing-spaces"
+text = "以下。  \n\n- a"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-second-paragraph"
+text = "あ。\n\n以下。\n\n- a"
+findings = ["3:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-position-second-line"
+text = "あ\n以下。\n\n- a"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-after-astral"
+text = "\U00020bb7は以下。\n\n- a"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-two-in-document"
+text = "以下。\n\n- a\n\n次に。\n\n- b"
+findings = ["1:1", "5:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている", "構造化: 段落を「次に。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-near-no-period"
+text = "以下\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-near-comma"
+text = "以下、\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-near-halfwidth-period"
+text = "以下.\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-near-colon"
+text = "以下:\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-near-continues"
+text = "以下の項目です。\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-near-other-word"
+text = "つまり。\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-near-word-in-middle"
+text = "以下。続きです。\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-near-word-then-space-period"
+text = "以下 。\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-near-tatoeba-comma-period"
+text = "例えば、。\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-next-paragraph"
+text = "以下。\n\nこれは段落です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-next-code-block"
+text = "以下。\n\n```\na\n```"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-next-quote"
+text = "以下。\n\n> a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-next-table"
+text = "以下。\n\n| a |\n| - |\n| b |"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-next-heading"
+text = "以下。\n\n# 見出し"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-next-thematic-break"
+text = "以下。\n\n---"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-next-nothing"
+text = "以下。"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-next-paragraph-then-list"
+text = "以下。\n\nこれは段落です。\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-in-quote"
+text = "> 以下。\n>\n> - a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-in-list-item"
+text = "- 以下。\n\n  - a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-heading"
+text = "# 以下。\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-disabled"
+builtin = 'ai-tech-writing-guideline = { disableStructureGuidance = true }'
+text = "以下。\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-disabled-keeps-other-category"
+builtin = 'ai-tech-writing-guideline = { disableStructureGuidance = true }'
+text = "効率的な方法は以下。\n\n- a"
+findings = ["1:1"]
+messages = ["具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "intro-and-pattern"
+text = "これは効率的な方法で、以下。\n\n- a"
+findings = ["1:1", "1:4"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "intro-other-category-disabled"
+builtin = 'ai-tech-writing-guideline = { disableRedundancyGuidance = true, disableVoiceGuidance = true, disableClarityGuidance = true, disableConsistencyGuidance = true }'
+text = "以下。\n\n- a"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-allows-string"
+builtin = 'ai-tech-writing-guideline = { allows = ["許可"] }'
+text = "許可は以下。\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-allows-regex"
+builtin = 'ai-tech-writing-guideline = { allows = ["/v\\d+/"] }'
+text = "v12は以下。\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "intro-allows-no-match"
+builtin = 'ai-tech-writing-guideline = { allows = ["許可"] }'
+text = "以下。\n\n- a"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-allows-in-list-not-paragraph"
+builtin = 'ai-tech-writing-guideline = { allows = ["許可"] }'
+text = "以下。\n\n- 許可"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-allows-other-paragraph"
+builtin = 'ai-tech-writing-guideline = { allows = ["許可"] }'
+text = "許可。\n\n以下。\n\n- a"
+findings = ["3:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-with-strong"
+text = "**以下**。\n\n- a"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-inline-code-after-period"
+text = "以下。`x`\n\n- a"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-inline-code-after-period-with-space"
+text = "以下。 `x`\n\n- a"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-with-inline-code-before"
+text = "`x`以下。\n\n- a"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "intro-with-inline-code-elsewhere"
+text = "`x`は以下。\n\n- a"
+findings = ["1:1"]
+messages = ["構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "summary-default-off"
+text = "# 見出し\n\nまず最初に確認します。\n\n効率的な方法です。"
+findings = ["3:1", "5:1"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "summary-explicit-false"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = false }'
+text = "# 見出し\n\nまず最初に確認します。\n\n効率的な方法です。"
+findings = ["3:1", "5:1"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "summary-on-two-findings"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 見出し\n\nまず最初に確認します。\n\n効率的な方法です。"
+findings = ["1:1", "3:1", "5:1"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が2件ある(簡潔性: 1件、具体性: 1件)", "簡潔性: 「まず最初に」は「まず」か「最初に」にできる", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "summary-on-one-finding"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 見出し\n\nまず最初に確認します。"
+findings = ["1:1", "3:1"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が1件ある(簡潔性: 1件)", "簡潔性: 「まず最初に」は「まず」か「最初に」にできる"]
+
+[[cases]]
+name = "summary-on-every-category"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 見出し\n\nまず最初に確認します。\n\n処理が行われます。\n\n効率的な方法です。\n\nユーザーとクライアントです。\n\nまた、a。また、b。"
+findings = ["1:1", "3:1", "5:3", "7:1", "9:1", "11:1"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が5件ある(簡潔性: 1件、明確性: 1件、具体性: 1件、一貫性: 1件、構造化: 1件)", "簡潔性: 「まず最初に」は「まず」か「最初に」にできる", "明確性: 受け身の「が行われる」は、「実行する」「処理する」のような具体的な動詞の能動態にできる", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける", "一貫性: 同じ対象を指す「ユーザー」と「クライアント」か「顧客」が混ざっている", "構造化: 「また、」が続くので、箇条書きか段落分けで整理できる"]
+
+[[cases]]
+name = "summary-on-same-category-twice"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 見出し\n\n効率的な方法と適切な値です。"
+findings = ["1:1", "3:1", "3:8"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が2件ある(具体性: 2件)", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける", "具体性: 「適切な」は、何を基準に適切かの条件を具体的に書ける"]
+
+[[cases]]
+name = "summary-on-two-patterns-of-one-sentence"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 見出し\n\n処理がシステムによって実行される。"
+findings = ["1:1", "3:3", "3:8"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が2件ある(明確性: 2件)", "明確性: 受け身の「がシステムによって実行される」は、「システムがAを実行する」のような能動態にできる", "明確性: 受け身の「によって実行され」は、「システムがAを実行する」のような能動態にできる"]
+
+[[cases]]
+name = "summary-on-no-finding"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 見出し\n\n問題ありません。"
+findings = []
+messages = []
+
+[[cases]]
+name = "summary-on-empty-heading-only"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 見出し"
+findings = []
+messages = []
+
+[[cases]]
+name = "summary-on-finding-only-in-heading"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 効率的な方法\n\n問題ありません。"
+findings = []
+messages = []
+
+[[cases]]
+name = "summary-on-finding-only-in-table"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 見出し\n\n| 効率的な方法 |\n| - |\n| a |"
+findings = []
+messages = []
+
+[[cases]]
+name = "summary-on-finding-only-in-code"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 見出し\n\n```\n効率的な方法\n```"
+findings = []
+messages = []
+
+[[cases]]
+name = "summary-on-finding-in-list-and-quote"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 見出し\n\n- 効率的な方法です。\n\n> 適切な値です。"
+findings = ["1:1", "3:3", "5:3"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が2件ある(具体性: 2件)", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける", "具体性: 「適切な」は、何を基準に適切かの条件を具体的に書ける"]
+
+[[cases]]
+name = "summary-on-allowed-finding-not-counted"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true, allows = ["許可"] }'
+text = "# 見出し\n\n効率的な許可の方法です。\n\n適切な値です。"
+findings = ["1:1", "5:1"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が1件ある(具体性: 1件)", "具体性: 「適切な」は、何を基準に適切かの条件を具体的に書ける"]
+
+[[cases]]
+name = "summary-on-all-findings-allowed"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true, allows = ["許可"] }'
+text = "# 見出し\n\n効率的な許可の方法です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "summary-on-category-disabled-not-counted"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true, disableRedundancyGuidance = true }'
+text = "# 見出し\n\nまず最初に確認します。\n\n効率的な方法です。"
+findings = ["1:1", "5:1"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が1件ある(具体性: 1件)", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "summary-on-all-categories-disabled"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true, disableRedundancyGuidance = true, disableVoiceGuidance = true, disableClarityGuidance = true, disableConsistencyGuidance = true, disableStructureGuidance = true }'
+text = "# 見出し\n\nまず最初に確認します。\n\n以下。\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "summary-on-structure-intro-one"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 見出し\n\n以下。\n\n- a"
+findings = ["1:1", "3:1"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が1件ある(構造化: 1件)", "構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "summary-on-structure-intro-three"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 見出し\n\n以下。\n\n- a\n\n次に。\n\n- b\n\n例えば。\n\n- c"
+findings = ["1:1", "3:1", "7:1", "11:1"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が3件ある(構造化: 3件)", "構造化: 段落を「以下。」で終えてリストを続けている", "構造化: 段落を「次に。」で終えてリストを続けている", "構造化: 段落を「例えば。」で終えてリストを続けている"]
+
+[[cases]]
+name = "summary-on-structure-intro-after-heading-position"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 見出し\n\nあ。\n\n以下。\n\n- a"
+findings = ["1:1", "5:1"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が1件ある(構造化: 1件)", "構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "summary-on-structure-intro-disabled"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true, disableStructureGuidance = true }'
+text = "# 見出し\n\n以下。\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "summary-on-intro-with-leading-blank-line"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "\n# 見出し\n\n以下。\n\n- a"
+findings = ["1:1", "4:1"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が1件ある(構造化: 1件)", "構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "summary-on-counts-intro-and-pattern"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "# 見出し\n\nまず最初に確認します。\n\n以下。\n\n- a"
+findings = ["1:1", "3:1", "5:1"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が2件ある(簡潔性: 1件、構造化: 1件)", "簡潔性: 「まず最初に」は「まず」か「最初に」にできる", "構造化: 段落を「以下。」で終えてリストを続けている"]
+
+[[cases]]
+name = "summary-on-first-paragraph-without-finding"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "あ。\n\nまず最初に確認します。"
+findings = ["1:1", "3:1"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が1件ある(簡潔性: 1件)", "簡潔性: 「まず最初に」は「まず」か「最初に」にできる"]
+
+[[cases]]
+name = "summary-on-after-blank-first-line"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "\n\nまず最初に確認します。"
+findings = ["1:1", "3:1"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が1件ある(簡潔性: 1件)", "簡潔性: 「まず最初に」は「まず」か「最初に」にできる"]
+
+[[cases]]
+name = "summary-on-with-astral-first"
+builtin = 'ai-tech-writing-guideline = { enableDocumentAnalysis = true }'
+text = "\U00020bb7\n\n効率的な方法です。"
+findings = ["1:1", "3:1"]
+messages = ["この文書でai-tech-writing-guidelineの指摘が1件ある(具体性: 1件)", "具体性: 「効率的な」は、何に対してどう効率的かを具体的に書ける"]
+
+[[cases]]
+name = "code-split-word"
+note = "textlintはインラインコードを空にして `まず最初に` がつながるので指摘するが、jafixはインラインコードを同じ文字数の半角空白に置き換えるのでつながらない"
+text = "まず`x`最初に確認します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "code-split-word-voice"
+note = "textlintはインラインコードを空にして `が行われ` がつながるので指摘するが、jafixはインラインコードを同じ文字数の半角空白に置き換えるのでつながらない"
+text = "処理が`x`行われます。"
+findings = []
+messages = []
+
+[[cases]]
+name = "code-split-word-clarity"
+note = "textlintはインラインコードを空にして `効率的な` がつながるので指摘するが、jafixはインラインコードを同じ文字数の半角空白に置き換えるのでつながらない"
+text = "効率`x`的な方法です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "code-split-word-long-code"
+note = "textlintはインラインコードを空にして `まず最初に` がつながるので指摘するが、jafixはインラインコードを同じ文字数の半角空白に置き換えるのでつながらない"
+text = "まず`npm install`最初に確認します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "code-split-word-then-real"
+note = "textlintはコードを挟んだ `まず最初に` も指摘するが、jafixはコードを挟まない `まず最初に` だけを指摘する"
+text = "まず`x`最初にし、まず最初に確認します。"
+findings = ["1:11"]
+messages = ["簡潔性: 「まず最初に」は「まず」か「最初に」にできる"]
+
+[[cases]]
+name = "code-split-word-dearu"
+note = "textlintはインラインコードを空にして `です。である。` がつながるので指摘するが、jafixはインラインコードを同じ文字数の半角空白に置き換えるのでつながらない"
+text = "です`x`。である。"
+findings = []
+messages = []
+
+[[cases]]
+name = "code-split-intro"
+note = "textlintはインラインコードを空にして `以下。` がつながるので段落の全体を指摘するが、jafixはインラインコードを同じ文字数の半角空白に置き換えるのでつながらない"
+text = "以下`x`。\n\n- a"
+findings = []
+messages = []
+
+[[cases]]
+name = "code-split-intro-tatoeba"
+note = "textlintはインラインコードを空にして `例えば。` がつながるので段落の全体を指摘するが、jafixはインラインコードを同じ文字数の半角空白に置き換えるのでつながらない"
+text = "例えば`x`。\n\n- a"
+findings = []
+messages = []

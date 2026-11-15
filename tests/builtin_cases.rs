@@ -5,6 +5,8 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 struct Fixture {
+    /// 全caseに当てる `[builtin]` の中身。caseに `builtin` があれば、そちらを使う
+    builtin: Option<String>,
     cases: Vec<Case>,
 }
 
@@ -24,10 +26,10 @@ fn assert_cases(rule: &str) {
     let fixture: Fixture = toml::from_str(&fixture(&format!("builtin/{rule}.toml"))).unwrap();
     let suffix = format!(" [{rule}]");
     let mut failures = Vec::new();
-    for case in fixture.cases {
+    for case in &fixture.cases {
         let sandbox = Sandbox::new();
         let path = sandbox.write("t.md", &format!("{}\n", case.text));
-        if let Some(builtin) = &case.builtin {
+        if let Some(builtin) = case.builtin.as_ref().or(fixture.builtin.as_ref()) {
             sandbox.write_xdg_config(&format!("[builtin]\n{builtin}\n"));
         }
         let output = sandbox.run(&["check", "t.md"]);

@@ -1,0 +1,1121 @@
+# no-ai-emphasis-patterns の例。期待値は、textlint 15.8.0、@textlint-ja/textlint-rule-preset-ai-writing 1.7.0、
+# textlint-rule-preset-ai-words-ja 1.2.1 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭の builtin は全caseに当たり、caseに builtin があればその代わりに使う (省略可)
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+builtin = 'no-ai-emphasis-patterns = true'
+
+[[cases]]
+name = "emoji-01-2139-fe0f"
+text = "ℹ\ufe0f **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-02-1f50d"
+text = "\U0001f50d **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-03-2705"
+text = "✅ **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-04-274c"
+text = "❌ **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-05-26a0-fe0f"
+text = "⚠\ufe0f **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-06-1f4a1"
+text = "\U0001f4a1 **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-07-1f4dd"
+text = "\U0001f4dd **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-08-1f4cb"
+text = "\U0001f4cb **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-09-1f4cc"
+text = "\U0001f4cc **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-10-1f517"
+text = "\U0001f517 **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-11-1f3af"
+text = "\U0001f3af **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-12-1f680"
+text = "\U0001f680 **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-13-2b50"
+text = "⭐ **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-14-2728"
+text = "✨ **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-15-1f4af"
+text = "\U0001f4af **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-16-1f525"
+text = "\U0001f525 **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-17-1f4ca"
+text = "\U0001f4ca **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-18-1f4c8"
+text = "\U0001f4c8 **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-no-space"
+text = "\U0001f680**項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-two-spaces"
+text = "\U0001f680  **項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-tab"
+text = "\U0001f680\t**項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-mid-sentence"
+text = "これは \U0001f680 **項目** です。"
+findings = ["1:5"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-bold-english"
+text = "\U0001f680 **Item** description."
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-bold-with-colon"
+text = "✅ **項目**: 説明"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-bold-colon-inside"
+text = "✅ **項目:** 説明"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-two-pairs"
+text = "\U0001f680 **a** と ✅ **b**"
+findings = ["1:1", "1:11"]
+messages = ["絵文字と太字を組み合わせている", "絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-two-lines"
+text = "\U0001f680 **a**\n✅ **b**"
+findings = ["1:1", "2:1"]
+messages = ["絵文字と太字を組み合わせている", "絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-bold-second-line"
+text = "あ\n\U0001f680 **a**"
+findings = ["2:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-after-astral"
+text = "\U0001f642\U0001f642 \U0001f680 **項目**です。"
+findings = ["1:4"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-with-text-between"
+text = "\U0001f680 と **項目**です。"
+findings = []
+
+[[cases]]
+name = "emoji-newline-between"
+text = "\U0001f680\n**項目**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "emoji-blank-between"
+text = "\U0001f680\n\n**項目**です。"
+findings = []
+
+[[cases]]
+name = "emoji-not-listed"
+text = "\U0001f389 **項目**です。"
+findings = []
+
+[[cases]]
+name = "emoji-not-listed-fire-variant"
+text = "\U0001f60a **項目**です。"
+findings = []
+
+[[cases]]
+name = "emoji-no-variation-selector"
+text = "⚠ **項目**です。"
+findings = []
+
+[[cases]]
+name = "emoji-info-no-variation-selector"
+text = "ℹ **項目**です。"
+findings = []
+
+[[cases]]
+name = "emoji-then-underscore-bold"
+text = "\U0001f680 __項目__です。"
+findings = []
+
+[[cases]]
+name = "emoji-then-emphasis"
+text = "\U0001f680 *項目*です。"
+findings = []
+
+[[cases]]
+name = "emoji-then-empty-bold"
+text = "\U0001f680 ****です。"
+findings = []
+
+[[cases]]
+name = "emoji-then-bold-with-star"
+text = "\U0001f680 **a*b**です。"
+findings = []
+
+[[cases]]
+name = "emoji-bold-only"
+text = "**項目** \U0001f680"
+findings = []
+
+[[cases]]
+name = "emoji-plain"
+text = "\U0001f680 説明です。"
+findings = []
+
+[[cases]]
+name = "info-01-注意"
+text = "**注意**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "info-02-重要"
+text = "**重要**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**重要**」を使っている"]
+
+[[cases]]
+name = "info-03-ポイント"
+text = "**ポイント**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**ポイント**」を使っている"]
+
+[[cases]]
+name = "info-04-メモ"
+text = "**メモ**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**メモ**」を使っている"]
+
+[[cases]]
+name = "info-05-参考"
+text = "**参考**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**参考**」を使っている"]
+
+[[cases]]
+name = "info-06-補足"
+text = "**補足**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**補足**」を使っている"]
+
+[[cases]]
+name = "info-07-確認"
+text = "**確認**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**確認**」を使っている"]
+
+[[cases]]
+name = "info-08-チェック"
+text = "**チェック**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**チェック**」を使っている"]
+
+[[cases]]
+name = "info-09-推奨"
+text = "**推奨**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**推奨**」を使っている"]
+
+[[cases]]
+name = "info-10-おすすめ"
+text = "**おすすめ**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**おすすめ**」を使っている"]
+
+[[cases]]
+name = "info-11-検出される例"
+text = "**検出される例**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**検出される例**」を使っている"]
+
+[[cases]]
+name = "info-12-推奨される表現"
+text = "**推奨される表現**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**推奨される表現**」を使っている"]
+
+[[cases]]
+name = "info-13-良い例"
+text = "**良い例**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**良い例**」を使っている"]
+
+[[cases]]
+name = "info-14-悪い例"
+text = "**悪い例**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**悪い例**」を使っている"]
+
+[[cases]]
+name = "info-15-例"
+text = "**例**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**例**」を使っている"]
+
+[[cases]]
+name = "info-16-サンプル"
+text = "**サンプル**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**サンプル**」を使っている"]
+
+[[cases]]
+name = "info-17-使用例"
+text = "**使用例**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**使用例**」を使っている"]
+
+[[cases]]
+name = "info-18-設定例"
+text = "**設定例**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**設定例**」を使っている"]
+
+[[cases]]
+name = "info-colon-outside"
+text = "**注意**: 説明"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "info-colon-inside"
+text = "**注意:** 説明"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "info-colon-inside-fullwidth"
+text = "**注意：** 説明"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "info-colon-then-text"
+text = "**注意: 説明です**。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "info-colon-then-text-fullwidth"
+text = "**注意：説明です**。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "info-colon-then-text-example"
+text = "**良い例: 説明です**。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**良い例**」を使っている"]
+
+[[cases]]
+name = "info-colon-no-text"
+text = "**ポイント:**説明"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**ポイント**」を使っている"]
+
+[[cases]]
+name = "info-after-text"
+text = "ここで**注意**してください。"
+findings = ["1:4"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "info-end-of-line"
+text = "確認は**必須**です。**参考**"
+findings = ["1:13"]
+messages = ["太字の情報プレフィックス「**参考**」を使っている"]
+
+[[cases]]
+name = "info-two-in-line"
+text = "**注意**と**重要**です。"
+findings = ["1:1", "1:8"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている", "太字の情報プレフィックス「**重要**」を使っている"]
+
+[[cases]]
+name = "info-two-lines"
+text = "**注意**\n**重要**"
+findings = ["1:1", "2:1"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている", "太字の情報プレフィックス「**重要**」を使っている"]
+
+[[cases]]
+name = "info-after-astral"
+text = "\U00020bb7 **注意**です。"
+findings = ["1:3"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "info-english-text"
+text = "Read this **注意** carefully."
+findings = ["1:11"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "info-longer-word"
+text = "**注意事項**です。"
+findings = []
+
+[[cases]]
+name = "info-longer-word-with-colon"
+text = "**注意事項: 説明**です。"
+findings = []
+
+[[cases]]
+name = "info-suffix-word"
+text = "**ご注意**です。"
+findings = []
+
+[[cases]]
+name = "info-word-in-middle"
+text = "**重要な点**です。"
+findings = []
+
+[[cases]]
+name = "info-underscore"
+text = "__注意__です。"
+findings = []
+
+[[cases]]
+name = "info-emphasis"
+text = "*注意*です。"
+findings = []
+
+[[cases]]
+name = "info-space-inside"
+text = "** 注意 **です。"
+findings = []
+
+[[cases]]
+name = "info-colon-after-space"
+text = "**注意 : 説明**です。"
+findings = []
+
+[[cases]]
+name = "info-english-word"
+text = "**Note**: text"
+findings = []
+
+[[cases]]
+name = "info-not-bold"
+text = "注意: 説明です。"
+findings = []
+
+[[cases]]
+name = "info-example-long-form"
+text = "**検出される例**: 説明"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**検出される例**」を使っている"]
+
+[[cases]]
+name = "info-example-vs-short"
+text = "**例**と**例外**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**例**」を使っている"]
+
+[[cases]]
+name = "overlap-emoji-and-info"
+text = "\U0001f680 **注意**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "overlap-emoji-and-info-colon"
+text = "✅ **注意: 説明**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "overlap-emoji-info-separate"
+text = "\U0001f680 **a**。**注意**です。"
+findings = ["1:1", "1:9"]
+messages = ["絵文字と太字を組み合わせている", "太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "overlap-info-then-emoji-bold"
+text = "**注意**です。\U0001f680 **a**"
+findings = ["1:1", "1:10"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている", "絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "overlap-info-adjacent-emoji-bold"
+text = "**注意**\U0001f680 **a**"
+findings = ["1:1", "1:7"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている", "絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "overlap-emoji-info-disabled-emoji"
+builtin = 'no-ai-emphasis-patterns = { disableEmojiEmphasisPatterns = true }'
+text = "\U0001f680 **注意**です。"
+findings = ["1:3"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "overlap-emoji-info-disabled-info"
+builtin = 'no-ai-emphasis-patterns = { disableInfoPatterns = true }'
+text = "\U0001f680 **注意**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "opt-disable-emoji"
+builtin = 'no-ai-emphasis-patterns = { disableEmojiEmphasisPatterns = true }'
+text = "\U0001f680 **a**。**注意**です。"
+findings = ["1:9"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "opt-disable-info"
+builtin = 'no-ai-emphasis-patterns = { disableInfoPatterns = true }'
+text = "\U0001f680 **a**。**注意**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "opt-disable-heading-keeps-paragraph"
+builtin = 'no-ai-emphasis-patterns = { disableHeadingEmphasisPatterns = true }'
+text = "# **a**\n\n**注意**です。"
+findings = ["3:1"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "opt-disable-heading"
+builtin = 'no-ai-emphasis-patterns = { disableHeadingEmphasisPatterns = true }'
+text = "# **a**"
+findings = []
+
+[[cases]]
+name = "opt-disable-emoji-and-info"
+builtin = 'no-ai-emphasis-patterns = { disableEmojiEmphasisPatterns = true, disableInfoPatterns = true }'
+text = "\U0001f680 **a**。**注意**です。"
+findings = []
+
+[[cases]]
+name = "opt-disable-all-heading-stays-off"
+builtin = 'no-ai-emphasis-patterns = { disableEmojiEmphasisPatterns = true, disableInfoPatterns = true, disableHeadingEmphasisPatterns = true }'
+text = "# **a**\n\n\U0001f680 **a**。**注意**です。"
+findings = []
+
+[[cases]]
+name = "opt-disable-emoji-list"
+builtin = 'no-ai-emphasis-patterns = { disableEmojiEmphasisPatterns = true }'
+text = "- \U0001f680 **a**"
+findings = []
+
+[[cases]]
+name = "opt-disable-info-list"
+builtin = 'no-ai-emphasis-patterns = { disableInfoPatterns = true }'
+text = "- **注意**です。"
+findings = []
+
+[[cases]]
+name = "opt-disable-emoji-list-keeps-info"
+builtin = 'no-ai-emphasis-patterns = { disableEmojiEmphasisPatterns = true }'
+text = "- **注意**です。"
+findings = ["1:3"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "opt-disable-heading-keeps-list"
+builtin = 'no-ai-emphasis-patterns = { disableHeadingEmphasisPatterns = true }'
+text = "- **注意**です。"
+findings = ["1:3"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "heading-bold"
+text = "# **太字**見出し"
+findings = ["1:3"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-bold-end"
+text = "# 見出し**太字**"
+findings = ["1:6"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-underscore"
+text = "# __太字__見出し"
+findings = ["1:3"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-bold-all"
+text = "# **見出し全体**"
+findings = ["1:3"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-h2"
+text = "## **太字**見出し"
+findings = ["1:4"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-h6"
+text = "###### **太字**見出し"
+findings = ["1:8"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-closing-hashes"
+text = "# **太字**見出し #"
+findings = ["1:3"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-two-bolds"
+text = "# **a** と **b**"
+findings = ["1:3", "1:11"]
+messages = ["見出しの中で太字を使っている", "見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-bold-and-underscore"
+text = "# **a** と __b__"
+findings = ["1:3", "1:11"]
+messages = ["見出しの中で太字を使っている", "見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-adjacent-bold-underscore"
+text = "# **a**__b__"
+findings = ["1:3", "1:8"]
+messages = ["見出しの中で太字を使っている", "見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-bold-with-spaces"
+text = "# ** a **"
+findings = ["1:3"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-empty-bold"
+text = "# ****"
+findings = ["1:3"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-bold-containing-single-star"
+text = "# **a*b**"
+findings = ["1:3"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-mixed-markers-first-wins"
+text = "# **a__b**c"
+findings = ["1:3"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-emphasis-only"
+text = "# *強調*見出し"
+findings = []
+
+[[cases]]
+name = "heading-plain"
+text = "# 見出し"
+findings = []
+
+[[cases]]
+name = "heading-unclosed"
+text = "# **太字見出し"
+findings = []
+
+[[cases]]
+name = "heading-unclosed-underscore"
+text = "# __太字見出し"
+findings = []
+
+[[cases]]
+name = "heading-snake-case"
+text = "# foo__bar__baz"
+findings = ["1:6"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-setext"
+text = "**太字**見出し\n========"
+findings = ["1:1"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-info-word-is-not-checked"
+text = "# 注意"
+findings = []
+
+[[cases]]
+name = "heading-info-bold-is-reported-as-heading"
+text = "# **注意**"
+findings = ["1:3"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-in-quote"
+text = "> # **太字**見出し"
+findings = ["1:5"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-after-astral"
+text = "# \U00020bb7**太字**"
+findings = ["1:4"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-second-line"
+text = "あ\n\n# **太字**"
+findings = ["3:3"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-allows"
+builtin = 'no-ai-emphasis-patterns = { allows = ["許可"] }'
+text = "# **許可**見出し"
+findings = []
+
+[[cases]]
+name = "heading-allows-no-match"
+builtin = 'no-ai-emphasis-patterns = { allows = ["許可"] }'
+text = "# **太字**見出し"
+findings = ["1:3"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "heading-allows-regex"
+builtin = 'no-ai-emphasis-patterns = { allows = ["/v\\d/"] }'
+text = "# **v1**見出し"
+findings = []
+
+[[cases]]
+name = "not-heading-paragraph-bold"
+text = "これは**非常に**重要です。"
+findings = []
+
+[[cases]]
+name = "not-heading-list-bold"
+text = "- これは**非常に**重要です。"
+findings = []
+
+[[cases]]
+name = "not-heading-quote-bold"
+text = "> これは**非常に**重要です。"
+findings = []
+
+[[cases]]
+name = "not-heading-table-bold"
+text = "| a |\n| - |\n| **b** |"
+findings = []
+
+[[cases]]
+name = "not-heading-hash-in-paragraph"
+text = "これは # **太字** です。"
+findings = []
+
+[[cases]]
+name = "para-info-in-quote"
+text = "> **注意**です。"
+findings = ["1:3"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "para-emoji-in-quote"
+text = "> \U0001f680 **a**"
+findings = ["1:3"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "para-info-in-nested-quote"
+text = "> > **注意**です。"
+findings = ["1:5"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "para-info-in-table"
+text = "| a |\n| - |\n| **注意** |"
+findings = []
+
+[[cases]]
+name = "para-info-in-table-header"
+text = "| **注意** |\n| - |\n| a |"
+findings = []
+
+[[cases]]
+name = "para-emoji-in-table"
+text = "| a |\n| - |\n| \U0001f680 **b** |"
+findings = []
+
+[[cases]]
+name = "para-info-in-code-block"
+text = "```\n**注意**\n```"
+findings = []
+
+[[cases]]
+name = "para-info-in-indented-code"
+text = "    **注意**"
+findings = []
+
+[[cases]]
+name = "para-info-in-link-text"
+text = "[**注意**](https://example.com)です。"
+findings = ["1:2"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "para-info-second-paragraph"
+text = "あ\n\n**注意**です。"
+findings = ["3:1"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "para-info-in-footnote"
+text = "本文[^1]。\n\n[^1]: **注意**です。"
+findings = ["3:7"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "para-info-in-emphasis"
+text = "*a **注意** b*"
+findings = ["1:4"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "list-emoji-bold"
+text = "- \U0001f680 **項目**です。"
+findings = ["1:3"]
+messages = ["リスト項目で絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "list-info"
+text = "- **注意**です。"
+findings = ["1:3"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "list-info-colon"
+text = "- **注意: 説明**"
+findings = ["1:3"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "list-info-ordered"
+text = "1. **注意**です。"
+findings = ["1:4"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "list-emoji-bold-second-item"
+text = "- a\n- ✅ **項目**です。"
+findings = ["2:3"]
+messages = ["リスト項目で絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "list-info-and-emoji"
+text = "- **注意**です。\U0001f680 **a**"
+findings = ["1:3", "1:12"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている", "リスト項目で絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "list-overlap-emoji-and-info"
+text = "- \U0001f680 **注意**です。"
+findings = ["1:3"]
+messages = ["リスト項目で絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "list-nested"
+text = "- 親\n  - **注意**です。"
+findings = ["2:5"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "list-nested-both"
+text = "- **重要**\n  - **注意**です。"
+findings = ["1:3", "2:5"]
+messages = ["リスト項目で太字の情報プレフィックス「**重要**」を使っている", "リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "list-nested-emoji-in-parent-text"
+text = "- \U0001f680 **a**\n  - b"
+findings = ["1:3"]
+messages = ["リスト項目で絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "list-second-paragraph"
+text = "- a\n\n  **注意**です。"
+findings = ["3:3"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "list-in-quote"
+text = "> - **注意**です。"
+findings = ["1:5"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "list-continuation-line"
+text = "- a\n  **注意**です。"
+findings = ["2:3"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "list-no-heading-pattern"
+text = "- **非常に**重要です。"
+findings = []
+
+[[cases]]
+name = "list-task"
+text = "- [ ] **注意**です。"
+findings = ["1:7"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "allows-string-paragraph"
+builtin = 'no-ai-emphasis-patterns = { allows = ["許可"] }'
+text = "**注意**許可です。"
+findings = []
+
+[[cases]]
+name = "allows-skips-all-in-paragraph"
+builtin = 'no-ai-emphasis-patterns = { allows = ["許可"] }'
+text = "\U0001f680 **a**。**注意**。許可。"
+findings = []
+
+[[cases]]
+name = "allows-no-match"
+builtin = 'no-ai-emphasis-patterns = { allows = ["許可"] }'
+text = "**注意**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "allows-regex"
+builtin = 'no-ai-emphasis-patterns = { allows = ["/v\\d+/"] }'
+text = "**注意** v12 です。"
+findings = []
+
+[[cases]]
+name = "allows-other-paragraph-still-checked"
+builtin = 'no-ai-emphasis-patterns = { allows = ["許可"] }'
+text = "許可です。\n\n**注意**です。"
+findings = ["3:1"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "allows-list-item"
+builtin = 'no-ai-emphasis-patterns = { allows = ["許可"] }'
+text = "- **注意**許可です。"
+findings = []
+
+[[cases]]
+name = "allows-list-item-in-nested-child"
+builtin = 'no-ai-emphasis-patterns = { allows = ["許可"] }'
+text = "- **注意**\n  - 許可"
+findings = []
+
+[[cases]]
+name = "allows-list-other-item"
+builtin = 'no-ai-emphasis-patterns = { allows = ["許可"] }'
+text = "- **注意**\n- 許可"
+findings = ["1:3"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "allows-list-parent-text-not-child"
+builtin = 'no-ai-emphasis-patterns = { allows = ["許可"] }'
+text = "- 許可 親\n  - **注意**です。"
+findings = ["2:5"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "allows-list-sibling-item-text"
+builtin = 'no-ai-emphasis-patterns = { allows = ["許可"] }'
+text = "- 親\n  - **注意**です。\n  - 許可"
+findings = ["2:5"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "allows-list-other-paragraph-of-same-item"
+builtin = 'no-ai-emphasis-patterns = { allows = ["許可"] }'
+text = "- **注意**です。\n\n  許可"
+findings = []
+
+[[cases]]
+name = "allows-list-nested-paragraph-of-parent-item"
+builtin = 'no-ai-emphasis-patterns = { allows = ["許可"] }'
+text = "- **注意**です。\n  - 子\n\n  許可"
+findings = []
+
+[[cases]]
+name = "allows-in-quote"
+builtin = 'no-ai-emphasis-patterns = { allows = ["許可"] }'
+text = "> **注意**許可です。"
+findings = []
+
+[[cases]]
+name = "code-info-in-inline-code"
+note = "textlintはインラインコードの中の `**注意**` も指摘するが、jafixは一致の先頭がインラインコードの中にあるものを捨てる"
+text = "`**注意**`です。"
+findings = []
+
+[[cases]]
+name = "code-emoji-bold-in-inline-code"
+note = "textlintはインラインコードの中の絵文字と太字も指摘するが、jafixはインラインコードの中身を判定に入れない"
+text = "`\U0001f680 **a**`です。"
+findings = []
+
+[[cases]]
+name = "code-info-in-inline-code-then-real"
+note = "textlintはインラインコードの中の `**注意**` も指摘するが、jafixはインラインコードの外の `**重要**` だけを指摘する"
+text = "`**注意**` と **重要** です。"
+findings = ["1:12"]
+messages = ["太字の情報プレフィックス「**重要**」を使っている"]
+
+[[cases]]
+name = "code-info-with-inline-code-inside-bold"
+text = "**注意: `x`**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "code-info-with-inline-html-inside-bold"
+text = "**注意: <b>x</b>**です。"
+findings = ["1:1"]
+messages = ["太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "code-emoji-bold-with-inline-code-inside-bold"
+text = "\U0001f680 **`a`**です。"
+findings = ["1:1"]
+messages = ["絵文字と太字を組み合わせている"]
+
+[[cases]]
+name = "code-heading-with-inline-code-inside-bold"
+text = "# **a `b` c**"
+findings = ["1:3"]
+messages = ["見出しの中で太字を使っている"]
+
+[[cases]]
+name = "code-list-info-with-inline-code-inside-bold"
+text = "- **注意: `x`**"
+findings = ["1:3"]
+messages = ["リスト項目で太字の情報プレフィックス「**注意**」を使っている"]
+
+[[cases]]
+name = "code-info-ends-inside-inline-code"
+note = "textlintは `**注意: `x**` を指摘するが、jafixは一致の末尾の `*` がインラインコードの中にあるものを捨てる"
+text = "**注意: `x**`です。"
+findings = []
+
+[[cases]]
+name = "code-info-starts-inside-inline-code"
+note = "textlintはインラインコードの中の `**注意**` を指摘するが、jafixは一致の先頭がインラインコードの中にあるものを捨てる"
+text = "`a **注意**` b"
+findings = []
+
+[[cases]]
+name = "code-info-in-inline-html"
+note = "textlintはHTMLのタグの属性の `**注意**` も指摘するが、jafixはHTMLのタグを判定に入れない"
+text = "<span title=\"**注意**\">説明</span>です。"
+findings = []
+
+[[cases]]
+name = "code-info-in-code-block-of-item"
+note = "textlintはリスト項目の原文にあるコードブロックの `**注意**` も指摘するが、jafixはリスト項目に属する段落だけを見る"
+text = "- 説明\n\n  ```\n  **注意**\n  ```"
+findings = []
+
+[[cases]]
+name = "code-heading-with-inline-code"
+note = "textlintは見出しの中のインラインコードの `**a**` も指摘するが、jafixはインラインコードの中身を判定に入れない"
+text = "# `**a**`見出し"
+findings = []
+
+[[cases]]
+name = "code-list-emoji-bold-in-inline-code"
+note = "textlintはインラインコードの中の絵文字と太字も指摘するが、jafixはインラインコードの中身を判定に入れない"
+text = "- `\U0001f680 **a**`です。"
+findings = []
