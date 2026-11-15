@@ -1,9 +1,10 @@
 use std::sync::LazyLock;
 
-use regex::Regex;
+use regress::Regex;
 
+use crate::js_regex;
 use crate::prose::{InlineKind, Paragraph};
-use crate::rules::builtin::{self, JaNoRedundantExpression, NodeType};
+use crate::rules::builtin::{JaNoRedundantExpression, NodeType};
 use crate::rules::{Report, RuleId};
 
 use super::Analyzed;
@@ -18,7 +19,7 @@ static DEFAULT_ALLOWS: LazyLock<Vec<Vec<Regex>>> = LazyLock::new(|| {
             entry
                 .allows
                 .iter()
-                .map(|allow| builtin::pattern(allow).expect("辞書の既定のパターンは読める"))
+                .map(|allow| js_regex::pattern(allow).expect("辞書の既定のパターンは読める"))
                 .collect()
         })
         .collect()
@@ -51,7 +52,7 @@ pub(super) fn report(sentence: &Analyzed, rule: &JaNoRedundantExpression) -> Vec
                 .map(|i| i.map_or("", |i| tokens[i].surface))
                 .collect();
             let expression = surfaces.concat();
-            if allows.iter().any(|allow| allow.is_match(&expression)) {
+            if allows.iter().any(|allow| allow.find(&expression).is_some()) {
                 continue;
             }
             let first = &tokens[found.tokens[0].expect("辞書の並びの先頭はskippableでない")];

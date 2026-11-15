@@ -1,5 +1,5 @@
 //! 利用者がJavaScriptの正規表現のように書いた文字列を、`regress` の正規表現にする。
-//! `prh` と `@textlint-rule/pattern` だけが使い、組み込みのルールのオプションのパターン (`builtin::pattern`) は使わない
+//! `prh`・`@textlint-rule/pattern`・組み込みのルールのオプションと既定のパターン・`allowlist` が、設定に書かれたパターンを読むのに使う
 
 use std::borrow::Cow;
 
@@ -103,10 +103,19 @@ pub fn escape(value: &str) -> String {
 
 /// `text` の中の `regex` の一致を、左から重ねずにすべて取り除いた文字列を返す。長さ0の一致は取り除くものが無いので、
 /// 次の文字へ進む
-#[allow(dead_code)] // skeleton: not implemented
 pub fn remove_all<'t>(regex: &Regex, text: &'t str) -> Cow<'t, str> {
-    let _ = (regex, text);
-    todo!("skeleton: not implemented")
+    let mut matches = regex.find_iter(text).filter(|m| !m.range().is_empty());
+    let Some(first) = matches.next() else {
+        return Cow::Borrowed(text);
+    };
+    let mut removed = String::with_capacity(text.len());
+    let mut kept_from = 0;
+    for m in std::iter::once(first).chain(matches) {
+        removed.push_str(&text[kept_from..m.start()]);
+        kept_from = m.end();
+    }
+    removed.push_str(&text[kept_from..]);
+    Cow::Owned(removed)
 }
 
 /// `source` を `u` と `flags` を付けて読む。読めなければ理由を返す
@@ -160,6 +169,41 @@ mod tests {
         let regex = pattern("//").unwrap();
         assert!(is_match(&regex, "a//b"));
         assert!(!is_match(&regex, "a/b"));
+    }
+
+    #[test]
+    fn pattern_reads_a_string_with_non_flag_letters_after_the_slash_literally() {
+        let regex = pattern("/usr/bin").unwrap();
+        assert!(is_match(&regex, "見る /usr/bin を"));
+        assert!(!is_match(&regex, "usr"));
+    }
+
+    #[test]
+    fn pattern_reads_the_slash_form_with_flags_as_a_regex() {
+        let regex = pattern("/a.c/gi").unwrap();
+        assert!(is_match(&regex, "xAbCx"));
+        assert!(!is_match(&regex, "a.d"));
+        assert!(is_match(&pattern("/a/d").unwrap(), "xa"));
+    }
+
+    #[test]
+    fn remove_all_removes_non_overlapping_matches_from_the_left() {
+        let regex = pattern("/aa|b/").unwrap();
+        assert_eq!(remove_all(&regex, "aaabxb"), "ax");
+    }
+
+    #[test]
+    fn remove_all_keeps_the_text_when_nothing_matches_or_only_empty_matches() {
+        assert_eq!(remove_all(&pattern("/z/").unwrap(), "abc"), "abc");
+        assert!(matches!(
+            remove_all(&pattern("/x*/").unwrap(), "abc"),
+            Cow::Borrowed("abc")
+        ));
+    }
+
+    #[test]
+    fn remove_all_removes_matches_around_empty_ones() {
+        assert_eq!(remove_all(&pattern("/b*/").unwrap(), "abbc"), "ac");
     }
 
     #[test]

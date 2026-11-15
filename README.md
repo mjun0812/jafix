@@ -341,9 +341,9 @@ patterns = [
 
 ### 正規表現
 
-`prh` の `pattern`・`patterns` と、`@textlint-rule/pattern` の `pattern`・`allows` は、JavaScriptの正規表現(`u` フラグ付き)の構文と意味で読みます。後読み・先読み・後方参照・名前付きグループ・`\p{Script=…}` を使え、`\b`・`\d`・`\w` はASCIIで判定します。組み込みのルールのオプションのパターン(「[パターン](#パターン)」)は、これまでどおりRustの `regex` crateで読みます。
+`prh` の `pattern`・`patterns` と、`@textlint-rule/pattern` の `pattern`・`allows`、組み込みのルールのオプションのパターン(「[パターン](#パターン)」)は、どれもJavaScriptの正規表現(`u` フラグ付き)の構文と意味で読みます。後読み・先読み・後方参照・名前付きグループ・`\p{Script=…}` を使え、`\b`・`\d`・`\w` はASCIIで判定します。
 
-`/source/flags` の形の見分け方は、textlintのそれぞれのルールと同じです。`prh` は `^/(.*)/([gimsuy]*)$` に当たれば正規表現にし、当たらなければ書いた文字列そのものに当てます。`g`・`m`・`u` は常に付き、`i` と `s` は書いたときだけ付き、`y` は無視します。`@textlint-rule/pattern` は `^/(.+)/([guimysd]*)$` に当たれば正規表現にし、`g`・`u` は常に付き、`i`・`m`・`s` は書いたときだけ付き、`d` は無視します。`y` は不正です。
+`/source/flags` の形の見分け方は、`prh` と `@textlint-rule/pattern` ではtextlintのそれぞれのルールと同じで、組み込みのルールのオプションのパターンは `@textlint-rule/pattern` と同じです。`prh` は `^/(.*)/([gimsuy]*)$` に当たれば正規表現にし、当たらなければ書いた文字列そのものに当てます。`g`・`m`・`u` は常に付き、`i` と `s` は書いたときだけ付き、`y` は無視します。`@textlint-rule/pattern` は `^/(.+)/([guimysd]*)$` に当たれば正規表現にし、`g`・`u` は常に付き、`i`・`m`・`s` は書いたときだけ付き、`d` は無視します。`y` は不正です。
 
 ### 修正の順と直さない箇所
 
@@ -583,7 +583,9 @@ fullwidth-paren = false
 
 #### パターン
 
-`sentence-length` の `skipPatterns`、`no-exclamation-question-mark`・`ja-unnatural-alphabet`・`ja-no-successive-word` の `allow`、`ja-no-redundant-expression` の `dictOptions` の `allows`、AIらしい書き方を指摘する6ルール(`no-short-topic-comma` 以外)の `allows` は、パターンの配列です。各要素は、`/source/flags` の形なら正規表現、それ以外は書いた文字列そのものに当たります。`/source/flags` とみなすのは、最後の `/` の後ろがフラグの文字(`g`・`u`・`i`・`m`・`y`・`s`)だけのときで、`/usr/bin` は文字列そのものです。正規表現はRustの [`regex` crate](https://docs.rs/regex/latest/regex/#syntax) の構文で読み、フラグは `i`・`m`・`s` を使えます。`g` と `u` は書いてよく、無視します。`y` を含む他のフラグは不正です。空の文字列も不正です。
+`sentence-length` の `skipPatterns`、`no-exclamation-question-mark`・`ja-unnatural-alphabet`・`ja-no-successive-word` の `allow`、`ja-no-redundant-expression` の `dictOptions` の `allows`、AIらしい書き方を指摘する6ルール(`no-short-topic-comma` 以外)の `allows` は、パターンの配列です。各要素は、`/source/flags` の形なら正規表現、それ以外は書いた文字列そのものに当たります。正規表現は、`@textlint-rule/pattern` と同じくJavaScriptの正規表現(`u` フラグ付き)で読みます。`/source/flags` とみなすのは、`^/(.+)/([guimysd]*)$` に当たるときだけで、`/usr/bin` は文字列そのものです。`//` は、すべてに当たる空の正規表現ではなく、文字列そのものの `//` です。フラグは `i`・`m`・`s` を使えます。`g`・`u`・`d` は書いてよく、無視します。`y` は不正です。
+
+JavaScriptの正規表現なので、後読み・先読み・後方参照を使え、`\p{sc=Han}` や `\p{Script=Han}` のようにscriptの名前を `sc=` か `Script=` 付きで書けます。`\d`・`\w`・`\b` はASCIIで判定するので、`/\d!/` は `1!` に当たり、`１!` に当たりません。Rustの `regex` だけが読む書き方(`\p{Han}`・`(?i)`・`[[:alpha:]]`・`\z`)と、`u` 付きのJavaScriptが断る書き方(`\-` のような意味の無い退避、閉じていない `{`)は、設定の不正です。空の文字列も不正です。
 
 ### 不正な設定
 
@@ -633,7 +635,6 @@ fullwidth-paren = false
 - `ja-no-mixed-period` と `arabic-kanji-numbers` は、textlintと違って自動で直さず、指摘だけを出します
 - `exclusionPatterns`・`forceAppendPeriod`・`checkFootnote`・`checkCode`・`checkImage` のオプションは使えません
 - `max-comma` と `max-kanji-continuous-len` の `max` に0は書けません。textlintは0をルール自身の既定値(4と5)に読み替えるので、同じ設定でも結果が変わります
-- 組み込みのルールのオプションのパターンは、JavaScriptの正規表現ではなく、Rustの `regex` crateの構文で読みます。後読みと後方参照を使えず、フラグは `i`・`m`・`s` です。`prh` と `@textlint-rule/pattern` のパターンはJavaScriptの構文で読みます
 - 指摘の文面は、textlintの文面ではなく、jafixの1行の日本語です
 
 形態素解析を使う11ルールは、判定の条件(どのトークンの並びを指摘するか、例外、辞書)をtextlintから写していますが、textlintと同じ箇所を指摘するとは限りません。上の点のうち、列の数え方、パターン、文面は11ルールにも当てはまります。ほかに次の点が違います。
@@ -688,7 +689,7 @@ AIらしい書き方を指摘する7ルールも、判定の条件(何を指摘�
 - 4つの `ja-space-around-*` は、nodeの前か後ろに文字が無ければ、その側を判定しません。textlintの `before: true` は、文書の先頭のインラインコードにも指摘を出します。`after: false` の位置は、削除する空白です。textlintは空白の次の文字に出します
 - `ja-space-around-link` は、裸のURLに当てません。textlintは裸のURLの前後の空白も削除するので、前の空白を消すとURLとして読まれなくなり、後ろの空白を消すと続く文字がURLに入ります。自動リンク(`<…>`)とインラインのリンクには当てます
 - `ja-space-around-strong` と `ja-space-around-emphasis` は、空白を削除すると強調として読まれなくなる箇所(区切りが `_` のときや、区切りの内側の文字が句読点か記号のとき)を判定しません。textlintは削除して強調を壊します
-- `ja-space-between-half-and-full-width` の `allows` は、判定で見た並びの先頭が、一致の範囲の中(終わりの位置を含まない)にあれば外します。textlintは終わりの位置も含めるので、許した文字列の直後の文字で始まる並びも外します。`allows` の要素は、JavaScriptの正規表現ではなく「[パターン](#パターン)」の書き方で読みます
+- `ja-space-between-half-and-full-width` の `allows` は、判定で見た並びの先頭が、一致の範囲の中(終わりの位置を含まない)にあれば外します。textlintは終わりの位置も含めるので、許した文字列の直後の文字で始まる並びも外します。`allows` の要素は、「[パターン](#パターン)」の書き方で読みます
 - `no-mixed-zenkaku-and-hankaku-alphabet` の `prefer` は、`"全角"` か `"半角"` だけを受け付けます。textlintは `"半角"` 以外のすべての値を `"全角"` とみなします
 - 本文でない箇所(裸のURL、自動リンクの文字列、定義を持つ省略形とcollapsed形の参照リンクの文字列)を見ません。textlintでは、これらも文字列のnodeです。そのため `no-kangxi-radicals` と `lintStyledNode = true` の `ja-space-between-half-and-full-width` が当たり、`no-mixed-zenkaku-and-hankaku-alphabet` は参照リンクの文字列を直して定義との対応を切ります
 - 見出しの中の修正の箇所は直さず、指摘として出します

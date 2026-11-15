@@ -9,7 +9,7 @@ mod table;
 
 use std::ops::Range;
 
-use regex::Regex;
+use regress::Regex;
 
 use crate::prose::{Document, InlineKind, Paragraph};
 
@@ -49,7 +49,7 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
 /// `allows` のどれかが `text` のどこかに当たるか。当たれば、ルールはその要素 (本文の範囲・段落・見出し・リスト項目)
 /// からの指摘をすべて出さない
 fn allowed(allows: &[Regex], text: &str) -> bool {
-    allows.iter().any(|allow| allow.is_match(text))
+    allows.iter().any(|allow| allow.find(text).is_some())
 }
 
 /// 元のソースの空でない範囲 `range` の先頭か末尾の文字が、段落の子孫のインラインコードかHTMLのタグの中にあるか。

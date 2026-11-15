@@ -22,3 +22,6 @@ _Avoid_: report rule、lintルール、検出ルール。
 
 **preset**: textlintで、複数のルールを1つの名前で束ねたもの。jafixの `[builtin]` には、`preset-ja-technical-writing`・`@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`・`preset-ja-spacing`・`preset-jtf-style` の名前を `true` か `false` で書き、そのpresetのルールをまとめて有効・無効にする。同じ表にそのpresetのルールのIDのキーもあれば、ルールのIDのキーの値を使う。
 _Avoid_: ルールセット、ルール集。
+
+**パターン**: 設定に書く、`/source/flags` の形の正規表現か、文字列そのもの。組み込みのルールのオプション・`prh`・`@textlint-rule/pattern` のどこに書いても、JavaScriptの正規表現(`u` フラグ付き)として読む。Rustの `regex` crateだけが読む書き方は、設定の不正になる。
+_Avoid_: 正規表現(文字列そのものも含むので)。

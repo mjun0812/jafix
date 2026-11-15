@@ -4,6 +4,7 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 
+use crate::js_regex;
 use crate::prose::{Inline, InlineKind, Paragraph};
 use crate::sentence::{self, Sentence, is_space};
 
@@ -62,7 +63,7 @@ fn sentence_length(sentence: &Sentence, rule: &SentenceLength) -> Option<Report>
         .map(|child| child.text.as_str())
         .collect();
     for pattern in &rule.skip_patterns {
-        text = pattern.replace_all(&text, "").into_owned();
+        text = js_regex::remove_all(pattern, &text).into_owned();
     }
     let len = match rule.count_by {
         CountBy::CodeUnits => text.encode_utf16().count(),

@@ -22,7 +22,10 @@ pub(super) fn report(prose: &AnalyzedProse, rule: &JaNoSuccessiveWord) -> Vec<Re
             }
             // linderaは改行とタブで区切るので、続く改行やタブが別々の空白のトークンになる
             let space = previous.pos_detail_1 == "空白" || token.pos_detail_1 == "空白";
-            let allowed = rule.allow.iter().any(|allow| allow.is_match(token.surface));
+            let allowed = rule
+                .allow
+                .iter()
+                .any(|allow| allow.find(token.surface).is_some());
             let number = [previous, token]
                 .iter()
                 .all(|token| token.pos == "名詞" && token.pos_detail_1 == "数");

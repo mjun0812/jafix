@@ -826,7 +826,7 @@ pub const ABUSAGE_WORDS: [Word; 73] = [
 ];
 
 /// `ja-no-redundant-expression` の辞書。textlint-rule-ja-no-redundant-expression 4.0.1 の `lib/dictionary.js` から作った。
-/// `allows` は、一致したトークンの表層をつなげた文字列に当てる既定のパターンで、`builtin::pattern` で読む
+/// `allows` は、一致したトークンの表層をつなげた文字列に当てる既定のパターンで、`js_regex::pattern` で読む
 pub const REDUNDANTS: [Redundant; 6] = [
     Redundant {
         id: "dict1",

@@ -2,10 +2,12 @@ use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
-use regex::{Regex, RegexBuilder};
+use regress::Regex;
 use serde::Deserialize;
 use toml::{Table, Value};
 use url::{Origin, Url};
+
+use crate::js_regex;
 
 use super::RuleId;
 use super::fix_rules_hitting;
@@ -706,46 +708,10 @@ pub(crate) fn non_empty_strings(key: &str, value: &Value) -> Result<Vec<String>,
 }
 
 fn patterns(key: &str, value: &Value) -> Result<Vec<Regex>, String> {
-    strings(key, value)?
-        .into_iter()
-        .map(|value| pattern(value).map_err(|reason| format!("`{key}`: {reason}")))
+    non_empty_strings(key, value)?
+        .iter()
+        .map(|value| js_regex::pattern(value).map_err(|reason| format!("`{key}`: {reason}")))
         .collect()
-}
-
-/// 許可や除外に書く文字列を正規表現にする。`/source/flags` の形 (`flags` が `g`・`i`・`m`・`s`・`u`・`y` だけ) は
-/// 正規表現 (`regex` crateの構文。フラグは `i`・`m`・`s` を使え、`g`・`u` は無視し、`y` は不正)、
-/// それ以外は文字列そのものに当たる
-pub fn pattern(value: &str) -> Result<Regex, String> {
-    if value.is_empty() {
-        return Err("空の文字列はパターンにできない".to_owned());
-    }
-    let (source, flags) = match value
-        .strip_prefix('/')
-        .and_then(|rest| rest.rsplit_once('/'))
-    {
-        // textlintと同じく、後ろがフラグの文字だけのときに正規表現の形とみなす。`/usr/bin` は文字列そのものである
-        Some((source, flags)) if flags.chars().all(|c| "gimsuy".contains(c)) => {
-            (Cow::Borrowed(source), flags)
-        }
-        _ => (Cow::Owned(regex::escape(value)), ""),
-    };
-    let mut builder = RegexBuilder::new(&source);
-    for flag in flags.chars() {
-        match flag {
-            'i' => builder.case_insensitive(true),
-            'm' => builder.multi_line(true),
-            's' => builder.dot_matches_new_line(true),
-            'g' | 'u' => &mut builder,
-            _ => {
-                return Err(format!(
-                    "`{value}` のフラグ `{flag}` は使えない (`i`・`m`・`s`・`g`・`u` を使える)"
-                ));
-            }
-        };
-    }
-    builder
-        .build()
-        .map_err(|e| format!("`{value}` を正規表現として読めない: {e}"))
 }
 
 #[derive(Debug)]
@@ -967,7 +933,7 @@ impl NoExclamationQuestionMark {
             }
         }
         rule.allow
-            .push(pattern("Yahoo!").expect("文字列のパターンは読める"));
+            .push(js_regex::pattern("Yahoo!").expect("文字列のパターンは読める"));
         Ok(rule)
     }
 }
@@ -1000,7 +966,7 @@ impl JaUnnaturalAlphabet {
             Some(allow) => allow,
             None => ["a", "i", "u", "e", "o", "n", "/[A-Z]/"]
                 .into_iter()
-                .map(|source| pattern(source).expect("既定のパターンは読める"))
+                .map(|source| js_regex::pattern(source).expect("既定のパターンは読める"))
                 .collect(),
         };
         if allow_common_case {
@@ -1012,7 +978,9 @@ impl JaUnnaturalAlphabet {
                     "/Eメール/i",
                 ]
                 .into_iter()
-                .map(|source| pattern(source).expect("決まった言い回しのパターンは読める")),
+                .map(|source| {
+                    js_regex::pattern(source).expect("決まった言い回しのパターンは読める")
+                }),
             );
         }
         Ok(Self { allow })
@@ -1767,11 +1735,11 @@ pub struct TextlintRulePattern {
 #[derive(Debug)]
 pub struct UserPattern {
     pub message: String,
-    pub pattern: regress::Regex,
+    pub pattern: Regex,
     /// 置き換え後の文字列。`$1`〜`$9` で捕捉グループを参照する。無ければ、箇所は指摘になる
     pub replace: Option<String>,
     /// 一致した文字列のどれかに当たれば、その一致を捨てる
-    pub allows: Vec<regress::Regex>,
+    pub allows: Vec<Regex>,
     /// 本文の範囲がこの型のどれかの中にあれば、その範囲の一致を捨てる
     pub allow_node_types: Vec<PatternNodeType>,
 }
@@ -1869,7 +1837,7 @@ fn user_pattern(value: &Value) -> Result<UserPattern, String> {
             "message" => message = Some(non_empty_string(key, value)?.to_owned()),
             "pattern" => {
                 pattern = Some(
-                    crate::js_regex::pattern(non_empty_string(key, value)?)
+                    js_regex::pattern(non_empty_string(key, value)?)
                         .map_err(|reason| format!("`{key}`: {reason}"))?,
                 );
             }
@@ -1878,8 +1846,7 @@ fn user_pattern(value: &Value) -> Result<UserPattern, String> {
                 allows = non_empty_strings(key, value)?
                     .iter()
                     .map(|allow| {
-                        crate::js_regex::pattern(allow)
-                            .map_err(|reason| format!("`{key}`: {reason}"))
+                        js_regex::pattern(allow).map_err(|reason| format!("`{key}`: {reason}"))
                     })
                     .collect::<Result<_, _>>()?;
             }
@@ -2500,28 +2467,4 @@ pub enum AlphabetWidth {
     Full,
     /// `"半角"` (既定)
     Half,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn pattern_matches_a_slash_string_with_non_flag_letters_literally() {
-        let regex = pattern("/usr/bin").unwrap();
-        assert!(regex.is_match("見る /usr/bin を"));
-        assert!(!regex.is_match("usr"));
-    }
-
-    #[test]
-    fn pattern_rejects_the_sticky_flag() {
-        assert!(pattern("/a/y").is_err());
-    }
-
-    #[test]
-    fn pattern_reads_a_slash_string_with_flags_as_a_regex() {
-        let regex = pattern("/a.c/gi").unwrap();
-        assert!(regex.is_match("xAbCx"));
-        assert!(!regex.is_match("a.d"));
-    }
 }

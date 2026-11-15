@@ -492,6 +492,82 @@ fn check_exits_2_on_a_pattern_that_cannot_be_read() {
     );
 }
 
+fn check_with_builtin(builtin: &str, text: &str) -> (Option<i32>, String) {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", text);
+    sandbox.write_xdg_config(&format!("[builtin]\n{builtin}\n"));
+    let output = sandbox.run(&["check", "t.md"]);
+    (output.status.code(), stdout(&output).to_owned())
+}
+
+#[test]
+fn builtin_option_patterns_use_javascript_regex() {
+    // 後読みで `a` の直後の `b` だけを取り除くので、1つ目の段落は3文字になり、2つ目の段落は4文字のまま残る
+    let (code, stdout) = check_with_builtin(
+        r"sentence-length = { max = 3, skipPatterns = ['/(?<=a)b/'] }",
+        "abcd\n\nxbcd\n",
+    );
+    assert_eq!(code, Some(1));
+    assert_eq!(
+        stdout,
+        "t.md:3:1: 1文が3文字を超えている (4文字) [sentence-length]\n"
+    );
+
+    assert_check_rejects_builtin(
+        r"no-exclamation-question-mark = { allow = ['/\-/'] }",
+        &["allow"],
+    );
+}
+
+#[test]
+fn builtin_option_digit_class_is_ascii() {
+    let (code, stdout) = check_with_builtin(
+        r"no-exclamation-question-mark = { allow = ['/\d!/'] }",
+        "1!\n１!\n",
+    );
+    assert_eq!(code, Some(1));
+    assert_eq!(
+        stdout,
+        "t.md:2:2: 「!」を使わない [no-exclamation-question-mark]\n"
+    );
+}
+
+#[test]
+fn builtin_option_patterns_reject_rust_only_syntax() {
+    for pattern in [r"/\p{Han}/", "/(?i)a/", "/[[:alpha:]]/", "/a{/"] {
+        assert_check_rejects_builtin(
+            &format!("ja-unnatural-alphabet = {{ allow = ['{pattern}'] }}"),
+            &["ja-unnatural-alphabet", "allow", pattern],
+        );
+    }
+    let (code, _) = check_with_builtin(
+        r"ja-unnatural-alphabet = { allow = ['/\p{sc=Han}/'] }",
+        "日本語\n",
+    );
+    assert_ne!(code, Some(2));
+}
+
+#[test]
+fn builtin_option_slash_form_follows_pattern_rule() {
+    // `//` はすべてを許す空の正規表現ではなく、文字列そのものの `//` である
+    let (code, stdout) = check_with_builtin(
+        r#"no-exclamation-question-mark = { allow = ["//"] }"#,
+        "a!\n",
+    );
+    assert_eq!(code, Some(1));
+    assert_eq!(
+        stdout,
+        "t.md:1:2: 「!」を使わない [no-exclamation-question-mark]\n"
+    );
+
+    // フラグ `d` を受けて無視するので、`/a!/d` は正規表現 `a!` になる
+    let (code, stdout) = check_with_builtin(
+        r#"no-exclamation-question-mark = { allow = ["/a!/d"] }"#,
+        "a!\n",
+    );
+    assert_eq!((code, stdout.as_str()), (Some(0), ""));
+}
+
 #[test]
 fn hook_exits_1_on_an_unknown_builtin_rule_without_changing_files() {
     let sandbox = Sandbox::new();

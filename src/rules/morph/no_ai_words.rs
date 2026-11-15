@@ -27,7 +27,7 @@ pub fn report(prose: &AnalyzedProse, rule: &NoAiWords) -> Vec<Report> {
         .filter_map(|(found, message)| {
             let range = matched_range(prose, &found)?;
             let text = &prose.text[range.clone()];
-            if rule.allows.iter().any(|allow| allow.is_match(text)) {
+            if rule.allows.iter().any(|allow| allow.find(text).is_some()) {
                 return None;
             }
             let message = match message {
