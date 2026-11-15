@@ -598,6 +598,21 @@ fn no_dead_link() {
 }
 
 #[test]
+fn terminology() {
+    assert_cases("terminology");
+}
+
+#[test]
+fn common_misspellings() {
+    assert_cases("common-misspellings");
+}
+
+#[test]
+fn write_good() {
+    assert_cases("write-good");
+}
+
+#[test]
 fn comments() {
     assert_fixture("filters/comments.toml", "comments");
 }

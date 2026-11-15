@@ -8,8 +8,8 @@ use crate::prose::{Context, Prose};
 use super::builtin::{PatternNodeType, TextlintRulePattern, UserPattern};
 use super::{Finding, Report, RuleId, UserReplacement, one_line};
 
-/// `context` の本文の範囲が、`node_type` の型のnodeの中にあるか
-fn contains(node_type: PatternNodeType, context: &Context) -> bool {
+/// `context` の本文の範囲が、`node_type` の型のnodeの中にあるか。`terminology` の `skip` も使う
+pub(super) fn contains(node_type: PatternNodeType, context: &Context) -> bool {
     match node_type {
         PatternNodeType::Paragraph => context.paragraph,
         PatternNodeType::Header => context.heading,

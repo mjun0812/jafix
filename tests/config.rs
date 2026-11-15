@@ -2745,3 +2745,285 @@ fn no_todo_reports_a_task_box_followed_only_by_trailing_spaces() {
     let output = sandbox.run(&["check", "t.md"]);
     assert!(findings_of(stdout(&output), "no-todo").is_empty());
 }
+
+/// 英語の4つのルール
+const ENGLISH_RULES: [&str; 4] = [
+    "terminology",
+    "spelling",
+    "common-misspellings",
+    "write-good",
+];
+
+/// `terminology` (`github`)、`spelling` (`recieve`)、`common-misspellings` (`teh`)、`write-good` (`clearly`) の
+/// それぞれに当たる英語の行
+const ENGLISH_RULES_INPUT: &str = "Use github here.
+
+We recieve it.
+
+I saw teh cat.
+
+It is clearly wrong.
+";
+
+#[test]
+fn english_rules_are_off_by_default() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", ENGLISH_RULES_INPUT);
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in ENGLISH_RULES {
+        assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+
+    // 同じ文書に当たることを、有効にして確かめる
+    sandbox.write_xdg_config(
+        "[builtin]\nterminology = true\ncommon-misspellings = true\nwrite-good = true\n",
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for (rule, line) in [
+        ("terminology", 1),
+        ("common-misspellings", 5),
+        ("write-good", 7),
+    ] {
+        assert!(
+            findings_of(found, rule)
+                .iter()
+                .any(|finding| finding.starts_with(&format!("t.md:{line}:"))),
+            "{rule}: {found}"
+        );
+    }
+}
+
+#[test]
+fn english_rule_options_are_validated() {
+    for (builtin, expected) in [
+        ("terminology = { term = [] }", ["terminology", "term"]),
+        (
+            "terminology = { defaultTerms = \"false\" }",
+            ["terminology", "defaultTerms"],
+        ),
+        (
+            "terminology = { exclude = \"GitHub\" }",
+            ["terminology", "exclude"],
+        ),
+        ("terminology = { terms = 1 }", ["terminology", "terms"]),
+        (
+            "spelling = { dictionary = \"en\" }",
+            ["spelling", "dictionary"],
+        ),
+        (
+            "spelling = { suggestCorrections = 1 }",
+            ["spelling", "suggestCorrections"],
+        ),
+        (
+            "spelling = { skipPatterns = \"a\" }",
+            ["spelling", "skipPatterns"],
+        ),
+        (
+            "common-misspellings = { ignores = [] }",
+            ["common-misspellings", "ignores"],
+        ),
+        (
+            "common-misspellings = { ignore = \"teh\" }",
+            ["common-misspellings", "ignore"],
+        ),
+        ("write-good = { checks = [] }", ["write-good", "checks"]),
+        (
+            "write-good = { weasel = \"false\" }",
+            ["write-good", "weasel"],
+        ),
+        (
+            "write-good = { whitelist = [1] }",
+            ["write-good", "whitelist"],
+        ),
+        (
+            "write-good = { whitelist = [\"\"] }",
+            ["write-good", "whitelist"],
+        ),
+    ] {
+        assert_check_rejects_builtin(builtin, &expected);
+    }
+}
+
+#[test]
+fn terminology_rejects_invalid_terms() {
+    for (builtin, expected) in [
+        ("terminology = { terms = [1] }", ["terminology", "terms"]),
+        (
+            "terminology = { terms = [[\"a\", \"b\", \"c\"]] }",
+            ["terminology", "terms"],
+        ),
+        (
+            "terminology = { terms = [\"(\"] }",
+            ["terminology", "terms"],
+        ),
+        (
+            "terminology = { terms = [[\"a\", \"b\"], [\"[\", \"c\"]] }",
+            ["terminology", "terms"],
+        ),
+        (
+            "terminology = { skip = [\"Code\"] }",
+            ["terminology", "skip"],
+        ),
+    ] {
+        assert_check_rejects_builtin(builtin, &expected);
+    }
+}
+
+#[test]
+fn terminology_reads_terms_file() {
+    let sandbox = Sandbox::new();
+    sandbox.write(
+        "xdg/jafix/terms.jsonc",
+        r#"// 利用者の表記
+[
+  "Jafix", /* 文字列の項目 */
+  ["front[- ]end(\\w*)", "frontend$1"] // 配列の項目
+]
+"#,
+    );
+    sandbox.write_xdg_config("[builtin]\nterminology = { terms = \"terms.jsonc\" }\n");
+    assert_eq!(
+        fix_with_config(&sandbox, "Use jafix for front-ends.\n"),
+        "Use Jafix for frontends.\n"
+    );
+
+    for (name, content) in [
+        ("missing.jsonc", None),
+        ("broken.jsonc", Some("[\"Jafix\",]")),
+        ("table.json", Some("{\"terms\": [\"Jafix\"]}")),
+    ] {
+        let sandbox = Sandbox::new();
+        if let Some(content) = content {
+            sandbox.write(&format!("xdg/jafix/{name}"), content);
+        }
+        let path = sandbox.path(&format!("xdg/jafix/{name}"));
+        assert_check_rejects_builtin_in(
+            &sandbox,
+            &format!("terminology = {{ terms = {name:?} }}"),
+            &["terminology", "terms", &path.display().to_string()],
+        );
+    }
+}
+
+/// `sandbox` に `builtin` を `[builtin]` の表に書いた設定で `jafix check` を実行し、exit 2で標準エラーに `expected` を
+/// すべて含むことを確かめる
+fn assert_check_rejects_builtin_in(sandbox: &Sandbox, builtin: &str, expected: &[&str]) {
+    sandbox.write("t.md", "Use jafix.\n");
+    sandbox.write_xdg_config(&format!("[builtin]\n{builtin}\n"));
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(2), "{builtin}");
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    for needle in expected {
+        assert!(stderr.contains(needle), "{builtin}: {stderr}");
+    }
+}
+
+#[test]
+fn terminology_user_terms_are_user_replacements() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(
+        r#"[builtin]
+terminology = { terms = ["GitHub", ["front[- ]end(\\w*)", "frontend$1"]] }
+"#,
+    );
+    let input = "# Use github\n\nUse github for the front-end.\n";
+    sandbox.write("t.md", input);
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(
+        findings_of(stdout(&output), "terminology"),
+        [
+            "t.md:1:7: 「github」を「GitHub」にする。見出しのアンカーが変わるので、見出しへのリンクも直す [terminology]",
+            "t.md:3:5: 「github」を「GitHub」にする [terminology]",
+            "t.md:3:20: 「front-end」を「frontend」にする [terminology]",
+        ],
+        "{}",
+        stdout(&output)
+    );
+    assert_eq!(
+        fix_with_config(&sandbox, input),
+        "# Use github\n\nUse GitHub for the frontend.\n"
+    );
+}
+
+#[test]
+fn terminology_rejects_opposite_user_terms() {
+    assert_check_rejects_builtin(
+        "terminology = { terms = [\"Ｗｅｂ\"] }\nno-mixed-zenkaku-and-hankaku-alphabet = true",
+        &[
+            "terminology",
+            "Ｗｅｂ",
+            "no-mixed-zenkaku-and-hankaku-alphabet",
+        ],
+    );
+
+    let (code, _) = check_with_builtin("terminology = { terms = [\"Ｗｅｂ\"] }", "Use Ｗｅｂ.\n");
+    assert_ne!(code, Some(2));
+}
+
+#[test]
+fn terminology_default_terms_are_reported() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nterminology = true\n");
+    let input = "Use javascript here.\n";
+    assert_eq!(fix_with_config(&sandbox, input), input);
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(
+        findings_of(stdout(&output), "terminology"),
+        ["t.md:1:5: 「javascript」を「JavaScript」にする [terminology]"]
+    );
+}
+
+#[test]
+fn terminology_matches_after_space_removal() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nterminology = true\n");
+    assert_eq!(
+        fix_with_config(&sandbox, "日本語の javascript を使う\n"),
+        "日本語のjavascriptを使う\n"
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(
+        findings_of(stdout(&output), "terminology"),
+        ["t.md:1:5: 「javascript」を「JavaScript」にする [terminology]"]
+    );
+}
+
+#[test]
+fn terminology_user_term_same_as_a_default_term_is_one_fix() {
+    for terms in [
+        r#"["JavaScript"]"#,
+        r#"[["java[ -]?script", "JavaScript"]]"#,
+    ] {
+        let sandbox = Sandbox::new();
+        sandbox.write_xdg_config(&format!("[builtin]\nterminology = {{ terms = {terms} }}\n"));
+        sandbox.write("t.md", "Use javascript here.\n");
+        let output = sandbox.run(&["check", "t.md"]);
+        assert_eq!(
+            findings_of(stdout(&output), "terminology"),
+            ["t.md:1:5: 「javascript」を「JavaScript」にする [terminology]"],
+            "{terms}"
+        );
+        assert_eq!(
+            fix_with_config(&sandbox, "Use javascript here.\n"),
+            "Use JavaScript here.\n",
+            "{terms}"
+        );
+    }
+
+    // 組み込みの辞書の文字列の項目 `GitHub` と、利用者の配列の項目が同じ箇所に当たる
+    let sandbox = Sandbox::new();
+    sandbox
+        .write_xdg_config("[builtin]\nterminology = { terms = [[\"git[ -]?hub\", \"GitHub\"]] }\n");
+    sandbox.write("t.md", "Use github here.\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(
+        findings_of(stdout(&output), "terminology"),
+        ["t.md:1:5: 「github」を「GitHub」にする [terminology]"]
+    );
+    assert_eq!(
+        fix_with_config(&sandbox, "Use github here.\n"),
+        "Use GitHub here.\n"
+    );
+}

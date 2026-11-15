@@ -82,18 +82,110 @@ pub fn slash_regex(value: &str) -> Result<Regex, String> {
 
 /// JavaScriptの `String.prototype.replace` の置き換えの記法 (ECMAScriptのGetSubstitution: `$1`〜`$99`・`$&`・`` $` ``・
 /// `$'`・`$$`・`$<name>`) を、`text` の中の一致 `m` で展開する。参照できない記法は書いたまま残す
-#[allow(dead_code)] // skeleton: not implemented
 pub fn substitute(replacement: &str, m: &Match, text: &str) -> String {
-    let _ = (replacement, m, text);
-    todo!("skeleton: not implemented")
+    let named = m.named_groups().next().is_some();
+    let mut out = String::with_capacity(replacement.len());
+    for piece in substitution_pieces(replacement, m.captures.len(), named) {
+        let range = match piece {
+            Piece::Text(text) => {
+                out.push_str(text);
+                continue;
+            }
+            Piece::Match => Some(m.range()),
+            Piece::Before => Some(0..m.start()),
+            Piece::After => Some(m.end()..text.len()),
+            Piece::Group(index) => m.group(index),
+            Piece::Named(name) => m.named_group(name),
+        };
+        // 参加しなかったグループと、無い名前のグループは、JavaScriptと同じく空の文字列になる
+        if let Some(range) = range {
+            out.push_str(&text[range]);
+        }
+    }
+    out
 }
 
 /// `replacement` を、`substitute` が展開する記法で区切った固定の部分。`$$` は `$` として部分に含める。
 /// 利用者の置き換えの逆の置き換えの判定に渡す
-#[allow(dead_code)] // skeleton: not implemented
 pub fn substitution_fixed_parts(replacement: &str) -> Vec<String> {
-    let _ = replacement;
-    todo!("skeleton: not implemented")
+    // 当てる正規表現のグループの数が分からないので、2桁までの番号と名前の参照をすべて参照とみなし、固定の部分を短く取る
+    let mut parts = vec![String::new()];
+    for piece in substitution_pieces(replacement, 99, true) {
+        match piece {
+            Piece::Text(text) => parts.last_mut().unwrap().push_str(text),
+            _ => parts.push(String::new()),
+        }
+    }
+    parts.retain(|part| !part.is_empty());
+    parts
+}
+
+/// 置き換えの記法で区切った、置き換えの文字列の1片
+enum Piece<'r> {
+    /// そのまま入れる文字列。`$$` は `$` で、参照できない記法は書いたままである
+    Text(&'r str),
+    /// `$&`
+    Match,
+    /// `` $` ``
+    Before,
+    /// `$'`
+    After,
+    /// `$1`〜`$99`
+    Group(usize),
+    /// `$<name>`
+    Named(&'r str),
+}
+
+/// ECMAScriptのGetSubstitutionと同じ規則で、`replacement` を片に分ける。`groups` は捕捉グループの数、`named` は
+/// 名前の付いたグループがあるかである。2桁の番号がグループの数を超えれば1桁の番号と数字として読み、`$0`・`$00` と
+/// グループの数を超える番号は書いたまま残す。名前の付いたグループが無ければ `$<` を書いたまま残す
+fn substitution_pieces(replacement: &str, groups: usize, named: bool) -> Vec<Piece<'_>> {
+    let mut pieces = Vec::new();
+    let mut rest = replacement;
+    while let Some(dollar) = rest.find('$') {
+        if dollar > 0 {
+            pieces.push(Piece::Text(&rest[..dollar]));
+        }
+        rest = &rest[dollar..];
+        let after = &rest.as_bytes()[1..];
+        let (piece, len) = match after.first() {
+            Some(b'$') => (Piece::Text("$"), 2),
+            Some(b'&') => (Piece::Match, 2),
+            Some(b'`') => (Piece::Before, 2),
+            Some(b'\'') => (Piece::After, 2),
+            Some(b'0'..=b'9') => {
+                let value = |digits: &[u8]| {
+                    digits
+                        .iter()
+                        .fold(0, |n, digit| n * 10 + usize::from(digit - b'0'))
+                };
+                let mut digits = if after.get(1).is_some_and(u8::is_ascii_digit) {
+                    2
+                } else {
+                    1
+                };
+                if digits == 2 && value(&after[..2]) > groups {
+                    digits = 1;
+                }
+                if (1..=groups).contains(&value(&after[..digits])) {
+                    (Piece::Group(value(&after[..digits])), 1 + digits)
+                } else {
+                    (Piece::Text(&rest[..1 + digits]), 1 + digits)
+                }
+            }
+            Some(b'<') if named => match rest[2..].find('>') {
+                Some(end) => (Piece::Named(&rest[2..2 + end]), 2 + end + 1),
+                None => (Piece::Text("$<"), 2),
+            },
+            _ => (Piece::Text("$"), 1),
+        };
+        pieces.push(piece);
+        rest = &rest[len..];
+    }
+    if !rest.is_empty() {
+        pieces.push(Piece::Text(rest));
+    }
+    pieces
 }
 
 /// 文字列そのものに当たる正規表現の元の文字列にする。`\ * + . ? { } ( ) | ^ $ [ ] /` の前に `\` を足す
@@ -243,6 +335,48 @@ mod tests {
         let regex = compile(&source, Flags::default()).unwrap();
         assert!(is_match(&regex, r"xa\*+.?{}()|^$[]/by"));
         assert!(!is_match(&regex, "ab"));
+    }
+
+    fn substitute_first(source: &str, text: &str, replacement: &str) -> String {
+        let regex = compile(source, Flags::default()).unwrap();
+        substitute(replacement, &regex.find(text).unwrap(), text)
+    }
+
+    #[test]
+    fn substitute_expands_the_javascript_replacement_patterns() {
+        assert_eq!(
+            substitute_first("b(c)", "abcd", "[$1|$&|$`|$'|$$]"),
+            "[c|bc|a|d|$]"
+        );
+        assert_eq!(substitute_first("(?<x>b)", "abc", "$<x>$<y>"), "b");
+        assert_eq!(substitute_first("b(x)?", "abc", "[$1]"), "[]");
+    }
+
+    #[test]
+    fn substitute_reads_two_digits_only_when_the_group_exists() {
+        let source = "(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)(k)";
+        assert_eq!(substitute_first(source, "abcdefghijk", "$11|$01"), "k|a");
+        assert_eq!(
+            substitute_first("(a)", "a", "$10|$2|$0|$00"),
+            "a0|$2|$0|$00"
+        );
+    }
+
+    #[test]
+    fn substitute_keeps_unknown_patterns_and_trailing_dollars() {
+        assert_eq!(substitute_first("a", "a", "$x$<x>$"), "$x$<x>$");
+        assert_eq!(substitute_first("(?<x>a)", "a", "$<x"), "$<x");
+        assert_eq!(substitute_first("é", "日本é語", "[$`$']"), "[日本語]");
+    }
+
+    #[test]
+    fn substitution_fixed_parts_split_at_references() {
+        assert_eq!(substitution_fixed_parts("frontend$1"), ["frontend"]);
+        assert_eq!(
+            substitution_fixed_parts("a$&b$<n>c$12d$$e$0"),
+            ["a", "b", "c", "d$e$0"]
+        );
+        assert!(substitution_fixed_parts("$1$'").is_empty());
     }
 
     #[test]

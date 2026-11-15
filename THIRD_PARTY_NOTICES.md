@@ -179,6 +179,15 @@ by Japan Translation Federation (CC BY-SA) www.jtf.jp
 
 packageのREADMEは、辞書以外のコードをMIT Licenseとしています。`2.1.2.漢字` が使う常用漢字の表は、packageの `src/2.1.2.js` から写したコードで、MIT Licenseの部分です。
 
+## Wikipediaの誤綴りの一覧
+
+jafixのbinaryは、`common-misspellings` が使う誤綴りの一覧(4,310件)を含みます。この一覧は、Wikipediaのページ「Wikipedia:Lists of common misspellings/For machines」のrevision 1199637275 (2024-01-27保存)から作りました。このrevisionのURLは `https://en.wikipedia.org/w/index.php?title=Wikipedia:Lists_of_common_misspellings/For_machines&oldid=1199637275` です。ページの文章は、CC BY-SA 3.0 (`https://creativecommons.org/licenses/by-sa/3.0/`)で公開されています。
+
+jafixは、誤綴りを小文字にし、前後の空白を除き、1行1項目の「誤綴り<タブ>正しい語,正しい語…」の形にしました。変えた一覧は `src/rules/english/data/common-misspellings.txt` に置き、ファイルの先頭の行にも、出典・revisionのid・ライセンスとこの変更を書いています。一覧は、CC BY-SA 3.0(表示 - 継承)の条件で利用しています。条件は次の2つです。
+
+- 表示: 出典のページと作者(ページの履歴にあるWikipediaの編集者)を示し、CC BY-SA 3.0で公開されていることと、変更したことを示す
+- 継承: 一覧を改変して配布するときは、同じCC BY-SA 3.0の条件で公開する
+
 ## MIT License
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:

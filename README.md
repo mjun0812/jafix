@@ -4,7 +4,7 @@ jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる�
 
 ## 組み込みのルール
 
-組み込みのルールは95あります。`fullwidth-paren`・`space-between-ja-and-alnum`・`space-between-ja-and-paren` の3つはjafix独自の修正ルールで、`prh` と `@textlint-rule/pattern` の2つは、利用者が書いた辞書やパターンで置き換える・指摘するルールです。残りの90ルールはtextlintから移したもので、内訳は、`textlint-rule-preset-ja-technical-writing` の23ルール、`@textlint-ja/textlint-rule-preset-ai-writing` の5ルール(`no-ai-list-formatting` から `ai-tech-writing-guideline` まで)、`textlint-rule-preset-ai-words-ja` の2ルール(`no-ai-words` と `no-short-topic-comma`)、`textlint-rule-preset-ja-spacing` の11ルール(`ja-nakaguro-or-halfwidth-space-between-katakana` から `ja-space-around-strong` まで)、`textlint-rule-preset-jtf-style` の37ルール(`1.1.1.本文` から `4.3.8.一重引用符` まで)、単独のルールの `textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet` と `textlint-rule-no-kangxi-radicals`、ひらがなで書く語・さ入れ言葉・同義語を見る7ルール(`ja-hiragana-hojodoushi` から `@textlint-ja/no-synonyms` まで)、言語によらない3ルール(`no-todo`・`date-weekday-mismatch`・`no-dead-link`)です。IDとオプションの名前はtextlintと同じです。ルールの有効・無効とオプションは、設定ファイルの `[builtin]` で変えます(「[設定ファイル](#builtin)」)。
+組み込みのルールは99あります。`fullwidth-paren`・`space-between-ja-and-alnum`・`space-between-ja-and-paren` の3つはjafix独自の修正ルールで、`prh` と `@textlint-rule/pattern` の2つは、利用者が書いた辞書やパターンで置き換える・指摘するルールです。残りの94ルールはtextlintから移したもので、内訳は、`textlint-rule-preset-ja-technical-writing` の23ルール、`@textlint-ja/textlint-rule-preset-ai-writing` の5ルール(`no-ai-list-formatting` から `ai-tech-writing-guideline` まで)、`textlint-rule-preset-ai-words-ja` の2ルール(`no-ai-words` と `no-short-topic-comma`)、`textlint-rule-preset-ja-spacing` の11ルール(`ja-nakaguro-or-halfwidth-space-between-katakana` から `ja-space-around-strong` まで)、`textlint-rule-preset-jtf-style` の37ルール(`1.1.1.本文` から `4.3.8.一重引用符` まで)、単独のルールの `textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet` と `textlint-rule-no-kangxi-radicals`、ひらがなで書く語・さ入れ言葉・同義語を見る7ルール(`ja-hiragana-hojodoushi` から `@textlint-ja/no-synonyms` まで)、言語によらない3ルール(`no-todo`・`date-weekday-mismatch`・`no-dead-link`)、英語の文章を見る4ルール(`terminology`・`spelling`・`common-misspellings`・`write-good`)です。IDとオプションの名前はtextlintと同じです。ルールの有効・無効とオプションは、設定ファイルの `[builtin]` で変えます(「[設定ファイル](#builtin)」)。
 
 設定に何も書かなければ、jafix独自の3つと `textlint-rule-preset-ja-technical-writing` の23ルールが有効で、オプションの既定値はpresetと同じです。AIらしい書き方を指摘する7ルールは無効です。7ルールには同じ書き方を重ねて見るものがあり、すべてを有効にすると同じ箇所に複数の指摘が出るためです。7ルールは、`[builtin]` にルールのIDかpresetの名前を書いて有効にします(「[presetの名前](#presetの名前)」)。空白と字種を見る13ルール(`textlint-rule-preset-ja-spacing` の11ルールと、`no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals`)も、同じ理由で無効で、同じく `[builtin]` で有効にします。日本語と英数字の間の空白のように、jafix独自の修正ルールと同じ空白を見るものがあるためです。JTF日本語標準スタイルガイドの37ルールも、ほかのルールと同じ箇所を見るものが多いので無効で、同じく `[builtin]` で有効にします(「[JTFスタイルガイドの37ルール](#jtfスタイルガイドの37ルール)」)。ひらがなで書く語・さ入れ言葉・同義語を見る7ルールも無効です。7つを束ねるpresetの名前は無いので、`[builtin]` にルールのIDのキーを書いて有効にします(「[ひらがな・さ入れ・同義語の7ルール](#ひらがなさ入れ同義語の7ルール)」)。TODO・曜日・リンク先を見る3ルールも無効で、presetの名前も無いので、ルールのIDのキーで有効にします。説明は「[言語によらない3ルール](#言語によらない3ルール)」の節です。`prh` と `@textlint-rule/pattern` も無効で、どのpresetにも入りません。辞書かパターンが無いと働かないので、`[builtin]` にオプションの表を書いたときだけ有効になります(「[利用者の置き換え](#利用者の置き換え)」)。
 
@@ -336,7 +336,7 @@ no-dead-link = { ignore = ["https://example.com/**"], retry = 1 }
 
 ## 利用者の置き換え
 
-`prh` と `@textlint-rule/pattern` は、利用者が書いた辞書やパターンで本文を直し、指摘するルールです。辞書とパターンはtextlintで使っているものをそのまま書けるので、textlintから移るときに書き直す必要がありません。prhのルールの箇所と、`replace` を持つ `@textlint-rule/pattern` の要素の箇所は修正ルールで、`jafix fix` とhookが直し、`jafix check` が箇所として出します。この置き換えを、以下では利用者の置き換えと呼びます。`replace` を持たない要素の箇所は、利用者の置き換えではなく、指摘ルールの指摘です。
+`prh` と `@textlint-rule/pattern` は、利用者が書いた辞書やパターンで本文を直し、指摘するルールです。辞書とパターンはtextlintで使っているものをそのまま書けるので、textlintから移るときに書き直す必要がありません。prhのルールの箇所と、`replace` を持つ `@textlint-rule/pattern` の要素の箇所と、`terminology` の `terms` に利用者が書いた項目の箇所は修正ルールです。`jafix fix` とhookが直し、`jafix check` が箇所として出します。この置き換えを、以下では利用者の置き換えと呼びます。`terminology` の組み込みの辞書の項目の箇所は、利用者の置き換えではなく、指摘ルールの指摘です。`replace` を持たない要素の箇所は、利用者の置き換えではなく、指摘ルールの指摘です。
 
 ### `prh`
 
@@ -406,14 +406,14 @@ patterns = [
 
 `jafix fix` とhookは、利用者の置き換えを組み込みの修正ルールより先に、1回だけ当てます。置き換えた内容を解析し直してから、組み込みの修正ルールを繰り返し当てる(「[修正ルール](#修正ルール)」)ので、置き換えが生んだ全角括弧や日本語と英数字の間の空白は、同じ実行で直ります。
 
-利用者の置き換えの箇所が重なるときは、先に始まる箇所を残します。同じ位置で始まるなら長い箇所を、範囲も同じなら `prh` の箇所を、それも同じなら `patterns` の前にある要素の箇所を残します。残した箇所と重なる箇所は直しません。`jafix check` は、重なりを解いた後の箇所だけを出します。
+利用者の置き換えの箇所が重なるときは、先に始まる箇所を残します。同じ位置で始まるなら長い箇所を、範囲も同じなら `prh`、`@textlint-rule/pattern`、`terminology` の順に前のルールの箇所を残します。同じルールの中では、`patterns` の前にある要素の箇所を残します。`terminology` では文字列の項目の箇所を、配列の項目どうしでは `terms` の前にある項目の箇所を残します。残した箇所と重なる箇所は直しません。`jafix check` は、重なりを解いた後の箇所だけを出します。
 
 次の箇所は、直さずに、そのルールのIDで指摘にします。
 
 - 見出しの中の箇所。見出しのアンカーが変わり、見出しへのリンクが切れるためです。文面の後に「見出しのアンカーが変わるので、見出しへのリンクも直す」を続けます。アンカーが変わらない置き換えを見分けることはしません
 - 一致した文字列か置き換え後の文字列が、改行を含む箇所。hookは、直した後の行の番号が変わらないことを前提にするためです。文面の後に「改行を含むので直さない」を続けます
 
-置き換えの固定の部分(`prh` の `expected` と `replace` から `$1` などを除いた部分)を有効な組み込みの修正ルールが直すときは、設定ファイルが不正です。たとえば `expected: （$1）` は、`fullwidth-paren` が `（` を `(` に戻すので、置き換えを当てても次の段で戻されます。理由に置き換えと組み込みの修正ルールのIDを書くので、どちらかを無効にするか、置き換えを辞書から外してください。`imports` の `ignoreRules` で外したルールと、無効にした組み込みのルールは、この判定に入りません。空白と字種の13ルールと、JTFスタイルガイドの37ルールのうち有効な修正ルールは、この判定に入ります。`no-mixed-zenkaku-and-hankaku-alphabet` を有効にした設定では、`expected` に全角英字を含む辞書が不正になります。
+置き換えの固定の部分(`prh` の `expected` と `replace` から `$1` などを除いた部分と、`terminology` の `terms` の文字列の項目の全体、配列の項目の2つ目の要素から `$1`・`$&` などを除いた部分)を有効な組み込みの修正ルールが直すときは、設定ファイルが不正です。たとえば `expected: （$1）` は、`fullwidth-paren` が `（` を `(` に戻すので、置き換えを当てても次の段で戻されます。理由に置き換えと組み込みの修正ルールのIDを書くので、どちらかを無効にするか、置き換えを辞書から外してください。`imports` の `ignoreRules` で外したルールと、無効にした組み込みのルールは、この判定に入りません。空白と字種の13ルールと、JTFスタイルガイドの37ルールのうち有効な修正ルールは、この判定に入ります。`no-mixed-zenkaku-and-hankaku-alphabet` を有効にした設定では、`expected` に全角英字を含む辞書が不正になります。
 
 ## 修正ルール
 
@@ -851,4 +851,4 @@ JTFスタイルガイドの37ルールも、判定の条件を `textlint-rule-pr
 
 [MIT License](LICENSE-MIT) と [Apache License 2.0](LICENSE-APACHE) のデュアルライセンスです。
 
-組み込みのルールのうち、textlintと同じIDのものは、textlintのルールとライブラリの挙動に合わせて書き直したもので、正規表現や語の表、辞書の一部をそれらのソースから写しています。`prh` と `@textlint-rule/pattern` は、`textlint-rule-prh`・`prh`・`@textlint-rule/textlint-rule-pattern`・`@textlint/regexp-string-matcher` の判定の条件を写しています。binaryには、MIT Licenseのlinderaと、mecab-ipadicの条件で配られるIPADICの辞書と、CC BY-SAの条件で配られるJTF日本語標準スタイルガイドの4つの辞書(`textlint-rule-preset-jtf-style` の `dict/*.yml`)も入っています。Apache License 2.0で配られる `sudachi-synonyms-dictionary` 20.0.0とSudachiDictの同義語辞書から、`@textlint-ja/no-synonyms` の判定に使う項目だけを取り出したデータも入っています。`no-dead-link` が外部のURLに接続するときのTLSの証明書の検証のために、CDLA-Permissive-2.0で配られる `webpki-roots` 1.0.12の証明書の一覧も入っています。それぞれの名前・version・著作権表示と、MIT License・mecab-ipadic・CC BY-SA・Apache License 2.0・CDLA-Permissive-2.0の条件は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にあります。GitHub Releasesのtarballには、binaryと一緒に `LICENSE-MIT`・`LICENSE-APACHE`・`THIRD_PARTY_NOTICES.md` を入れています。
+組み込みのルールのうち、textlintと同じIDのものは、textlintのルールとライブラリの挙動に合わせて書き直したもので、正規表現や語の表、辞書の一部をそれらのソースから写しています。`prh` と `@textlint-rule/pattern` は、`textlint-rule-prh`・`prh`・`@textlint-rule/textlint-rule-pattern`・`@textlint/regexp-string-matcher` の判定の条件を写しています。binaryには、MIT Licenseのlinderaと、mecab-ipadicの条件で配られるIPADICの辞書と、CC BY-SAの条件で配られるJTF日本語標準スタイルガイドの4つの辞書(`textlint-rule-preset-jtf-style` の `dict/*.yml`)も入っています。Apache License 2.0で配られる `sudachi-synonyms-dictionary` 20.0.0とSudachiDictの同義語辞書から、`@textlint-ja/no-synonyms` の判定に使う項目だけを取り出したデータも入っています。`no-dead-link` が外部のURLに接続するときのTLSの証明書の検証のために、CDLA-Permissive-2.0で配られる `webpki-roots` 1.0.12の証明書の一覧も入っています。`common-misspellings` が使う誤綴りの一覧は、Wikipediaの「Wikipedia:Lists of common misspellings/For machines」のrevision 1199637275 (`https://en.wikipedia.org/w/index.php?title=Wikipedia:Lists_of_common_misspellings/For_machines&oldid=1199637275`)から作ったもので、CC BY-SA 3.0の条件で入っています。それぞれの名前・version・著作権表示と、MIT License・mecab-ipadic・CC BY-SA・Apache License 2.0・CDLA-Permissive-2.0の条件は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にあります。GitHub Releasesのtarballには、binaryと一緒に `LICENSE-MIT`・`LICENSE-APACHE`・`THIRD_PARTY_NOTICES.md` を入れています。

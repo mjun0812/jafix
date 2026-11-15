@@ -2478,7 +2478,6 @@ fn link_globs(key: &str, value: &Value) -> Result<GlobSet, String> {
 pub struct Terminology {
     /// 文字列の項目のすべてを `word_terms` の順に選択にまとめ、語の前後の条件で包んだ正規表現 (`i`・`m`・`u`)。
     /// 文字列の項目が無ければ `None`
-    #[allow(dead_code)] // skeleton: not implemented
     pub words: Option<Regex>,
     /// 文字列の項目。利用者の `terms` の項目を書いた順に、その後に組み込みの辞書の項目が並ぶ。置き換え後の語は、
     /// 一致を小文字にしたものと、小文字にして等しい最初の項目である
@@ -2486,7 +2485,6 @@ pub struct Terminology {
     /// 配列の項目。並びは `word_terms` と同じで、この順に1つずつ当てる
     pub pair_terms: Vec<PairTerm>,
     /// `skip`。本文の範囲がこの型のどれかの中にあれば当てない
-    #[allow(dead_code)] // skeleton: not implemented
     pub skip: Vec<PatternNodeType>,
 }
 
@@ -2504,10 +2502,8 @@ pub struct WordTerm {
 pub struct PairTerm {
     /// 本文の範囲に当てる正規表現 (`i`・`m`・`u`)。1つ目の要素が `(?<` で始まらず、`(?=`・`(?!` も含まなければ、
     /// 語の前後の条件で包んである
-    #[allow(dead_code)] // skeleton: not implemented
     pub pattern: Regex,
     /// 置き換え後の語を求めるときに `xyz <一致> xyz` に1回だけ当てる、包まない1つ目の要素 (`i`・`u`)
-    #[allow(dead_code)] // skeleton: not implemented
     pub source: Regex,
     /// 置き換え後の文字列。JavaScriptの `replace` の記法 (`js_regex::substitute`) で展開する
     pub replacement: Cow<'static, str>,
@@ -2742,8 +2738,49 @@ fn terms_file(path: &Path) -> Result<Vec<RawTerm>, String> {
 /// `strip-json-comments` の既定と同じく、文字列の外の `//` から行末までと `/* */` を除く。末尾のカンマは除かない。
 /// 閉じていない `/*` は、文書の末尾までを除く
 fn strip_json_comments(text: &str) -> String {
-    let _ = text;
-    todo!("skeleton: not implemented")
+    // コメントの文字を空白にして改行を残すので、JSONとして読めないときの理由の行が元のファイルと同じになる
+    let mut out = String::with_capacity(text.len());
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
+        match (c, chars.peek()) {
+            ('"', _) => {
+                out.push(c);
+                while let Some(c) = chars.next() {
+                    out.push(c);
+                    match c {
+                        '\\' => out.extend(chars.next()),
+                        '"' => break,
+                        _ => {}
+                    }
+                }
+            }
+            ('/', Some('/')) => {
+                out.push(' ');
+                // `strip-json-comments` と同じく、`\n` と `\r\n` で終え、単独の `\r` では終えない
+                while let Some(&c) = chars.peek() {
+                    if c == '\n' || c == '\r' && chars.clone().nth(1) == Some('\n') {
+                        break;
+                    }
+                    out.push(if c == '\r' { c } else { ' ' });
+                    chars.next();
+                }
+            }
+            ('/', Some('*')) => {
+                chars.next();
+                out.push_str("  ");
+                while let Some(c) = chars.next() {
+                    if c == '*' && chars.peek() == Some(&'/') {
+                        chars.next();
+                        out.push_str("  ");
+                        break;
+                    }
+                    out.push(if c == '\n' || c == '\r' { c } else { ' ' });
+                }
+            }
+            _ => out.push(c),
+        }
+    }
+    out
 }
 
 /// textlint-rule-terminologyの `getExactMatchRegExp` と同じく、項目を語の前後の条件で包む。直後の条件には、jafixが
@@ -2810,7 +2847,6 @@ impl Spelling {
 #[derive(Debug, Default)]
 pub struct CommonMisspellings {
     /// `ignore` の語を小文字にしたもの。一致を小文字にしたものと等しければ指摘しない
-    #[allow(dead_code)] // skeleton: not implemented
     pub ignore: Vec<String>,
 }
 
@@ -2879,10 +2915,8 @@ impl WriteGoodCheck {
 #[derive(Debug)]
 pub struct WriteGood {
     /// 有効な検査。`WriteGoodCheck::ALL` の順に並ぶ
-    #[allow(dead_code)] // skeleton: not implemented
     pub checks: Vec<WriteGoodCheck>,
     /// `whitelist`。本文の範囲の中の出現と重なる提案は指摘しない
-    #[allow(dead_code)] // skeleton: not implemented
     pub whitelist: Vec<String>,
 }
 
@@ -2920,4 +2954,42 @@ pub enum AlphabetWidth {
     Full,
     /// `"半角"` (既定)
     Half,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::strip_json_comments;
+
+    #[test]
+    fn strip_json_comments_blanks_comments_outside_strings() {
+        assert_eq!(
+            strip_json_comments("[\"a\", // b\n/* c\nd */ \"e\"]"),
+            "[\"a\",     \n    \n     \"e\"]"
+        );
+        assert_eq!(
+            strip_json_comments(r#"["a//b", "c\"/*d*/", "\\"]"#),
+            r#"["a//b", "c\"/*d*/", "\\"]"#
+        );
+    }
+
+    #[test]
+    fn strip_json_comments_blanks_multibyte_comments() {
+        assert_eq!(strip_json_comments("/* 日本 */1"), "        1");
+        assert_eq!(strip_json_comments("1// 語\r\n2"), "1    \r\n2");
+    }
+
+    #[test]
+    fn strip_json_comments_does_not_end_a_line_comment_at_a_lone_carriage_return() {
+        assert_eq!(strip_json_comments("1// a\r2\n3"), "1    \r \n3");
+    }
+
+    #[test]
+    fn strip_json_comments_stops_at_the_end_of_the_text() {
+        assert_eq!(strip_json_comments("1 /* 日本"), "1      ");
+        assert_eq!(strip_json_comments("1 /*"), "1   ");
+        assert_eq!(strip_json_comments("1 //"), "1   ");
+        assert_eq!(strip_json_comments("1 /"), "1 /");
+        assert_eq!(strip_json_comments("[\"a\\"), "[\"a\\");
+        assert_eq!(strip_json_comments("[\"語"), "[\"語");
+    }
 }
