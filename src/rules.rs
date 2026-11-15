@@ -22,7 +22,7 @@ use self::jtf_style::JtfRule;
 
 /// 組み込みのルール。全角括弧と空白の3つ以外は、textlintのpreset (`preset-ja-technical-writing`・
 /// `@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`・`preset-ja-spacing`・`preset-jtf-style`) の中の名前か、
-/// textlintの設定に書くルールの名前と同じIDである。宣言の順は `ALL` と同じで、組み込みの修正ルールの箇所の
+/// textlintの設定に書くルールの名前 (textlintが `textlint-rule-` を除いてruleIdとして出す名前) と同じIDである。宣言の順は `ALL` と同じで、組み込みの修正ルールの箇所の
 /// 範囲が同じときに、前にあるルールの箇所を残すのに使う
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RuleId {
@@ -76,11 +76,18 @@ pub enum RuleId {
     NoKangxiRadicals,
     /// `preset-jtf-style` の37ルール
     JtfStyle(JtfRule),
+    JaHiraganaHojodoushi,
+    JaHiraganaKeishikimeishi,
+    JaKeishikimeishi,
+    JaHiraganaFukushi,
+    JaHiraganaDaimeishi,
+    NoInsertDroppingSa,
+    NoSynonyms,
 }
 
 impl RuleId {
     /// 組み込みのルールのすべて。設定の `[builtin]` のキーをルールのIDとして読むのに使う
-    pub const ALL: [RuleId; 85] = [
+    pub const ALL: [RuleId; 92] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
         RuleId::SpaceBetweenJaAndParen,
@@ -166,6 +173,13 @@ impl RuleId {
         RuleId::JtfStyle(JtfRule::R4_3_6),
         RuleId::JtfStyle(JtfRule::R4_3_7),
         RuleId::JtfStyle(JtfRule::R4_3_8),
+        RuleId::JaHiraganaHojodoushi,
+        RuleId::JaHiraganaKeishikimeishi,
+        RuleId::JaKeishikimeishi,
+        RuleId::JaHiraganaFukushi,
+        RuleId::JaHiraganaDaimeishi,
+        RuleId::NoInsertDroppingSa,
+        RuleId::NoSynonyms,
     ];
 
     /// `check` の出力の `[<rule-id>]` に使う名前
@@ -222,6 +236,13 @@ impl RuleId {
             RuleId::NoMixedZenkakuAndHankakuAlphabet => "no-mixed-zenkaku-and-hankaku-alphabet",
             RuleId::NoKangxiRadicals => "no-kangxi-radicals",
             RuleId::JtfStyle(rule) => rule.name(),
+            RuleId::JaHiraganaHojodoushi => "ja-hiragana-hojodoushi",
+            RuleId::JaHiraganaKeishikimeishi => "ja-hiragana-keishikimeishi",
+            RuleId::JaKeishikimeishi => "ja-keishikimeishi",
+            RuleId::JaHiraganaFukushi => "ja-hiragana-fukushi",
+            RuleId::JaHiraganaDaimeishi => "ja-hiragana-daimeishi",
+            RuleId::NoInsertDroppingSa => "@textlint-ja/no-insert-dropping-sa",
+            RuleId::NoSynonyms => "@textlint-ja/no-synonyms",
         }
     }
 }

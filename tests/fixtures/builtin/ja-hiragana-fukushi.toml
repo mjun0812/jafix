@@ -1,0 +1,695 @@
+# ja-hiragana-fukushi の例。期待値は、textlint 15.8.0 と textlint-rule-ja-hiragana-fukushi 1.3.0 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+# entry-NN のcaseは、辞書(textlintのpackageの辞書の並び)の NN 番目 (0始まり) の項目に当たる入力。
+# 当たる入力を作れなかった項目 (辞書の品詞・読みに解析される文が見つからなかった): 73
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭の builtin は全caseに当たり、caseに builtin があればその代わりに使う (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+builtin = 'ja-hiragana-fukushi = true'
+
+[[cases]]
+name = "entry-00"
+text = "生憎行けない。"
+findings = ["1:1"]
+messages = ["副詞「生憎」はひらがなの「あいにく」にする"]
+
+[[cases]]
+name = "entry-01"
+text = "敢えて言う。"
+findings = ["1:1"]
+messages = ["副詞「敢えて」はひらがなの「あえて」にする"]
+
+[[cases]]
+name = "entry-02"
+text = "飽くまで主張する。"
+findings = ["1:1"]
+messages = ["副詞「飽くまで」はひらがなの「あくまで」にする"]
+
+[[cases]]
+name = "entry-03"
+text = "飽く迄主張する。"
+findings = ["1:1"]
+messages = ["副詞「飽く迄」はひらがなの「あくまで」にする"]
+
+[[cases]]
+name = "entry-04"
+text = "一旦止める。"
+findings = ["1:1"]
+messages = ["副詞「一旦」はひらがなの「いったん」にする"]
+
+[[cases]]
+name = "entry-05"
+text = "薄々気づいていた。"
+findings = ["1:1"]
+messages = ["副詞「薄々」はひらがなの「うすうす」にする"]
+
+[[cases]]
+name = "entry-06"
+text = "予め伝える。"
+findings = ["1:1"]
+messages = ["副詞「予め」はひらがなの「あらかじめ」にする"]
+
+[[cases]]
+name = "entry-07"
+text = "粗方終わった。"
+findings = ["1:1"]
+messages = ["副詞「粗方」はひらがなの「あらかた」にする"]
+
+[[cases]]
+name = "entry-08"
+text = "改めて確認する。"
+findings = ["1:1"]
+messages = ["副詞「改めて」はひらがなの「あらためて」にする"]
+
+[[cases]]
+name = "entry-09"
+text = "如何に困難でも進む。"
+findings = ["1:1"]
+messages = ["副詞「如何に」はひらがなの「いかに」にする"]
+
+[[cases]]
+name = "entry-10"
+text = "如何にも怪しい。"
+findings = ["1:1"]
+messages = ["副詞「如何にも」はひらがなの「いかにも」にする"]
+
+[[cases]]
+name = "entry-11"
+text = "徒に時間を費やす。"
+findings = ["1:1"]
+messages = ["副詞「徒に」はひらがなの「いたずらに」にする"]
+
+[[cases]]
+name = "entry-12"
+text = "いち早く気づいた。"
+findings = ["1:1"]
+messages = ["副詞「いち早く」はひらがなの「いちはやく」にする"]
+
+[[cases]]
+name = "entry-13"
+text = "未だに信じられない。"
+findings = ["1:1"]
+messages = ["副詞「未だに」はひらがなの「いまだに」にする"]
+
+[[cases]]
+name = "entry-14"
+text = "苟も教師なら責任がある。"
+findings = ["1:1"]
+messages = ["副詞「苟も」はひらがなの「いやしくも」にする"]
+
+[[cases]]
+name = "entry-15"
+text = "言わば私の恩人だ。"
+findings = ["1:1"]
+messages = ["副詞「言わば」はひらがなの「いわば」にする"]
+
+[[cases]]
+name = "entry-17"
+text = "概ね良好だ。"
+findings = ["1:1"]
+messages = ["副詞「概ね」はひらがなの「おおむね」にする"]
+
+[[cases]]
+name = "entry-18"
+text = "押し並べて高い。"
+findings = ["1:1"]
+messages = ["副詞「押し並べて」はひらがなの「おしなべて」にする"]
+
+[[cases]]
+name = "entry-19"
+text = "押しなべて高い。"
+findings = ["1:1"]
+messages = ["副詞「押しなべて」はひらがなの「おしなべて」にする"]
+
+[[cases]]
+name = "entry-20"
+text = "自ずから明らかだ。"
+findings = ["1:1"]
+messages = ["副詞「自ずから」はひらがなの「おのずから」にする"]
+
+[[cases]]
+name = "entry-21"
+text = "自ずと分かる。"
+findings = ["1:1"]
+messages = ["副詞「自ずと」はひらがなの「おのずと」にする"]
+
+[[cases]]
+name = "entry-22"
+text = "凡そ三年だ。"
+findings = ["1:1"]
+messages = ["副詞「凡そ」はひらがなの「およそ」にする"]
+
+[[cases]]
+name = "entry-24"
+text = "安全且つ便利だ。"
+findings = ["1:3"]
+messages = ["副詞「且つ」はひらがなの「かつ」にする"]
+
+[[cases]]
+name = "entry-25"
+text = "嘗て栄えた町だ。"
+findings = ["1:1"]
+messages = ["副詞「嘗て」はひらがなの「かつて」にする"]
+
+[[cases]]
+name = "entry-26"
+text = "予て聞いていた。"
+findings = ["1:1"]
+messages = ["副詞「予て」はひらがなの「かねて」にする"]
+
+[[cases]]
+name = "entry-27"
+text = "悉く失敗した。"
+findings = ["1:1"]
+messages = ["副詞「悉く」はひらがなの「ことごとく」にする"]
+
+[[cases]]
+name = "entry-28"
+text = "尽く失敗した。"
+findings = ["1:1"]
+messages = ["副詞「尽く」はひらがなの「ことごとく」にする"]
+
+[[cases]]
+name = "entry-29"
+text = "細々と説明する。"
+findings = ["1:1"]
+messages = ["副詞「細々」はひらがなの「こまごま」にする"]
+
+[[cases]]
+name = "entry-30"
+text = "更に良くなる。"
+findings = ["1:1"]
+messages = ["副詞「更に」はひらがなの「さらに」にする"]
+
+[[cases]]
+name = "entry-31"
+text = "頻りに頷いた。"
+findings = ["1:1"]
+messages = ["副詞「頻りに」はひらがなの「しきりに」にする"]
+
+[[cases]]
+name = "entry-32"
+text = "暫く待つ。"
+findings = ["1:1"]
+messages = ["副詞「暫く」はひらがなの「しばらく」にする"]
+
+[[cases]]
+name = "entry-33"
+text = "所詮無理だ。"
+findings = ["1:1"]
+messages = ["副詞「所詮」はひらがなの「しょせん」にする"]
+
+[[cases]]
+name = "entry-34"
+text = "頗る調子が良い。"
+findings = ["1:1"]
+messages = ["副詞「頗る」はひらがなの「すこぶる」にする"]
+
+[[cases]]
+name = "entry-35"
+text = "既に終わった。"
+findings = ["1:1"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "entry-36"
+text = "精一杯の努力をする。"
+findings = ["1:1"]
+messages = ["副詞「精一杯」はひらがなの「せいいっぱい」にする"]
+
+[[cases]]
+name = "entry-37"
+text = "折角の機会だ。"
+findings = ["1:1"]
+messages = ["副詞「折角」はひらがなの「せっかく」にする"]
+
+[[cases]]
+name = "entry-38"
+text = "是非来てほしい。"
+findings = ["1:1"]
+messages = ["副詞「是非」はひらがなの「ぜひ」にする"]
+
+[[cases]]
+name = "entry-39"
+text = "是非とも忙しい。"
+findings = ["1:1"]
+messages = ["副詞「是非とも」はひらがなの「ぜひとも」にする"]
+
+[[cases]]
+name = "entry-40"
+text = "沢山の人が来た。"
+findings = ["1:1"]
+messages = ["副詞「沢山」はひらがなの「たくさん」にする"]
+
+[[cases]]
+name = "entry-41"
+text = "立ち所に解決した。"
+findings = ["1:1"]
+messages = ["副詞「立ち所に」はひらがなの「たちどころに」にする"]
+
+[[cases]]
+name = "entry-42"
+text = "仮令失敗しても進む。"
+findings = ["1:1"]
+messages = ["副詞「仮令」はひらがなの「たとえ」にする"]
+
+[[cases]]
+name = "entry-43"
+text = "縦令失敗しても進む。"
+findings = ["1:1"]
+messages = ["副詞「縦令」はひらがなの「たとえ」にする"]
+
+[[cases]]
+name = "entry-44"
+text = "丁度良い。"
+findings = ["1:1"]
+messages = ["副詞「丁度」はひらがなの「ちょうど」にする"]
+
+[[cases]]
+name = "entry-45"
+text = "篤と考える。"
+findings = ["1:1"]
+messages = ["副詞「篤と」はひらがなの「とくと」にする"]
+
+[[cases]]
+name = "entry-46"
+text = "土台無理な話だ。"
+findings = ["1:1"]
+messages = ["副詞「土台」はひらがなの「どだい」にする"]
+
+[[cases]]
+name = "entry-47"
+text = "取り分けが多い。"
+findings = ["1:1"]
+messages = ["副詞「取り分け」はひらがなの「とりわけ」にする"]
+
+[[cases]]
+name = "entry-48"
+text = "何故来たのか。"
+findings = ["1:1"]
+messages = ["副詞「何故」はひらがなの「なぜ」にする"]
+
+[[cases]]
+name = "entry-49"
+text = "偏に感謝する。"
+findings = ["1:1"]
+messages = ["副詞「偏に」はひらがなの「ひとえに」にする"]
+
+[[cases]]
+name = "entry-50"
+text = "一際目立つ。"
+findings = ["1:1"]
+messages = ["副詞「一際」はひらがなの「ひときわ」にする"]
+
+[[cases]]
+name = "entry-51"
+text = "一入感慨深い。"
+findings = ["1:1"]
+messages = ["副詞「一入」はひらがなの「ひとしお」にする"]
+
+[[cases]]
+name = "entry-52"
+text = "一先ず休む。"
+findings = ["1:1"]
+messages = ["副詞「一先ず」はひらがなの「ひとまず」にする"]
+
+[[cases]]
+name = "entry-53"
+text = "独りでに開いた。"
+findings = ["1:1"]
+messages = ["副詞「独りでに」はひらがなの「ひとりでに」にする"]
+
+[[cases]]
+name = "entry-54"
+text = "殆どの人が来た。"
+findings = ["1:1"]
+messages = ["副詞「殆ど」はひらがなの「ほとんど」にする"]
+
+[[cases]]
+name = "entry-55"
+text = "正しく彼の言う通りだ。"
+findings = ["1:1"]
+messages = ["副詞「正しく」はひらがなの「まさしく」にする"]
+
+[[cases]]
+name = "entry-56"
+text = "正に名案だ。"
+findings = ["1:1"]
+messages = ["副詞「正に」はひらがなの「まさに」にする"]
+
+[[cases]]
+name = "entry-57"
+text = "況して子供には無理だ。"
+findings = ["1:1"]
+messages = ["副詞「況して」はひらがなの「まして」にする"]
+
+[[cases]]
+name = "entry-58"
+text = "先ず始める。"
+findings = ["1:1"]
+messages = ["副詞「先ず」はひらがなの「まず」にする"]
+
+[[cases]]
+name = "entry-59"
+text = "丸で夢のようだ。"
+findings = ["1:1"]
+messages = ["副詞「丸で」はひらがなの「まるで」にする"]
+
+[[cases]]
+name = "entry-60"
+text = "満更でもない。"
+findings = ["1:1"]
+messages = ["副詞「満更」はひらがなの「まんざら」にする"]
+
+[[cases]]
+name = "entry-61"
+text = "彼は無碍に行く。"
+findings = ["1:3"]
+messages = ["副詞「無碍に」はひらがなの「むげに」にする"]
+
+[[cases]]
+name = "entry-62"
+text = "寧ろ良い。"
+findings = ["1:1"]
+messages = ["副詞「寧ろ」はひらがなの「むしろ」にする"]
+
+[[cases]]
+name = "entry-63"
+text = "無理矢理に行く。"
+findings = ["1:1"]
+messages = ["副詞「無理矢理」はひらがなの「無理やり」にする"]
+
+[[cases]]
+name = "entry-64"
+text = "滅法強い。"
+findings = ["1:1"]
+messages = ["副詞「滅法」はひらがなの「めっぽう」にする"]
+
+[[cases]]
+name = "entry-65"
+text = "若しも雨なら中止だ。"
+findings = ["1:1"]
+messages = ["副詞「若しも」はひらがなの「もしも」にする"]
+
+[[cases]]
+name = "entry-66"
+text = "彼若しくは私が行く。"
+findings = ["1:2"]
+messages = ["副詞「若しくは」はひらがなの「もしくは」にする"]
+
+[[cases]]
+name = "entry-67"
+text = "勿論行く。"
+findings = ["1:1"]
+messages = ["副詞「勿論」はひらがなの「もちろん」にする"]
+
+[[cases]]
+name = "entry-68"
+text = "最も良い。"
+findings = ["1:1"]
+messages = ["副詞「最も」はひらがなの「もっとも」にする"]
+
+[[cases]]
+name = "entry-69"
+text = "元々そうだった。"
+findings = ["1:1"]
+messages = ["副詞「元々」はひらがなの「もともと」にする"]
+
+[[cases]]
+name = "entry-70"
+text = "素より承知だ。"
+findings = ["1:1"]
+messages = ["副詞「素より」はひらがなの「もとより」にする"]
+
+[[cases]]
+name = "entry-71"
+text = "最早手遅れだ。"
+findings = ["1:1"]
+messages = ["副詞「最早」はひらがなの「もはや」にする"]
+
+[[cases]]
+name = "entry-72"
+text = "彼は矢張り行く。"
+findings = ["1:3"]
+messages = ["副詞「矢張り」はひらがなの「やはり」にする"]
+
+[[cases]]
+name = "entry-74"
+text = "漸く終わった。"
+findings = ["1:1"]
+messages = ["副詞「漸く」はひらがなの「ようやく」にする"]
+
+[[cases]]
+name = "entry-75"
+text = "余程疲れていたのだろう。"
+findings = ["1:1"]
+messages = ["副詞「余程」はひらがなの「よほど」にする"]
+
+[[cases]]
+name = "entry-76"
+text = "彼は僅かに行く。"
+findings = ["1:3"]
+messages = ["副詞「僅かに」はひらがなの「わずかに」にする"]
+
+[[cases]]
+name = "kaette-typo"
+note = "textlintの辞書は `却って` の項目のキーが `po\"` で、 `pos` を持たないので一度も当たらない。jafixはキーを `pos` に直して写すので指摘する"
+text = "却って悪い。"
+findings = ["1:1"]
+messages = ["副詞「却って」はひらがなの「かえって」にする"]
+
+[[cases]]
+name = "kaette-in-sentence"
+note = "textlintの辞書は `却って` の項目のキーが `po\"` で、 `pos` を持たないので一度も当たらない。jafixはキーを `pos` に直して写すので指摘する"
+text = "雨が降って却って良かった。"
+findings = ["1:6"]
+messages = ["副詞「却って」はひらがなの「かえって」にする"]
+
+[[cases]]
+name = "dup-usuusu"
+text = "薄々気づいていた。薄々分かっていた。"
+findings = ["1:1", "1:10"]
+messages = ["副詞「薄々」はひらがなの「うすうす」にする", "副詞「薄々」はひらがなの「うすうす」にする"]
+
+[[cases]]
+name = "yappari-never-matches"
+text = "彼は矢っ張り行く。"
+findings = []
+messages = []
+
+[[cases]]
+name = "yabari-not-suffix"
+text = "彼は矢張り来た。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-hiragana"
+text = "既に終わった。すでに終わった。"
+findings = ["1:1"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "neg-kanji-noun"
+text = "既存の仕組みだ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-paragraph"
+text = "既に終わった。"
+findings = ["1:1"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "ctx-heading"
+text = "# 既に終わった"
+findings = ["1:3"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "ctx-setext-heading"
+text = "既に終わった\n=========="
+findings = ["1:1"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "ctx-blockquote"
+text = "> 既に終わった。"
+findings = ["1:3"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "ctx-table-cell"
+text = "| 項目 | 内容 |\n| --- | --- |\n| 既に終わった | 本文 |"
+findings = ["3:3"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "ctx-list-item"
+text = "- 既に終わった。\n- 暫く待つ。"
+findings = ["1:3", "2:3"]
+messages = ["副詞「既に」はひらがなの「すでに」にする", "副詞「暫く」はひらがなの「しばらく」にする"]
+
+[[cases]]
+name = "ctx-link-text"
+text = "[既に終わった](https://example.com)"
+findings = ["1:2"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "ctx-emphasis"
+text = "*既に終わった*"
+findings = ["1:2"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "ctx-strong"
+text = "**既に終わった**"
+findings = ["1:3"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "ctx-strikethrough"
+text = "~~既に終わった~~"
+findings = ["1:3"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "ctx-inline-code"
+text = "`既に` は対象外です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-code-block"
+text = "```\n既に終わった\n```"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-html-block"
+text = "<div>既に終わった</div>"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-frontmatter"
+text = "---\ntitle: 既に終わった\n---\n\n本文です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-footnote-definition"
+text = "本文です[^1]。\n\n[^1]: 既に終わった。"
+findings = ["3:7"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "multi-in-one-str"
+text = "既に終わった。暫く待つ。"
+findings = ["1:1", "1:8"]
+messages = ["副詞「既に」はひらがなの「すでに」にする", "副詞「暫く」はひらがなの「しばらく」にする"]
+
+[[cases]]
+name = "multi-paragraphs"
+text = "既に終わった。\n\n暫く待つ。"
+findings = ["1:1", "3:1"]
+messages = ["副詞「既に」はひらがなの「すでに」にする", "副詞「暫く」はひらがなの「しばらく」にする"]
+
+[[cases]]
+name = "multi-same-word"
+text = "既に終わった。既に済んだ。"
+findings = ["1:1", "1:8"]
+messages = ["副詞「既に」はひらがなの「すでに」にする", "副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "pos-second-line"
+text = "一行目です。\n既に終わった。"
+findings = ["2:1"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "pos-astral-before"
+text = "\U0001f600既に終わった。"
+findings = ["1:2"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "pos-after-link"
+text = "[リンク](https://example.com) 既に終わった。"
+findings = ["1:28"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "carry-over-strong"
+note = "textlintは照合の状態を太字の境目をまたいで持ち越し、 `丸` と `で` を1つの一致として `で` の位置に指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "夢は丸**で始まる**。"
+findings = []
+messages = []
+
+[[cases]]
+name = "carry-over-link"
+note = "textlintは照合の状態をリンクの境目をまたいで持ち越し、 `丸` と `で` を1つの一致として `で` の位置に指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "夢は[丸](https://example.com)で始まる。"
+findings = []
+messages = []
+
+[[cases]]
+name = "carry-over-paragraph"
+note = "textlintは照合の状態を段落の境目をまたいで持ち越し、 `丸` と `で` を1つの一致として指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "夢は丸\n\nで始まる。"
+findings = []
+messages = []
+
+[[cases]]
+name = "no-carry-in-same-str"
+text = "丸で夢のようだ。丸で夢のようだ。"
+findings = ["1:1", "1:9"]
+messages = ["副詞「丸で」はひらがなの「まるで」にする", "副詞「丸で」はひらがなの「まるで」にする"]
+
+[[cases]]
+name = "nonprose-bare-url"
+note = "textlintは裸のURLの文字列も見て指摘するが、jafixは裸のURLを本文の範囲にしない"
+text = "https://example.com/既に終わった"
+findings = []
+messages = []
+
+[[cases]]
+name = "nonprose-autolink"
+note = "textlintは自動リンクの文字列も見て指摘するが、jafixは自動リンクを本文の範囲にしない"
+text = "<https://example.com/既に終わった>"
+findings = []
+messages = []
+
+[[cases]]
+name = "nonprose-shortcut-reference"
+note = "textlintは省略形の参照リンクの文字列も見て指摘するが、jafixは本文の範囲にしない"
+text = "[既に終わった]\n\n[既に終わった]: https://example.com"
+findings = []
+messages = []
+
+[[cases]]
+name = "nonprose-collapsed-reference"
+note = "textlintはcollapsed形の参照リンクの文字列も見て指摘するが、jafixは本文の範囲にしない"
+text = "[既に終わった][]\n\n[既に終わった]: https://example.com"
+findings = []
+messages = []
+
+[[cases]]
+name = "prose-full-reference"
+text = "[既に終わった][a]\n\n[a]: https://example.com"
+findings = ["1:2"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]
+
+[[cases]]
+name = "prose-after-bare-url"
+text = "https://example.com の後で既に終わった。"
+findings = ["1:24"]
+messages = ["副詞「既に」はひらがなの「すでに」にする"]

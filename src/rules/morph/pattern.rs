@@ -34,17 +34,28 @@ pub type OwnedFields = Vec<(Field, Vec<String>)>;
 /// 期待するトークンの項目と値の持ち方。照合はどの持ち方でも `matches_all` で行う
 pub trait Fields {
     fn matches(&self, token: &Token) -> bool;
+
+    /// 表層 (`Field::Surface`) の値。表層を書いていなければ無い。照合の開始位置を表層で引く索引に使う
+    fn surfaces(&self) -> Option<Vec<&str>>;
 }
 
 impl Fields for StaticFields {
     fn matches(&self, token: &Token) -> bool {
         matches_all(self, token)
     }
+
+    fn surfaces(&self) -> Option<Vec<&str>> {
+        todo!("skeleton: not implemented")
+    }
 }
 
 impl Fields for OwnedFields {
     fn matches(&self, token: &Token) -> bool {
         matches_all(self, token)
+    }
+
+    fn surfaces(&self) -> Option<Vec<&str>> {
+        todo!("skeleton: not implemented")
     }
 }
 
@@ -71,8 +82,9 @@ pub fn find<F: Fields>(tokens: &[Token], pattern: &[Expect<F>]) -> Vec<Match> {
         .collect()
 }
 
-/// `start` のトークンから `pattern` を当てる。一致の途中で外れても、ほかの開始位置の結果には影響しない
-fn match_at<F: Fields>(tokens: &[Token], pattern: &[Expect<F>], start: usize) -> Option<Match> {
+/// `start` のトークンから `pattern` を当てる。一致の途中で外れても、ほかの開始位置の結果には影響しない。
+/// 開始位置を索引で選ぶ照合も、この関数で当てる
+pub fn match_at<F: Fields>(tokens: &[Token], pattern: &[Expect<F>], start: usize) -> Option<Match> {
     // 先頭が飛ばせない期待で外れる開始位置が大半なので、外れるなら確保の前に返す
     if let Some(first) = pattern.first()
         && !first.skippable

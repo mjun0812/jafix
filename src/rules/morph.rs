@@ -1,6 +1,8 @@
-//! 形態素解析を使う13ルール
+//! 形態素解析を使う20ルール
 
 mod dict;
+mod hiragana;
+mod hiragana_dict;
 mod ja_no_abusage;
 mod ja_no_redundant_expression;
 mod ja_no_successive_word;
@@ -12,8 +14,10 @@ mod no_doubled_conjunction;
 mod no_doubled_conjunctive_particle_ga;
 mod no_doubled_joshi;
 mod no_dropping_the_ra;
+mod no_insert_dropping_sa;
 mod no_mix_dearu_desumasu;
 mod no_short_topic_comma;
+mod no_synonyms;
 pub(super) mod pattern;
 pub(super) mod projection;
 
@@ -103,13 +107,27 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
         }
         reports.extend(styles.reports(rule));
     }
+    let hiragana = (builtin.ja_hiragana_hojodoushi.is_some()
+        || builtin.ja_hiragana_keishikimeishi
+        || builtin.ja_keishikimeishi.is_some()
+        || builtin.ja_hiragana_fukushi.is_some()
+        || builtin.ja_hiragana_daimeishi)
+        .then(|| hiragana::Matcher::new(builtin));
+    // `@textlint-ja/no-synonyms` は、文書の全体の出現を集めてから指摘を決める
+    let mut synonyms = builtin
+        .no_synonyms
+        .as_ref()
+        .map(|rule| (rule, no_synonyms::Occurrences::default()));
     let prose_rules = builtin.no_double_negative_ja
         || builtin.no_dropping_the_ra
         || builtin.ja_no_weak_phrase
         || builtin.ja_no_successive_word.is_some()
         || builtin.ja_no_abusage
         || builtin.no_ai_words.is_some()
-        || builtin.no_short_topic_comma.is_some();
+        || builtin.no_short_topic_comma.is_some()
+        || hiragana.is_some()
+        || builtin.no_insert_dropping_sa
+        || synonyms.is_some();
     if !prose_rules {
         return reports;
     }
@@ -143,6 +161,18 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
         if let Some(rule) = &builtin.no_short_topic_comma {
             reports.extend(no_short_topic_comma::report(&analyzed, rule));
         }
+        if let Some(matcher) = &hiragana {
+            reports.extend(matcher.report(&analyzed));
+        }
+        if builtin.no_insert_dropping_sa {
+            reports.extend(no_insert_dropping_sa::report(&analyzed));
+        }
+        if let Some((_, occurrences)) = &mut synonyms {
+            occurrences.collect(&analyzed);
+        }
+    }
+    if let Some((rule, occurrences)) = synonyms {
+        reports.extend(occurrences.report(rule));
     }
     reports
 }

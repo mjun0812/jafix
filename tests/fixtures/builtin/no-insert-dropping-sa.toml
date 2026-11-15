@@ -1,0 +1,372 @@
+# @textlint-ja/no-insert-dropping-sa の例。期待値は、textlint 15.8.0 と @textlint-ja/textlint-rule-no-insert-dropping-sa 2.0.1 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` に出るルールのID。ファイル名と違うので書く (省略するとファイル名)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭の builtin は全caseに当たり、caseに builtin があればその代わりに使う (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+rule = "@textlint-ja/no-insert-dropping-sa"
+builtin = '"@textlint-ja/no-insert-dropping-sa" = true'
+
+[[cases]]
+name = "entry-0-karai"
+text = "このカレーは辛さそうだ。"
+findings = ["1:8"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "entry-0-oishii"
+text = "美味しさそうな料理だ。"
+findings = ["1:4"]
+messages = ["さ入れ言葉「美味しさそう」は「美味しそう」にする"]
+
+[[cases]]
+name = "entry-0-samui"
+text = "寒さそうに見える。"
+findings = ["1:2"]
+messages = ["さ入れ言葉「寒さそう」は「寒そう」にする"]
+
+[[cases]]
+name = "entry-0-after-comma-free"
+text = "辛い辛さそうだ。"
+findings = ["1:4"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "entry-1-tabeta"
+text = "食べたさそうな顔をしている。"
+findings = ["1:4"]
+messages = ["さ入れ言葉「食べたさそう」は「食べたそう」にする"]
+
+[[cases]]
+name = "entry-1-ikita"
+text = "行きたさそうに見える。"
+findings = ["1:4"]
+messages = ["さ入れ言葉「行きたさそう」は「行きたそう」にする"]
+
+[[cases]]
+name = "entry-1-mita"
+text = "見たさそうだ。"
+findings = ["1:3"]
+messages = ["さ入れ言葉「見たさそう」は「見たそう」にする"]
+
+[[cases]]
+name = "entry-2-yoi"
+text = "この案は良そうだ。"
+findings = ["1:5"]
+messages = ["さ抜き言葉「良そう」は「良さそう」にする"]
+
+[[cases]]
+name = "entry-2-nai"
+text = "お金が無そうだ。"
+findings = ["1:4"]
+messages = ["さ抜き言葉「無そう」は「無さそう」にする"]
+
+[[cases]]
+name = "entry-2-yoi-modifier"
+text = "これは良そうな案だ。"
+findings = ["1:4"]
+messages = ["さ抜き言葉「良そう」は「良さそう」にする"]
+
+[[cases]]
+name = "neg-correct-karai"
+text = "このカレーは辛そうだ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-correct-oishii"
+text = "美味しそうな料理だ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-correct-samui"
+text = "寒そうに見える。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-correct-tai"
+text = "食べたそうな顔をしている。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-correct-yoi"
+text = "この案は良さそうだ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-correct-nai"
+text = "お金が無さそうだ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-correct-nai-hiragana"
+text = "お金がなさそうだ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-other-adjective"
+text = "高さそうだ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-other-adjective-sa"
+text = "嬉しさそうだ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-hearsay"
+text = "お金が無いそうだ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-hearsay-yoi"
+text = "良いそうだ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-nai-hiragana"
+text = "お金がなそうだ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-noun-sa"
+text = "辛さを感じる。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-paragraph"
+text = "このカレーは辛さそうだ。"
+findings = ["1:8"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "ctx-heading"
+text = "# 辛さそうだ"
+findings = ["1:4"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "ctx-setext-heading"
+text = "辛さそうだ\n=========="
+findings = ["1:2"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "ctx-blockquote"
+text = "> このカレーは辛さそうだ。"
+findings = ["1:10"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "ctx-table-cell"
+text = "| 項目 | 内容 |\n| --- | --- |\n| 辛さそうだ | 本文 |"
+findings = ["3:4"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "ctx-list-item"
+text = "- このカレーは辛さそうだ。\n- この案は良そうだ。"
+findings = ["1:10", "2:7"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする", "さ抜き言葉「良そう」は「良さそう」にする"]
+
+[[cases]]
+name = "ctx-link-text"
+text = "[辛さそうだ](https://example.com)"
+findings = ["1:3"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "ctx-emphasis"
+text = "*辛さそうだ*"
+findings = ["1:3"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "ctx-strong"
+text = "**辛さそうだ**"
+findings = ["1:4"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "ctx-strikethrough"
+text = "~~辛さそうだ~~"
+findings = ["1:4"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "ctx-inline-code"
+text = "`辛さそう` は対象外です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-code-block"
+text = "```\n辛さそうだ\n```"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-html-block"
+text = "<div>辛さそうだ</div>"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-frontmatter"
+text = "---\ntitle: 辛さそうだ\n---\n\n本文です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-footnote-definition"
+text = "本文です[^1]。\n\n[^1]: 辛さそうだ。"
+findings = ["3:8"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "multi-in-one-str"
+text = "このカレーは辛さそうだ。この案は良そうだ。"
+findings = ["1:8", "1:17"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする", "さ抜き言葉「良そう」は「良さそう」にする"]
+
+[[cases]]
+name = "multi-three-patterns"
+text = "辛さそうだ。食べたさそうだ。良そうだ。"
+findings = ["1:2", "1:10", "1:15"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする", "さ入れ言葉「食べたさそう」は「食べたそう」にする", "さ抜き言葉「良そう」は「良さそう」にする"]
+
+[[cases]]
+name = "multi-paragraphs"
+text = "辛さそうだ。\n\n寒さそうだ。"
+findings = ["1:2", "3:2"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする", "さ入れ言葉「寒さそう」は「寒そう」にする"]
+
+[[cases]]
+name = "multi-same-word"
+text = "辛さそうだ。辛さそうだ。"
+findings = ["1:2", "1:8"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする", "さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "pos-second-line"
+text = "一行目です。\n\n辛さそうだ。"
+findings = ["3:2"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "pos-soft-break"
+text = "一行目です。\n辛さそうだ。"
+findings = ["2:2"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "pos-after-link"
+text = "[リンク](https://example.com) 辛さそうだ。"
+findings = ["1:29"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "pos-astral-before"
+note = "textlintは位置を文字(コードポイント)の数で求めてUTF-16の位置として使うため、サロゲートペアの文字の分だけ前にずれた位置を指摘する(置き換えも別の文字になる)が、jafixは元のソースの位置(文字で数える)を指摘する"
+text = "\U0001f600辛さそうだ。"
+findings = ["1:3"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "pos-astral-before-dropping"
+note = "textlintは位置を文字(コードポイント)の数で求めてUTF-16の位置として使うため、サロゲートペアの文字の分だけ前にずれた位置を指摘する(置き換えも別の文字になる)が、jafixは元のソースの位置(文字で数える)を指摘する"
+text = "\U0001f600これは良そうな案だ。"
+findings = ["1:5"]
+messages = ["さ抜き言葉「良そう」は「良さそう」にする"]
+
+[[cases]]
+name = "carry-over-strong"
+note = "textlintは照合の状態を本文の範囲(Str)をまたいで持ち越し、前の本文の範囲の `食べ` `た` と次の本文の範囲の `さ` `そう` を1つの一致として指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "彼女は食べた**さそうだ**。"
+findings = []
+messages = []
+
+[[cases]]
+name = "carry-over-link"
+note = "textlintは照合の状態を本文の範囲(Str)をまたいで持ち越し、前の本文の範囲の `食べ` `た` と次の本文の範囲の `さ` `そう` を1つの一致として指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "彼女は食べた[さそうだ](https://example.com)。"
+findings = []
+messages = []
+
+[[cases]]
+name = "carry-over-paragraph"
+note = "textlintは照合の状態を本文の範囲(Str)をまたいで持ち越し、前の本文の範囲の `食べ` `た` と次の本文の範囲の `さ` `そう` を1つの一致として指摘するが、jafixは本文の範囲ごとに状態を捨てる"
+text = "彼女は食べた\n\nさそうだ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "restart-after-failed-match"
+note = "textlintは一致の途中で外れたトークン(`続け`)を次の一致の先頭として見直さず、 `食べ` から始めた一致が `続け` で外れた後は `た` `さ` `そう` に当たらないが、jafixはすべての位置から当てるので `続け` から始めた一致を指摘する"
+text = "食べ続けたさそうな顔をしている。"
+findings = ["1:6"]
+messages = ["さ入れ言葉「続けたさそう」は「続けたそう」にする"]
+
+[[cases]]
+name = "restart-without-failure"
+text = "食べて見たさそうな顔をしている。"
+findings = ["1:6"]
+messages = ["さ入れ言葉「見たさそう」は「見たそう」にする"]
+
+[[cases]]
+name = "nonprose-bare-url"
+note = "textlintは裸のURLの文字列も見て指摘するが、jafixは裸のURLを本文の範囲にしない"
+text = "https://example.com/辛さそうだ"
+findings = []
+messages = []
+
+[[cases]]
+name = "nonprose-autolink"
+note = "textlintは自動リンクの文字列も見て指摘するが、jafixは自動リンクを本文の範囲にしない"
+text = "<https://example.com/辛さそうだ>"
+findings = []
+messages = []
+
+[[cases]]
+name = "nonprose-shortcut-reference"
+note = "textlintは省略形の参照リンクの文字列も見て指摘するが、jafixは本文の範囲にしない"
+text = "[辛さそうだ]\n\n[辛さそうだ]: https://example.com"
+findings = []
+messages = []
+
+[[cases]]
+name = "nonprose-collapsed-reference"
+note = "textlintはcollapsed形の参照リンクの文字列も見て指摘するが、jafixは本文の範囲にしない"
+text = "[辛さそうだ][]\n\n[辛さそうだ]: https://example.com"
+findings = []
+messages = []
+
+[[cases]]
+name = "prose-full-reference"
+text = "[辛さそうだ][a]\n\n[a]: https://example.com"
+findings = ["1:3"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
+
+[[cases]]
+name = "prose-after-bare-url"
+text = "https://example.com の後で辛さそうだ。"
+findings = ["1:25"]
+messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]

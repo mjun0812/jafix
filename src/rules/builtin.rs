@@ -16,7 +16,8 @@ use super::prh::dictionary::{Dictionary, Source};
 /// 既定では、`preset-ja-technical-writing` の23ルールと修正ルールの3つが有効で、オプションはtextlintの
 /// `preset-ja-technical-writing` と同じである。`@textlint-ja/preset-ai-writing` と `preset-ai-words-ja` の
 /// 7ルール、利用者の置き換えの2ルール (`prh`・`@textlint-rule/pattern`)、`preset-ja-spacing` の11ルール、
-/// `no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals`、`preset-jtf-style` の37ルールは無効である
+/// `no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals`、`preset-jtf-style` の37ルール、ひらがな系の5ルール、
+/// `@textlint-ja/no-insert-dropping-sa`・`@textlint-ja/no-synonyms` は無効である
 #[derive(Debug)]
 pub struct Builtin {
     pub fullwidth_paren: bool,
@@ -68,6 +69,13 @@ pub struct Builtin {
     pub no_mixed_zenkaku_and_hankaku_alphabet: Option<NoMixedZenkakuAndHankakuAlphabet>,
     pub no_kangxi_radicals: bool,
     pub jtf_style: JtfStyle,
+    pub ja_hiragana_hojodoushi: Option<JaHiragana>,
+    pub ja_hiragana_keishikimeishi: bool,
+    pub ja_keishikimeishi: Option<JaKeishikimeishi>,
+    pub ja_hiragana_fukushi: Option<JaHiragana>,
+    pub ja_hiragana_daimeishi: bool,
+    pub no_insert_dropping_sa: bool,
+    pub no_synonyms: Option<NoSynonyms>,
 }
 
 impl Default for Builtin {
@@ -122,6 +130,13 @@ impl Default for Builtin {
             no_mixed_zenkaku_and_hankaku_alphabet: None,
             no_kangxi_radicals: false,
             jtf_style: JtfStyle::default(),
+            ja_hiragana_hojodoushi: None,
+            ja_hiragana_keishikimeishi: false,
+            ja_keishikimeishi: None,
+            ja_hiragana_fukushi: None,
+            ja_hiragana_daimeishi: false,
+            no_insert_dropping_sa: false,
+            no_synonyms: None,
         }
     }
 }
@@ -368,6 +383,25 @@ impl Builtin {
             }
             RuleId::NoKangxiRadicals => self.no_kangxi_radicals = enabled(options)?,
             RuleId::JtfStyle(rule) => self.jtf_style.set(rule, options)?,
+            RuleId::JaHiraganaHojodoushi => {
+                self.ja_hiragana_hojodoushi = options
+                    .map(|options| JaHiragana::from_options(options, config_dir))
+                    .transpose()?;
+            }
+            RuleId::JaHiraganaKeishikimeishi => self.ja_hiragana_keishikimeishi = enabled(options)?,
+            RuleId::JaKeishikimeishi => {
+                self.ja_keishikimeishi = options.map(JaKeishikimeishi::from_options).transpose()?;
+            }
+            RuleId::JaHiraganaFukushi => {
+                self.ja_hiragana_fukushi = options
+                    .map(|options| JaHiragana::from_options(options, config_dir))
+                    .transpose()?;
+            }
+            RuleId::JaHiraganaDaimeishi => self.ja_hiragana_daimeishi = enabled(options)?,
+            RuleId::NoInsertDroppingSa => self.no_insert_dropping_sa = enabled(options)?,
+            RuleId::NoSynonyms => {
+                self.no_synonyms = options.map(NoSynonyms::from_options).transpose()?;
+            }
         }
         Ok(())
     }
@@ -2081,6 +2115,152 @@ impl JtfParentheses {
                  `requireOutsideHalfParentheses = true` は同じ空白を求める。どちらかを外す"
                     .to_owned(),
             );
+        }
+        Ok(rule)
+    }
+}
+
+/// `ja-hiragana-hojodoushi` と `ja-hiragana-fukushi` のオプション
+#[derive(Debug, Default)]
+pub struct JaHiragana {
+    /// `rulePath` の辞書。あれば、組み込みの辞書の代わりにこの辞書だけを使う
+    #[allow(dead_code)] // skeleton: not implemented
+    pub dictionary: Option<HiraganaDictionary>,
+}
+
+impl JaHiragana {
+    /// `config_dir` は、`rulePath` の相対パスを解決するディレクトリである
+    fn from_options(options: &Table, config_dir: &Path) -> Result<Self, String> {
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "rulePath" => {
+                    let path = resolve_path(key, non_empty_string(key, value)?, config_dir)?;
+                    rule.dictionary =
+                        Some(hiragana_dictionary(&path).map_err(|reason| {
+                            format!("`rulePath` の {}: {reason}", path.display())
+                        })?);
+                }
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
+    }
+}
+
+/// `rulePath` の辞書。textlintの `ja-hiragana-hojodoushi` と `ja-hiragana-fukushi` の辞書と同じ形である
+#[derive(Debug)]
+pub struct HiraganaDictionary {
+    /// 指摘の文面の先頭に使う
+    #[allow(dead_code)] // skeleton: not implemented
+    pub message: String,
+    #[allow(dead_code)] // skeleton: not implemented
+    pub entries: Vec<HiraganaWord>,
+}
+
+/// `rulePath` の辞書の1項目
+#[derive(Debug)]
+pub struct HiraganaWord {
+    /// 置き換え後の語
+    #[allow(dead_code)] // skeleton: not implemented
+    pub expected: String,
+    #[allow(dead_code)] // skeleton: not implemented
+    pub pattern: Vec<Expect<OwnedFields>>,
+}
+
+/// `path` の `rulePath` の辞書 (`message` と、`expected` と `tokens` を持つ項目の配列 `dict` のYAML) を読む。
+/// `tokens` の要素は `no-ai-words` の利用者の辞書と同じく `expect` で読み、項目のほかのキーは読まない。
+/// 読めない、YAMLとして読めない、形の誤りは、理由を返す
+fn hiragana_dictionary(path: &Path) -> Result<HiraganaDictionary, String> {
+    let _ = (path, expect);
+    todo!("skeleton: not implemented")
+}
+
+/// `ja-keishikimeishi` のオプション。2つは独立で、`false` にしたほうだけを止める
+#[derive(Debug)]
+pub struct JaKeishikimeishi {
+    /// `detection_hou_kata`。偽なら、置き換え後の語が `ほう` の項目を当てない
+    #[allow(dead_code)] // skeleton: not implemented
+    pub detection_hou_kata: bool,
+    /// `detection_ue`。偽なら、置き換え後の語が `うえ` の項目を当てない
+    #[allow(dead_code)] // skeleton: not implemented
+    pub detection_ue: bool,
+}
+
+impl Default for JaKeishikimeishi {
+    fn default() -> Self {
+        Self {
+            detection_hou_kata: true,
+            detection_ue: true,
+        }
+    }
+}
+
+impl JaKeishikimeishi {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "detection_hou_kata" => rule.detection_hou_kata = boolean(key, value)?,
+                "detection_ue" => rule.detection_ue = boolean(key, value)?,
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
+    }
+}
+
+/// `@textlint-ja/no-synonyms` のオプション。`allows` と `preferWords` の要素は、パターンではなく、見出しと完全に
+/// 一致させる文字列である
+#[derive(Debug)]
+pub struct NoSynonyms {
+    /// 見出しがこのどれかである項目は、使われた項目に数えない。これを見出しに持つ集まりは、`preferWords` の指摘をしない
+    #[allow(dead_code)] // skeleton: not implemented
+    pub allows: Vec<String>,
+    /// 集まりの見出しにあれば、その集まりの使われたほかの項目を、最初の要素の語にするよう指摘する
+    #[allow(dead_code)] // skeleton: not implemented
+    pub prefer_words: Vec<String>,
+    /// 英字の表記の項目を、使われた項目に数えない
+    #[allow(dead_code)] // skeleton: not implemented
+    pub allow_alphabet: bool,
+    /// 見出しにASCIIの数字を含む項目と、見出しが漢数字1字の項目を、使われた項目に数えない
+    #[allow(dead_code)] // skeleton: not implemented
+    pub allow_number: bool,
+    /// 真なら、同義語のグループを語彙番号ごとの集まりに分け、偽ならグループの全体を1つの集まりにする
+    #[allow(dead_code)] // skeleton: not implemented
+    pub allow_lexeme: bool,
+}
+
+impl Default for NoSynonyms {
+    fn default() -> Self {
+        Self {
+            allows: Vec::new(),
+            prefer_words: Vec::new(),
+            allow_alphabet: true,
+            allow_number: true,
+            allow_lexeme: true,
+        }
+    }
+}
+
+impl NoSynonyms {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let mut rule = Self::default();
+        let owned = |key: &str, value: &Value| -> Result<Vec<String>, String> {
+            Ok(strings(key, value)?
+                .into_iter()
+                .map(str::to_owned)
+                .collect())
+        };
+        for (key, value) in options {
+            match key.as_str() {
+                "allows" => rule.allows = owned(key, value)?,
+                "preferWords" => rule.prefer_words = owned(key, value)?,
+                "allowAlphabet" => rule.allow_alphabet = boolean(key, value)?,
+                "allowNumber" => rule.allow_number = boolean(key, value)?,
+                "allowLexeme" => rule.allow_lexeme = boolean(key, value)?,
+                _ => return Err(unknown_option(key)),
+            }
         }
         Ok(rule)
     }

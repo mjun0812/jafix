@@ -1,0 +1,878 @@
+# @textlint-ja/no-synonyms の例。期待値は、textlint 15.8.0、@textlint-ja/textlint-rule-no-synonyms 1.3.0、sudachi-synonyms-dictionary 20.0.0 の実行結果から作った。
+# 語の区切りは、textlintが tiny-segmenter、jafixが lindera のトークンをつなげた最長一致で、見出しに当たる語が同じ入力は、textlintの結果と使われた表記と集まりが同じになる。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+# 集まりの指摘は、textlintが集まりにつき1件、jafixが使われた表記ごとに最後の出現に1件ずつなので、集まりを指摘するcaseは note を持つ。
+#
+# rule:     指摘の行の `[<rule-id>]` に出るルールのID。ファイル名と違うので書く (省略するとファイル名)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭の builtin は全caseに当たり、caseに builtin があればその代わりに使う (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+rule = "@textlint-ja/no-synonyms"
+builtin = '"@textlint-ja/no-synonyms" = true'
+
+[[cases]]
+name = "basic-pair"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバを起動する。サーバーを停止する。"
+findings = ["1:1", "1:10"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "basic-pair-reversed"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバーを起動する。サーバを停止する。"
+findings = ["1:1", "1:11"]
+messages = ["同義語の「サーバー」と「サーバ」が混ざっている", "同義語の「サーバー」と「サーバ」が混ざっている"]
+
+[[cases]]
+name = "basic-same-spelling-once"
+text = "サーバを起動する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "basic-same-spelling-many"
+text = "サーバを起動する。サーバを停止する。サーバを再起動する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "basic-same-spelling-many-long"
+text = "サーバーを起動する。サーバーを停止する。サーバーを削除する。サーバーを確認する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "basic-last-occurrence"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバを起動する。サーバーを停止する。サーバを再起動する。サーバーを削除する。"
+findings = ["1:20", "1:30"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "basic-last-occurrence-interleaved"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバーを起動する。サーバを停止する。サーバーを再起動する。"
+findings = ["1:11", "1:20"]
+messages = ["同義語の「サーバー」と「サーバ」が混ざっている", "同義語の「サーバー」と「サーバ」が混ざっている"]
+
+[[cases]]
+name = "basic-last-occurrence-first-spelling-last"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバーを起動する。サーバーを停止する。サーバを削除する。"
+findings = ["1:11", "1:21"]
+messages = ["同義語の「サーバー」と「サーバ」が混ざっている", "同義語の「サーバー」と「サーバ」が混ざっている"]
+
+[[cases]]
+name = "basic-distant-paragraphs"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバを起動する。\n\nここでは別の話題に移り、いくつかの注意点を順に説明する。\n\n最後にサーバーを停止する。"
+findings = ["1:1", "5:4"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "basic-same-sentence"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバとサーバーを使い分ける。"
+findings = ["1:1", "1:5"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "basic-two-collections"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバを起動する。ユーザを追加する。サーバーを停止する。ユーザーを削除する。"
+findings = ["1:1", "1:10", "1:19", "1:29"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「ユーザ」と「ユーザー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「ユーザ」と「ユーザー」が混ざっている"]
+
+[[cases]]
+name = "basic-two-collections-one-flagged"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバを起動する。ユーザを追加する。サーバーを停止する。ユーザを削除する。"
+findings = ["1:1", "1:19"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "basic-with-other-words"
+text = "システム全体の構成を見直し、データを移行する。サーバを起動する。ユーザーを追加する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "word-user"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "ユーザを追加する。ユーザーを削除する。"
+findings = ["1:1", "1:10"]
+messages = ["同義語の「ユーザ」と「ユーザー」が混ざっている", "同義語の「ユーザ」と「ユーザー」が混ざっている"]
+
+[[cases]]
+name = "word-computer"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "コンピュータを買う。コンピューターを使う。"
+findings = ["1:1", "1:11"]
+messages = ["同義語の「コンピュータ」と「コンピューター」が混ざっている", "同義語の「コンピュータ」と「コンピューター」が混ざっている"]
+
+[[cases]]
+name = "word-printer"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "プリンタを買う。プリンターを使う。"
+findings = ["1:1", "1:9"]
+messages = ["同義語の「プリンタ」と「プリンター」が混ざっている", "同義語の「プリンタ」と「プリンター」が混ざっている"]
+
+[[cases]]
+name = "word-browser"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "ブラウザを開く。ブラウザーを閉じる。"
+findings = ["1:1", "1:9"]
+messages = ["同義語の「ブラウザ」と「ブラウザー」が混ざっている", "同義語の「ブラウザ」と「ブラウザー」が混ざっている"]
+
+[[cases]]
+name = "word-memory-in-two-collections"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "メモリを増設する。メモリーを増設する。"
+findings = ["1:1", "1:10"]
+messages = ["同義語の「メモリ」と「メモリー」が混ざっている", "同義語の「メモリ」と「メモリー」が混ざっている"]
+
+[[cases]]
+name = "word-software"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "ソフトウェアを入れる。ソフトウエアを消す。"
+findings = ["1:1", "1:12"]
+messages = ["同義語の「ソフトウェア」と「ソフトウエア」が混ざっている", "同義語の「ソフトウェア」と「ソフトウエア」が混ざっている"]
+
+[[cases]]
+name = "word-web"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "ウェブを見る。ウエブを見る。"
+findings = ["1:1", "1:8"]
+messages = ["同義語の「ウェブ」と「ウエブ」が混ざっている", "同義語の「ウェブ」と「ウエブ」が混ざっている"]
+
+[[cases]]
+name = "word-category"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "カテゴリを選ぶ。カテゴリーを選ぶ。"
+findings = ["1:1", "1:9"]
+messages = ["同義語の「カテゴリ」と「カテゴリー」が混ざっている", "同義語の「カテゴリ」と「カテゴリー」が混ざっている"]
+
+[[cases]]
+name = "word-all-kanji-hiragana"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "全てを確認する。すべてを確認する。"
+findings = ["1:1", "1:9"]
+messages = ["同義語の「全て」と「すべて」が混ざっている", "同義語の「全て」と「すべて」が混ざっている"]
+
+[[cases]]
+name = "word-america-beikoku"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "アメリカに行く。米国に行く。"
+findings = ["1:1", "1:9"]
+messages = ["同義語の「アメリカ」と「米国」が混ざっている", "同義語の「アメリカ」と「米国」が混ざっている"]
+
+[[cases]]
+name = "word-mail"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "メールを送る。メイルを送る。"
+findings = ["1:1", "1:8"]
+messages = ["同義語の「メール」と「メイル」が混ざっている", "同義語の「メール」と「メイル」が混ざっている"]
+
+[[cases]]
+name = "word-app"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "アプリを作る。アプリケーションを作る。"
+findings = ["1:1", "1:8"]
+messages = ["同義語の「アプリ」と「アプリケーション」が混ざっている", "同義語の「アプリ」と「アプリケーション」が混ざっている"]
+
+[[cases]]
+name = "word-three-spellings"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "インターフェースを作る。インタフェースを作る。インターフェイスを作る。"
+findings = ["1:1", "1:13", "1:24"]
+messages = ["同義語の「インターフェース」と「インタフェース」と「インターフェイス」が混ざっている", "同義語の「インターフェース」と「インタフェース」と「インターフェイス」が混ざっている", "同義語の「インターフェース」と「インタフェース」と「インターフェイス」が混ざっている"]
+
+[[cases]]
+name = "word-three-spellings-two-used"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "インターフェースを作る。インタフェースを作る。"
+findings = ["1:1", "1:13"]
+messages = ["同義語の「インターフェース」と「インタフェース」が混ざっている", "同義語の「インターフェース」と「インタフェース」が混ざっている"]
+
+[[cases]]
+name = "word-lexemes-same-number"
+text = "電子メールを送る。メールを送る。"
+findings = []
+messages = []
+
+[[cases]]
+name = "tokens-joined-template"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "テンプレを作る。テンプレートを作る。"
+findings = ["1:1", "1:9"]
+messages = ["同義語の「テンプレ」と「テンプレート」が混ざっている", "同義語の「テンプレ」と「テンプレート」が混ざっている"]
+
+[[cases]]
+name = "tokens-joined-infra"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "インフラを整える。インフラストラクチャを整える。"
+findings = ["1:1", "1:10"]
+messages = ["同義語の「インフラ」と「インフラストラクチャ」が混ざっている", "同義語の「インフラ」と「インフラストラクチャ」が混ざっている"]
+
+[[cases]]
+name = "tokens-joined-nakaguro"
+note = "textlintは tiny-segmenter で `オペレーティング・システム` を `オペレーティング|・|システム` に割り、見出しの `オペレーティング・システム` に当たらないが、jafixは lindera のトークン `オペレーティング` `・` `システム` を空白をまたがずにつなげて見出しに当たるので指摘する"
+text = "オペレーティングシステムを選ぶ。オペレーティング・システムを選ぶ。"
+findings = ["1:1", "1:17"]
+messages = ["同義語の「オペレーティングシステム」と「オペレーティング・システム」が混ざっている", "同義語の「オペレーティングシステム」と「オペレーティング・システム」が混ざっている"]
+
+[[cases]]
+name = "tokens-not-joined-across-space"
+text = "natural language processingと自然言語処理を比べる。"
+findings = []
+messages = []
+
+[[cases]]
+name = "tokens-boundary-only"
+text = "ユーザビリティを高める。ユーザーを増やす。"
+findings = []
+messages = []
+
+[[cases]]
+name = "tokens-longest-match"
+text = "インターフェースを作る。インターフェースデザインを作る。"
+findings = []
+messages = []
+
+[[cases]]
+name = "seg-kiwamete"
+note = "textlintは tiny-segmenter で `極めて` を `極め|て` に割り、 `決め` と同義語の `極め` を混ざっているとするが、jafixは lindera のトークンで `極めて` を1語にし、見出しに当たらないので指摘しない"
+text = "規則を決めておく。極めて重要だ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "seg-category-level"
+note = "textlintは tiny-segmenter で `カテゴリレベル` `カテゴリーレベル` を1語にして見出しに当たらないが、jafixは lindera のトークン `カテゴリ` `カテゴリー` が見出しに当たるので指摘する"
+text = "カテゴリレベルを決める。カテゴリーレベルを決める。"
+findings = ["1:1", "1:13"]
+messages = ["同義語の「カテゴリ」と「カテゴリー」が混ざっている", "同義語の「カテゴリ」と「カテゴリー」が混ざっている"]
+
+[[cases]]
+name = "seg-all-te-sentence"
+note = "textlintは tiny-segmenter で `全て` を `全|て` に割り、見出しの `全て` に当たらないが、jafixは lindera のトークン `全て` が見出しに当たるので指摘する"
+text = "全て完了した。すべて完了した。"
+findings = ["1:1", "1:8"]
+messages = ["同義語の「全て」と「すべて」が混ざっている", "同義語の「全て」と「すべて」が混ざっている"]
+
+[[cases]]
+name = "seg-tuner-command"
+note = "textlintは tiny-segmenter で `チューナコマンド` `チューナーコマンド` を1語にして見出しに当たらないが、jafixは lindera のトークンから `チューナ` `チューナー` が見出しに当たるので指摘する"
+text = "チューナコマンドを使う。チューナーコマンドを使う。"
+findings = ["1:1", "1:13"]
+messages = ["同義語の「チューナ」と「チューナー」が混ざっている", "同義語の「チューナ」と「チューナー」が混ざっている"]
+
+[[cases]]
+name = "lexeme-default-different-lexemes"
+text = "ルームを予約する。部屋を掃除する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "lexeme-false-different-lexemes"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allowLexeme = false }'
+text = "ルームを予約する。部屋を掃除する。"
+findings = ["1:1", "1:10"]
+messages = ["同義語の「ルーム」と「部屋」が混ざっている", "同義語の「ルーム」と「部屋」が混ざっている"]
+
+[[cases]]
+name = "lexeme-false-mail"
+note = "textlintは tiny-segmenter で2文目の `電子メール` を `電子|メール` に割り、見出しの `電子メール` に当たらないが、jafixは lindera のトークン `電子` `メール` をつなげて見出しに当たるので指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allowLexeme = false }'
+text = "メールを送る。電子メールを送る。"
+findings = ["1:1", "1:8"]
+messages = ["同義語の「メール」と「電子メール」が混ざっている", "同義語の「メール」と「電子メール」が混ざっている"]
+
+[[cases]]
+name = "lexeme-false-same-lexeme"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allowLexeme = false }'
+text = "サーバを起動する。サーバーを停止する。"
+findings = ["1:1", "1:10"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "lexeme-true-explicit"
+builtin = '"@textlint-ja/no-synonyms" = { allowLexeme = true }'
+text = "ルームを予約する。部屋を掃除する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "alphabet-default-server"
+text = "サーバーを起動する。serverを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "alphabet-false-server"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allowAlphabet = false }'
+text = "サーバーを起動する。serverを停止する。"
+findings = ["1:1", "1:11"]
+messages = ["同義語の「サーバー」と「server」が混ざっている", "同義語の「サーバー」と「server」が混ざっている"]
+
+[[cases]]
+name = "alphabet-false-blog"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allowAlphabet = false }'
+text = "ブログを書く。blogを読む。"
+findings = ["1:1", "1:8"]
+messages = ["同義語の「ブログ」と「blog」が混ざっている", "同義語の「ブログ」と「blog」が混ざっている"]
+
+[[cases]]
+name = "alphabet-default-blog"
+text = "ブログを書く。blogを読む。"
+findings = []
+messages = []
+
+[[cases]]
+name = "alphabet-abbreviation-default"
+text = "OSを選ぶ。オペレーティングシステムを選ぶ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "alphabet-abbreviation-false"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allowAlphabet = false }'
+text = "OSを選ぶ。オペレーティングシステムを選ぶ。"
+findings = ["1:1", "1:7"]
+messages = ["同義語の「OS」と「オペレーティングシステム」が混ざっている", "同義語の「OS」と「オペレーティングシステム」が混ざっている"]
+
+[[cases]]
+name = "alphabet-false-three-spellings"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allowAlphabet = false }'
+text = "サーバを起動する。サーバーを停止する。serverを確認する。"
+findings = ["1:1", "1:10", "1:20"]
+messages = ["同義語の「サーバ」と「サーバー」と「server」が混ざっている", "同義語の「サーバ」と「サーバー」と「server」が混ざっている", "同義語の「サーバ」と「サーバー」と「server」が混ざっている"]
+
+[[cases]]
+name = "alphabet-true-explicit"
+builtin = '"@textlint-ja/no-synonyms" = { allowAlphabet = true }'
+text = "サーバーを起動する。serverを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "alphabet-default-with-katakana-pair"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバを起動する。サーバーを停止する。serverを確認する。"
+findings = ["1:1", "1:10"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "number-default-digit-kanji"
+text = "1位を取る。一位を取る。"
+findings = []
+messages = []
+
+[[cases]]
+name = "number-false-digit-kanji"
+note = "textlintは tiny-segmenter で2文目の `一位` を `一|位` に割り、見出しの `一位` に当たらないが、jafixは lindera のトークン `一位` が見出しに当たるので指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allowNumber = false }'
+text = "1位を取る。一位を取る。"
+findings = ["1:1", "1:7"]
+messages = ["同義語の「1位」と「一位」が混ざっている", "同義語の「1位」と「一位」が混ざっている"]
+
+[[cases]]
+name = "number-default-single-digit"
+text = "3を選ぶ。三を選ぶ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "number-false-single-digit"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allowNumber = false }'
+text = "3を選ぶ。三を選ぶ。"
+findings = ["1:1", "1:6"]
+messages = ["同義語の「3」と「三」が混ざっている", "同義語の「3」と「三」が混ざっている"]
+
+[[cases]]
+name = "number-false-unrelated"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allowNumber = false }'
+text = "サーバを起動する。サーバーを停止する。"
+findings = ["1:1", "1:10"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "number-true-explicit"
+builtin = '"@textlint-ja/no-synonyms" = { allowNumber = true }'
+text = "1位を取る。一位を取る。"
+findings = []
+messages = []
+
+[[cases]]
+name = "allows-one-spelling"
+builtin = '"@textlint-ja/no-synonyms" = { allows = ["サーバ"] }'
+text = "サーバを起動する。サーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "allows-other-spelling"
+builtin = '"@textlint-ja/no-synonyms" = { allows = ["サーバー"] }'
+text = "サーバを起動する。サーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "allows-unrelated-word"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allows = ["ユーザ"] }'
+text = "サーバを起動する。サーバーを停止する。"
+findings = ["1:1", "1:10"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "allows-both-spellings"
+builtin = '"@textlint-ja/no-synonyms" = { allows = ["サーバ", "サーバー"] }'
+text = "サーバを起動する。サーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "allows-exact-match-only"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allows = ["サ"] }'
+text = "サーバを起動する。サーバーを停止する。"
+findings = ["1:1", "1:10"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "allows-three-spellings"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allows = ["インタフェース"] }'
+text = "インターフェースを作る。インタフェースを作る。インターフェイスを作る。"
+findings = ["1:1", "1:24"]
+messages = ["同義語の「インターフェース」と「インターフェイス」が混ざっている", "同義語の「インターフェース」と「インターフェイス」が混ざっている"]
+
+[[cases]]
+name = "allows-empty"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allows = [] }'
+text = "サーバを起動する。サーバーを停止する。"
+findings = ["1:1", "1:10"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "allows-with-alphabet-false"
+builtin = '"@textlint-ja/no-synonyms" = { allows = ["server"], allowAlphabet = false }'
+text = "サーバーを起動する。serverを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "prefer-denied-only"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["サーバー"] }'
+text = "サーバを起動する。"
+findings = ["1:1"]
+messages = ["「サーバ」は同義語の「サーバー」にする"]
+
+[[cases]]
+name = "prefer-preferred-only"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["サーバー"] }'
+text = "サーバーを起動する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "prefer-both-used"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["サーバー"] }'
+text = "サーバを起動する。サーバーを停止する。"
+findings = ["1:1"]
+messages = ["「サーバ」は同義語の「サーバー」にする"]
+
+[[cases]]
+name = "prefer-both-used-other-side"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["サーバ"] }'
+text = "サーバを起動する。サーバーを停止する。"
+findings = ["1:10"]
+messages = ["「サーバー」は同義語の「サーバ」にする"]
+
+[[cases]]
+name = "prefer-last-occurrence"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["サーバー"] }'
+text = "サーバを起動する。サーバーを停止する。サーバを再起動する。"
+findings = ["1:20"]
+messages = ["「サーバ」は同義語の「サーバー」にする"]
+
+[[cases]]
+name = "prefer-three-spellings"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["インターフェース"] }'
+text = "インターフェースを作る。インタフェースを作る。インターフェイスを作る。"
+findings = ["1:13", "1:24"]
+messages = ["「インタフェース」は同義語の「インターフェース」にする", "「インターフェイス」は同義語の「インターフェース」にする"]
+
+[[cases]]
+name = "prefer-first-word-in-array-wins"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["サーバ", "サーバー"] }'
+text = "サーバを起動する。サーバーを停止する。"
+findings = ["1:10"]
+messages = ["「サーバー」は同義語の「サーバ」にする"]
+
+[[cases]]
+name = "prefer-first-word-in-array-wins-reversed"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["サーバー", "サーバ"] }'
+text = "サーバを起動する。サーバーを停止する。"
+findings = ["1:1"]
+messages = ["「サーバ」は同義語の「サーバー」にする"]
+
+[[cases]]
+name = "prefer-other-collection-ignored"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["ユーザー"] }'
+text = "サーバを起動する。サーバーを停止する。"
+findings = ["1:1", "1:10"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "prefer-with-allows-for-denied"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["サーバー"], allows = ["サーバ"] }'
+text = "サーバを起動する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "prefer-with-allows-other"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["サーバー"], allows = ["ユーザ"] }'
+text = "サーバを起動する。サーバーを停止する。"
+findings = ["1:1"]
+messages = ["「サーバ」は同義語の「サーバー」にする"]
+
+[[cases]]
+name = "prefer-with-allows-same-collection-and-two-denied"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["インターフェース"], allows = ["インタフェース"] }'
+text = "インターフェースを作る。インタフェースを作る。インターフェイスを作る。"
+findings = ["1:1", "1:24"]
+messages = ["同義語の「インターフェース」と「インターフェイス」が混ざっている", "同義語の「インターフェース」と「インターフェイス」が混ざっている"]
+
+[[cases]]
+name = "prefer-alphabet-excluded"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["サーバー"] }'
+text = "serverを起動する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "prefer-alphabet-included"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["サーバー"], allowAlphabet = false }'
+text = "serverを起動する。"
+findings = ["1:1"]
+messages = ["「server」は同義語の「サーバー」にする"]
+
+[[cases]]
+name = "prefer-number-excluded"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["一位"] }'
+text = "1位を取る。"
+findings = []
+messages = []
+
+[[cases]]
+name = "prefer-number-included"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["一位"], allowNumber = false }'
+text = "1位を取る。"
+findings = ["1:1"]
+messages = ["「1位」は同義語の「一位」にする"]
+
+[[cases]]
+name = "prefer-two-collections"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["サーバー", "ユーザー"] }'
+text = "サーバを起動する。ユーザを追加する。"
+findings = ["1:1", "1:10"]
+messages = ["「サーバ」は同義語の「サーバー」にする", "「ユーザ」は同義語の「ユーザー」にする"]
+
+[[cases]]
+name = "prefer-kanji-hiragana"
+note = "textlintは tiny-segmenter で `全て` を `全|て` に割り、見出しの `全て` に当たらないが、jafixは lindera のトークン `全て` が見出しに当たるので指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["すべて"] }'
+text = "全て完了した。"
+findings = ["1:1"]
+messages = ["「全て」は同義語の「すべて」にする"]
+
+[[cases]]
+name = "prefer-memory-two-collections"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["メモリー"] }'
+text = "メモリを増設する。"
+findings = ["1:1"]
+messages = ["「メモリ」は同義語の「メモリー」にする"]
+
+[[cases]]
+name = "prefer-lexeme-false"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["部屋"], allowLexeme = false }'
+text = "ルームを予約する。"
+findings = ["1:1"]
+messages = ["「ルーム」は同義語の「部屋」にする"]
+
+[[cases]]
+name = "prefer-lexeme-default"
+builtin = '"@textlint-ja/no-synonyms" = { preferWords = ["部屋"] }'
+text = "ルームを予約する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-paragraph"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバを起動する。\n\nサーバーを停止する。"
+findings = ["1:1", "3:1"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "ctx-heading"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "# サーバの設定\n\nサーバーを停止する。"
+findings = ["1:3", "3:1"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "ctx-heading-both"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "# サーバの設定\n\n## サーバーの設定"
+findings = ["1:3", "3:4"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "ctx-setext-heading"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバの設定\n============\n\nサーバーを停止する。"
+findings = ["1:1", "4:1"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "ctx-blockquote"
+text = "> サーバを起動する。\n\nサーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-blockquote-both"
+text = "> サーバを起動する。\n\n> サーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-blockquote-nested"
+text = "> > サーバを起動する。\n\nサーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-table-cell"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "| 項目 | 内容 |\n| --- | --- |\n| サーバ | 起動する |\n\nサーバーを停止する。"
+findings = ["3:3", "5:1"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "ctx-list-item"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "- サーバを起動する。\n- サーバーを停止する。"
+findings = ["1:3", "2:3"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "ctx-list-item-nested"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "- 手順\n  - サーバを起動する。\n\nサーバーを停止する。"
+findings = ["2:5", "4:1"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "ctx-link-text"
+text = "[サーバ](https://example.com)を起動する。\n\nサーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-link-text-both"
+text = "[サーバ](https://example.com)を起動する。[サーバー](https://example.com)を停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-link-url-text"
+text = "https://example.com/サーバ\n\nサーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-autolink"
+text = "<https://example.com/サーバ>\n\nサーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-image-alt"
+text = "![サーバ](a.png)\n\nサーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-emphasis"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "*サーバ*を起動する。\n\nサーバーを停止する。"
+findings = ["1:2", "3:1"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "ctx-strong"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "**サーバ**を起動する。\n\nサーバーを停止する。"
+findings = ["1:3", "3:1"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "ctx-strikethrough"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "~~サーバ~~を起動する。\n\nサーバーを停止する。"
+findings = ["1:3", "3:1"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "ctx-inline-code"
+text = "`サーバ` を起動する。\n\nサーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-code-block"
+text = "```\nサーバを起動する。\n```\n\nサーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-indented-code-block"
+text = "手順:\n\n    サーバを起動する。\n\nサーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-html-block"
+text = "<div>サーバを起動する。</div>\n\nサーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-html-comment"
+text = "<!-- サーバを起動する。 -->\n\nサーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-frontmatter"
+text = "---\ntitle: サーバ\n---\n\nサーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-footnote-definition"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバを起動する[^1]。\n\n[^1]: サーバーを停止する。"
+findings = ["1:1", "3:7"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "ctx-full-reference-link"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "[サーバ][a]を起動する。\n\n[a]: https://example.com\n\nサーバーを停止する。"
+findings = ["1:2", "5:1"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "ctx-full-reference-link-text-only"
+text = "[サーバ][a]を起動する。\n\n[a]: https://example.com"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-inline-code-and-text"
+text = "`サーバ` と書く。サーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "nonprose-shortcut-reference"
+note = "textlintは省略形の参照リンクの文字列も見て同義語を数えるが、jafixは本文の範囲にしない"
+text = "[サーバ]を起動する。\n\n[サーバ]: https://example.com\n\nサーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "nonprose-collapsed-reference"
+note = "textlintはcollapsed形の参照リンクの文字列も見て同義語を数えるが、jafixは本文の範囲にしない"
+text = "[サーバ][]を起動する。\n\n[サーバ]: https://example.com\n\nサーバーを停止する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "pos-second-line"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "一行目です。\nサーバを起動する。\nサーバーを停止する。"
+findings = ["2:1", "3:1"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "pos-fullwidth-before"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "ＡＢＣサーバを起動する。ＡＢＣサーバーを停止する。"
+findings = ["1:4", "1:16"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "pos-astral-before"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "\U0001f600サーバを起動する。\U0001f600サーバーを停止する。"
+findings = ["1:2", "1:12"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "pos-after-link"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "[リンク](https://example.com) サーバを起動する。サーバーを停止する。"
+findings = ["1:28", "1:37"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "pos-multiple-lines-in-one-str"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバを起動する。\nサーバーを停止する。"
+findings = ["1:1", "2:1"]
+messages = ["同義語の「サーバ」と「サーバー」が混ざっている", "同義語の「サーバ」と「サーバー」が混ざっている"]
+
+[[cases]]
+name = "msg-order-by-first-appearance"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "サーバーを起動する。サーバを停止する。"
+findings = ["1:1", "1:11"]
+messages = ["同義語の「サーバー」と「サーバ」が混ざっている", "同義語の「サーバー」と「サーバ」が混ざっている"]
+
+[[cases]]
+name = "msg-keeps-heading-text"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+text = "ソフトウェアを入れる。ソフトウエアを消す。"
+findings = ["1:1", "1:12"]
+messages = ["同義語の「ソフトウェア」と「ソフトウエア」が混ざっている", "同義語の「ソフトウェア」と「ソフトウエア」が混ざっている"]
+
+[[cases]]
+name = "dup-heading-archive"
+note = "textlintは同義語の集まりにつき1件を、最初に出たのが最も遅い表記の最後の出現に指摘するが、jafixは使われた表記ごとに、その表記が文書の中で最後に出た位置に1件ずつ指摘する"
+builtin = '"@textlint-ja/no-synonyms" = { allowAlphabet = false }'
+text = "アーカイブを作る。archiveを作る。"
+findings = ["1:1", "1:10"]
+messages = ["同義語の「アーカイブ」と「archive」が混ざっている", "同義語の「アーカイブ」と「archive」が混ざっている"]

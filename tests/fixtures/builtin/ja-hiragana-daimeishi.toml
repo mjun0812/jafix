@@ -1,0 +1,318 @@
+# ja-hiragana-daimeishi の例。期待値は、textlint 15.8.0 と textlint-rule-ja-hiragana-daimeishi 1.0.0 の実行結果のうち、
+# kuromojinとlinderaのトークンが同じ入力のものから作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+# entry-NN のcaseは、辞書(textlintのpackageの辞書の並び)の NN 番目 (0始まり) の項目に当たる入力。
+# 当たる入力を作れなかった項目 (辞書の品詞・読みに解析される文が見つからなかった): 2
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭の builtin は全caseに当たり、caseに builtin があればその代わりに使う (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+builtin = 'ja-hiragana-daimeishi = true'
+
+[[cases]]
+name = "entry-00"
+text = "彼処に行く。"
+findings = ["1:1"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "entry-01"
+text = "何処に行く。"
+findings = ["1:1"]
+messages = ["代名詞「何処」はひらがなの「どこ」にする"]
+
+[[cases]]
+name = "entry-03"
+text = "貴方に会う。"
+findings = ["1:1"]
+messages = ["代名詞「貴方」はひらがなの「あなた」にする"]
+
+[[cases]]
+name = "entry-04"
+text = "何時でもよい。"
+findings = ["1:1"]
+messages = ["代名詞「何時」はひらがなの「いつ」にする"]
+
+[[cases]]
+name = "entry-05"
+text = "之を見る。"
+findings = ["1:1"]
+messages = ["代名詞「之」はひらがなの「これ」にする"]
+
+[[cases]]
+name = "entry-06"
+text = "何れにしても同じだ。"
+findings = ["1:1"]
+messages = ["代名詞「何れ」はひらがなの「いずれ」にする"]
+
+[[cases]]
+name = "entry-07"
+text = "何時のまにか寝ていた。"
+findings = ["1:1"]
+messages = ["代名詞「何時のまにか」はひらがなの「いつのまにか」にする"]
+
+[[cases]]
+name = "entry-08"
+text = "何時ぞやの話だ。"
+findings = ["1:1"]
+messages = ["代名詞「何時ぞや」はひらがなの「いつぞや」にする"]
+
+[[cases]]
+name = "entry-09"
+text = "何時もの店に行く。"
+findings = ["1:1"]
+messages = ["代名詞「何時も」はひらがなの「いつも」にする"]
+
+[[cases]]
+name = "entry-10"
+text = "何時しか夜になった。"
+findings = ["1:1"]
+messages = ["代名詞「何時しか」はひらがなの「いつしか」にする"]
+
+[[cases]]
+name = "entry-11"
+text = "何時のまに寝たのか。"
+findings = ["1:1"]
+messages = ["代名詞「何時のまに」はひらがなの「いつのまに」にする"]
+
+[[cases]]
+name = "entry-12"
+text = "何時かしらと思う。"
+findings = ["1:1"]
+messages = ["代名詞「何時かしら」はひらがなの「いつかしら」にする"]
+
+[[cases]]
+name = "entry-13"
+text = "何時の間にか寝ていた。"
+findings = ["1:1"]
+messages = ["代名詞「何時の間にか」はひらがなの「いつの間にか」にする"]
+
+[[cases]]
+name = "entry-14"
+text = "何時の間に寝たのか。"
+findings = ["1:1"]
+messages = ["代名詞「何時の間に」はひらがなの「いつの間に」にする"]
+
+[[cases]]
+name = "variant-dokomo"
+text = "何処も同じだ。"
+findings = ["1:1"]
+messages = ["代名詞「何処」はひらがなの「どこ」にする"]
+
+[[cases]]
+name = "variant-doko-ni-demo"
+text = "何処にでもある。"
+findings = ["1:1"]
+messages = ["代名詞「何処」はひらがなの「どこ」にする"]
+
+[[cases]]
+name = "variant-itsumo-split"
+text = "彼は何時も元気だ。"
+findings = ["1:3"]
+messages = ["代名詞「何時」はひらがなの「いつ」にする"]
+
+[[cases]]
+name = "variant-itsumo-twice"
+text = "何時も何時も来る。"
+findings = ["1:1", "1:4"]
+messages = ["代名詞「何時も」はひらがなの「いつも」にする", "代名詞「何時」はひらがなの「いつ」にする"]
+
+[[cases]]
+name = "variant-doko-twice"
+text = "何処と何処。"
+findings = ["1:1", "1:4"]
+messages = ["代名詞「何処」はひらがなの「どこ」にする", "代名詞「何処」はひらがなの「どこ」にする"]
+
+[[cases]]
+name = "izuko-context-matches-doko-entry"
+text = "何処ともなく去った。"
+findings = ["1:1"]
+messages = ["代名詞「何処」はひらがなの「どこ」にする"]
+
+[[cases]]
+name = "neg-hiragana"
+text = "あそこに行く。どこに行く。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-kanji-other-word"
+text = "場所を探す。"
+findings = []
+messages = []
+
+[[cases]]
+name = "neg-anata-kanji-noun"
+text = "貴重な話だ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-paragraph"
+text = "彼処に行く。"
+findings = ["1:1"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "ctx-heading"
+text = "# 彼処に行く"
+findings = ["1:3"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "ctx-setext-heading"
+text = "彼処に行く\n=========="
+findings = ["1:1"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "ctx-blockquote"
+text = "> 彼処に行く。"
+findings = ["1:3"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "ctx-table-cell"
+text = "| 項目 | 内容 |\n| --- | --- |\n| 彼処に行く | 本文 |"
+findings = ["3:3"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "ctx-list-item"
+text = "- 彼処に行く。\n- 何処に行く。"
+findings = ["1:3", "2:3"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする", "代名詞「何処」はひらがなの「どこ」にする"]
+
+[[cases]]
+name = "ctx-link-text"
+text = "[彼処に行く](https://example.com)"
+findings = ["1:2"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "ctx-emphasis"
+text = "*彼処に行く*"
+findings = ["1:2"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "ctx-strong"
+text = "**彼処に行く**"
+findings = ["1:3"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "ctx-strikethrough"
+text = "~~彼処に行く~~"
+findings = ["1:3"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "ctx-inline-code"
+text = "`彼処` は対象外です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-code-block"
+text = "```\n彼処に行く\n```"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-html-block"
+text = "<div>彼処に行く</div>"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-frontmatter"
+text = "---\ntitle: 彼処に行く\n---\n\n本文です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "ctx-footnote-definition"
+text = "本文です[^1]。\n\n[^1]: 彼処に行く。"
+findings = ["3:7"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "multi-in-one-str"
+text = "彼処に行く。何処に行く。"
+findings = ["1:1", "1:7"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする", "代名詞「何処」はひらがなの「どこ」にする"]
+
+[[cases]]
+name = "multi-paragraphs"
+text = "彼処に行く。\n\n何処に行く。"
+findings = ["1:1", "3:1"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする", "代名詞「何処」はひらがなの「どこ」にする"]
+
+[[cases]]
+name = "multi-same-word"
+text = "彼処に行く。彼処に行く。"
+findings = ["1:1", "1:7"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする", "代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "pos-second-line"
+text = "一行目です。\n彼処に行く。"
+findings = ["2:1"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "pos-astral-before"
+text = "\U0001f600彼処に行く。"
+findings = ["1:2"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "pos-after-link"
+text = "[リンク](https://example.com) 彼処に行く。"
+findings = ["1:28"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "nonprose-bare-url"
+note = "textlintは裸のURLの文字列も見て指摘するが、jafixは裸のURLを本文の範囲にしない"
+text = "https://example.com/彼処に行く"
+findings = []
+messages = []
+
+[[cases]]
+name = "nonprose-autolink"
+note = "textlintは自動リンクの文字列も見て指摘するが、jafixは自動リンクを本文の範囲にしない"
+text = "<https://example.com/彼処に行く>"
+findings = []
+messages = []
+
+[[cases]]
+name = "nonprose-shortcut-reference"
+note = "textlintは省略形の参照リンクの文字列も見て指摘するが、jafixは本文の範囲にしない"
+text = "[彼処に行く]\n\n[彼処に行く]: https://example.com"
+findings = []
+messages = []
+
+[[cases]]
+name = "nonprose-collapsed-reference"
+note = "textlintはcollapsed形の参照リンクの文字列も見て指摘するが、jafixは本文の範囲にしない"
+text = "[彼処に行く][]\n\n[彼処に行く]: https://example.com"
+findings = []
+messages = []
+
+[[cases]]
+name = "prose-full-reference"
+text = "[彼処に行く][a]\n\n[a]: https://example.com"
+findings = ["1:2"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
+
+[[cases]]
+name = "prose-after-bare-url"
+text = "https://example.com の後で彼処に行く。"
+findings = ["1:24"]
+messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
