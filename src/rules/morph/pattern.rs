@@ -45,7 +45,9 @@ impl Fields for StaticFields {
     }
 
     fn surfaces(&self) -> Option<Vec<&str>> {
-        todo!("skeleton: not implemented")
+        self.iter()
+            .find(|(field, _)| *field == Field::Surface)
+            .map(|(_, values)| values.to_vec())
     }
 }
 
@@ -55,7 +57,9 @@ impl Fields for OwnedFields {
     }
 
     fn surfaces(&self) -> Option<Vec<&str>> {
-        todo!("skeleton: not implemented")
+        self.iter()
+            .find(|(field, _)| *field == Field::Surface)
+            .map(|(_, values)| values.iter().map(String::as_str).collect())
     }
 }
 

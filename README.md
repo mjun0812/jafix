@@ -198,6 +198,8 @@ AIらしい書き方を指摘する7ルールのオプションは、次のと�
 
 `2.2.2.算用数字と漢数字の使い分け` は `arabic-kanji-numbers` と同じパターンで判定するので、両方を有効にすると、同じ箇所に2つの指摘が出ます。設定を書かなければ `arabic-kanji-numbers` だけが有効なので、重なるのは `preset-jtf-style = true` かルールのIDのキーで `2.2.2` を有効にしたときだけです。指摘する一致の数も違い、`arabic-kanji-numbers` はパターンごとに最初の一致だけを、`2.2.2` はすべての一致を指摘します。片方だけを使うには、`arabic-kanji-numbers = false` か `"2.2.2.算用数字と漢数字の使い分け" = false` を書きます。
 
+`2.2.1.ひらがなと漢字の使い分け` は、ひらがな系の3ルール(`ja-hiragana-hojodoushi`・`ja-hiragana-fukushi`・`ja-hiragana-daimeishi`)と同じ語を、同じ向きに直すよう求めることがあります。両方を有効にすると、同じ箇所に2つのIDの指摘が出ます。組は、`下さい`(`ja-hiragana-hojodoushi`)、`更に`・`暫く`・`折角`(`ja-hiragana-fukushi`)、`何処`(`ja-hiragana-daimeishi`)などです。どちらも指摘ルールなので、設定の不正にはしません。片方だけを使うには、`"2.2.1.ひらがなと漢字の使い分け" = false` か、ひらがな系のルールのIDのキーを `false` にします。逆の向きの組もあり、`2.2.1` は `いたす` を `致す` に、`ja-hiragana-hojodoushi` は補助動詞の `致す` を `いたす` にするよう求めます。この組には両方を満たす書き方の無い場合があるので、片方を `false` にしてください。
+
 利用者の置き換えの結果を、37ルールの指摘ルールが指摘する組は、設定の不正にしません。たとえば `サーバー` を `サーバ` にする `prh` の辞書と `2.1.6`、`replace` で `:` や `(` を作る `@textlint-rule/pattern` の要素と `4.2.7`・`4.3.1` の組です。この組では、hookが置き換えた箇所をagentが指摘に従って戻し、次の編集でまた置き換わる、という往復が起きえます。どちらかのルールのIDのキーを `false` にするか、その置き換えを辞書やパターンから外してください。組み込みの修正ルールが置き換えを戻す組は、設定の不正です(「[修正の順と直さない箇所](#修正の順と直さない箇所)」)。
 
 ## 利用者の置き換え
@@ -525,6 +527,8 @@ fullwidth-paren = false
 - 空白と字種の13ルールのオプションの値が誤っている。`ja-space-between-half-and-full-width` の `space` は `"never"`・`"always"` か、`"alphabets"`・`"numbers"`・`"punctuation"` からなる配列、`lintStyledNode` と4つの `ja-space-around-*` の `before`・`after` は真偽値、`allows` はパターンの配列、`no-mixed-zenkaku-and-hankaku-alphabet` の `prefer` は `"全角"` か `"半角"`。`exceptPunctuation` は、知らないオプションに当たります
 - `no-ai-words` の `dictionaryPath` のファイルが読めないか、JSONとして読めないか、利用者の辞書の形でない。`tokens` の要素に、上に挙げたトークンの項目の名前でも `_` で始まる名前でもないキー(kuromojiの `word_id`・`word_type`・`word_position` を含む)があるときも、これに当たります。理由には `dictionaryPath` とファイルのパスを含めます
 - `no-ai-words` の `dictionaryMode` が `"override"` なのに、`dictionaryPath` が無い
+- ひらがな系の5ルール・`@textlint-ja/no-insert-dropping-sa`・`@textlint-ja/no-synonyms` のオプションの値が誤っている。`ja-hiragana-hojodoushi` と `ja-hiragana-fukushi` の `rulePath` は空でない文字列、`ja-keishikimeishi` の `detection_hou_kata`・`detection_ue` と、`@textlint-ja/no-synonyms` の `allowAlphabet`・`allowNumber`・`allowLexeme` は真偽値、`allows`・`preferWords` は文字列の配列です。`ja-hiragana-keishikimeishi`・`ja-hiragana-daimeishi`・`@textlint-ja/no-insert-dropping-sa` はオプションを持たないので、表にキーがあれば知らないオプションです
+- `ja-hiragana-hojodoushi` か `ja-hiragana-fukushi` の `rulePath` のファイルが読めないか、YAMLとして読めないか、辞書の形でない。辞書は、空でない文字列の `message` と空でない配列の `dict` を持つ表で、`dict` の各項目は文字列の `expected` と空でない配列の `tokens` を持ちます。`tokens` の要素は `no-ai-words` の利用者の辞書と同じく読むので、トークンの項目の名前でも `_` で始まる名前でもないキー(`word_id`・`word_type`・`word_position` を含む)があれば、これに当たります。理由には `rulePath` とファイルのパスを含めます
 - `prh` のオプションが誤っている。`rulePaths` と `ruleContents` に辞書が1つも無い(`prh = true` を含む)、`check` で始まるオプションが真偽値でない、`checkCodeComment`・`debug`・知らないオプションがある。理由には `prh` とオプションの名前を含めます
 - `prh` の `rulePaths` か `ruleContents` の辞書が誤っている。理由には `prh`、`rulePaths` か `ruleContents`、辞書のファイルのパス(`ruleContents` では何番目の要素か)を含めます。次のどれかに当たります
   - 辞書のファイルが読めないか、YAMLとして読めない。辞書の値の型が誤っている(`expected` が文字列でない、`rules` が配列でないなど)

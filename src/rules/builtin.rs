@@ -2124,7 +2124,6 @@ impl JtfParentheses {
 #[derive(Debug, Default)]
 pub struct JaHiragana {
     /// `rulePath` の辞書。あれば、組み込みの辞書の代わりにこの辞書だけを使う
-    #[allow(dead_code)] // skeleton: not implemented
     pub dictionary: Option<HiraganaDictionary>,
 }
 
@@ -2152,9 +2151,7 @@ impl JaHiragana {
 #[derive(Debug)]
 pub struct HiraganaDictionary {
     /// 指摘の文面の先頭に使う
-    #[allow(dead_code)] // skeleton: not implemented
     pub message: String,
-    #[allow(dead_code)] // skeleton: not implemented
     pub entries: Vec<HiraganaWord>,
 }
 
@@ -2162,9 +2159,7 @@ pub struct HiraganaDictionary {
 #[derive(Debug)]
 pub struct HiraganaWord {
     /// 置き換え後の語
-    #[allow(dead_code)] // skeleton: not implemented
     pub expected: String,
-    #[allow(dead_code)] // skeleton: not implemented
     pub pattern: Vec<Expect<OwnedFields>>,
 }
 
@@ -2172,18 +2167,73 @@ pub struct HiraganaWord {
 /// `tokens` の要素は `no-ai-words` の利用者の辞書と同じく `expect` で読み、項目のほかのキーは読まない。
 /// 読めない、YAMLとして読めない、形の誤りは、理由を返す
 fn hiragana_dictionary(path: &Path) -> Result<HiraganaDictionary, String> {
-    let _ = (path, expect);
-    todo!("skeleton: not implemented")
+    let text = std::fs::read_to_string(path).map_err(|e| format!("読めない: {e}"))?;
+    let options = serde_saphyr::options! {
+        // textlintのルールが使う `js-yaml` 4と同じく、`yes`・`no`・`on`・`off` を文字列にする
+        strict_booleans: true,
+        with_snippet: false,
+    };
+    let document: serde_json::Value = serde_saphyr::from_str_with_options(&text, options)
+        .map_err(|e| format!("YAMLとして読めない: {e}"))?;
+    let raw: RawHiraganaDictionary =
+        serde_json::from_value(document).map_err(|e| format!("辞書の形でない: {e}"))?;
+    if raw.message.is_empty() {
+        return Err("`message` は空でない文字列で書く".to_owned());
+    }
+    if raw.dict.is_empty() {
+        return Err("`dict` は空でない配列で書く".to_owned());
+    }
+    let entries = raw
+        .dict
+        .into_iter()
+        .enumerate()
+        .map(|(i, entry)| {
+            hiragana_word(entry).map_err(|reason| format!("`dict` の{}番目: {reason}", i + 1))
+        })
+        .collect::<Result<_, _>>()?;
+    Ok(HiraganaDictionary {
+        message: raw.message,
+        entries,
+    })
+}
+
+#[derive(Deserialize)]
+struct RawHiraganaDictionary {
+    message: String,
+    dict: Vec<RawHiraganaEntry>,
+}
+
+/// 項目の `expected` と `tokens` 以外のキー (`extensions` など) は、textlintと同じく読まない
+#[derive(Deserialize)]
+struct RawHiraganaEntry {
+    expected: String,
+    tokens: Vec<serde_json::Map<String, serde_json::Value>>,
+}
+
+fn hiragana_word(entry: RawHiraganaEntry) -> Result<HiraganaWord, String> {
+    if entry.tokens.is_empty() {
+        return Err("`tokens` は空でない配列で書く".to_owned());
+    }
+    let pattern = entry
+        .tokens
+        .iter()
+        .enumerate()
+        .map(|(j, token)| {
+            expect(token).map_err(|reason| format!("`tokens` の{}番目: {reason}", j + 1))
+        })
+        .collect::<Result<_, _>>()?;
+    Ok(HiraganaWord {
+        expected: entry.expected,
+        pattern,
+    })
 }
 
 /// `ja-keishikimeishi` のオプション。2つは独立で、`false` にしたほうだけを止める
 #[derive(Debug)]
 pub struct JaKeishikimeishi {
     /// `detection_hou_kata`。偽なら、置き換え後の語が `ほう` の項目を当てない
-    #[allow(dead_code)] // skeleton: not implemented
     pub detection_hou_kata: bool,
     /// `detection_ue`。偽なら、置き換え後の語が `うえ` の項目を当てない
-    #[allow(dead_code)] // skeleton: not implemented
     pub detection_ue: bool,
 }
 

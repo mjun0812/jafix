@@ -487,3 +487,33 @@ fn jtf_style_4_3_7() {
 fn jtf_style_4_3_8() {
     assert_cases("jtf-style-4-3-8");
 }
+
+#[test]
+fn ja_hiragana_hojodoushi() {
+    assert_cases("ja-hiragana-hojodoushi");
+}
+
+#[test]
+fn ja_hiragana_keishikimeishi() {
+    assert_cases("ja-hiragana-keishikimeishi");
+}
+
+#[test]
+fn ja_keishikimeishi() {
+    assert_cases("ja-keishikimeishi");
+}
+
+#[test]
+fn ja_hiragana_fukushi() {
+    assert_cases("ja-hiragana-fukushi");
+}
+
+#[test]
+fn ja_hiragana_daimeishi() {
+    assert_cases("ja-hiragana-daimeishi");
+}
+
+#[test]
+fn no_insert_dropping_sa() {
+    assert_cases("no-insert-dropping-sa");
+}

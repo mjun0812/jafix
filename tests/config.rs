@@ -2113,3 +2113,209 @@ fn prh_rejects_a_replacement_opposite_to_a_jtf_style_fix_rule() {
     sandbox.write_xdg_config(&format!("[builtin]\n{fullwidth_digits}"));
     assert_eq!(fix_with_config(&sandbox, "いちにさん\n"), "１２３\n");
 }
+
+/// ひらがな系の5ルール、`@textlint-ja/no-insert-dropping-sa`、`@textlint-ja/no-synonyms`
+const HIRAGANA_AND_SYNONYMS_RULES: [&str; 7] = [
+    "ja-hiragana-hojodoushi",
+    "ja-hiragana-keishikimeishi",
+    "ja-keishikimeishi",
+    "ja-hiragana-fukushi",
+    "ja-hiragana-daimeishi",
+    "@textlint-ja/no-insert-dropping-sa",
+    "@textlint-ja/no-synonyms",
+];
+
+/// `HIRAGANA_AND_SYNONYMS_RULES` のそれぞれに当たる行。最後の2行は、同じ同義語の集まりの別の表記である
+const HIRAGANA_AND_SYNONYMS_RULES_INPUT: &str = "お願い致します。
+
+見た事がある。
+
+既に終わった。
+
+彼処に行く。
+
+このカレーは辛さそうだ。
+
+サーバを使う。
+
+サーバーを使う。
+";
+
+#[test]
+fn hiragana_and_synonyms_rules_are_off_by_default() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", HIRAGANA_AND_SYNONYMS_RULES_INPUT);
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in HIRAGANA_AND_SYNONYMS_RULES {
+        assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+
+    // 同じ文書に、ひらがな系の5ルールとさ入れのルールのそれぞれが当たることを、有効にして確かめる
+    let rules = &HIRAGANA_AND_SYNONYMS_RULES[..6];
+    let enabled: String = rules
+        .iter()
+        .map(|rule| format!("\"{rule}\" = true\n"))
+        .collect();
+    sandbox.write_xdg_config(&format!("[builtin]\n{enabled}"));
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in rules {
+        assert!(!findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+}
+
+#[test]
+fn hiragana_and_synonyms_rule_options_are_validated() {
+    for (builtin, expected) in [
+        (
+            "ja-hiragana-hojodoushi = { dictPath = \"hojo.yml\" }",
+            ["ja-hiragana-hojodoushi", "dictPath"],
+        ),
+        (
+            "ja-hiragana-hojodoushi = { rulePath = 1 }",
+            ["ja-hiragana-hojodoushi", "rulePath"],
+        ),
+        (
+            "ja-hiragana-fukushi = { dictPath = \"fukushi.yml\" }",
+            ["ja-hiragana-fukushi", "dictPath"],
+        ),
+        (
+            "ja-hiragana-fukushi = { rulePath = 1 }",
+            ["ja-hiragana-fukushi", "rulePath"],
+        ),
+        (
+            "ja-keishikimeishi = { detection_hou = false }",
+            ["ja-keishikimeishi", "detection_hou"],
+        ),
+        (
+            "ja-keishikimeishi = { detection_ue = \"false\" }",
+            ["ja-keishikimeishi", "detection_ue"],
+        ),
+        (
+            "\"@textlint-ja/no-synonyms\" = { allow = [] }",
+            ["@textlint-ja/no-synonyms", "allow"],
+        ),
+        (
+            "\"@textlint-ja/no-synonyms\" = { allows = [1] }",
+            ["@textlint-ja/no-synonyms", "allows"],
+        ),
+        (
+            "\"@textlint-ja/no-synonyms\" = { preferWords = [true] }",
+            ["@textlint-ja/no-synonyms", "preferWords"],
+        ),
+        (
+            "\"@textlint-ja/no-synonyms\" = { allowLexeme = \"true\" }",
+            ["@textlint-ja/no-synonyms", "allowLexeme"],
+        ),
+        (
+            "ja-hiragana-keishikimeishi = { detection_ue = false }",
+            ["ja-hiragana-keishikimeishi", "detection_ue"],
+        ),
+        (
+            "ja-hiragana-daimeishi = { rulePath = \"daimeishi.yml\" }",
+            ["ja-hiragana-daimeishi", "rulePath"],
+        ),
+        (
+            "\"@textlint-ja/no-insert-dropping-sa\" = { strict = true }",
+            ["@textlint-ja/no-insert-dropping-sa", "strict"],
+        ),
+    ] {
+        assert_check_rejects_builtin(builtin, &expected);
+    }
+}
+
+#[test]
+fn hiragana_rule_path_replaces_the_builtin_dictionary() {
+    let dictionary = "message: 漢字で書かない語
+dict:
+  - expected: さいこう
+    tokens:
+      - basic_form: 再考
+";
+    for rule in ["ja-hiragana-hojodoushi", "ja-hiragana-fukushi"] {
+        let sandbox = Sandbox::new();
+        // `致し` は補助動詞の、`既に` は副詞の組み込みの辞書の語である
+        sandbox.write("t.md", "再考する。お願い致します。既に終わった。\n");
+        sandbox.write("xdg/jafix/hiragana.yml", dictionary);
+        sandbox.write_xdg_config(&format!(
+            "[builtin]\n{rule} = {{ rulePath = \"hiragana.yml\" }}\n"
+        ));
+        let output = sandbox.run(&["check", "t.md"]);
+        assert_eq!(
+            findings_of(stdout(&output), rule),
+            [format!(
+                "t.md:1:1: 漢字で書かない語: 「再考」を「さいこう」にする [{rule}]"
+            )],
+            "{rule}"
+        );
+    }
+}
+
+#[test]
+fn hiragana_rule_path_rejects_invalid_dictionary() {
+    let token = |key: &str| {
+        format!("message: m\ndict:\n  - expected: いたし\n    tokens:\n      - {key}: 致し\n")
+    };
+    // `rulePath` の値と、置く辞書 (無ければ置かない)
+    for (rule_path, dictionary) in [
+        ("", None),
+        ("hojo.yml", None),
+        ("hojo.yml", Some("message: [\n".to_owned())),
+        ("hojo.yml", Some(token("word_id"))),
+        ("hojo.yml", Some(token("part_of_speech"))),
+    ] {
+        let sandbox = Sandbox::new();
+        sandbox.write("t.md", "お願い致します。\n");
+        if let Some(dictionary) = &dictionary {
+            sandbox.write("xdg/jafix/hojo.yml", dictionary);
+        }
+        sandbox.write_xdg_config(&format!(
+            "[builtin]\nja-hiragana-hojodoushi = {{ rulePath = \"{rule_path}\" }}\n"
+        ));
+        let output = sandbox.run(&["check", "t.md"]);
+        assert_eq!(output.status.code(), Some(2), "{dictionary:?}");
+        let stderr = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            stderr.contains("rulePath") && stderr.contains(rule_path),
+            "{dictionary:?}: {stderr}"
+        );
+    }
+}
+
+#[test]
+fn both_keishikimeishi_rules() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "見る事が出来る。\n");
+    sandbox.write_xdg_config(
+        "[builtin]\nja-hiragana-keishikimeishi = true\nja-keishikimeishi = true\n",
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in ["ja-hiragana-keishikimeishi", "ja-keishikimeishi"] {
+        assert_eq!(
+            findings_of(found, rule),
+            [format!(
+                "t.md:1:3: 形式名詞「事」はひらがなの「こと」にする [{rule}]"
+            )],
+            "{found}"
+        );
+    }
+}
+
+#[test]
+fn hiragana_rules_and_2_2_1_report_both() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "提出して下さい。\n");
+    sandbox.write_xdg_config(
+        "[builtin]\n\"2.2.1.ひらがなと漢字の使い分け\" = true\nja-hiragana-hojodoushi = true\n",
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(1));
+    let found = stdout(&output);
+    for rule in ["2.2.1.ひらがなと漢字の使い分け", "ja-hiragana-hojodoushi"] {
+        let findings = findings_of(found, rule);
+        assert_eq!(findings.len(), 1, "{rule}: {found}");
+        assert!(findings[0].starts_with("t.md:1:5: "), "{rule}: {found}");
+    }
+}
