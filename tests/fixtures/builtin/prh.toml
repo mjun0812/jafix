@@ -1,0 +1,1621 @@
+# prh の例。期待値は、textlint 15.8.0、textlint-rule-prh 6.1.1 (prh 6.1.0) の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表の下に書く内容。辞書とパターンがcaseごとに違うので、すべてのcaseが持つ
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    `jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+[[cases]]
+name = "d-string-rule"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - JavaScript
+""",
+]
+'''
+text = "javascriptとＪａｖａＳｃｒｉｐｔとJavaScriptとJAVASCRIPT。"
+findings = ["1:1", "1:12", "1:34"]
+messages = ["「javascript」を「JavaScript」にする", "「ＪａｖａＳｃｒｉｐｔ」を「JavaScript」にする", "「JAVASCRIPT」を「JavaScript」にする"]
+fixed = "JavaScriptとJavaScriptとJavaScriptとJavaScript。"
+
+[[cases]]
+name = "d-expected-only-digits"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Web2
+""",
+]
+'''
+text = "web2とＷｅｂ２とWEB２とWeb2"
+findings = ["1:1", "1:6", "1:11"]
+messages = ["「web2」を「Web2」にする", "「Ｗｅｂ２」を「Web2」にする", "「WEB２」を「Web2」にする"]
+fixed = "Web2とWeb2とWeb2とWeb2"
+
+[[cases]]
+name = "d-expected-only-symbol"
+note = "expected だけのルールは、英数字以外の正規表現の記号をエスケープする。textlintは `.` を任意の1文字として扱い、`Nodexjs` も指摘する"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Node.js
+""",
+]
+'''
+text = "Nodexjsとnode.jsとNode.js"
+findings = ["1:9"]
+messages = ["「node.js」を「Node.js」にする"]
+fixed = "NodexjsとNode.jsとNode.js"
+
+[[cases]]
+name = "d-expected-only-plus"
+note = "expected の `+` をエスケープする。textlintは `Nothing to repeat` で辞書の読み込みに失敗する"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: C++
+""",
+]
+'''
+text = "c++とC++"
+findings = ["1:1"]
+messages = ["「c++」を「C++」にする"]
+fixed = "C++とC++"
+
+[[cases]]
+name = "d-pattern-literal"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: 1.0版
+    pattern: v1.0
+""",
+]
+'''
+text = "v1x0とv1.0"
+findings = ["1:6"]
+messages = ["「v1.0」を「1.0版」にする"]
+fixed = "v1x0と1.0版"
+
+[[cases]]
+name = "d-pattern-literal-parens"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: "[笑]"
+    pattern: (笑)
+""",
+]
+'''
+text = "いいね(笑)とうれしい"
+findings = ["1:4"]
+messages = ["「(笑)」を「[笑]」にする"]
+fixed = "いいね[笑]とうれしい"
+
+[[cases]]
+name = "d-pattern-slash-prefixed-literal"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: /usr/local/bin
+    pattern: /usr/bin
+""",
+]
+'''
+text = "/usr/binとusr/bin"
+findings = ["1:1"]
+messages = ["「/usr/bin」を「/usr/local/bin」にする"]
+fixed = "/usr/local/binとusr/bin"
+
+[[cases]]
+name = "d-pattern-array"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: [クッキー, ビスケット]
+""",
+]
+'''
+text = "クッキーとビスケット"
+findings = ["1:1", "1:6"]
+messages = ["「クッキー」を「Cookie」にする", "「ビスケット」を「Cookie」にする"]
+fixed = "CookieとCookie"
+
+[[cases]]
+name = "d-patterns-key"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    patterns:
+      - クッキー
+      - ビスケット
+""",
+]
+'''
+text = "クッキーとビスケット"
+findings = ["1:1", "1:6"]
+messages = ["「クッキー」を「Cookie」にする", "「ビスケット」を「Cookie」にする"]
+fixed = "CookieとCookie"
+
+[[cases]]
+name = "d-pattern-wins-over-patterns"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: X
+    pattern: aaa
+    patterns: bbb
+""",
+]
+'''
+text = "aaaとbbb"
+findings = ["1:1"]
+messages = ["「aaa」を「X」にする"]
+fixed = "Xとbbb"
+
+[[cases]]
+name = "d-patterns-group-numbers"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: ECMAScript $1
+    patterns: ["/ECMAScript([0-9]+)/", "/ECMA Script([0-9]+)/"]
+""",
+]
+'''
+text = "ECMAScript2015とECMA Script2016"
+findings = ["1:1", "1:16"]
+messages = ["「ECMAScript2015」を「ECMAScript 2015」にする", "「ECMA Script2016」を「ECMAScript 」にする"]
+fixed = "ECMAScript 2015とECMAScript "
+
+[[cases]]
+name = "d-word-boundary"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Rust
+    pattern: /rust/
+    options:
+      wordBoundary: true
+""",
+]
+'''
+text = "日本語rustとrustyとrust"
+findings = ["1:4", "1:15"]
+messages = ["「rust」を「Rust」にする", "「rust」を「Rust」にする"]
+fixed = "日本語RustとrustyとRust"
+
+[[cases]]
+name = "d-word-boundary-alternation"
+note = "wordBoundary は、正規表現の全体を `\\b` で挟む。textlintは括弧で囲まずにつなぐので、`\\bfoo|bar\\b` になり、`foobaz` の `foo` にも当たる"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: X
+    pattern: /foo|bar/
+    options:
+      wordBoundary: true
+""",
+]
+'''
+text = "foobazとbazfooとfoo"
+findings = ["1:15"]
+messages = ["「foo」を「X」にする"]
+fixed = "foobazとbazfooとX"
+
+[[cases]]
+name = "d-regexp-must-empty"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: ウエア
+    pattern: /(ハード)?ウェア/
+    regexpMustEmpty: $1
+""",
+]
+'''
+text = "ソフトウェアとハードウェア"
+findings = ["1:4"]
+messages = ["「ウェア」を「ウエア」にする"]
+fixed = "ソフトウエアとハードウェア"
+
+[[cases]]
+name = "d-expected-groups"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: $1-$2-$3 $0 $4 $10
+    pattern: /(\\d{4})\\/(\\d{2})\\/(\\d{2})/
+""",
+]
+'''
+text = "2020/01/02"
+findings = ["1:1"]
+messages = ["「2020/01/02」を「2020-01-02 $0 $4 $10」にする"]
+fixed = "2020-01-02 $0 $4 $10"
+
+[[cases]]
+name = "d-expected-ten-groups"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: '$10$1$99'
+    pattern: /(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)/
+""",
+]
+'''
+text = "abcdefghij"
+findings = ["1:1"]
+messages = ["「abcdefghij」を「ja$99」にする"]
+fixed = "ja$99"
+
+[[cases]]
+name = "d-expected-nonparticipating-group"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: '[$1|$2]'
+    pattern: /(?:(a)|(b))z/
+""",
+]
+'''
+text = "azとbz"
+findings = ["1:1", "1:4"]
+messages = ["「az」を「[a|]」にする", "「bz」を「[|b]」にする"]
+fixed = "[a|]と[|b]"
+
+[[cases]]
+name = "d-rules-mixed-forms"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - JavaScript
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "javascriptとクッキー"
+findings = ["1:1", "1:12"]
+messages = ["「javascript」を「JavaScript」にする", "「クッキー」を「Cookie」にする"]
+fixed = "JavaScriptとCookie"
+
+[[cases]]
+name = "d-supplement"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+    prh: 英字で書く
+  - expected: Biscuit
+    pattern: ビスケット
+    prh: |
+      英字で書く。
+      詳しくは表記ルールを見る。
+""",
+]
+'''
+text = "クッキーとビスケット"
+findings = ["1:1", "1:6"]
+messages = ["「クッキー」を「Cookie」にする: 英字で書く", "「ビスケット」を「Biscuit」にする: 英字で書く。 詳しくは表記ルールを見る。"]
+fixed = "CookieとBiscuit"
+
+[[cases]]
+name = "d-merge-same-expected"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+"""
+rules:
+  - expected: Cookie
+    pattern: ビスケット
+  - expected: Pie
+    pattern: パイ
+""",
+]
+'''
+text = "クッキーとビスケットとパイ"
+findings = ["1:1", "1:12"]
+messages = ["「クッキー」を「Cookie」にする", "「パイ」を「Pie」にする"]
+fixed = "CookieとビスケットとPie"
+
+[[cases]]
+name = "d-rule-order-same-range"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: A
+    pattern: abc
+  - expected: B
+    pattern: abc
+""",
+]
+'''
+text = "abc"
+findings = ["1:1"]
+messages = ["「abc」を「A」にする"]
+fixed = "A"
+
+[[cases]]
+name = "d-same-start-longer"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: A
+    pattern: ab
+  - expected: B
+    pattern: abcd
+""",
+]
+'''
+text = "abcd"
+findings = ["1:1"]
+messages = ["「abcd」を「B」にする"]
+fixed = "B"
+
+[[cases]]
+name = "d-partial-overlap"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: A
+    pattern: abc
+  - expected: B
+    pattern: bcd
+""",
+]
+'''
+text = "abcd"
+findings = ["1:1"]
+messages = ["「abc」を「A」にする"]
+fixed = "Ad"
+
+[[cases]]
+name = "d-overlap-chain"
+note = "重なる箇所は、残した箇所と比べて捨てる。prhは捨てた箇所と比べるので、`234` を捨てた後の `6789ab` が `0123456789` と重なったまま残る"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: A
+    pattern: /0123456789/
+  - expected: B
+    pattern: /234/
+  - expected: C
+    pattern: /6789ab/
+""",
+]
+'''
+text = "0123456789ab"
+findings = ["1:1"]
+messages = ["「0123456789」を「A」にする"]
+fixed = "Aab"
+
+[[cases]]
+name = "d-unchanged-match"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: /cookie/i
+""",
+]
+'''
+text = "Cookie"
+findings = []
+fixed = "Cookie"
+
+[[cases]]
+name = "d-unchanged-expansion-keeps-overlap"
+note = "`$1` を展開した結果が一致した文字列と同じ箇所は、他のルールの重なる箇所を捨てさせない。textlintは、重なりを解いた後に捨てるので、`oba` も指摘しない"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: $1bar
+    pattern: /(foo)bar/
+  - expected: X
+    pattern: /oba/
+""",
+]
+'''
+text = "foobar"
+findings = ["1:3"]
+messages = ["「oba」を「X」にする"]
+fixed = "foXr"
+
+[[cases]]
+name = "d-ignored-keys"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+version: 1
+meta:
+  name: sample
+targets:
+  - file: /\\.md$/
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "クッキー"
+findings = ["1:1"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "Cookie"
+
+[[cases]]
+name = "d-specs-passing"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+    specs:
+      - from: クッキー
+        to: Cookie
+""",
+]
+'''
+text = "クッキー"
+findings = ["1:1"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "Cookie"
+
+[[cases]]
+name = "d-no-rules"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules: []
+""",
+]
+'''
+text = "クッキー"
+findings = []
+fixed = "クッキー"
+
+[[cases]]
+name = "r-lookbehind-lookahead"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Y
+    pattern: /(?<=a)X(?=b)/
+""",
+]
+'''
+text = "aXbとcXb"
+findings = ["1:2"]
+messages = ["「X」を「Y」にする"]
+fixed = "aYbとcXb"
+
+[[cases]]
+name = "r-negative-lookahead"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: サーバー
+    pattern: /サーバ(?!ー)/
+""",
+]
+'''
+text = "サーバとサーバーとサーバ"
+findings = ["1:1", "1:10"]
+messages = ["「サーバ」を「サーバー」にする", "「サーバ」を「サーバー」にする"]
+fixed = "サーバーとサーバーとサーバー"
+
+[[cases]]
+name = "r-backreference"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Z
+    pattern: /(\\w)\\1/
+""",
+]
+'''
+text = "aaとab"
+findings = ["1:1"]
+messages = ["「aa」を「Z」にする"]
+fixed = "Zとab"
+
+[[cases]]
+name = "r-named-group"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: $1/$2
+    pattern: /(?<y>\\d{4})-(?<m>\\d{2})/
+""",
+]
+'''
+text = "2020-01"
+findings = ["1:1"]
+messages = ["「2020-01」を「2020/01」にする"]
+fixed = "2020/01"
+
+[[cases]]
+name = "r-script-han"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: K
+    pattern: /\\p{Script=Han}{2,}/
+""",
+]
+'''
+text = "漢字とかんじと漢"
+findings = ["1:1"]
+messages = ["「漢字」を「K」にする"]
+fixed = "Kとかんじと漢"
+
+[[cases]]
+name = "r-ignore-case"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Rust
+    pattern: /rust/i
+""",
+]
+'''
+text = "RUSTとRustとrust"
+findings = ["1:1", "1:11"]
+messages = ["「RUST」を「Rust」にする", "「rust」を「Rust」にする"]
+fixed = "RustとRustとRust"
+
+[[cases]]
+name = "r-dot-all-flag"
+note = "`s` フラグを読む。prh 6.1.0は `/NODE.JS/is` を文字列そのものとして扱い、`/NODE.JS/is` という文字列だけに当たる"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Node.js
+    pattern: /NODE.JS/is
+""",
+]
+'''
+text = "NODE.JSとnode.jsとNode.js"
+findings = ["1:1", "1:9"]
+messages = ["「NODE.JS」を「Node.js」にする", "「node.js」を「Node.js」にする"]
+fixed = "Node.jsとNode.jsとNode.js"
+
+[[cases]]
+name = "r-unicode-flag"
+note = "`u` フラグも読む。prh 6.1.0は `/rust/gmu` を文字列そのものとして扱い、`prh --rules-yaml` が出す形の `/…/gmu` に当たらない"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Rust
+    pattern: /rust/gmu
+""",
+]
+'''
+text = "rustとRust"
+findings = ["1:1"]
+messages = ["「rust」を「Rust」にする"]
+fixed = "RustとRust"
+
+[[cases]]
+name = "r-multiline-anchor"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Foo
+    pattern: /^foo/
+""",
+]
+'''
+text = "foo bar\nfoo"
+findings = ["1:1", "2:1"]
+messages = ["「foo」を「Foo」にする", "「foo」を「Foo」にする"]
+fixed = "Foo bar\nFoo"
+
+[[cases]]
+name = "r-sticky-flag-dropped"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Foo
+    pattern: /foo/y
+""",
+]
+'''
+text = "afooとfoo"
+findings = ["1:2", "1:6"]
+messages = ["「foo」を「Foo」にする", "「foo」を「Foo」にする"]
+fixed = "aFooとFoo"
+
+[[cases]]
+name = "r-ascii-word-boundary"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: ID
+    pattern: /\\bid\\b/i
+""",
+]
+'''
+text = "ユーザーidを確認"
+findings = ["1:5"]
+messages = ["「id」を「ID」にする"]
+fixed = "ユーザーIDを確認"
+
+[[cases]]
+name = "r-ascii-digit"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: N
+    pattern: /\\d+/
+""",
+]
+'''
+text = "１２３と456"
+findings = ["1:5"]
+messages = ["「456」を「N」にする"]
+fixed = "１２３とN"
+
+[[cases]]
+name = "r-backslash-in-source"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: X
+    pattern: /a\\\\\\*b/
+""",
+]
+'''
+text = "a\\*bと*c*"
+findings = ["1:1"]
+messages = ["「a\\*b」を「X」にする"]
+fixed = "Xと*c*"
+
+[[cases]]
+name = "c-paragraph"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "クッキーを食べる。\nクッキーは甘い。"
+findings = ["1:1", "2:1"]
+messages = ["「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする"]
+fixed = "Cookieを食べる。\nCookieは甘い。"
+
+[[cases]]
+name = "c-link-default"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "[クッキー](http://example.com/)とクッキー"
+findings = ["1:29"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "[クッキー](http://example.com/)とCookie"
+
+[[cases]]
+name = "c-link-check-link"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+checkLink = true
+'''
+text = "[クッキー](http://example.com/)とクッキー"
+findings = ["1:2", "1:29"]
+messages = ["「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする"]
+fixed = "[Cookie](http://example.com/)とCookie"
+
+[[cases]]
+name = "c-link-reference-full"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "[クッキー][a]とクッキー\n\n[a]: http://example.com/"
+findings = ["1:2", "1:11"]
+messages = ["「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする"]
+fixed = "[Cookie][a]とCookie\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "c-link-reference-shortcut"
+note = "定義を持つ省略形の参照リンクの文字列は、定義のラベルを兼ねるので本文にしない。textlintは `[クッキー]` の中も指摘し、直すと定義と対応が切れる"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "[クッキー]とクッキー\n\n[クッキー]: http://example.com/"
+findings = ["1:8"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "[クッキー]とCookie\n\n[クッキー]: http://example.com/"
+
+[[cases]]
+name = "c-link-reference-collapsed"
+note = "collapsed形の参照リンクの文字列も、定義のラベルを兼ねるので本文にしない"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "[クッキー][]とクッキー\n\n[クッキー]: http://example.com/"
+findings = ["1:10"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "[クッキー][]とCookie\n\n[クッキー]: http://example.com/"
+
+[[cases]]
+name = "c-brackets-without-definition"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "[クッキー]とクッキー"
+findings = ["1:2", "1:8"]
+messages = ["「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする"]
+fixed = "[Cookie]とCookie"
+
+[[cases]]
+name = "c-autolink"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "<http://example.com/クッキー>とクッキー"
+findings = ["1:27"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "<http://example.com/クッキー>とCookie"
+
+[[cases]]
+name = "c-bare-url"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "http://example.com/クッキー とクッキー"
+findings = ["1:26"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "http://example.com/クッキー とCookie"
+
+[[cases]]
+name = "c-bare-url-check-link"
+note = "裸のURLは本文にしない。textlintは、`checkLink` を true にすると、URLの中の文字列も指摘する"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+checkLink = true
+'''
+text = "http://example.com/クッキー とクッキー"
+findings = ["1:26"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "http://example.com/クッキー とCookie"
+
+[[cases]]
+name = "c-autolink-check-link"
+note = "自動リンクは本文にしない。textlintは、`checkLink` を true にすると、URLの中の文字列も指摘する"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+checkLink = true
+'''
+text = "<http://example.com/クッキー>とクッキー"
+findings = ["1:27"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "<http://example.com/クッキー>とCookie"
+
+[[cases]]
+name = "c-blockquote-default"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "> クッキー\n\nクッキー"
+findings = ["3:1"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "> クッキー\n\nCookie"
+
+[[cases]]
+name = "c-blockquote-check-block-quote"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+checkBlockQuote = true
+'''
+text = "> クッキー\n\nクッキー"
+findings = ["1:3", "3:1"]
+messages = ["「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする"]
+fixed = "> Cookie\n\nCookie"
+
+[[cases]]
+name = "c-blockquote-list-check-block-quote"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+checkBlockQuote = true
+'''
+text = "> - クッキー\n\n- クッキー"
+findings = ["1:5", "3:3"]
+messages = ["「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする"]
+fixed = "> - Cookie\n\n- Cookie"
+
+[[cases]]
+name = "c-blockquote-list-default"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "> - クッキー\n\n- クッキー"
+findings = ["3:3"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "> - クッキー\n\n- Cookie"
+
+[[cases]]
+name = "c-emphasis-default"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "*クッキー*とクッキー"
+findings = ["1:8"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "*クッキー*とCookie"
+
+[[cases]]
+name = "c-emphasis-check-emphasis"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+checkEmphasis = true
+'''
+text = "*クッキー*とクッキー"
+findings = ["1:2", "1:8"]
+messages = ["「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする"]
+fixed = "*Cookie*とCookie"
+
+[[cases]]
+name = "c-strong"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "**クッキー**とクッキー"
+findings = ["1:3", "1:10"]
+messages = ["「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする"]
+fixed = "**Cookie**とCookie"
+
+[[cases]]
+name = "c-strong-in-emphasis"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "*強調の**太字のクッキー**です*とクッキー"
+findings = ["1:20"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "*強調の**太字のクッキー**です*とCookie"
+
+[[cases]]
+name = "c-delete"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "~~クッキー~~とクッキー"
+findings = ["1:3", "1:10"]
+messages = ["「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする"]
+fixed = "~~Cookie~~とCookie"
+
+[[cases]]
+name = "c-table-header-cell"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "| クッキー | 英語 |\n| --- | --- |\n| 菓子 | Cookie |"
+findings = ["1:3"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "| Cookie | 英語 |\n| --- | --- |\n| 菓子 | Cookie |"
+
+[[cases]]
+name = "c-table-cell"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "| 菓子 | 英語 |\n| --- | --- |\n| クッキー | Cookie |"
+findings = ["3:3"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "| 菓子 | 英語 |\n| --- | --- |\n| Cookie | Cookie |"
+
+[[cases]]
+name = "c-list-item"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "- クッキー\n  - クッキー\n\n1. クッキー"
+findings = ["1:3", "2:5", "4:4"]
+messages = ["「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする"]
+fixed = "- Cookie\n  - Cookie\n\n1. Cookie"
+
+[[cases]]
+name = "c-footnote-definition"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "クッキー[^1]\n\n[^1]: 脚注のクッキー"
+findings = ["1:1", "3:10"]
+messages = ["「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする"]
+fixed = "Cookie[^1]\n\n[^1]: 脚注のCookie"
+
+[[cases]]
+name = "c-inline-code"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "`クッキー`とクッキー"
+findings = ["1:8"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "`クッキー`とCookie"
+
+[[cases]]
+name = "c-code-block"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "```\nクッキー\n```\n\nクッキー\n\n    クッキー"
+findings = ["5:1"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "```\nクッキー\n```\n\nCookie\n\n    クッキー"
+
+[[cases]]
+name = "c-html-inline"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "<b>クッキー</b>とクッキー"
+findings = ["1:4", "1:13"]
+messages = ["「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする"]
+fixed = "<b>Cookie</b>とCookie"
+
+[[cases]]
+name = "c-html-block"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "<div>\nクッキー\n</div>\n\n<!-- クッキー -->\n\nクッキー"
+findings = ["7:1"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "<div>\nクッキー\n</div>\n\n<!-- クッキー -->\n\nCookie"
+
+[[cases]]
+name = "c-image-alt"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "![クッキー](cookie.png)とクッキー"
+findings = ["1:21"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "![クッキー](cookie.png)とCookie"
+
+[[cases]]
+name = "c-hard-break"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+  - expected: X
+    pattern: /お菓子\\s+クッキー/
+""",
+]
+'''
+text = "お菓子  \nクッキー\n\nお菓子\\\nクッキー"
+findings = ["2:1", "5:1"]
+messages = ["「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする"]
+fixed = "お菓子  \nCookie\n\nお菓子\\\nCookie"
+
+[[cases]]
+name = "c-check-header-false-paragraph"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+checkHeader = false
+'''
+text = "クッキー\n\n# クッキー"
+findings = ["1:1"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "Cookie\n\n# クッキー"
+
+[[cases]]
+name = "c-check-paragraph-false"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+checkParagraph = false
+'''
+text = "クッキー\n\n- クッキー\n\n| 菓子 |\n| --- |\n| クッキー |\n\n> クッキー"
+findings = ["7:3"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "クッキー\n\n- クッキー\n\n| 菓子 |\n| --- |\n| Cookie |\n\n> クッキー"
+
+[[cases]]
+name = "c-heading"
+note = "見出しの中の箇所は、直さずに指摘にする。見出しのアンカーが変わり、見出しへのリンクが切れるため"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "# クッキーの話\n\nクッキー"
+findings = ["1:3", "3:1"]
+messages = ["「クッキー」を「Cookie」にする。見出しのアンカーが変わるので、見出しへのリンクも直す", "「クッキー」を「Cookie」にする"]
+fixed = "# クッキーの話\n\nCookie"
+
+[[cases]]
+name = "c-heading-setext"
+note = "setext形式の見出しも、直さずに指摘にする"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "クッキーの話\n=======\n\nクッキー"
+findings = ["1:1", "4:1"]
+messages = ["「クッキー」を「Cookie」にする。見出しのアンカーが変わるので、見出しへのリンクも直す", "「クッキー」を「Cookie」にする"]
+fixed = "クッキーの話\n=======\n\nCookie"
+
+[[cases]]
+name = "c-heading-supplement"
+note = "見出しの中の箇所は、文面の補足の後に見出しの文を続ける"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+    prh: 英字で書く
+""",
+]
+'''
+text = "## クッキー"
+findings = ["1:4"]
+messages = ["「クッキー」を「Cookie」にする: 英字で書く。見出しのアンカーが変わるので、見出しへのリンクも直す"]
+fixed = "## クッキー"
+
+[[cases]]
+name = "c-heading-check-paragraph-false"
+note = "checkParagraph を false にしても、見出しと表のセルは見る。見出しの箇所は直さずに指摘にする"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+checkParagraph = false
+'''
+text = "クッキー\n\n# クッキー\n\n| 菓子 |\n| --- |\n| クッキー |"
+findings = ["3:3", "7:3"]
+messages = ["「クッキー」を「Cookie」にする。見出しのアンカーが変わるので、見出しへのリンクも直す", "「クッキー」を「Cookie」にする"]
+fixed = "クッキー\n\n# クッキー\n\n| 菓子 |\n| --- |\n| Cookie |"
+
+[[cases]]
+name = "n-newline-in-match"
+note = "一致した文字列が改行を含む箇所は、直さずに指摘にする。hookは、直した後の行の番号が変わらないことを前提にする"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: FOOBAR
+    pattern: /foo\\s+bar/
+""",
+]
+'''
+text = "foo\nbar"
+findings = ["1:1"]
+messages = ["「foo\\nbar」を「FOOBAR」にする。改行を含むので直さない"]
+fixed = "foo\nbar"
+
+[[cases]]
+name = "n-newline-in-expected"
+note = "置き換え後の文字列が改行を含む箇所は、直さずに指摘にする。文面の改行は `\\n` の2文字にする"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: "FOO\\nBAR"
+    pattern: foo
+""",
+]
+'''
+text = "foo"
+findings = ["1:1"]
+messages = ["「foo」を「FOO\\nBAR」にする。改行を含むので直さない"]
+fixed = "foo"
+
+[[cases]]
+name = "n-heading-newline"
+note = "見出しの中で改行を含む箇所は、見出しの文面だけを続ける。どちらも直さずに指摘にする"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: FOOBAR
+    pattern: /foo\\s+bar/
+""",
+]
+'''
+text = "foo\nbar\n===\n\nfoo\nbar"
+findings = ["1:1", "5:1"]
+messages = ["「foo\\nbar」を「FOOBAR」にする。見出しのアンカーが変わるので、見出しへのリンクも直す", "「foo\\nbar」を「FOOBAR」にする。改行を含むので直さない"]
+fixed = "foo\nbar\n===\n\nfoo\nbar"
+
+[[cases]]
+name = "n-zero-length"
+note = "長さ0の一致は箇所にしない。textlintは `a` と `b` の間への挿入を指摘する"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: X
+    pattern: /(?<=a)(?=b)/
+""",
+]
+'''
+text = "abc"
+findings = []
+fixed = "abc"
+
+[[cases]]
+name = "n-column-after-emoji"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "\U0001f600クッキー"
+findings = ["1:2"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "\U0001f600Cookie"
+
+[[cases]]
+name = "n-positions-over-lines"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+'''
+text = "クッキー\n\n菓子はクッキーとクッキー"
+findings = ["1:1", "3:4", "3:9"]
+messages = ["「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする", "「クッキー」を「Cookie」にする"]
+fixed = "Cookie\n\n菓子はCookieとCookie"
+
+[[cases]]
+name = "x-builtin-fix-after-replacement"
+note = "利用者の置き換えを先に当て、その結果に組み込みの修正ルールを当てる。置き換えが残した日本語と英数字の間の空白は、同じ実行で消える"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: $1 $2bc
+    pattern: /(本語) (A)BC/
+""",
+]
+'''
+text = "日本語 ABC"
+findings = ["1:2"]
+messages = ["「本語 ABC」を「本語 Abc」にする"]
+fixed = "日本語Abc"
+
+[[cases]]
+name = "x-replacement-undone-by-builtin-fix"
+note = "置き換えの固定の部分は空白だけで、境目は判定しない。置き換えが作った日本語と英数字の間の空白は、組み込みの修正ルールが消すので、置き換えは効かない"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: $1 $2
+    pattern: /(語)(ABC)/
+""",
+]
+'''
+text = "日本語ABC"
+findings = ["1:3"]
+messages = ["「語ABC」を「語 ABC」にする"]
+fixed = "日本語ABC"
+
+[[cases]]
+name = "x-fullwidth-paren-disabled"
+builtin = '''
+fullwidth-paren = false
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: （$1）
+    pattern: /\\((.+?)\\)/
+""",
+]
+'''
+text = "いいね(笑)ね"
+findings = ["1:4"]
+messages = ["「(笑)」を「（笑）」にする"]
+fixed = "いいね（笑）ね"
+
+[[cases]]
+name = "x-prh-and-pattern-same-range"
+note = "prhと `@textlint-rule/pattern` の箇所の範囲が同じなら、prhの箇所を残し、patternの箇所は直さない"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'ビスケットと書く'
+pattern = 'クッキー'
+replace = 'Biscuit'
+'''
+text = "クッキー"
+findings = ["1:1"]
+messages = ["「クッキー」を「Cookie」にする"]
+fixed = "Cookie"
+
+[[cases]]
+name = "x-pattern-starts-before-prh"
+note = "重なる箇所は、先に始まる箇所を残す。patternの箇所が先に始まるので、prhの箇所は直さない"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: P
+    pattern: cdef
+""",
+]
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = 'abcd'
+replace = 'Q'
+'''
+text = "abcdef"
+findings = []
+fixed = "Qef"
+
+[[cases]]
+name = "x-prh-starts-before-pattern"
+note = "重なる箇所は、先に始まる箇所を残す。prhの箇所が先に始まるので、patternの箇所は直さない"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: P
+    pattern: abcd
+""",
+]
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = 'cdef'
+replace = 'Q'
+'''
+text = "abcdef"
+findings = ["1:1"]
+messages = ["「abcd」を「P」にする"]
+fixed = "Pef"

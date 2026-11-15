@@ -5,6 +5,8 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 struct Fixture {
+    /// 指摘の行の `[<rule-id>]` のID。無ければfixtureのファイル名である
+    rule: Option<String>,
     /// 全caseに当てる `[builtin]` の中身。caseに `builtin` があれば、そちらを使う
     builtin: Option<String>,
     cases: Vec<Case>,
@@ -24,7 +26,7 @@ struct Case {
 /// 食い違ったcaseを名前と一緒にまとめて報告する
 fn assert_cases(rule: &str) {
     let fixture: Fixture = toml::from_str(&fixture(&format!("builtin/{rule}.toml"))).unwrap();
-    let suffix = format!(" [{rule}]");
+    let suffix = format!(" [{}]", fixture.rule.as_deref().unwrap_or(rule));
     let mut failures = Vec::new();
     for case in &fixture.cases {
         let sandbox = Sandbox::new();

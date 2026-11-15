@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use std::ops::RangeInclusive;
 
 use crate::rules::Finding;
 
@@ -15,6 +16,13 @@ impl TargetLines {
             TargetLines::All => true,
             TargetLines::Lines(lines) => lines.contains(&line),
         }
+    }
+
+    /// 行の範囲 `lines` のどれかの行が対象行か
+    #[allow(dead_code)] // skeleton: not implemented
+    pub fn overlaps(&self, lines: RangeInclusive<usize>) -> bool {
+        let _ = lines;
+        todo!("skeleton: not implemented")
     }
 }
 

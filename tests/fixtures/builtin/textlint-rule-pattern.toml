@@ -1,0 +1,1189 @@
+# @textlint-rule/pattern の例。期待値は、textlint 15.8.0、@textlint-rule/textlint-rule-pattern 2.0.2 (@textlint/regexp-string-matcher 2.0.2) の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値はjafixの規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` に出るルールのID。ファイル名と違うので書く (省略するとファイル名)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表の下に書く内容。辞書とパターンがcaseごとに違うので、すべてのcaseが持つ
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    `jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "@textlint-rule/pattern"
+
+[[cases]]
+name = "p-string-literal"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "TODOとtodoとTODO"
+findings = ["1:1", "1:11"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "TODOとtodoとTODO"
+
+[[cases]]
+name = "p-string-with-regex-characters"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm1'
+pattern = 'C++'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm2'
+pattern = '(a)'
+'''
+text = "C++とc++と(a)とa"
+findings = ["1:1", "1:9"]
+messages = ["「C++」: m1", "「(a)」: m2"]
+fixed = "C++とc++と(a)とa"
+
+[[cases]]
+name = "p-string-double-slash"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'スラッシュ'
+pattern = '//'
+'''
+text = "a//bと//"
+findings = ["1:2", "1:6"]
+messages = ["「//」: スラッシュ", "「//」: スラッシュ"]
+fixed = "a//bと//"
+
+[[cases]]
+name = "p-string-slash-prefixed"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'パス'
+pattern = '/path/to'
+'''
+text = "/path/toとpath/to"
+findings = ["1:1"]
+messages = ["「/path/to」: パス"]
+fixed = "/path/toとpath/to"
+
+[[cases]]
+name = "p-regex"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = '/TODO:/i'
+'''
+text = "TODO:とtodo:とTODO"
+findings = ["1:1", "1:7"]
+messages = ["「TODO:」: TODOを残さない", "「todo:」: TODOを残さない"]
+fixed = "TODO:とtodo:とTODO"
+
+[[cases]]
+name = "p-regex-anchor-without-m"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = '/^foo/'
+'''
+text = "x\nfoo"
+findings = []
+fixed = "x\nfoo"
+
+[[cases]]
+name = "p-flag-m"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = '/^foo/m'
+'''
+text = "x\nfoo\nbar\nfoo"
+findings = ["2:1", "4:1"]
+messages = ["「foo」: m", "「foo」: m"]
+fixed = "x\nfoo\nbar\nfoo"
+
+[[cases]]
+name = "p-flag-s"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = '改行をまたぐ'
+pattern = '/a.b/s'
+'''
+text = "a\nbとa\nb"
+findings = ["1:1", "2:3"]
+messages = ["「a\\nb」: 改行をまたぐ", "「a\\nb」: 改行をまたぐ"]
+fixed = "a\nbとa\nb"
+
+[[cases]]
+name = "p-dot-without-s"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = '改行をまたぐ'
+pattern = '/a.b/'
+'''
+text = "a\nb"
+findings = []
+fixed = "a\nb"
+
+[[cases]]
+name = "p-flags-d-g-u"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'a'
+pattern = '/a/dgu'
+'''
+text = "abaとa"
+findings = ["1:1", "1:3", "1:5"]
+messages = ["「a」: a", "「a」: a", "「a」: a"]
+fixed = "abaとa"
+
+[[cases]]
+name = "p-regex-lookbehind"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = '/(?<=a)X(?=b)/'
+'''
+text = "aXbとcXb"
+findings = ["1:2"]
+messages = ["「X」: m"]
+fixed = "aXbとcXb"
+
+[[cases]]
+name = "p-regex-backreference"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = '重複'
+pattern = '/(\w)\1/'
+'''
+text = "aaとab"
+findings = ["1:1"]
+messages = ["「aa」: 重複"]
+fixed = "aaとab"
+
+[[cases]]
+name = "p-regex-named-group"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = '/(?<y>\d{4})-(?<m>\d{2})/'
+replace = '$1/$2'
+'''
+text = "2020-01と2021-02"
+findings = ["1:1", "1:9"]
+messages = ["「2020-01」: m", "「2021-02」: m"]
+fixed = "2020/01と2021/02"
+
+[[cases]]
+name = "p-regex-script-han"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = '漢字2文字以上'
+pattern = '/\p{Script=Han}{2,}/'
+'''
+text = "漢字とかんじと漢"
+findings = ["1:1"]
+messages = ["「漢字」: 漢字2文字以上"]
+fixed = "漢字とかんじと漢"
+
+[[cases]]
+name = "p-regex-ascii-word-boundary"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'IDと書く'
+pattern = '/\bid\b/i'
+replace = 'ID'
+'''
+text = "ユーザーidを確認"
+findings = ["1:5"]
+messages = ["「id」: IDと書く"]
+fixed = "ユーザーIDを確認"
+
+[[cases]]
+name = "p-regex-ascii-digit"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = '数字'
+pattern = '/\d+/'
+'''
+text = "１２３と456"
+findings = ["1:5"]
+messages = ["「456」: 数字"]
+fixed = "１２３と456"
+
+[[cases]]
+name = "p-two-elements-in-position-order"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'FIXMEを残さない'
+pattern = 'FIXME'
+'''
+text = "FIXMEとTODO"
+findings = ["1:1", "1:7"]
+messages = ["「FIXME」: FIXMEを残さない", "「TODO」: TODOを残さない"]
+fixed = "FIXMEとTODO"
+
+[[cases]]
+name = "p-replace-date"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = '日付はYYYY-MM-DDで書く'
+pattern = '/(\d{4})\/(\d{2})\/(\d{2})/'
+replace = '$1-$2-$3'
+'''
+text = "2020/01/02と2021/12/31"
+findings = ["1:1", "1:12"]
+messages = ["「2020/01/02」: 日付はYYYY-MM-DDで書く", "「2021/12/31」: 日付はYYYY-MM-DDで書く"]
+fixed = "2020-01-02と2021-12-31"
+
+[[cases]]
+name = "p-replace-references"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = '/(?:(a)|(b))z/'
+replace = '[$1|$2|$0|$3|$10]'
+'''
+text = "azとbz"
+findings = ["1:1", "1:4"]
+messages = ["「az」: m", "「bz」: m"]
+fixed = "[a|$2|$0|$3|a0]と[$1|b|$0|$3|$10]"
+
+[[cases]]
+name = "p-replace-empty"
+note = "`replace = \"\"` は、一致した文字列を消す修正にする。textlintは空文字列を偽とみなし、指摘だけを出す"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'fooを消す'
+pattern = 'foo'
+replace = ''
+'''
+text = "削除対象fooです"
+findings = ["1:5"]
+messages = ["「foo」: fooを消す"]
+fixed = "削除対象です"
+
+[[cases]]
+name = "p-replace-same-as-match"
+note = "置き換え後が一致した文字列と同じ一致は、箇所にしない。textlintは、直しても変わらない箇所も指摘する"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = '/(foo)bar/'
+replace = '$1bar'
+'''
+text = "foobar"
+findings = []
+fixed = "foobar"
+
+[[cases]]
+name = "p-replace-heading"
+note = "見出しの中の箇所は、直さずに指摘にする。見出しのアンカーが変わり、見出しへのリンクが切れるため"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+replace = 'ToDo'
+'''
+text = "# TODOの話\n\nTODO"
+findings = ["1:3", "3:1"]
+messages = ["「TODO」: TODOを残さない。見出しのアンカーが変わるので、見出しへのリンクも直す", "「TODO」: TODOを残さない"]
+fixed = "# TODOの話\n\nToDo"
+
+[[cases]]
+name = "p-replace-setext-heading"
+note = "setext形式の見出しも、直さずに指摘にする"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+replace = 'ToDo'
+'''
+text = "TODOの話\n=======\n\nTODO"
+findings = ["1:1", "4:1"]
+messages = ["「TODO」: TODOを残さない。見出しのアンカーが変わるので、見出しへのリンクも直す", "「TODO」: TODOを残さない"]
+fixed = "TODOの話\n=======\n\nToDo"
+
+[[cases]]
+name = "p-replace-newline-in-match"
+note = "一致した文字列が改行を含む箇所は、直さずに指摘にする。hookは、直した後の行の番号が変わらないことを前提にする"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'つなげる'
+pattern = '/foo\s+bar/'
+replace = 'FOOBAR'
+'''
+text = "foo\nbar"
+findings = ["1:1"]
+messages = ["「foo\\nbar」: つなげる。改行を含むので直さない"]
+fixed = "foo\nbar"
+
+[[cases]]
+name = "p-replace-newline-in-replacement"
+note = "置き換え後の文字列が改行を含む箇所は、直さずに指摘にする"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = '分ける'
+pattern = 'foo'
+replace = "FOO\nBAR"
+'''
+text = "foo"
+findings = ["1:1"]
+messages = ["「foo」: 分ける。改行を含むので直さない"]
+fixed = "foo"
+
+[[cases]]
+name = "p-replace-heading-newline"
+note = "見出しの中で改行を含む箇所は、見出しの文面だけを続ける。どちらも直さずに指摘にする"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'つなげる'
+pattern = '/foo\s+bar/'
+replace = 'FOOBAR'
+'''
+text = "foo\nbar\n===\n\nfoo\nbar"
+findings = ["1:1", "5:1"]
+messages = ["「foo\\nbar」: つなげる。見出しのアンカーが変わるので、見出しへのリンクも直す", "「foo\\nbar」: つなげる。改行を含むので直さない"]
+fixed = "foo\nbar\n===\n\nfoo\nbar"
+
+[[cases]]
+name = "p-no-replace-newline-in-match"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'つなげない'
+pattern = '/foo\s+bar/'
+'''
+text = "foo\nbar"
+findings = ["1:1"]
+messages = ["「foo\\nbar」: つなげない"]
+fixed = "foo\nbar"
+
+[[cases]]
+name = "p-replace-zero-length"
+note = "長さ0の一致は箇所にしない。textlintは `range must not be same` で止まる"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = '/(?<=a)(?=b)/'
+replace = '-'
+'''
+text = "ab"
+findings = []
+fixed = "ab"
+
+[[cases]]
+name = "p-no-replace-zero-length"
+note = "長さ0の一致は箇所にしない。textlintは `range must not be same` で止まる"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = '/(?<=a)(?=b)/'
+'''
+text = "ab"
+findings = []
+fixed = "ab"
+
+[[cases]]
+name = "p-replace-multiple-elements"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm1'
+pattern = 'TODO'
+replace = 'DONE'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm2'
+pattern = 'FIXME'
+replace = 'FIXED'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm3'
+pattern = '/(\d{4})\/(\d{2})\/(\d{2})/'
+replace = '$1-$2-$3'
+'''
+text = "TODOとFIXMEと2020/01/02"
+findings = ["1:1", "1:6", "1:12"]
+messages = ["「TODO」: m1", "「FIXME」: m2", "「2020/01/02」: m3"]
+fixed = "DONEとFIXEDと2020-01-02"
+
+[[cases]]
+name = "p-replace-and-report-elements"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = '置き換える'
+pattern = 'TODO'
+replace = 'DONE'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = '指摘だけ'
+pattern = 'FIXME'
+'''
+text = "TODOとFIXME"
+findings = ["1:1", "1:6"]
+messages = ["「TODO」: 置き換える", "「FIXME」: 指摘だけ"]
+fixed = "DONEとFIXME"
+
+[[cases]]
+name = "p-allows-string-and-regex"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'fooを使わない'
+pattern = '/foo(-\w+)?/'
+allows = ['foo-ok', '/^foo$/']
+'''
+text = "foo-okとfoo-ngとfoo"
+findings = ["1:8"]
+messages = ["「foo-ng」: fooを使わない"]
+fixed = "foo-okとfoo-ngとfoo"
+
+[[cases]]
+name = "p-allows-sees-only-the-match"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allows = ['/^TODO:/']
+'''
+text = "TODO: aとTODO"
+findings = ["1:1", "1:9"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "TODO: aとTODO"
+
+[[cases]]
+name = "p-allows-with-replace"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = '日付はYYYY-MM-DDで書く'
+pattern = '/(\d{4})\/(\d{2})\/(\d{2})/'
+replace = '$1-$2-$3'
+allows = ['/1000/01/01/']
+'''
+text = "2020/01/02と1000/01/01"
+findings = ["1:1"]
+messages = ["「2020/01/02」: 日付はYYYY-MM-DDで書く"]
+fixed = "2020-01-02と1000/01/01"
+
+[[cases]]
+name = "c-structures"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:6", "3:37", "3:48", "3:59", "5:6", "7:7", "9:5", "11:5", "13:7", "15:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "c-replace-in-structures"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+replace = 'DONE'
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出し\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:6", "3:37", "3:48", "3:59", "5:6", "9:5", "11:5", "13:7", "15:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のDONE\n\n[リンクのDONE](http://example.com/)と*強調のDONE*と**太字のDONE**と~~消すDONE~~\n\n> 引用のDONE\n\n# 見出し\n\n| 表のDONE |\n| --- |\n| 表のDONE |\n\n- リストのDONE\n\n[参照のDONE][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "c-multi-line-paragraph"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "一行目\nTODOの二行目"
+findings = ["2:1"]
+messages = ["「TODO」: TODOを残さない"]
+fixed = "一行目\nTODOの二行目"
+
+[[cases]]
+name = "c-reference-full"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "[参照のTODO][a]とTODO\n\n[a]: http://example.com/"
+findings = ["1:5", "1:14"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "[参照のTODO][a]とTODO\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "c-reference-shortcut"
+note = "定義を持つ省略形の参照リンクの文字列は、定義のラベルを兼ねるので本文にしない。textlintは `[省略のTODO]` の中も指摘する"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "[省略のTODO]とTODO\n\n[省略のTODO]: http://example.com/"
+findings = ["1:11"]
+messages = ["「TODO」: TODOを残さない"]
+fixed = "[省略のTODO]とTODO\n\n[省略のTODO]: http://example.com/"
+
+[[cases]]
+name = "c-reference-collapsed"
+note = "collapsed形の参照リンクの文字列も、定義のラベルを兼ねるので本文にしない"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "[省略のTODO][]とTODO\n\n[省略のTODO]: http://example.com/"
+findings = ["1:13"]
+messages = ["「TODO」: TODOを残さない"]
+fixed = "[省略のTODO][]とTODO\n\n[省略のTODO]: http://example.com/"
+
+[[cases]]
+name = "c-brackets-without-definition"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "[省略のTODO]とTODO"
+findings = ["1:5", "1:11"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "[省略のTODO]とTODO"
+
+[[cases]]
+name = "c-bare-url"
+note = "裸のURLは本文にしない。textlintは、URLの中の文字列も指摘する"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "http://example.com/TODO とTODO"
+findings = ["1:26"]
+messages = ["「TODO」: TODOを残さない"]
+fixed = "http://example.com/TODO とTODO"
+
+[[cases]]
+name = "c-autolink"
+note = "自動リンクは本文にしない。textlintは、URLの中の文字列も指摘する"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "<http://example.com/TODO>とTODO"
+findings = ["1:27"]
+messages = ["「TODO」: TODOを残さない"]
+fixed = "<http://example.com/TODO>とTODO"
+
+[[cases]]
+name = "c-inline-code"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "`TODO`とTODO"
+findings = ["1:8"]
+messages = ["「TODO」: TODOを残さない"]
+fixed = "`TODO`とTODO"
+
+[[cases]]
+name = "c-code-block"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "```\nTODO\n```\n\n    TODO\n\nTODO"
+findings = ["7:1"]
+messages = ["「TODO」: TODOを残さない"]
+fixed = "```\nTODO\n```\n\n    TODO\n\nTODO"
+
+[[cases]]
+name = "c-html"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "<div>\nTODO\n</div>\n\n<!-- TODO -->\n\n<b>TODO</b>とTODO"
+findings = ["7:4", "7:13"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "<div>\nTODO\n</div>\n\n<!-- TODO -->\n\n<b>TODO</b>とTODO"
+
+[[cases]]
+name = "c-image-alt-and-definition"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "![TODO](x.png)とTODO\n\n[a]: http://example.com/TODO"
+findings = ["1:16"]
+messages = ["「TODO」: TODOを残さない"]
+fixed = "![TODO](x.png)とTODO\n\n[a]: http://example.com/TODO"
+
+[[cases]]
+name = "c-hard-break"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = 'TODO'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'n'
+pattern = '/TODO\s+TODO/'
+'''
+text = "TODO  \nTODO\n\nTODO\\\nTODO"
+findings = ["1:1", "2:1", "4:1", "5:1"]
+messages = ["「TODO」: m", "「TODO」: m", "「TODO」: m", "「TODO」: m"]
+fixed = "TODO  \nTODO\n\nTODO\\\nTODO"
+
+[[cases]]
+name = "c-footnote-definition"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "TODO[^1]\n\n[^1]: 脚注のTODO"
+findings = ["1:1", "3:10"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "TODO[^1]\n\n[^1]: 脚注のTODO"
+
+[[cases]]
+name = "c-position-after-emoji"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "\U0001f600TODO"
+findings = ["1:2"]
+messages = ["「TODO」: TODOを残さない"]
+fixed = "\U0001f600TODO"
+
+[[cases]]
+name = "c-positions-over-lines"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "TODO\n\n一行目\n二行目のTODOとTODO"
+findings = ["1:1", "4:5", "4:10"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "TODO\n\n一行目\n二行目のTODOとTODO"
+
+[[cases]]
+name = "a-allow-node-types-paragraph"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allowNodeTypes = ['Paragraph']
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["7:7", "9:5", "11:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "a-allow-node-types-header"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allowNodeTypes = ['Header']
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:6", "3:37", "3:48", "3:59", "5:6", "9:5", "11:5", "13:7", "15:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "a-allow-node-types-blockquote"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allowNodeTypes = ['BlockQuote']
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:6", "3:37", "3:48", "3:59", "7:7", "9:5", "11:5", "13:7", "15:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "a-allow-node-types-list"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allowNodeTypes = ['List']
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:6", "3:37", "3:48", "3:59", "5:6", "7:7", "9:5", "11:5", "15:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "a-allow-node-types-listitem"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allowNodeTypes = ['ListItem']
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:6", "3:37", "3:48", "3:59", "5:6", "7:7", "9:5", "11:5", "15:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "a-allow-node-types-table"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allowNodeTypes = ['Table']
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:6", "3:37", "3:48", "3:59", "5:6", "7:7", "13:7", "15:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "a-allow-node-types-tablerow"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allowNodeTypes = ['TableRow']
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:6", "3:37", "3:48", "3:59", "5:6", "7:7", "13:7", "15:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "a-allow-node-types-tablecell"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allowNodeTypes = ['TableCell']
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:6", "3:37", "3:48", "3:59", "5:6", "7:7", "13:7", "15:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "a-allow-node-types-emphasis"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allowNodeTypes = ['Emphasis']
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:6", "3:48", "3:59", "5:6", "7:7", "9:5", "11:5", "13:7", "15:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "a-allow-node-types-strong"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allowNodeTypes = ['Strong']
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:6", "3:37", "3:59", "5:6", "7:7", "9:5", "11:5", "13:7", "15:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "a-allow-node-types-delete"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allowNodeTypes = ['Delete']
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:6", "3:37", "3:48", "5:6", "7:7", "9:5", "11:5", "13:7", "15:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "a-allow-node-types-link"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allowNodeTypes = ['Link']
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:37", "3:48", "3:59", "5:6", "7:7", "9:5", "11:5", "13:7", "15:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "a-allow-node-types-linkreference"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allowNodeTypes = ['LinkReference']
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:6", "3:37", "3:48", "3:59", "5:6", "7:7", "9:5", "11:5", "13:7"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "a-allow-node-types-several"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+allowNodeTypes = ['Link', 'BlockQuote']
+'''
+text = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+findings = ["1:4", "3:37", "3:48", "3:59", "7:7", "9:5", "11:5", "13:7", "15:5"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない"]
+fixed = "段落のTODO\n\n[リンクのTODO](http://example.com/)と*強調のTODO*と**太字のTODO**と~~消すTODO~~\n\n> 引用のTODO\n\n# 見出しのTODO\n\n| 表のTODO |\n| --- |\n| 表のTODO |\n\n- リストのTODO\n\n[参照のTODO][a]\n\n[a]: http://example.com/"
+
+[[cases]]
+name = "a-allow-node-types-with-replace"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+replace = 'DONE'
+allowNodeTypes = ['BlockQuote']
+'''
+text = "> 引用のTODO\n\nTODO"
+findings = ["3:1"]
+messages = ["「TODO」: TODOを残さない"]
+fixed = "> 引用のTODO\n\nDONE"
+
+[[cases]]
+name = "a-allow-node-types-keeps-other-elements"
+note = "allowNodeTypes は、当たった要素の、そのnodeの中の箇所だけを除く。textlintは、そのnodeの以降の箇所と以降の要素も調べないので、引用の中の `TODO` を指摘しない"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = '日付を書かない'
+pattern = '/\d{4}\/\d{2}\/\d{2}/'
+allowNodeTypes = ['BlockQuote']
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+'''
+text = "> 2000/01/01 TODOとTODO\n\nTODOと2000/01/01"
+findings = ["1:14", "1:19", "3:1", "3:6"]
+messages = ["「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「TODO」: TODOを残さない", "「2000/01/01」: 日付を書かない"]
+fixed = "> 2000/01/01 TODOとTODO\n\nTODOと2000/01/01"
+
+[[cases]]
+name = "o-replace-starts-earlier"
+note = "重なる箇所は、先に始まる箇所を残す。textlintは、`abc` と `cde` の両方を指摘し、直すのは後ろで終わる `cde` である"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'A'
+pattern = 'abc'
+replace = '1'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'B'
+pattern = 'cde'
+replace = '2'
+'''
+text = "abcdef"
+findings = ["1:1"]
+messages = ["「abc」: A"]
+fixed = "1def"
+
+[[cases]]
+name = "o-replace-longer-at-same-start"
+note = "同じ位置で始まる箇所は、長い箇所を残す"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'A'
+pattern = 'ab'
+replace = '1'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'B'
+pattern = 'abcd'
+replace = '2'
+'''
+text = "abcdef"
+findings = ["1:1"]
+messages = ["「abcd」: B"]
+fixed = "2ef"
+
+[[cases]]
+name = "o-replace-earlier-element-at-same-range"
+note = "範囲が同じ箇所は、前にある要素の箇所を残す"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'A'
+pattern = 'abc'
+replace = '1'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'B'
+pattern = '/ab./'
+replace = '2'
+'''
+text = "abc"
+findings = ["1:1"]
+messages = ["「abc」: A"]
+fixed = "1"
+
+[[cases]]
+name = "o-replace-three-elements"
+note = "同じ位置で始まる `abc` と `abcd` は長い `abcd` を残し、`abcd` と重なる `cde` も直さない"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'A'
+pattern = 'abc'
+replace = '1'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'B'
+pattern = 'cde'
+replace = '2'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'C'
+pattern = 'abcd'
+replace = '3'
+'''
+text = "abcdef"
+findings = ["1:1"]
+messages = ["「abcd」: C"]
+fixed = "3ef"
+
+[[cases]]
+name = "o-replace-compares-with-kept"
+note = "残した箇所の終わりと、次の箇所の始まりを比べる。捨てた `cdef` ではなく `abcd` と比べるので、`abcd` の直後から始まる `efgh` は残る"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'A'
+pattern = 'abcd'
+replace = '1'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'B'
+pattern = 'cdef'
+replace = '2'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'C'
+pattern = 'efgh'
+replace = '3'
+'''
+text = "abcdefgh"
+findings = ["1:1", "1:5"]
+messages = ["「abcd」: A", "「efgh」: C"]
+fixed = "13"
+
+[[cases]]
+name = "o-report-elements-all"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'A'
+pattern = 'abc'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'B'
+pattern = 'cde'
+'''
+text = "abcdef"
+findings = ["1:1", "1:3"]
+messages = ["「abc」: A", "「cde」: B"]
+fixed = "abcdef"
+
+[[cases]]
+name = "o-report-element-overlapping-replace"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'A'
+pattern = 'abc'
+replace = '1'
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'B'
+pattern = 'cde'
+'''
+text = "abcdef"
+findings = ["1:1", "1:3"]
+messages = ["「abc」: A", "「cde」: B"]
+fixed = "1def"
+
+[[cases]]
+name = "m-colon-in-message"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = '注意: TODOを残さない'
+pattern = 'TODO'
+'''
+text = "TODO"
+findings = ["1:1"]
+messages = ["「TODO」: 注意: TODOを残さない"]
+fixed = "TODO"
+
+[[cases]]
+name = "m-newline-in-message"
+note = "文面に埋め込む文字列の中の改行は、`\\n` の2文字にする。出力は1件1行である"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = "TODOを残さない\n理由を書く"
+pattern = 'TODO'
+'''
+text = "TODO"
+findings = ["1:1"]
+messages = ["「TODO」: TODOを残さない\\n理由を書く"]
+fixed = "TODO"
+
+[[cases]]
+name = "x-builtin-fix-after-replacement"
+note = "利用者の置き換えを先に当て、その結果に組み込みの修正ルールを当てる。置き換えが残した日本語と英数字の間の空白は、同じ実行で消える"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = '/(本語) (A)BC/'
+replace = '$1 $2bc'
+'''
+text = "日本語 ABC"
+findings = ["1:2"]
+messages = ["「本語 ABC」: m"]
+fixed = "日本語Abc"
+
+[[cases]]
+name = "x-replacement-undone-by-builtin-fix"
+note = "置き換えの固定の部分は空白だけで、境目は判定しない。置き換えが作った日本語と英数字の間の空白は、組み込みの修正ルールが消すので、置き換えは効かない"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = '/(語)(ABC)/'
+replace = '$1 $2'
+'''
+text = "日本語ABC"
+findings = ["1:3"]
+messages = ["「語ABC」: m"]
+fixed = "日本語ABC"
+
+[[cases]]
+name = "x-fullwidth-paren-disabled"
+builtin = '''
+fullwidth-paren = false
+[[builtin."@textlint-rule/pattern".patterns]]
+message = '全角にする'
+pattern = '/\((.+?)\)/'
+replace = '（$1）'
+'''
+text = "いいね(笑)ね"
+findings = ["1:4"]
+messages = ["「(笑)」: 全角にする"]
+fixed = "いいね（笑）ね"
+
+[[cases]]
+name = "x-prh-same-range"
+note = "prhと `@textlint-rule/pattern` の箇所の範囲が同じなら、prhの箇所を残し、patternの箇所は直さない"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'ビスケットと書く'
+pattern = 'クッキー'
+replace = 'Biscuit'
+'''
+text = "クッキー"
+findings = []
+fixed = "Cookie"
+
+[[cases]]
+name = "x-pattern-starts-before-prh"
+note = "重なる箇所は、先に始まる箇所を残す。patternの箇所が先に始まるので、prhの箇所は直さない"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: P
+    pattern: cdef
+""",
+]
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = 'abcd'
+replace = 'Q'
+'''
+text = "abcdef"
+findings = ["1:1"]
+messages = ["「abcd」: m"]
+fixed = "Qef"
+
+[[cases]]
+name = "x-prh-starts-before-pattern"
+note = "重なる箇所は、先に始まる箇所を残す。prhの箇所が先に始まるので、patternの箇所は直さない"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: P
+    pattern: abcd
+""",
+]
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = 'cdef'
+replace = 'Q'
+'''
+text = "abcdef"
+findings = []
+fixed = "Pef"
+
+[[cases]]
+name = "x-pattern-longer-at-same-start"
+note = "同じ位置で始まる箇所は、長い箇所を残す。patternの箇所が長いので、prhの箇所は直さない"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: P
+    pattern: ab
+""",
+]
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'm'
+pattern = 'abcd'
+replace = 'Q'
+'''
+text = "abcdef"
+findings = ["1:1"]
+messages = ["「abcd」: m"]
+fixed = "Qef"
+
+[[cases]]
+name = "x-prh-and-pattern-apart"
+note = "重ならない箇所は、prhと `@textlint-rule/pattern` のどちらも直す"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+""",
+]
+[[builtin."@textlint-rule/pattern".patterns]]
+message = 'TODOを残さない'
+pattern = 'TODO'
+replace = 'DONE'
+'''
+text = "クッキーとTODO"
+findings = ["1:6"]
+messages = ["「TODO」: TODOを残さない"]
+fixed = "CookieとDONE"

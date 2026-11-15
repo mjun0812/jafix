@@ -1,6 +1,7 @@
 mod apply;
 mod config;
 mod hook;
+mod js_regex;
 mod morph;
 mod prose;
 mod rules;
@@ -73,11 +74,19 @@ fn run_check(files: &[PathBuf]) -> ExitCode {
             }
         };
         let document = prose::parse(&src);
-        let findings = rules::find(&src, &document, config.builtin());
+        let mut findings =
+            rules::replacements(&src, &document, config.builtin(), &TargetLines::All);
+        findings.extend(rules::find(&src, &document, config.builtin()));
         let reports = if config.is_report_excluded(path) {
             Vec::new()
         } else {
-            rules::report(&src, &document, config.builtin(), config.rules())
+            rules::report(
+                &src,
+                &document,
+                config.builtin(),
+                config.rules(),
+                &TargetLines::All,
+            )
         };
         let mut lines: Vec<(usize, &str, &str)> = findings
             .iter()
@@ -182,7 +191,13 @@ fn run_hook(agent: Agent) -> ExitCode {
         // 修正ルールは改行を足し引きしないので、対象行は直した後の内容でも同じ行番号である
         let index = LineIndex::new(&fixed);
         let document = prose::parse(&fixed);
-        for report in rules::report(&fixed, &document, config.builtin(), config.rules()) {
+        for report in rules::report(
+            &fixed,
+            &document,
+            config.builtin(),
+            config.rules(),
+            &target.lines,
+        ) {
             let (line, column) = index.line_col(report.range.start);
             if !target.lines.contains(line) {
                 continue;
@@ -216,11 +231,20 @@ fn run_hook(agent: Agent) -> ExitCode {
     ExitCode::from(2)
 }
 
-/// 対象行に修正ルールを適用した内容を返す。変更が無ければ書き戻さない
+/// 対象行に、利用者の置き換えを当て、その結果に組み込みの修正ルールを当てた内容を返す。変更が無ければ書き戻さない
 fn fix_file(path: &Path, lines: &TargetLines, builtin: &Builtin) -> std::io::Result<String> {
     let src = fs::read_to_string(path)?;
-    let findings = rules::find(&src, &prose::parse(&src), builtin);
-    let fixed = apply::apply(&src, &findings, lines);
+    let document = prose::parse(&src);
+    let replacements = rules::replacements(&src, &document, builtin, lines);
+    let replaced = apply::apply(&src, &replacements, lines);
+    // 利用者の置き換えも改行を足し引きしないので、対象行は置き換えた後の内容でも同じ行番号である
+    let document = if replaced == src {
+        document
+    } else {
+        prose::parse(&replaced)
+    };
+    let findings = rules::find(&replaced, &document, builtin);
+    let fixed = apply::apply(&replaced, &findings, lines);
     if fixed != src {
         fs::write(path, &fixed)?;
     }

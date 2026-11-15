@@ -6,16 +6,19 @@ mod ai_writing;
 pub mod builtin;
 mod morph;
 mod paragraph;
+mod prh;
 mod text;
+mod textlint_rule_pattern;
 
 use regex::Regex;
 
+use crate::apply::TargetLines;
 use crate::prose::{Document, Prose};
 
 use self::builtin::Builtin;
 
 /// 組み込みのルール。全角括弧と空白の3つ以外は、textlintのpreset (`preset-ja-technical-writing`・
-/// `@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`) の中の名前と同じIDである
+/// `@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`) の中の名前か、textlintの設定に書くルールの名前と同じIDである
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuleId {
     FullwidthParen,
@@ -51,11 +54,13 @@ pub enum RuleId {
     AiTechWritingGuideline,
     NoAiWords,
     NoShortTopicComma,
+    Prh,
+    TextlintRulePattern,
 }
 
 impl RuleId {
     /// 組み込みのルールのすべて。設定の `[builtin]` のキーと、設定の指摘ルールの `id` と重ならないことを確かめるのに使う
-    pub const ALL: [RuleId; 33] = [
+    pub const ALL: [RuleId; 35] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
         RuleId::SpaceBetweenJaAndParen,
@@ -89,6 +94,8 @@ impl RuleId {
         RuleId::AiTechWritingGuideline,
         RuleId::NoAiWords,
         RuleId::NoShortTopicComma,
+        RuleId::Prh,
+        RuleId::TextlintRulePattern,
     ];
 
     /// `check` の出力の `[<rule-id>]` に使う名前
@@ -127,6 +134,8 @@ impl RuleId {
             RuleId::AiTechWritingGuideline => "ai-tech-writing-guideline",
             RuleId::NoAiWords => "no-ai-words",
             RuleId::NoShortTopicComma => "no-short-topic-comma",
+            RuleId::Prh => "prh",
+            RuleId::TextlintRulePattern => "@textlint-rule/pattern",
         }
     }
 }
@@ -217,17 +226,41 @@ pub struct Report<'r> {
     pub message: Cow<'r, str>,
 }
 
-/// 指摘ルール (組み込みの指摘ルール、見出しの中で直さない修正ルール、設定の `custom`) に当たる箇所を、位置の順に返す
+/// 指摘ルール (組み込みの指摘ルール、見出しの中で直さない修正ルール、直さない利用者の置き換え、設定の `custom`) に
+/// 当たる箇所を、位置の順に返す。`prh` と `@textlint-rule/pattern` は、`targets` と重なる本文の範囲だけに当てる
 pub fn report<'r>(
     src: &str,
     document: &Document,
     builtin: &Builtin,
     custom: &'r [CustomRule],
+    targets: &TargetLines,
 ) -> Vec<Report<'r>> {
     let mut reports = text::report(src, &document.texts, builtin);
     reports.extend(paragraph::report(src, &document.paragraphs, builtin));
     reports.extend(morph::report(src, document, builtin));
     reports.extend(ai_writing::report(src, document, builtin));
+    if let Some(rule) = &builtin.textlint_rule_pattern {
+        reports.extend(textlint_rule_pattern::report(src, document, rule, targets));
+    }
+    reports.extend(
+        user_replacements(src, document, builtin, targets)
+            .into_iter()
+            .filter_map(|replacement| {
+                let reason = unfixable(src, &replacement)?;
+                let Finding {
+                    range,
+                    rule,
+                    position,
+                    message,
+                    ..
+                } = replacement.finding;
+                Some(Report {
+                    range: position..range.end,
+                    rule: rule.name(),
+                    message: Cow::Owned(format!("{message}。{reason}")),
+                })
+            }),
+    );
     let headings = document.texts.iter().filter(|prose| prose.context.heading);
     reports.extend(
         anchor_changing_findings(src, headings, builtin)
@@ -255,6 +288,81 @@ pub fn report<'r>(
     }
     reports.sort_by_key(|report| report.range.start);
     reports
+}
+
+/// 利用者の置き換え (`prh` の箇所と、`replace` のある `@textlint-rule/pattern` の要素の箇所) の1箇所
+#[allow(dead_code)] // skeleton: not implemented
+pub struct UserReplacement {
+    pub finding: Finding,
+    /// 見出しの中の本文の範囲の箇所
+    pub heading: bool,
+}
+
+/// 利用者の置き換えのうち直すものを、重なりを解いて位置の順に返す。見出しの中の箇所と改行を含む箇所は含めない
+/// (`report` が指摘にする)。`targets` と重なる本文の範囲だけに当てる
+pub fn replacements(
+    src: &str,
+    document: &Document,
+    builtin: &Builtin,
+    targets: &TargetLines,
+) -> Vec<Finding> {
+    user_replacements(src, document, builtin, targets)
+        .into_iter()
+        .filter(|replacement| unfixable(src, replacement).is_none())
+        .map(|replacement| replacement.finding)
+        .collect()
+}
+
+/// 利用者の置き換えの箇所を、重なりを解いて位置の順に返す。範囲が同じ箇所は、`prh`、`patterns` の前の要素の順に残す
+fn user_replacements(
+    src: &str,
+    document: &Document,
+    builtin: &Builtin,
+    targets: &TargetLines,
+) -> Vec<UserReplacement> {
+    let mut replacements = Vec::new();
+    if let Some(rule) = &builtin.prh {
+        replacements.extend(prh::replacements(src, document, rule, targets));
+    }
+    if let Some(rule) = &builtin.textlint_rule_pattern {
+        replacements.extend(textlint_rule_pattern::replacements(
+            src, document, rule, targets,
+        ));
+    }
+    drop_overlaps(&mut replacements, |replacement| &replacement.finding.range);
+    replacements
+}
+
+/// 直さずに指摘にする利用者の置き換えなら、指摘の文面に続ける理由を返す。見出しの中の箇所は見出しの理由だけを返す
+fn unfixable(src: &str, replacement: &UserReplacement) -> Option<&'static str> {
+    let _ = (src, replacement);
+    todo!("skeleton: not implemented")
+}
+
+/// 箇所を開始の位置の順に、同じ位置なら長いものを先に並べ、残した最後の箇所の終わりより前に始まる箇所を捨てる。
+/// 並べ替えは安定なので、範囲が同じ箇所は `items` で前にあるものが残る
+fn drop_overlaps<T>(items: &mut Vec<T>, range: impl Fn(&T) -> &Range<usize>) {
+    items.sort_by_key(|item| {
+        let range = range(item);
+        (range.start, std::cmp::Reverse(range.end))
+    });
+    let mut end = 0;
+    items.retain(|item| {
+        let range = range(item);
+        if range.start < end {
+            return false;
+        }
+        end = range.end;
+        true
+    });
+}
+
+/// 利用者の置き換えの固定の部分 `text` を、段落の直下にある本文の範囲1つだけの文書とみなして、
+/// 有効な組み込みの修正ルールのうち当たるものを返す。当たれば、置き換えは組み込みの修正ルールと逆である
+#[allow(dead_code)] // skeleton: not implemented
+pub fn fix_rules_hitting(text: &str, builtin: &Builtin) -> Vec<RuleId> {
+    let _ = (text, builtin);
+    todo!("skeleton: not implemented")
 }
 
 static SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new("[ \u{3000}]+").unwrap());

@@ -45,6 +45,18 @@ pub struct Context {
     pub link: bool,
     /// 段落の直下にあり、引用の中でない
     pub plain: bool,
+    /// 段落の中。リスト項目・引用・脚注の定義の中の段落を含み、見出しと表のセルは段落ではない
+    pub paragraph: bool,
+    /// リスト項目の中
+    pub list_item: bool,
+    /// 表の中
+    pub table: bool,
+    /// 太字 (`**x**`) の中
+    pub strong: bool,
+    /// 取り消し線の中
+    pub delete: bool,
+    /// full形の参照リンク (`[x][id]`) の中
+    pub link_reference: bool,
 }
 
 /// 段落。`range` は元のソース上のバイト範囲
@@ -164,6 +176,8 @@ fn collect(node: &Node, src: &str, context: Context, ranges: &mut Vec<Prose>) {
                 emphasis: context.emphasis || matches!(node, Node::Emphasis(_)),
                 link: context.link || matches!(node, Node::Link(_)),
                 plain: matches!(node, Node::Paragraph(_)) && !blockquote,
+                // skeleton: not implemented (`paragraph`・`list_item`・`table`・`strong`・`delete`・`link_reference` を祖先から決める)
+                ..Context::default()
             };
             for child in node.children().into_iter().flatten() {
                 collect(child, src, children_context, ranges);

@@ -7,11 +7,13 @@ use toml::{Table, Value};
 
 use super::RuleId;
 use super::morph::pattern::{Expect, Field, OwnedFields};
+use super::prh::Checks;
+use super::prh::dictionary::Dictionary;
 
 /// 組み込みのルールの設定。有効・無効と、オプションを持つルールのオプションである。
 /// 既定では、`preset-ja-technical-writing` の23ルールと修正ルールの3つが有効で、オプションはtextlintの
 /// `preset-ja-technical-writing` と同じである。`@textlint-ja/preset-ai-writing` と `preset-ai-words-ja` の
-/// 7ルールは無効である
+/// 7ルールと、利用者の置き換えの2ルール (`prh`・`@textlint-rule/pattern`) は無効である
 #[derive(Debug)]
 pub struct Builtin {
     pub fullwidth_paren: bool,
@@ -47,6 +49,8 @@ pub struct Builtin {
     pub ai_tech_writing_guideline: Option<AiTechWritingGuideline>,
     pub no_ai_words: Option<NoAiWords>,
     pub no_short_topic_comma: Option<NoShortTopicComma>,
+    pub prh: Option<Prh>,
+    pub textlint_rule_pattern: Option<TextlintRulePattern>,
 }
 
 impl Default for Builtin {
@@ -85,6 +89,8 @@ impl Default for Builtin {
             ai_tech_writing_guideline: None,
             no_ai_words: None,
             no_short_topic_comma: None,
+            prh: None,
+            textlint_rule_pattern: None,
         }
     }
 }
@@ -127,7 +133,22 @@ impl Builtin {
                 .set(id, options, config_dir)
                 .map_err(|reason| format!("`{key}`: {reason}"))?;
         }
+        builtin.reject_opposite_replacements()?;
         Ok(builtin)
+    }
+
+    /// 利用者の置き換えの固定の部分に、有効な組み込みの修正ルールが直す箇所があれば理由を返す。
+    /// すべてのキーを当てた後の有効・無効で判定する
+    fn reject_opposite_replacements(&self) -> Result<(), String> {
+        if let Some(rule) = &self.prh {
+            rule.reject_opposite_replacements(self)
+                .map_err(|reason| format!("`{}`: {reason}", RuleId::Prh.name()))?;
+        }
+        if let Some(rule) = &self.textlint_rule_pattern {
+            rule.reject_opposite_replacements(self)
+                .map_err(|reason| format!("`{}`: {reason}", RuleId::TextlintRulePattern.name()))?;
+        }
+        Ok(())
     }
 
     /// `preset` のルールを、`value` が `true` ならpresetの既定の有効・無効とオプションにし、`false` ならすべて無効にする。
@@ -245,6 +266,15 @@ impl Builtin {
             RuleId::NoShortTopicComma => {
                 self.no_short_topic_comma =
                     options.map(NoShortTopicComma::from_options).transpose()?;
+            }
+            RuleId::Prh => {
+                self.prh = options
+                    .map(|options| Prh::from_options(options, config_dir))
+                    .transpose()?;
+            }
+            RuleId::TextlintRulePattern => {
+                self.textlint_rule_pattern =
+                    options.map(TextlintRulePattern::from_options).transpose()?;
             }
         }
         Ok(())
@@ -1291,6 +1321,103 @@ impl NoShortTopicComma {
             }
         }
         Ok(rule)
+    }
+}
+
+#[allow(dead_code)] // skeleton: not implemented
+#[derive(Debug)]
+pub struct Prh {
+    /// `rulePaths` の辞書、`ruleContents` の辞書の順に読んでまとめた辞書
+    pub dictionary: Dictionary,
+    /// 辞書の出どころの、不正の理由に書く名前 (``rulePaths の `/path/prh.yml` `` か `ruleContents の2番目`)。
+    /// `dictionary` に渡した出どころの一覧と同じ順に並ぶ
+    pub source_names: Vec<String>,
+    pub checks: Checks,
+}
+
+impl Prh {
+    /// `config_dir` は、`rulePaths` の相対パスと `ruleContents` の中の `imports` を解決するディレクトリである。
+    /// `rulePaths` と `ruleContents` に辞書が1つも無ければ理由を返す
+    fn from_options(options: &Table, config_dir: &Path) -> Result<Self, String> {
+        let _ = (options, config_dir);
+        todo!("skeleton: not implemented")
+    }
+
+    /// 辞書のルールの `expected` を `$` と1〜2桁の数字 (`$0` を除く) で区切った各部分に、
+    /// 有効な組み込みの修正ルールが当たれば理由を返す
+    fn reject_opposite_replacements(&self, builtin: &Builtin) -> Result<(), String> {
+        let _ = builtin;
+        todo!("skeleton: not implemented")
+    }
+}
+
+#[allow(dead_code)] // skeleton: not implemented
+#[derive(Debug)]
+pub struct TextlintRulePattern {
+    /// `patterns` の要素。書いた順に並ぶ
+    pub patterns: Vec<UserPattern>,
+}
+
+/// `@textlint-rule/pattern` の `patterns` の1つの要素
+#[allow(dead_code)] // skeleton: not implemented
+#[derive(Debug)]
+pub struct UserPattern {
+    pub message: String,
+    pub pattern: regress::Regex,
+    /// 置き換え後の文字列。`$1`〜`$9` で捕捉グループを参照する。無ければ、箇所は指摘になる
+    pub replace: Option<String>,
+    /// 一致した文字列のどれかに当たれば、その一致を捨てる
+    pub allows: Vec<regress::Regex>,
+    /// 本文の範囲がこの型のどれかの中にあれば、その範囲の一致を捨てる
+    pub allow_node_types: Vec<PatternNodeType>,
+}
+
+/// `@textlint-rule/pattern` の `allowNodeTypes` に書けるtextlintのnodeの型。本文の範囲の祖先になりうる型だけを持つ
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PatternNodeType {
+    Paragraph,
+    Header,
+    BlockQuote,
+    /// `List` と `ListItem`
+    ListItem,
+    /// `Table`・`TableRow`・`TableCell`
+    Table,
+    Emphasis,
+    Strong,
+    Delete,
+    Link,
+    LinkReference,
+}
+
+/// 本文の範囲の祖先にならない型 (`Document`・`Str`・`Code` など) と知らない名前は `None` である
+#[allow(dead_code)] // skeleton: not implemented
+fn pattern_node_type(name: &str) -> Option<PatternNodeType> {
+    Some(match name {
+        "Paragraph" => PatternNodeType::Paragraph,
+        "Header" => PatternNodeType::Header,
+        "BlockQuote" => PatternNodeType::BlockQuote,
+        "List" | "ListItem" => PatternNodeType::ListItem,
+        "Table" | "TableRow" | "TableCell" => PatternNodeType::Table,
+        "Emphasis" => PatternNodeType::Emphasis,
+        "Strong" => PatternNodeType::Strong,
+        "Delete" => PatternNodeType::Delete,
+        "Link" => PatternNodeType::Link,
+        "LinkReference" => PatternNodeType::LinkReference,
+        _ => return None,
+    })
+}
+
+impl TextlintRulePattern {
+    /// `patterns` が無いか空なら理由を返す
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
+    }
+
+    /// `replace` を `$1`〜`$9` で区切った各部分に、有効な組み込みの修正ルールが当たれば理由を返す
+    fn reject_opposite_replacements(&self, builtin: &Builtin) -> Result<(), String> {
+        let _ = builtin;
+        todo!("skeleton: not implemented")
     }
 }
 
