@@ -2,10 +2,11 @@ use std::borrow::Cow;
 use std::path::Path;
 
 use regex::{Regex, RegexBuilder};
+use serde::Deserialize;
 use toml::{Table, Value};
 
 use super::RuleId;
-use super::morph::pattern::{Expect, OwnedFields};
+use super::morph::pattern::{Expect, Field, OwnedFields};
 
 /// 組み込みのルールの設定。有効・無効と、オプションを持つルールのオプションである。
 /// 既定では、`preset-ja-technical-writing` の23ルールと修正ルールの3つが有効で、オプションはtextlintの
@@ -111,7 +112,7 @@ impl Builtin {
             let id = RuleId::ALL
                 .into_iter()
                 .find(|id| id.name() == key)
-                .ok_or_else(|| format!("`{key}` は組み込みのルールのIDではない"))?;
+                .ok_or_else(|| format!("`{key}` は組み込みのルールのIDでもpresetの名前でもない"))?;
             let options = match value {
                 Value::Boolean(false) => None,
                 Value::Boolean(true) => Some(&defaults),
@@ -137,8 +138,13 @@ impl Builtin {
         value: &Value,
         config_dir: &Path,
     ) -> Result<(), String> {
-        let _ = (preset, value, config_dir);
-        todo!("skeleton: not implemented")
+        let enabled = value.as_bool().ok_or("値は `true` か `false` で書く")?;
+        let defaults = Table::new();
+        for &(id, default_enabled) in preset.rules() {
+            let options = (enabled && default_enabled).then_some(&defaults);
+            self.set(id, options, config_dir)?;
+        }
+        Ok(())
     }
 
     /// `id` のルールを、`options` が無ければ無効にし、あればそのオプションで有効にする
@@ -274,7 +280,6 @@ impl Preset {
     }
 
     /// presetが束ねるルールと、presetの既定で有効か。`preset-ja-technical-writing` は、jafix独自の修正ルール3つを含まない
-    #[allow(dead_code)] // skeleton: not implemented
     fn rules(self) -> &'static [(RuleId, bool)] {
         match self {
             Preset::JaTechnicalWriting => &[
@@ -1052,7 +1057,6 @@ impl AiTechWritingGuideline {
 }
 
 #[derive(Debug, Default)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct NoAiWords {
     /// 一致した範囲の元の文字列に当たれば、指摘しない
     pub allows: Vec<Regex>,
@@ -1064,14 +1068,49 @@ pub struct NoAiWords {
 impl NoAiWords {
     /// `config_dir` は、`dictionaryPath` の相対パスを解決するディレクトリである
     fn from_options(options: &Table, config_dir: &Path) -> Result<Self, String> {
-        let _ = (options, config_dir);
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        let mut dictionary_path = None;
+        for (key, value) in options {
+            match key.as_str() {
+                "allows" => rule.allows = patterns(key, value)?,
+                "dictionaryPath" => dictionary_path = Some(non_empty_string(key, value)?),
+                "dictionaryMode" => {
+                    rule.dictionary_mode = match string(key, value)? {
+                        "append" => DictionaryMode::Append,
+                        "override" => DictionaryMode::Override,
+                        _ => {
+                            return Err(format!("`{key}` は \"append\" か \"override\" で書く"));
+                        }
+                    }
+                }
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        match dictionary_path {
+            Some(path) => {
+                let path = match path.strip_prefix("~/") {
+                    Some(rest) => std::env::home_dir()
+                        .ok_or("ホームディレクトリが分からないため `dictionaryPath` の `~/` を展開できない")?
+                        .join(rest),
+                    None => config_dir.join(path),
+                };
+                rule.user_words = user_dictionary(&path).map_err(|reason| {
+                    format!("`dictionaryPath` の {}: {reason}", path.display())
+                })?;
+            }
+            None if rule.dictionary_mode == DictionaryMode::Override => {
+                return Err(
+                    "`dictionaryMode` が \"override\" のときは `dictionaryPath` を書く".to_owned(),
+                );
+            }
+            None => {}
+        }
+        Ok(rule)
     }
 }
 
 /// 組み込みの辞書と利用者の辞書の使い方
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-#[allow(dead_code)] // skeleton: not implemented
 pub enum DictionaryMode {
     /// 両方を使う
     #[default]
@@ -1082,23 +1121,98 @@ pub enum DictionaryMode {
 
 /// 利用者の辞書の1項目
 #[derive(Debug)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct UserWord {
     /// 指摘の文面
     pub message: String,
     pub pattern: Vec<Expect<OwnedFields>>,
 }
 
+#[derive(Deserialize)]
+struct RawDictionary {
+    entries: Vec<RawEntry>,
+}
+
+/// 項目の `message` と `tokens` 以外のキーは、textlintと同じく読まない
+#[derive(Deserialize)]
+struct RawEntry {
+    message: String,
+    tokens: Vec<serde_json::Map<String, serde_json::Value>>,
+}
+
 /// `path` の利用者の辞書 (`{ "entries": [{ "message": …, "tokens": [...] }] }` のJSON) を読む。
 /// 読めない、JSONとして読めない、形の誤りは、理由を返す
-#[allow(dead_code)] // skeleton: not implemented
 fn user_dictionary(path: &Path) -> Result<Vec<UserWord>, String> {
-    let _ = path;
-    todo!("skeleton: not implemented")
+    let text = std::fs::read_to_string(path).map_err(|e| format!("読めない: {e}"))?;
+    let raw: RawDictionary = serde_json::from_str(&text).map_err(|e| match e.classify() {
+        serde_json::error::Category::Data => format!("辞書の形でない: {e}"),
+        _ => format!("JSONとして読めない: {e}"),
+    })?;
+    raw.entries
+        .into_iter()
+        .enumerate()
+        .map(|(i, entry)| {
+            user_word(entry).map_err(|reason| format!("`entries` の{}番目: {reason}", i + 1))
+        })
+        .collect()
+}
+
+fn user_word(entry: RawEntry) -> Result<UserWord, String> {
+    if entry.message.is_empty() {
+        return Err("`message` は空でない文字列で書く".to_owned());
+    }
+    if entry.tokens.is_empty() {
+        return Err("`tokens` は空でない配列で書く".to_owned());
+    }
+    let pattern = entry
+        .tokens
+        .iter()
+        .enumerate()
+        .map(|(j, token)| {
+            expect(token).map_err(|reason| format!("`tokens` の{}番目: {reason}", j + 1))
+        })
+        .collect::<Result<_, _>>()?;
+    Ok(UserWord {
+        message: entry.message,
+        pattern,
+    })
+}
+
+/// 期待するトークンの表を読む。`_` で始まるキーは、textlintと同じく照合に使わず、`_skippable` だけを読む
+fn expect(
+    token: &serde_json::Map<String, serde_json::Value>,
+) -> Result<Expect<OwnedFields>, String> {
+    let mut expect = Expect {
+        fields: Vec::new(),
+        skippable: false,
+    };
+    for (key, value) in token {
+        if key == "_skippable" {
+            expect.skippable = value
+                .as_bool()
+                .ok_or_else(|| format!("`{key}` は `true` か `false` で書く"))?;
+            continue;
+        }
+        if key.starts_with('_') {
+            continue;
+        }
+        // `word_id`・`word_type`・`word_position` もkuromojiの項目だが、jafixのトークンは持たない
+        let field = Field::from_kuromoji_name(key)
+            .ok_or_else(|| format!("`{key}` はjafixのトークンの項目ではない"))?;
+        let values = match value {
+            serde_json::Value::String(value) => vec![value.clone()],
+            serde_json::Value::Array(values) => values
+                .iter()
+                .map(|value| value.as_str().map(str::to_owned))
+                .collect::<Option<_>>()
+                .ok_or_else(|| format!("`{key}` は文字列か文字列の配列で書く"))?,
+            _ => return Err(format!("`{key}` は文字列か文字列の配列で書く")),
+        };
+        expect.fields.push((field, values));
+    }
+    Ok(expect)
 }
 
 #[derive(Debug)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct NoShortTopicComma {
     /// 文頭から読点の手前までの文字数がこれ以下なら指摘する
     pub max_length: usize,
@@ -1112,8 +1226,14 @@ impl Default for NoShortTopicComma {
 
 impl NoShortTopicComma {
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "maxLength" => rule.max_length = integer(key, value, 1)?,
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
     }
 }
 

@@ -190,3 +190,13 @@ fn ja_no_successive_word() {
 fn ja_no_abusage() {
     assert_cases("ja-no-abusage");
 }
+
+#[test]
+fn no_ai_words() {
+    assert_cases("no-ai-words");
+}
+
+#[test]
+fn no_short_topic_comma() {
+    assert_cases("no-short-topic-comma");
+}

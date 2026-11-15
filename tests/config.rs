@@ -738,3 +738,241 @@ fn max_ten_resets_the_count_at_the_kuten_before_comparing_it_with_max() {
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stdout(&output), "");
 }
+
+/// `stdout` のうち、`rule` の指摘の行
+fn findings_of<'a>(stdout: &'a str, rule: &str) -> Vec<&'a str> {
+    let suffix = format!(" [{rule}]");
+    stdout
+        .lines()
+        .filter(|line| line.ends_with(&suffix))
+        .collect()
+}
+
+const AI_WRITING_RULES: [&str; 5] = [
+    "no-ai-list-formatting",
+    "no-ai-hype-expressions",
+    "no-ai-emphasis-patterns",
+    "no-ai-colon-continuation",
+    "ai-tech-writing-guideline",
+];
+
+/// `@textlint-ja/preset-ai-writing` の5ルールと `preset-ai-words-ja` の2ルールのそれぞれに当たる文書。
+/// 段落を分けて、ルールどうしの指摘が重ならないようにしている
+const AI_RULES_INPUT: &str = "- **項目**: 説明
+
+これは革命的なです。
+
+✅ **項目**です。
+
+次のコマンドを実行します:
+
+```sh
+npm test
+```
+
+まず最初に確認します。
+
+通信経路を確認する。
+
+今日は、晴れです。
+";
+
+#[test]
+fn preset_ai_words_ja_enables_only_no_ai_words() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", AI_RULES_INPUT);
+    sandbox.write_xdg_config("[builtin]\npreset-ai-words-ja = true\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    assert!(!findings_of(found, "no-ai-words").is_empty(), "{found}");
+    for rule in AI_WRITING_RULES.iter().chain(&["no-short-topic-comma"]) {
+        assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+
+    // 同じ文書に `no-short-topic-comma` が当たることを、ルールのIDのキーで有効にして確かめる
+    sandbox.write_xdg_config("[builtin]\npreset-ai-words-ja = true\nno-short-topic-comma = true\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    assert_eq!(
+        findings_of(found, "no-short-topic-comma"),
+        ["t.md:17:4: 主題を3文字示しただけで読点を打っている [no-short-topic-comma]"]
+    );
+}
+
+/// `preset-ja-technical-writing` の23ルール
+const TECHNICAL_WRITING_RULES: [&str; 23] = [
+    "sentence-length",
+    "max-comma",
+    "max-kanji-continuous-len",
+    "arabic-kanji-numbers",
+    "ja-no-mixed-period",
+    "no-nfd",
+    "no-invalid-control-character",
+    "no-zero-width-spaces",
+    "no-exclamation-question-mark",
+    "no-hankaku-kana",
+    "ja-unnatural-alphabet",
+    "no-unmatched-pair",
+    "max-ten",
+    "no-mix-dearu-desumasu",
+    "no-doubled-conjunction",
+    "no-doubled-conjunctive-particle-ga",
+    "no-double-negative-ja",
+    "no-doubled-joshi",
+    "no-dropping-the-ra",
+    "ja-no-weak-phrase",
+    "ja-no-successive-word",
+    "ja-no-abusage",
+    "ja-no-redundant-expression",
+];
+
+/// jafix独自の修正ルール
+const JAFIX_FIX_RULES: [&str; 3] = [
+    "fullwidth-paren",
+    "space-between-ja-and-alnum",
+    "space-between-ja-and-paren",
+];
+
+/// `preset-ja-technical-writing` の23ルールと、jafix独自の修正ルール3つのそれぞれに当たる文書
+fn technical_writing_rules_input() -> String {
+    let others = [
+        format!("{}。", "あ".repeat(101)),
+        "a,b,c,d,e".to_owned(),
+        "情報処理推進機です。".to_owned(),
+        "二回実行する。".to_owned(),
+        "これは文です".to_owned(),
+        "か\u{3099}き。".to_owned(),
+        "あ\u{1}い。".to_owned(),
+        "あ\u{200b}い。".to_owned(),
+        "すごい！".to_owned(),
+        "ﾊﾝｶｸです。".to_owned(),
+        "あgい。".to_owned(),
+        "「閉じない文です。".to_owned(),
+        "日本語 Rustです。".to_owned(),
+        "注の文 （補足）です。".to_owned(),
+    ];
+    format!("{MORPHOLOGICAL_RULES_INPUT}\n{}\n", others.join("\n\n"))
+}
+
+#[test]
+fn preset_ja_technical_writing_false_disables_its_rules() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", &technical_writing_rules_input());
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in TECHNICAL_WRITING_RULES.iter().chain(&JAFIX_FIX_RULES) {
+        assert!(!findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+
+    sandbox.write_xdg_config("[builtin]\npreset-ja-technical-writing = false\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in TECHNICAL_WRITING_RULES {
+        assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+    for rule in JAFIX_FIX_RULES {
+        assert!(!findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+}
+
+#[test]
+fn rule_key_enables_a_rule_of_a_disabled_preset() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", &technical_writing_rules_input());
+    sandbox.write_xdg_config(
+        "[builtin]\npreset-ja-technical-writing = false\nsentence-length = true\n",
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in TECHNICAL_WRITING_RULES {
+        assert_eq!(
+            findings_of(found, rule).is_empty(),
+            rule != "sentence-length",
+            "{rule}: {found}"
+        );
+    }
+}
+
+#[test]
+fn preset_value_must_be_boolean() {
+    assert_check_rejects_builtin("preset-ai-words-ja = { }", &["preset-ai-words-ja"]);
+}
+
+/// 「再考」の1項目を持つ利用者の辞書を、設定ファイルのディレクトリに `dict.json` として置く
+fn write_user_dictionary(sandbox: &Sandbox) {
+    let dictionary = json!({
+        "entries": [
+            {
+                "message": "「再考」は言い換える",
+                "tokens": [{ "pos": "名詞", "basic_form": "再考" }]
+            }
+        ]
+    });
+    sandbox.write("xdg/jafix/dict.json", &dictionary.to_string());
+}
+
+#[test]
+fn no_ai_words_appends_user_dictionary() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "再考と照合を行う。\n");
+    write_user_dictionary(&sandbox);
+    sandbox.write_xdg_config("[builtin]\nno-ai-words = { dictionaryPath = \"dict.json\" }\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(
+        findings_of(stdout(&output), "no-ai-words"),
+        [
+            "t.md:1:1: 「再考」は言い換える [no-ai-words]",
+            "t.md:1:4: AIが多用する語「照合」を使っている [no-ai-words]",
+        ]
+    );
+}
+
+#[test]
+fn no_ai_words_override_uses_only_user_dictionary() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "再考と照合を行う。\n");
+    write_user_dictionary(&sandbox);
+    sandbox.write_xdg_config(
+        "[builtin]\nno-ai-words = { dictionaryPath = \"dict.json\", dictionaryMode = \"override\" }\n",
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(
+        findings_of(stdout(&output), "no-ai-words"),
+        ["t.md:1:1: 「再考」は言い換える [no-ai-words]"]
+    );
+}
+
+#[test]
+fn no_ai_words_rejects_invalid_user_dictionary() {
+    let token = |key: &str| {
+        json!({ "entries": [{ "message": "m", "tokens": [{ key: "再考" }] }] }).to_string()
+    };
+    for dictionary in [
+        None,
+        Some("{ \"entries\": [".to_owned()),
+        Some(token("part_of_speech")),
+        Some(token("word_id")),
+    ] {
+        let sandbox = Sandbox::new();
+        sandbox.write("t.md", "再考する。\n");
+        if let Some(dictionary) = &dictionary {
+            sandbox.write("xdg/jafix/dict.json", dictionary);
+        }
+        sandbox.write_xdg_config("[builtin]\nno-ai-words = { dictionaryPath = \"dict.json\" }\n");
+        let output = sandbox.run(&["check", "t.md"]);
+        assert_eq!(output.status.code(), Some(2), "{dictionary:?}");
+        let stderr = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            stderr.contains("dictionaryPath"),
+            "{dictionary:?}: {stderr}"
+        );
+    }
+}
+
+#[test]
+fn no_ai_words_override_requires_dictionary_path() {
+    assert_check_rejects_builtin(
+        "no-ai-words = { dictionaryMode = \"override\" }",
+        &["dictionaryMode"],
+    );
+}

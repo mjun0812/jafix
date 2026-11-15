@@ -91,10 +91,20 @@ fn match_at<F: Fields>(tokens: &[Token], pattern: &[Expect<F>], start: usize) ->
 
 impl Field {
     /// 利用者の辞書に書く、kuromojiのトークンの項目の名前から引く
-    #[allow(dead_code)] // skeleton: not implemented
     pub fn from_kuromoji_name(name: &str) -> Option<Field> {
-        let _ = name;
-        todo!("skeleton: not implemented")
+        Some(match name {
+            "surface_form" => Field::Surface,
+            "pos" => Field::Pos,
+            "pos_detail_1" => Field::PosDetail1,
+            "pos_detail_2" => Field::PosDetail2,
+            "pos_detail_3" => Field::PosDetail3,
+            "conjugated_type" => Field::ConjugatedType,
+            "conjugated_form" => Field::ConjugatedForm,
+            "basic_form" => Field::BasicForm,
+            "reading" => Field::Reading,
+            "pronunciation" => Field::Pronunciation,
+            _ => return None,
+        })
     }
 }
 
