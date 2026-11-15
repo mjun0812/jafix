@@ -3,7 +3,7 @@
 //! 見出しで引く表は `build.rs` が作る
 
 use std::borrow::Cow;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::ops::Range;
 
 use super::AnalyzedProse;
@@ -20,7 +20,11 @@ static TABLE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/synonyms-table.b
 /// 見出しに当てる、空白をまたがずにつなげたトークンの並びの長さの上限
 const MAX_TOKENS: usize = 8;
 
+/// 32bitのFNV-1aの初期値
 const FNV_OFFSET_BASIS: u32 = 0x811c_9dc5;
+
+/// 32bitのFNV-1aの乗数
+const FNV_PRIME: u32 = 0x0100_0193;
 
 /// 文書の中で使われた見出しの出現。本文の範囲の繰り返しで集め、繰り返しの後に `report` で指摘にする
 #[derive(Default)]
@@ -129,6 +133,7 @@ impl Occurrences {
             .flat_map(|word| headword_collections(word))
             .collect();
         let mut reports: Vec<Report> = Vec::new();
+        let mut seen: HashSet<(Range<usize>, String)> = HashSet::new();
         for (collection, members) in &collections {
             let preferred = prefer
                 .iter()
@@ -156,15 +161,15 @@ impl Occurrences {
                 None => Vec::new(),
             };
             for (range, message) in found {
-                let report = Report {
+                // 1つの見出しは複数の集まりに属しうるので、集まりが違っても同じ指摘になりうる
+                if !seen.insert((range.clone(), message.clone())) {
+                    continue;
+                }
+                reports.push(Report {
                     range,
                     rule: RuleId::NoSynonyms.name(),
                     message: Cow::Owned(message),
-                };
-                // 1つの見出しは複数の集まりに属しうるので、集まりが違っても同じ指摘になりうる
-                if !reports.contains(&report) {
-                    reports.push(report);
-                }
+                });
             }
         }
         reports
@@ -223,7 +228,7 @@ fn lookup(key: &str, hash: u32) -> Option<(&'static str, &'static str)> {
 /// `hash` に `bytes` を続けた32bitのFNV-1a。`build.rs` の表と同じ値になる
 fn fnv1a(hash: u32, bytes: &[u8]) -> u32 {
     bytes.iter().fold(hash, |hash, &byte| {
-        (hash ^ u32::from(byte)).wrapping_mul(0x0100_0193)
+        (hash ^ u32::from(byte)).wrapping_mul(FNV_PRIME)
     })
 }
 

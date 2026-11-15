@@ -58,9 +58,15 @@ fn main() {
     std::fs::write(out.join("synonyms-table.bin"), bytes).unwrap();
 }
 
+/// 32bitのFNV-1aの初期値
+const FNV_OFFSET_BASIS: u32 = 0x811c_9dc5;
+
+/// 32bitのFNV-1aの乗数
+const FNV_PRIME: u32 = 0x0100_0193;
+
 /// 32bitのFNV-1a。実行時の照合は、トークンの表層を1つずつ足して同じ値を求める
 fn fnv1a(text: &str) -> u32 {
-    text.bytes().fold(0x811c_9dc5, |hash, byte| {
-        (hash ^ u32::from(byte)).wrapping_mul(0x0100_0193)
+    text.bytes().fold(FNV_OFFSET_BASIS, |hash, byte| {
+        (hash ^ u32::from(byte)).wrapping_mul(FNV_PRIME)
     })
 }
