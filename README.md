@@ -828,6 +828,8 @@ JTFスタイルガイドの37ルールも、判定の条件を `textlint-rule-pr
 - `date-weekday-mismatch` は、年を補うとき、日付の文字列に年を足して解析し直さず、読んだ月と日に年を直に当てます。textlintは `April 23 (Mon)` の年が決まらず、確かめません。元号の無い `元年` の後の月と日(`元年5月1日`)は、年の無い日付として補いません
 - `date-weekday-mismatch` は、範囲の日付(`4月23日〜24日`・`April 23 - 25, 2024`)と、`BE`・`AD`・`BC` の付く年の日付を確かめません。textlintは、範囲の最初の日と、`AD` の付く年の日付を確かめます
 - `date-weekday-mismatch` の位置は、括弧の中の前後の空白を除いた曜日の先頭です。textlintは、括弧の中に前の空白があると、その空白に出します
+- `date-weekday-mismatch` は、http(s)のURLの中の日付を確かめません。裸のURLと、文字列がURLのリンクは、本文でない箇所だからです。textlintは、`[https://example.com/2019/07/08(Su)/x](https://e.com)` の日付も確かめます
+- `date-weekday-mismatch` は、月が先の数字の日付(`4/23/2024`)の前に文字があっても、曜日を確かめます。textlintは、`chrono-node` 1.4.9の切り出しの誤りのため、行頭でない `会議は4/23/2024(Mon)です。` の日付を確かめません
 - `no-dead-link` は、裸のURLを対にならない `）` の手前で終えます。GFMの裸のURLは空白まで続くので、textlintは `https://example.com）を参照。` へ接続します
 - `no-dead-link` の相対のリンクの位置は、元のソースのリンク先の文字列です。textlintは、解決した後の `file:///...` の長さで範囲を計り、宛先の文字列をリンクの原文から探します。そのため、textlintの位置はずれることがあります
 - `no-dead-link` は、1回の要求を10秒で打ち切ります。textlintは上限を持ちません。`User-Agent` の既定値は `jafix-no-dead-link/<jafixのversion>` です
@@ -835,6 +837,7 @@ JTFスタイルガイドの37ルールも、判定の条件を `textlint-rule-pr
 - `no-dead-link` は、パスで書いた `baseURI` を、末尾の `/` の有無によらずディレクトリとして扱います。textlintは、末尾に `/` が無いと1つ上のディレクトリで解決します
 - `no-dead-link` は、`httpOnly` が `true` で `baseURI` が無いとき、相対のリンクと絶対パスを確かめません。textlintは、実行したディレクトリから見たファイルとして確かめます
 - `no-dead-link` の `dotInIgnore`・`interval`・`intervalCap`・`linkMaxAge` は使えません。`ignore` のglobは `exclude` のglobと同じ読み方で、`*` と `?` は `/` をまたがず、`.` で始まる要素にも `*` が当たります
+- `no-dead-link` は、リンクの宛先だけを確かめます。textlintは、文中の `//host.tld/...` の文字列も拾い、ローカルのファイルとして確かめます
 - 3つとも、textlintと違って自動で直さず、指摘だけを出します。曜日とリダイレクト先のURLは文面に入れます
 
 2つのfilterも、外す範囲の求め方を `textlint-filter-rule-comments` 1.3.0と `textlint-filter-rule-allowlist` 4.0.0から写しています。ほかに次の点が違います。

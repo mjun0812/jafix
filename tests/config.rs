@@ -2720,3 +2720,28 @@ fn comments_filter_accepts_textlint_rule_ids() {
         );
     }
 }
+
+#[test]
+fn no_todo_reports_a_task_box_followed_only_by_trailing_spaces() {
+    for content in ["- [ ] \n", "- [ ]\t\n", "- 項目 [ ] \n"] {
+        let sandbox = Sandbox::new();
+        sandbox.write("t.md", content);
+        sandbox.write_xdg_config("[builtin]\nno-todo = true\n");
+        let output = sandbox.run(&["check", "t.md"]);
+        let column = content.find('[').map(|i| content[..i].chars().count() + 1);
+        assert_eq!(
+            findings_of(stdout(&output), "no-todo"),
+            [format!(
+                "t.md:1:{}: 未完了のタスクが残っている [no-todo]",
+                column.unwrap()
+            )],
+            "{content:?}"
+        );
+    }
+    // 記号の後ろが改行なら、後ろに空白が続かないので指摘しない
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "- [ ]\n");
+    sandbox.write_xdg_config("[builtin]\nno-todo = true\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert!(findings_of(stdout(&output), "no-todo").is_empty());
+}

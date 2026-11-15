@@ -77,7 +77,14 @@ fn task_marker(src: &str, item: &ListItem) -> Option<Range<usize>> {
 
 /// `range` の中の最初の `[ ]` (角括弧の間が1文字以上の空白で、後ろに空白が続くもの) の、`[` から `]` までの範囲
 fn unchecked_box(src: &str, range: Range<usize>) -> Option<Range<usize>> {
-    let found = TASK.find(&src[range.clone()])?;
+    // markdown-rsの項目と文字列の範囲は行末の空白を含まないが、textlintは項目の原文の行末の空白にも `\s` を当てる。
+    // そのため、範囲の直後の1文字も、改行でなければ見る
+    let end = src[range.end..]
+        .chars()
+        .next()
+        .filter(|c| !matches!(c, '\n' | '\r'))
+        .map_or(range.end, |c| range.end + c.len_utf8());
+    let found = TASK.find(&src[range.start..end])?;
     let start = range.start + found.start();
     let close = src[start..range.start + found.end()].rfind(']')?;
     Some(start..start + close + 1)
