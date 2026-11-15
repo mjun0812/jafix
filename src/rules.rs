@@ -4,6 +4,7 @@ use std::sync::LazyLock;
 
 mod ai_writing;
 pub mod builtin;
+pub mod general;
 mod jtf_style;
 mod morph;
 mod paragraph;
@@ -15,9 +16,13 @@ mod textlint_rule_pattern;
 use regex::Regex;
 
 use crate::apply::{LineIndex, TargetLines};
+use crate::filter::Ignored;
 use crate::prose::{Context, Document, Prose};
 
+pub(crate) use self::prh::dictionary::parse_yaml;
+
 use self::builtin::Builtin;
+use self::general::Links;
 use self::jtf_style::JtfRule;
 
 /// 組み込みのルール。全角括弧と空白の3つ以外は、textlintのpreset (`preset-ja-technical-writing`・
@@ -83,11 +88,14 @@ pub enum RuleId {
     JaHiraganaDaimeishi,
     NoInsertDroppingSa,
     NoSynonyms,
+    NoTodo,
+    DateWeekdayMismatch,
+    NoDeadLink,
 }
 
 impl RuleId {
     /// 組み込みのルールのすべて。設定の `[builtin]` のキーをルールのIDとして読むのに使う
-    pub const ALL: [RuleId; 92] = [
+    pub const ALL: [RuleId; 95] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
         RuleId::SpaceBetweenJaAndParen,
@@ -180,6 +188,9 @@ impl RuleId {
         RuleId::JaHiraganaDaimeishi,
         RuleId::NoInsertDroppingSa,
         RuleId::NoSynonyms,
+        RuleId::NoTodo,
+        RuleId::DateWeekdayMismatch,
+        RuleId::NoDeadLink,
     ];
 
     /// `check` の出力の `[<rule-id>]` に使う名前
@@ -243,6 +254,9 @@ impl RuleId {
             RuleId::JaHiraganaDaimeishi => "ja-hiragana-daimeishi",
             RuleId::NoInsertDroppingSa => "@textlint-ja/no-insert-dropping-sa",
             RuleId::NoSynonyms => "@textlint-ja/no-synonyms",
+            RuleId::NoTodo => "no-todo",
+            RuleId::DateWeekdayMismatch => "date-weekday-mismatch",
+            RuleId::NoDeadLink => "no-dead-link",
         }
     }
 }
@@ -308,13 +322,16 @@ pub struct Report {
 
 /// 指摘ルール (組み込みの指摘ルール、見出しの中で直さない修正ルール、直さない利用者の置き換え、`replace` の無い
 /// `@textlint-rule/pattern` の要素) に当たる箇所を、位置の順に返す。`prh` と `@textlint-rule/pattern` と
-/// `preset-jtf-style` の辞書の4ルールは、`targets` と重なる本文の範囲だけに当てる。`fixes` は、同じ `src` と `document` の `fix_findings` の結果である
+/// `preset-jtf-style` の辞書の4ルールは、`targets` と重なる本文の範囲だけに当てる。`fixes` は、同じ `src` と `document` の `fix_findings` の結果である。
+/// `ignored` に含まれる指摘は除く。`links` は、`no-dead-link` が宛先を確かめる文脈である
 pub fn report(
     src: &str,
     document: &Document,
     builtin: &Builtin,
     targets: &TargetLines,
     fixes: &[FixRuleFinding],
+    ignored: &Ignored,
+    links: &Links,
 ) -> Vec<Report> {
     let mut reports = text::report(src, &document.texts, builtin);
     reports.extend(paragraph::report(src, &document.paragraphs, builtin));
@@ -355,6 +372,8 @@ pub fn report(
     ));
     reports.extend(spacing::report(src, document, builtin));
     reports.extend(jtf_style::report(src, document, builtin, &texts));
+    reports.extend(general::report(src, document, builtin, links, ignored));
+    // skeleton: not implemented (`ignored` に含まれる指摘を除く)
     reports.sort_by_key(|report| report.range.start);
     reports
 }
@@ -367,13 +386,16 @@ pub struct UserReplacement {
 }
 
 /// 利用者の置き換えのうち直すものを、重なりを解いて位置の順に返す。見出しの中の箇所と改行を含む箇所は含めない
-/// (`report` が指摘にする)。`targets` と重なる本文の範囲だけに当てる
+/// (`report` が指摘にする)。`targets` と重なる本文の範囲だけに当てる。`ignored` に含まれる箇所は、重なりを解く前に除く
 pub fn replacements(
     src: &str,
     document: &Document,
     builtin: &Builtin,
     targets: &TargetLines,
+    ignored: &Ignored,
 ) -> Vec<Finding> {
+    // skeleton: not implemented (`ignored` に含まれる箇所を、重なりを解く前に除く)
+    let _ = ignored;
     let texts = target_texts(src, document, builtin, targets);
     user_replacements(src, &texts, builtin)
         .into_iter()
@@ -441,6 +463,8 @@ pub fn fix_rules_hitting(text: &str, builtin: &Builtin) -> Vec<RuleId> {
         headings: Vec::new(),
         list_items: Vec::new(),
         inline_nodes: Vec::new(),
+        comments: Vec::new(),
+        links: Vec::new(),
     };
     let mut rules: Vec<RuleId> = fix_rule_findings(text, &document, builtin)
         .into_iter()
@@ -503,8 +527,15 @@ pub fn fixable(fixes: &[FixRuleFinding]) -> Vec<Finding> {
 }
 
 /// 有効な修正ルールに当たる箇所を、見出しの中のものも含めて、重なりを解いて位置の順に返す。範囲が同じ箇所は、
-/// `RuleId` で前にあるルールの箇所が残る
-pub fn fix_findings(src: &str, document: &Document, builtin: &Builtin) -> Vec<FixRuleFinding> {
+/// `RuleId` で前にあるルールの箇所が残る。`ignored` に含まれる箇所は、重なりを解く前に除く
+pub fn fix_findings(
+    src: &str,
+    document: &Document,
+    builtin: &Builtin,
+    ignored: &Ignored,
+) -> Vec<FixRuleFinding> {
+    // skeleton: not implemented (`ignored` に含まれる箇所を、重なりを解く前に除く)
+    let _ = ignored;
     let mut findings = fix_rule_findings(src, document, builtin);
     drop_overlaps(&mut findings, |fix| &fix.finding.range);
     findings
@@ -603,11 +634,18 @@ mod tests {
             headings: Vec::new(),
             list_items: Vec::new(),
             inline_nodes: Vec::new(),
+            comments: Vec::new(),
+            links: Vec::new(),
         }
     }
 
     fn find_in(src: &str, range: Range<usize>) -> Vec<Finding> {
-        fixable(&fix_findings(src, &body(range), &Builtin::default()))
+        fixable(&fix_findings(
+            src,
+            &body(range),
+            &Builtin::default(),
+            &Ignored::default(),
+        ))
     }
 
     fn find_all(src: &str) -> Vec<(&str, String, RuleId)> {

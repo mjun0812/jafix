@@ -1,0 +1,562 @@
+# date-weekday-mismatch の例。期待値は、textlint 15.8.0 と textlint-rule-date-weekday-mismatch 1.1.1 (chrono-node 1.4.9、moment 2.31.0) の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値は設計の規則から決めた。
+# textlintは曜日の言語を日付を読んだparserで決める。jafixは括弧の中身で決めるので、年が先の数字の日付と日本語の曜日の組も確かめる。
+# 年を補うcaseと `今年`・`本年` のcaseは、実行する年によらないように currentYear を書く。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭の builtin は全caseに当たり、caseに builtin があればその代わりに使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+builtin = 'date-weekday-mismatch = true'
+
+[[cases]]
+name = "ja-basic"
+text = "2024年4月23日(月)"
+findings = ["1:12"]
+messages = ["「2024年4月23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ja-correct"
+text = "2024年4月23日(火)"
+findings = []
+
+[[cases]]
+name = "ja-fullwidth-paren"
+text = "2024年04月23日（月）"
+findings = ["1:13"]
+messages = ["「2024年04月23日（」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ja-mixed-paren"
+text = "2024年4月23日（月)と2024年4月23日(月）"
+findings = ["1:12", "1:26"]
+messages = ["「2024年4月23日（」の曜日は「火」で、「月」ではない", "「2024年4月23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ja-space-in-date"
+text = "2024年 4月 23日(月)"
+findings = ["1:14"]
+messages = ["「2024年 4月 23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ja-space-before-paren"
+text = "2024年4月23日 (月)"
+findings = ["1:13"]
+messages = ["「2024年4月23日 (」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ja-fullwidth-space-before-paren"
+text = "2024年4月23日\u3000(月)"
+findings = ["1:13"]
+messages = ["「2024年4月23日\u3000(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ja-space-inside-paren"
+note = "指摘の範囲は括弧の中の前後の空白を除いた曜日である。textlintは括弧の中の前の空白を置き換えの始まりにし、指摘をそこに出す"
+text = "2024年4月23日( 月 )"
+findings = ["1:13"]
+messages = ["「2024年4月23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ja-fullwidth-digits"
+text = "２０２４年４月２３日（月）"
+findings = ["1:12"]
+messages = ["「２０２４年４月２３日（」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ja-reiwa"
+text = "令和6年4月23日(月)"
+findings = ["1:11"]
+messages = ["「令和6年4月23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ja-heisei"
+text = "平成31年4月23日(月)"
+findings = ["1:12"]
+messages = ["「平成31年4月23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ja-showa"
+text = "昭和64年1月7日(月)"
+findings = ["1:11"]
+messages = ["「昭和64年1月7日(」の曜日は「土」で、「月」ではない"]
+
+[[cases]]
+name = "ja-reiwa-gannen"
+text = "令和元年5月1日(月)"
+findings = ["1:10"]
+messages = ["「令和元年5月1日(」の曜日は「水」で、「月」ではない"]
+
+[[cases]]
+name = "ja-gannen-without-era"
+note = "textlintは元号の無い `元年` を西暦1年とみなす。jafixは元号の無い `元年` を年として読まない"
+text = "元年5月1日(月)"
+findings = []
+
+[[cases]]
+name = "ja-long-weekday"
+text = "2024年4月23日(月曜日)"
+findings = ["1:12"]
+messages = ["「2024年4月23日(」の曜日は「火曜日」で、「月曜日」ではない"]
+
+[[cases]]
+name = "ja-not-weekday"
+text = "2024年4月23日(月曜)と2024年4月23日(祝)と2024年4月23日(月・火)と2024年4月23日(げつ)"
+findings = []
+
+[[cases]]
+name = "ja-no-paren"
+text = "2024年4月23日月曜日"
+findings = []
+
+[[cases]]
+name = "ja-second-paren-ignored"
+text = "2024年4月23日(火)(月)と2024年4月23日(月)(火)"
+findings = ["1:29"]
+messages = ["「2024年4月23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ja-two-dates"
+text = "2024年4月23日(月)から2024年4月24日(水)まで"
+findings = ["1:12"]
+messages = ["「2024年4月23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ja-range"
+text = "2024年4月23日〜24日(月)"
+findings = []
+
+[[cases]]
+name = "ja-invalid-day"
+text = "2016年2月30日(月)"
+findings = []
+
+[[cases]]
+name = "ja-invalid-month"
+text = "2024年13月1日(月)"
+findings = []
+
+[[cases]]
+name = "ja-leap-day"
+text = "2024年2月29日(金)と2023年2月29日(水)"
+findings = ["1:12"]
+messages = ["「2024年2月29日(」の曜日は「木」で、「金」ではない"]
+
+[[cases]]
+name = "ja-year-zero"
+text = "0000年1月1日(月)"
+findings = ["1:11"]
+messages = ["「0000年1月1日(」の曜日は「土」で、「月」ではない"]
+
+[[cases]]
+name = "ja-escaped-paren"
+text = "2024年4月23日\\(月)"
+findings = []
+
+[[cases]]
+name = "ja-strong-splits"
+text = "**2024年4月23日**(月)"
+findings = []
+
+[[cases]]
+name = "ja-spaced-units"
+text = "2024 年 4 月 23 日(月)"
+findings = []
+
+[[cases]]
+name = "ja-yearless-default"
+text = "4月23日(月)"
+findings = []
+
+[[cases]]
+name = "ja-yearless-current-year"
+builtin = 'date-weekday-mismatch = { useCurrentYearIfMissing = true, currentYear = 2024 }'
+text = "4月23日(月)"
+findings = ["1:7"]
+messages = ["「4月23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ja-yearless-current-year-other"
+builtin = 'date-weekday-mismatch = { useCurrentYearIfMissing = true, currentYear = 2026 }'
+text = "4月23日(月)"
+findings = ["1:7"]
+messages = ["「4月23日(」の曜日は「木」で、「月」ではない"]
+
+[[cases]]
+name = "ja-imanen"
+note = "textlintは `今年` を `currentYear` によらず実行した時点のシステムの年 (この期待値を作った2026年) とみなす。jafixは `currentYear` の年で確かめる"
+builtin = 'date-weekday-mismatch = { currentYear = 2024 }'
+text = "今年4月23日(火)"
+findings = []
+
+[[cases]]
+name = "ja-honnen"
+note = "textlintは `本年` を `currentYear` によらず実行した時点のシステムの年 (この期待値を作った2026年、金曜日) とみなす。jafixは `currentYear` の年 (水曜日) で確かめる"
+builtin = 'date-weekday-mismatch = { currentYear = 2024 }'
+text = "本年4月24日(火)"
+findings = ["1:9"]
+messages = ["「本年4月24日(」の曜日は「水」で、「火」ではない"]
+
+[[cases]]
+name = "ja-dounen"
+note = "textlintは `同年` を実行した時点のシステムの年とみなす。jafixは `同年` の日付を確かめない"
+builtin = 'date-weekday-mismatch = { currentYear = 2024 }'
+text = "同年4月23日(月)"
+findings = []
+
+[[cases]]
+name = "ja-en-weekday"
+note = "textlintは日本語のparserが読む日付と英語の曜日の組を確かめない。jafixは括弧の中身で言語を決める"
+text = "2024年4月23日(Mon)"
+findings = ["1:12"]
+messages = ["「2024年4月23日(」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "ja-en-weekday-correct"
+text = "2024年4月23日(Tue)"
+findings = []
+
+[[cases]]
+name = "iso-en"
+text = "2024-04-23 (Mon)"
+findings = ["1:13"]
+messages = ["「2024-04-23 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "iso-en-no-space"
+text = "2024-04-23(Mon)"
+findings = ["1:12"]
+messages = ["「2024-04-23(」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "iso-ja"
+note = "textlintは曜日の言語を日付を読んだparserで決めるので、英語のparserが読む日付と日本語の曜日の組を確かめない。jafixは括弧の中身で言語を決める"
+text = "2024-04-23(月)"
+findings = ["1:12"]
+messages = ["「2024-04-23(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "iso-ja-correct"
+text = "2024-04-23(火)"
+findings = []
+
+[[cases]]
+name = "iso-short-numbers"
+text = "2024-4-23(Mon)"
+findings = ["1:11"]
+messages = ["「2024-4-23(」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "iso-fullwidth-paren"
+text = "2024-04-23（Mon）"
+findings = ["1:12"]
+messages = ["「2024-04-23（」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "iso-time"
+note = "textlintは曜日の言語を日付を読んだparserで決めるので、英語のparserが読む日付と日本語の曜日の組を確かめない。jafixは括弧の中身で言語を決める"
+text = "2024-04-23T10:00(月)"
+findings = ["1:18"]
+messages = ["「2024-04-23T10:00(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "iso-time-seconds-offset"
+text = "2024-04-23T10:00:00+09:00 (Mon)"
+findings = ["1:28"]
+messages = ["「2024-04-23T10:00:00+09:00 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "slash-en"
+text = "2024/04/23 (Mon)"
+findings = ["1:13"]
+messages = ["「2024/04/23 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "slash-ja"
+note = "textlintは曜日の言語を日付を読んだparserで決めるので、英語のparserが読む日付と日本語の曜日の組を確かめない。jafixは括弧の中身で言語を決める"
+text = "2024/04/23(月)"
+findings = ["1:12"]
+messages = ["「2024/04/23(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "dot-ja"
+note = "textlintは曜日の言語を日付を読んだparserで決めるので、英語のparserが読む日付と日本語の曜日の組を確かめない。jafixは括弧の中身で言語を決める"
+text = "2024.04.23(月)"
+findings = ["1:12"]
+messages = ["「2024.04.23(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "year-first-month-name"
+text = "2024/Apr/23 (Mon)"
+findings = ["1:14"]
+messages = ["「2024/Apr/23 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "year-first-compact"
+text = "20240423(Mon)"
+findings = []
+
+[[cases]]
+name = "year-first-after-text"
+text = "日付は2024-04-23 (Mon)です"
+findings = ["1:16"]
+messages = ["「2024-04-23 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "year-first-after-word"
+text = "id2024-04-23 (Mon)"
+findings = []
+
+[[cases]]
+name = "month-first"
+text = "04/23/2024 (Mon)"
+findings = ["1:13"]
+messages = ["「04/23/2024 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-first-swapped"
+text = "23/04/2024 (Mon)"
+findings = ["1:13"]
+messages = ["「23/04/2024 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-first-no-space"
+text = "04/23/2024(Mon)"
+findings = ["1:12"]
+messages = ["「04/23/2024(」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-first-two-digit-year"
+text = "4/23/24 (Mon)"
+findings = ["1:10"]
+messages = ["「4/23/24 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-first-two-digit-year-1900s"
+text = "4/23/99 (Mon)"
+findings = ["1:10"]
+messages = ["「4/23/99 (」の曜日は「Fri」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-first-dots"
+text = "4.23.2024 (Mon)"
+findings = ["1:12"]
+messages = ["「4.23.2024 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-first-weekday-word"
+text = "Tuesday 4/23/2024 (Mon)"
+findings = ["1:20"]
+messages = ["「Tuesday 4/23/2024 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-first-yearless-default"
+text = "4/23 (Mon)"
+findings = []
+
+[[cases]]
+name = "month-first-yearless-current-year"
+builtin = 'date-weekday-mismatch = { useCurrentYearIfMissing = true, currentYear = 2024 }'
+text = "4/23 (Mon)"
+findings = ["1:7"]
+messages = ["「4/23 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-first-yearless-dash"
+builtin = 'date-weekday-mismatch = { useCurrentYearIfMissing = true, currentYear = 2024 }'
+text = "4-23 (Mon)"
+findings = []
+
+[[cases]]
+name = "month-first-yearless-ja"
+note = "textlintは曜日の言語を日付を読んだparserで決めるので、英語のparserが読む日付と日本語の曜日の組を確かめない。jafixは括弧の中身で言語を決める"
+builtin = 'date-weekday-mismatch = { useCurrentYearIfMissing = true, currentYear = 2024 }'
+text = "4/23(月)"
+findings = ["1:6"]
+messages = ["「4/23(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "month-name"
+text = "April 23, 2024 (Mon)"
+findings = ["1:17"]
+messages = ["「April 23, 2024 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-name-short"
+text = "Apr 23 2024 (Monday)"
+findings = ["1:14"]
+messages = ["「Apr 23 2024 (」の曜日は「Tuesday」で、「Monday」ではない"]
+
+[[cases]]
+name = "month-name-dot"
+text = "Apr. 23, 2024 (Mon)"
+findings = ["1:16"]
+messages = ["「Apr. 23, 2024 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-name-ordinal"
+text = "April 23rd, 2024 (Mon)"
+findings = ["1:19"]
+messages = ["「April 23rd, 2024 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-name-lowercase"
+text = "april 23, 2024 (Mon)"
+findings = ["1:17"]
+messages = ["「april 23, 2024 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-name-weekday-word"
+text = "Tuesday, April 23, 2024 (Mon)"
+findings = ["1:26"]
+messages = ["「Tuesday, April 23, 2024 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-name-little"
+text = "23 April 2024 (Mon)"
+findings = ["1:16"]
+messages = ["「23 April 2024 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-name-little-of"
+text = "23rd of April, 2024 (Mon)"
+findings = ["1:22"]
+messages = ["「23rd of April, 2024 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-name-ordinal-word"
+text = "twenty-third of April, 2024 (Mon)"
+findings = ["1:30"]
+messages = ["「twenty-third of April, 2024 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-name-ja-weekday"
+note = "textlintは曜日の言語を日付を読んだparserで決めるので、英語のparserが読む日付と日本語の曜日の組を確かめない。jafixは括弧の中身で言語を決める"
+text = "April 23, 2024 (月)"
+findings = ["1:17"]
+messages = ["「April 23, 2024 (」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "month-name-yearless"
+note = "textlintは年を補うとき日付の文字列に年を足して解析し直し、`2024 April 23` の年が決まらないので確かめない。jafixは読んだ月と日に年を直に当てる"
+builtin = 'date-weekday-mismatch = { useCurrentYearIfMissing = true, currentYear = 2024 }'
+text = "April 23 (Mon)"
+findings = ["1:11"]
+messages = ["「April 23 (」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "month-name-range"
+note = "textlintは範囲の日付の最初の日を確かめる。jafixは範囲の日付を確かめない"
+text = "April 23 - 25, 2024 (Thu)"
+findings = []
+
+[[cases]]
+name = "month-name-era"
+note = "textlintは `AD` の付く年を読む。jafixは `BE`・`AD`・`BC` の付く年の日付を確かめない"
+text = "April 23, 2024 AD (Mon)"
+findings = []
+
+[[cases]]
+name = "weekday-en-min"
+text = "2024-04-23 (Mo)と2024-04-23 (Tu)"
+findings = ["1:13"]
+messages = ["「2024-04-23 (」の曜日は「Tu」で、「Mo」ではない"]
+
+[[cases]]
+name = "weekday-en-long"
+text = "2024-04-23 (Monday)"
+findings = ["1:13"]
+messages = ["「2024-04-23 (」の曜日は「Tuesday」で、「Monday」ではない"]
+
+[[cases]]
+name = "weekday-en-case"
+text = "2024-04-23 (mon)と2024-04-23 (MON)"
+findings = []
+
+[[cases]]
+name = "weekday-ja-long-iso"
+note = "textlintは曜日の言語を日付を読んだparserで決めるので、英語のparserが読む日付と日本語の曜日の組を確かめない。jafixは括弧の中身で言語を決める"
+text = "2024-04-23(月曜日)"
+findings = ["1:12"]
+messages = ["「2024-04-23(」の曜日は「火曜日」で、「月曜日」ではない"]
+
+[[cases]]
+name = "lang-ja-iso"
+builtin = 'date-weekday-mismatch = { lang = "ja" }'
+text = "2024-04-23(月)"
+findings = ["1:12"]
+messages = ["「2024-04-23(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "lang-ja-en-weekday"
+builtin = 'date-weekday-mismatch = { lang = "ja" }'
+text = "2024-04-23 (Mon)"
+findings = []
+
+[[cases]]
+name = "lang-en-ja-date"
+builtin = 'date-weekday-mismatch = { lang = "en" }'
+text = "2024年4月23日(Mon)"
+findings = ["1:12"]
+messages = ["「2024年4月23日(」の曜日は「Tue」で、「Mon」ではない"]
+
+[[cases]]
+name = "lang-en-ja-weekday"
+builtin = 'date-weekday-mismatch = { lang = "en" }'
+text = "2024年4月23日(月)"
+findings = []
+
+[[cases]]
+name = "ctx-heading"
+text = "# 2024年4月23日(月)"
+findings = ["1:14"]
+messages = ["「2024年4月23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ctx-blockquote"
+text = "> 2024年4月23日(月)"
+findings = ["1:14"]
+messages = ["「2024年4月23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ctx-link-text"
+text = "[2024年4月23日(月)](https://example.com)"
+findings = ["1:13"]
+messages = ["「2024年4月23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ctx-table-cell"
+text = "| 日付 |\n| --- |\n| 2024年4月23日(月) |"
+findings = ["3:14"]
+messages = ["「2024年4月23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ctx-list-item"
+text = "- 2024年4月23日(月)"
+findings = ["1:14"]
+messages = ["「2024年4月23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ctx-emphasis"
+text = "*2024年4月23日(月)*"
+findings = ["1:13"]
+messages = ["「2024年4月23日(」の曜日は「火」で、「月」ではない"]
+
+[[cases]]
+name = "ctx-inline-code"
+text = "`2024年4月23日(月)`"
+findings = []
+
+[[cases]]
+name = "ctx-code-block"
+text = "```\n2024年4月23日(月)\n```"
+findings = []
+
+[[cases]]
+name = "ctx-second-line"
+text = "予定\n\n会議は2024年4月23日(月)です"
+findings = ["3:15"]
+messages = ["「2024年4月23日(」の曜日は「火」で、「月」ではない"]

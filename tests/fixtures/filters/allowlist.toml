@@ -1,0 +1,269 @@
+# allowlist filterの例。期待値は、textlint 15.8.0 と textlint-filter-rule-allowlist 4.0.0 (@textlint/regexp-string-matcher 1.1.1) の実行結果から作った。外れるかを見るルールは、textlint-rule-no-todo 2.0.1、
+# @textlint-rule/textlint-rule-pattern 2.0.2、textlint-rule-preset-ja-technical-writing 12.0.2 の sentence-length、
+# textlint-rule-preset-ja-spacing 3.0.4 の ja-space-between-half-and-full-width である。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値は設計の規則から決めた。
+#
+# rule:     外れるかを見るルールのID。指摘の行の `[<rule-id>]` がこのIDの指摘だけを比べる。ファイルの先頭の rule を全caseに当て、caseに rule があればその代わりに使う
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭の builtin は全caseに当たり、caseに builtin があればその代わりに使う
+# filters:  設定ファイルの [filters] の表に書く内容。ファイルの先頭の filters は全caseに当たり、caseに filters があればその代わりに使う
+# files:    入力 (t.md) と同じディレクトリを根にして置くファイル。キーがパス、値が中身である (省略可)。
+#           設定ファイルは `<一時ディレクトリ>/xdg/jafix/config.toml` にあるので、そこからの相対パスは `../..` が入力のあるディレクトリになる
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、rule の指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    `jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる (省略可)
+
+rule = "no-todo"
+builtin = 'no-todo = true'
+
+[[cases]]
+name = "al-string"
+filters = 'allowlist = { allow = ["TODO: 移行の後に消す"] }'
+text = "TODO: 移行の後に消す\n\nTODO: 残す"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 残す」"]
+
+[[cases]]
+name = "al-string-regex-characters"
+filters = 'allowlist = { allow = ["TODO: a.b*"] }'
+text = "TODO: a.b*\n\nTODO: aXb"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: aXb」"]
+
+[[cases]]
+name = "al-string-slash-unknown-flag"
+filters = 'allowlist = { allow = ["/TODO: x/q"] }'
+text = "TODO: x"
+findings = ["1:1"]
+messages = ["TODOが残っている: 「TODO: x」"]
+
+[[cases]]
+name = "al-string-across-markup"
+filters = 'allowlist = { allow = ["TODO: `x`"] }'
+text = "TODO: `x` の後\n\nTODO: `y` の後"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 」"]
+
+[[cases]]
+name = "al-string-heading"
+filters = 'allowlist = { allow = ["# TODO: 見出し"] }'
+text = "# TODO: 見出し\n\nTODO: 見出し"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 見出し」"]
+
+[[cases]]
+name = "al-string-task"
+filters = 'allowlist = { allow = ["- [ ] 保留"] }'
+text = "- [ ] 保留\n- [ ] 実施"
+findings = ["2:3"]
+messages = ["未完了のタスクが残っている"]
+
+[[cases]]
+name = "al-partial-before"
+filters = 'allowlist = { allow = ["ODO: x"] }'
+text = "TODO: x"
+findings = ["1:1"]
+messages = ["TODOが残っている: 「TODO: x」"]
+
+[[cases]]
+name = "al-shorter-than-finding"
+note = "外れるかは、jafixの指摘の範囲 (`todo:` の5文字) で判定する。textlintの no-todo は1文字の幅で報告するので、`TODO` の一致の中に収まって外れる"
+filters = 'allowlist = { allow = ["TODO"] }'
+text = "TODO: x"
+findings = ["1:1"]
+messages = ["TODOが残っている: 「TODO: x」"]
+
+[[cases]]
+name = "al-multiple"
+filters = 'allowlist = { allow = ["TODO: a", "/TODO: b/"] }'
+text = "TODO: a\n\nTODO: b\n\nTODO: c"
+findings = ["5:1"]
+messages = ["TODOが残っている: 「TODO: c」"]
+
+[[cases]]
+name = "al-regex"
+filters = 'allowlist = { allow = ["/TODO:\\s\\w+/"] }'
+text = "TODO: abc\n\nTODO: 日本語"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 日本語」"]
+
+[[cases]]
+name = "al-regex-flag-i"
+filters = 'allowlist = { allow = ["/todo: x/i"] }'
+text = "TODO: x"
+findings = []
+
+[[cases]]
+name = "al-regex-anchor-start"
+filters = 'allowlist = { allow = ["/^TODO: [ab]/"] }'
+text = "TODO: a\n\nTODO: b"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: b」"]
+
+[[cases]]
+name = "al-regex-anchor-multiline"
+filters = 'allowlist = { allow = ["/^TODO: b/m"] }'
+text = "TODO: a\n\nTODO: b"
+findings = ["1:1"]
+messages = ["TODOが残っている: 「TODO: a」"]
+
+[[cases]]
+name = "al-regex-lookbehind"
+filters = 'allowlist = { allow = ["/(?<=前置き)TODO:/"] }'
+text = "前置きTODO: x\n\nTODO: y"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: y」"]
+
+[[cases]]
+name = "al-regex-flag-s"
+note = "jafixの `allowlist` のパターンは、`@textlint-rule/pattern` と同じく `u` 付きのJavaScriptの正規表現で読む。textlintの4.0.0は `@textlint/regexp-string-matcher` 1.1.1 で読み、`s` をフラグとみなさず、文字列そのものとして探す"
+filters = 'allowlist = { allow = ["/前.*TODO:/s"] }'
+text = "前\nTODO: x"
+findings = []
+
+[[cases]]
+name = "al-regex-unicode-property"
+note = "jafixの `allowlist` のパターンは、`@textlint-rule/pattern` と同じく `u` 付きのJavaScriptの正規表現で読む。textlintの4.0.0は `@textlint/regexp-string-matcher` 1.1.1 で読み、`u` を付けないので `\\p{sc=Han}` が文字のscriptに当たらない"
+filters = 'allowlist = { allow = ["/\\p{sc=Han}+ TODO:/"] }'
+text = "漢字 TODO: x"
+findings = []
+
+[[cases]]
+name = "al-regex-flag-d"
+note = "jafixの `allowlist` のパターンは、`@textlint-rule/pattern` と同じく `u` 付きのJavaScriptの正規表現で読む。textlintの4.0.0は `@textlint/regexp-string-matcher` 1.1.1 で読み、`d` をフラグとみなさず、文字列そのものとして探す。jafixは `d` を受けて無視する"
+filters = 'allowlist = { allow = ["/TODO: x/d"] }'
+text = "TODO: x"
+findings = []
+
+[[cases]]
+name = "al-double-slash"
+note = "jafixは `//` を文字列そのものとして探す。textlintの4.0.0は空の正規表現とみなして止まらなくなる"
+filters = 'allowlist = { allow = ["//"] }'
+text = "//TODO: x"
+findings = ["1:3"]
+messages = ["TODOが残っている: 「TODO: x」"]
+
+[[cases]]
+name = "al-config-json"
+filters = 'allowlist = { allowlistConfigPaths = ["../../allow.json"] }'
+files = { "allow.json" = "[\"TODO: 移行の後に消す\"]\n" }
+text = "TODO: 移行の後に消す\n\nTODO: 残す"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 残す」"]
+
+[[cases]]
+name = "al-config-yaml"
+filters = 'allowlist = { allowlistConfigPaths = ["../../allow.yml"] }'
+files = { "allow.yml" = "- \"TODO: 移行の後に消す\"\n- \"/TODO: 仮.*/\"\n" }
+text = "TODO: 移行の後に消す\n\nTODO: 仮の記述\n\nTODO: 残す"
+findings = ["5:1"]
+messages = ["TODOが残っている: 「TODO: 残す」"]
+
+[[cases]]
+name = "al-config-yaml-extension"
+filters = 'allowlist = { allowlistConfigPaths = ["../../allow.yaml"] }'
+files = { "allow.yaml" = "- \"TODO: 移行の後に消す\"\n" }
+text = "TODO: 移行の後に消す\n\nTODO: 残す"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 残す」"]
+
+[[cases]]
+name = "al-config-home"
+filters = 'allowlist = { allowlistConfigPaths = ["~/allow.json"] }'
+files = { "home/allow.json" = "[\"TODO: 移行の後に消す\"]\n" }
+text = "TODO: 移行の後に消す\n\nTODO: 残す"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 残す」"]
+
+[[cases]]
+name = "al-config-and-allow"
+filters = 'allowlist = { allow = ["TODO: a"], allowlistConfigPaths = ["../../allow.json"] }'
+files = { "allow.json" = "[\"TODO: b\"]\n" }
+text = "TODO: a\n\nTODO: b\n\nTODO: c"
+findings = ["5:1"]
+messages = ["TODOが残っている: 「TODO: c」"]
+
+[[cases]]
+name = "al-true"
+filters = 'allowlist = true'
+text = "TODO: x"
+findings = ["1:1"]
+messages = ["TODOが残っている: 「TODO: x」"]
+
+[[cases]]
+name = "al-false"
+filters = 'allowlist = false'
+text = "TODO: x"
+findings = ["1:1"]
+messages = ["TODOが残っている: 「TODO: x」"]
+
+[[cases]]
+name = "al-with-comments"
+filters = '''
+comments = true
+allowlist = { allow = ["TODO: a"] }
+'''
+text = "TODO: a\n\n<!-- textlint-disable -->\n\nTODO: b\n\n<!-- textlint-enable -->\n\nTODO: c"
+findings = ["9:1"]
+messages = ["TODOが残っている: 「TODO: c」"]
+
+[[cases]]
+name = "fix-user-replacement"
+rule = "@textlint-rule/pattern"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = "突き合わせと書く"
+pattern = "照合"
+replace = "突き合わせ"
+'''
+filters = 'allowlist = { allow = ["照合する"] }'
+text = "照合する\n\n照合しない"
+findings = ["3:1"]
+messages = ["「照合」: 突き合わせと書く"]
+fixed = "照合する\n\n突き合わせしない"
+
+[[cases]]
+name = "fix-user-replacement-partial"
+rule = "@textlint-rule/pattern"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = "突き合わせと書く"
+pattern = "照合"
+replace = "突き合わせ"
+'''
+filters = 'allowlist = { allow = ["照"] }'
+text = "照合する"
+findings = ["1:1"]
+messages = ["「照合」: 突き合わせと書く"]
+fixed = "突き合わせする"
+
+[[cases]]
+name = "fix-builtin"
+rule = "ja-space-between-half-and-full-width"
+builtin = '''
+ja-space-between-half-and-full-width = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+filters = 'allowlist = { allow = ["日本語 Rust"] }'
+text = "日本語 Rust\n\n日本語 Go"
+findings = ["3:4"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語 Rust\n\n日本語Go"
+
+[[cases]]
+name = "fix-builtin-space-only"
+rule = "ja-space-between-half-and-full-width"
+builtin = '''
+ja-space-between-half-and-full-width = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+filters = 'allowlist = { allow = [" "] }'
+text = "日本語 Rust"
+findings = []
+fixed = "日本語 Rust"

@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use serde::Deserialize;
 
+use crate::filter::Filters;
 use crate::rules::builtin::Builtin;
 
 /// `$XDG_CONFIG_HOME/jafix/config.toml` (未設定なら `~/.config/jafix/config.toml`) の内容
@@ -14,6 +15,8 @@ pub struct Config {
     report_exclude: GlobSet,
     /// `[builtin]` で決めた、組み込みのルールの有効・無効とオプション
     builtin: Builtin,
+    /// `[filters]` で決めた、filterの有効・無効とオプション
+    filters: Filters,
 }
 
 #[derive(Deserialize)]
@@ -24,6 +27,7 @@ struct RawConfig {
     #[serde(default, rename = "report-exclude")]
     report_exclude: Vec<String>,
     builtin: Option<toml::Table>,
+    filters: Option<toml::Table>,
 }
 
 /// 設定ファイルを読む。無ければ空の設定を返し、TOMLとして読めないか値が不正なら理由を返す
@@ -53,10 +57,16 @@ pub fn load() -> Result<Config, String> {
             .map_err(|reason| format!("{}: [builtin]: {reason}", path.display()))?,
         None => Builtin::default(),
     };
+    let filters = match &raw.filters {
+        Some(table) => Filters::from_table(table, &dir)
+            .map_err(|reason| format!("{}: [filters]: {reason}", path.display()))?,
+        None => Filters::default(),
+    };
     Ok(Config {
         exclude,
         report_exclude,
         builtin,
+        filters,
     })
 }
 
@@ -122,6 +132,10 @@ impl Config {
 
     pub fn builtin(&self) -> &Builtin {
         &self.builtin
+    }
+
+    pub fn filters(&self) -> &Filters {
+        &self.filters
     }
 }
 

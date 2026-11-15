@@ -1,9 +1,11 @@
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 
+use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use regex::{Regex, RegexBuilder};
 use serde::Deserialize;
 use toml::{Table, Value};
+use url::{Origin, Url};
 
 use super::RuleId;
 use super::fix_rules_hitting;
@@ -17,7 +19,8 @@ use super::prh::dictionary::{Dictionary, Source, parse_yaml};
 /// `preset-ja-technical-writing` と同じである。`@textlint-ja/preset-ai-writing` と `preset-ai-words-ja` の
 /// 7ルール、利用者の置き換えの2ルール (`prh`・`@textlint-rule/pattern`)、`preset-ja-spacing` の11ルール、
 /// `no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals`、`preset-jtf-style` の37ルール、ひらがな系の5ルール、
-/// `@textlint-ja/no-insert-dropping-sa`・`@textlint-ja/no-synonyms` は無効である
+/// `@textlint-ja/no-insert-dropping-sa`・`@textlint-ja/no-synonyms`、`no-todo`・`date-weekday-mismatch`・`no-dead-link` は
+/// 無効である
 #[derive(Debug)]
 pub struct Builtin {
     pub fullwidth_paren: bool,
@@ -76,6 +79,9 @@ pub struct Builtin {
     pub ja_hiragana_daimeishi: bool,
     pub no_insert_dropping_sa: bool,
     pub no_synonyms: Option<NoSynonyms>,
+    pub no_todo: bool,
+    pub date_weekday_mismatch: Option<DateWeekdayMismatch>,
+    pub no_dead_link: Option<NoDeadLink>,
 }
 
 impl Default for Builtin {
@@ -137,6 +143,9 @@ impl Default for Builtin {
             ja_hiragana_daimeishi: false,
             no_insert_dropping_sa: false,
             no_synonyms: None,
+            no_todo: false,
+            date_weekday_mismatch: None,
+            no_dead_link: None,
         }
     }
 }
@@ -402,6 +411,16 @@ impl Builtin {
             RuleId::NoSynonyms => {
                 self.no_synonyms = options.map(NoSynonyms::from_options).transpose()?;
             }
+            RuleId::NoTodo => self.no_todo = enabled(options)?,
+            RuleId::DateWeekdayMismatch => {
+                self.date_weekday_mismatch =
+                    options.map(DateWeekdayMismatch::from_options).transpose()?;
+            }
+            RuleId::NoDeadLink => {
+                self.no_dead_link = options
+                    .map(|options| NoDeadLink::from_options(options, config_dir))
+                    .transpose()?;
+            }
         }
         Ok(())
     }
@@ -537,7 +556,7 @@ impl Preset {
     }
 
     /// presetが束ねるルールと、presetの既定で有効か。`preset-ja-technical-writing` は、jafix独自の修正ルール3つを含まない
-    fn rules(self) -> &'static [(RuleId, bool)] {
+    pub fn rules(self) -> &'static [(RuleId, bool)] {
         match self {
             Preset::JaTechnicalWriting => &[
                 (RuleId::SentenceLength, true),
@@ -641,7 +660,7 @@ fn enabled(options: Option<&Table>) -> Result<bool, String> {
     }
 }
 
-fn unknown_option(key: &str) -> String {
+pub(crate) fn unknown_option(key: &str) -> String {
     format!("`{key}` は使えないオプション")
 }
 
@@ -653,7 +672,7 @@ fn integer(key: &str, value: &Value, min: usize) -> Result<usize, String> {
         .ok_or_else(|| format!("`{key}` は{min}以上の整数で書く"))
 }
 
-fn boolean(key: &str, value: &Value) -> Result<bool, String> {
+pub(crate) fn boolean(key: &str, value: &Value) -> Result<bool, String> {
     value
         .as_bool()
         .ok_or_else(|| format!("`{key}` は `true` か `false` で書く"))
@@ -665,20 +684,20 @@ fn string<'v>(key: &str, value: &'v Value) -> Result<&'v str, String> {
         .ok_or_else(|| format!("`{key}` は文字列で書く"))
 }
 
-fn strings<'v>(key: &str, value: &'v Value) -> Result<Vec<&'v str>, String> {
+pub(crate) fn strings<'v>(key: &str, value: &'v Value) -> Result<Vec<&'v str>, String> {
     value
         .as_array()
         .and_then(|values| values.iter().map(Value::as_str).collect())
         .ok_or_else(|| format!("`{key}` は文字列の配列で書く"))
 }
 
-fn non_empty_string<'v>(key: &str, value: &'v Value) -> Result<&'v str, String> {
+pub(crate) fn non_empty_string<'v>(key: &str, value: &'v Value) -> Result<&'v str, String> {
     Some(string(key, value)?)
         .filter(|value| !value.is_empty())
         .ok_or_else(|| format!("`{key}` は空でない文字列で書く"))
 }
 
-fn non_empty_strings(key: &str, value: &Value) -> Result<Vec<String>, String> {
+pub(crate) fn non_empty_strings(key: &str, value: &Value) -> Result<Vec<String>, String> {
     let values = strings(key, value)?;
     if values.iter().any(|value| value.is_empty()) {
         return Err(format!("`{key}` の要素は空でない文字列で書く"));
@@ -1473,7 +1492,7 @@ impl NoAiWords {
 }
 
 /// `path` が `~/` で始まればホームディレクトリに展開し、相対パスなら `config_dir` から解決する。`key` は理由に書くオプションの名前
-fn resolve_path(key: &str, path: &str, config_dir: &Path) -> Result<PathBuf, String> {
+pub(crate) fn resolve_path(key: &str, path: &str, config_dir: &Path) -> Result<PathBuf, String> {
     match path.strip_prefix("~/") {
         Some(rest) => Ok(std::env::home_dir()
             .ok_or_else(|| {
@@ -2302,6 +2321,176 @@ impl NoSynonyms {
         }
         Ok(rule)
     }
+}
+
+/// `date-weekday-mismatch` のオプション
+#[derive(Debug, Default)]
+pub struct DateWeekdayMismatch {
+    /// `lang`。あれば、その言語の曜日だけを確かめ、無ければ日本語と英語の両方の曜日を確かめる
+    #[allow(dead_code)] // skeleton: not implemented
+    pub lang: Option<WeekdayLang>,
+    /// `useCurrentYearIfMissing`。真なら、年の無い日付を `current_year` の年として確かめる
+    #[allow(dead_code)] // skeleton: not implemented
+    pub use_current_year_if_missing: bool,
+    /// `currentYear`。`今年`・`本年` と、年の無い日付に使う年である。無ければ実行した時点のシステムの年を使う
+    #[allow(dead_code)] // skeleton: not implemented
+    pub current_year: Option<usize>,
+}
+
+impl DateWeekdayMismatch {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "lang" => {
+                    rule.lang = Some(match string(key, value)? {
+                        "ja" => WeekdayLang::Ja,
+                        "en" => WeekdayLang::En,
+                        _ => return Err(format!("`{key}` は \"ja\" か \"en\" で書く")),
+                    });
+                }
+                "useCurrentYearIfMissing" => {
+                    rule.use_current_year_if_missing = boolean(key, value)?;
+                }
+                "currentYear" => rule.current_year = Some(integer(key, value, 1)?),
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
+    }
+}
+
+/// `date-weekday-mismatch` が確かめる曜日の言語
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WeekdayLang {
+    Ja,
+    En,
+}
+
+/// `no-dead-link` のオプション。時間は秒である
+#[derive(Debug)]
+pub struct NoDeadLink {
+    /// `checkRelative`。偽なら、相対のリンクと `/` で始まる絶対パスを確かめない
+    #[allow(dead_code)] // skeleton: not implemented
+    pub check_relative: bool,
+    /// `baseURI`。パスで書いたものは、末尾の `/` の有無によらずディレクトリの `file://` のURLにする
+    #[allow(dead_code)] // skeleton: not implemented
+    pub base_uri: Option<Url>,
+    /// `ignore`。解決する前の宛先の文字列に当たれば確かめない
+    #[allow(dead_code)] // skeleton: not implemented
+    pub ignore: GlobSet,
+    /// `ignoreRedirects`。真なら、リダイレクトの結果を指摘しない
+    #[allow(dead_code)] // skeleton: not implemented
+    pub ignore_redirects: bool,
+    /// `preferGET`。このoriginのURLは、最初から `GET` で確かめる
+    #[allow(dead_code)] // skeleton: not implemented
+    pub prefer_get: Vec<Origin>,
+    /// `retry`。2xxでない応答と接続の誤りを、この回数まで再試行する
+    #[allow(dead_code)] // skeleton: not implemented
+    pub retry: usize,
+    /// `concurrency`。1つのファイルの宛先を、最大この数だけ同時に確かめる
+    #[allow(dead_code)] // skeleton: not implemented
+    pub concurrency: usize,
+    /// `userAgent`
+    #[allow(dead_code)] // skeleton: not implemented
+    pub user_agent: String,
+    /// `maxRetryTime`。`Retry-After` の無い再試行の待ちの上限
+    #[allow(dead_code)] // skeleton: not implemented
+    pub max_retry_time: usize,
+    /// `maxRetryAfterTime`。`Retry-After` の待ちの上限
+    #[allow(dead_code)] // skeleton: not implemented
+    pub max_retry_after_time: usize,
+    /// `httpOnly`。真なら、すべての宛先を `base_uri` を基準にしたURLとして解決する
+    #[allow(dead_code)] // skeleton: not implemented
+    pub http_only: bool,
+}
+
+impl Default for NoDeadLink {
+    fn default() -> Self {
+        Self {
+            check_relative: true,
+            base_uri: None,
+            ignore: GlobSet::empty(),
+            ignore_redirects: false,
+            prefer_get: Vec::new(),
+            retry: 3,
+            concurrency: 8,
+            user_agent: format!("jafix-no-dead-link/{}", env!("CARGO_PKG_VERSION")),
+            max_retry_time: 10,
+            max_retry_after_time: 10,
+            http_only: false,
+        }
+    }
+}
+
+impl NoDeadLink {
+    /// `config_dir` は、パスで書いた `baseURI` の相対パスを解決するディレクトリである。`dotInIgnore`・`interval`・
+    /// `intervalCap`・`linkMaxAge` は受け付けず、知らないオプションとして理由を返す
+    fn from_options(options: &Table, config_dir: &Path) -> Result<Self, String> {
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "checkRelative" => rule.check_relative = boolean(key, value)?,
+                "baseURI" => rule.base_uri = Some(base_uri(key, value, config_dir)?),
+                "ignore" => rule.ignore = link_globs(key, value)?,
+                "ignoreRedirects" => rule.ignore_redirects = boolean(key, value)?,
+                "preferGET" => {
+                    rule.prefer_get = strings(key, value)?
+                        .into_iter()
+                        .map(|value| {
+                            Url::parse(value)
+                                .ok()
+                                .map(|url| url.origin())
+                                .filter(Origin::is_tuple)
+                                .ok_or_else(|| {
+                                    format!("`{key}` の `{value}` をoriginを持つURLとして読めない")
+                                })
+                        })
+                        .collect::<Result<_, _>>()?;
+                }
+                "retry" => rule.retry = integer(key, value, 0)?,
+                "concurrency" => rule.concurrency = integer(key, value, 1)?,
+                "userAgent" => rule.user_agent = non_empty_string(key, value)?.to_owned(),
+                "maxRetryTime" => rule.max_retry_time = integer(key, value, 0)?,
+                "maxRetryAfterTime" => rule.max_retry_after_time = integer(key, value, 0)?,
+                "httpOnly" => rule.http_only = boolean(key, value)?,
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
+    }
+}
+
+/// `baseURI` を読む。`http://`・`https://`・`file://` で始まればURL、それ以外はパスで、`config_dir` から解決して
+/// ディレクトリの `file://` のURLにする
+fn base_uri(key: &str, value: &Value, config_dir: &Path) -> Result<Url, String> {
+    let value = non_empty_string(key, value)?;
+    if ["http://", "https://", "file://"]
+        .iter()
+        .any(|scheme| value.starts_with(scheme))
+    {
+        return Url::parse(value)
+            .map_err(|e| format!("`{key}` の `{value}` をURLとして読めない: {e}"));
+    }
+    let path = resolve_path(key, value, config_dir)?;
+    Url::from_directory_path(&path)
+        .map_err(|()| format!("`{key}` の `{value}` を絶対パスにできない"))
+}
+
+/// `ignore` のglobの配列を読む。`exclude` と同じく、`*` と `?` は `/` をまたがない
+fn link_globs(key: &str, value: &Value) -> Result<GlobSet, String> {
+    let mut builder = GlobSetBuilder::new();
+    for glob in strings(key, value)? {
+        builder.add(
+            GlobBuilder::new(glob)
+                .literal_separator(true)
+                .build()
+                .map_err(|e| format!("`{key}` の `{glob}` をglobとして読めない: {e}"))?,
+        );
+    }
+    builder
+        .build()
+        .map_err(|e| format!("`{key}` をglobとして読めない: {e}"))
 }
 
 /// `no-mixed-zenkaku-and-hankaku-alphabet` が揃える英字の幅

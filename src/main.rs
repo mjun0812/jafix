@@ -1,5 +1,6 @@
 mod apply;
 mod config;
+mod filter;
 mod hook;
 mod js_regex;
 mod morph;
@@ -15,7 +16,9 @@ use std::process::ExitCode;
 use clap::{Parser, Subcommand, ValueEnum};
 
 use crate::apply::{LineIndex, TargetLines};
+use crate::filter::{Filters, Ignored};
 use crate::rules::builtin::Builtin;
+use crate::rules::general::{Links, UrlChecker};
 
 /// AI agentが書いた日本語の文章を直す
 #[derive(Parser)]
@@ -58,6 +61,12 @@ fn run_check(files: &[PathBuf]) -> ExitCode {
             return ExitCode::from(2);
         }
     };
+    // 外部のURLの確認の結果は、すべてのファイルで共有する
+    let urls = config
+        .builtin()
+        .no_dead_link
+        .is_some()
+        .then(UrlChecker::default);
     let mut stdout = std::io::stdout().lock();
     let mut failed = false;
     let mut found = false;
@@ -74,14 +83,31 @@ fn run_check(files: &[PathBuf]) -> ExitCode {
             }
         };
         let document = prose::parse(&src);
-        let mut findings =
-            rules::replacements(&src, &document, config.builtin(), &TargetLines::All);
-        let fixes = rules::fix_findings(&src, &document, config.builtin());
+        let ignored = Ignored::new(&src, &document, config.filters());
+        let mut findings = rules::replacements(
+            &src,
+            &document,
+            config.builtin(),
+            &TargetLines::All,
+            &ignored,
+        );
+        let fixes = rules::fix_findings(&src, &document, config.builtin(), &ignored);
         findings.extend(rules::fixable(&fixes));
         let reports = if config.is_report_excluded(path) {
             Vec::new()
         } else {
-            rules::report(&src, &document, config.builtin(), &TargetLines::All, &fixes)
+            rules::report(
+                &src,
+                &document,
+                config.builtin(),
+                &TargetLines::All,
+                &fixes,
+                &ignored,
+                &Links {
+                    file: path,
+                    urls: urls.as_ref(),
+                },
+            )
         };
         let mut lines: Vec<(usize, &str, &str)> = findings
             .iter()
@@ -135,7 +161,7 @@ fn run_fix(files: &[PathBuf]) -> ExitCode {
         if config.is_excluded(path) {
             continue;
         }
-        if let Err(e) = fix_file(path, &TargetLines::All, config.builtin()) {
+        if let Err(e) = fix_file(path, &TargetLines::All, config.builtin(), config.filters()) {
             eprintln!("jafix: {}: {e}", path.display());
             failed = true;
         }
@@ -173,7 +199,12 @@ fn run_hook(agent: Agent) -> ExitCode {
         .collect();
     let mut reports = Vec::new();
     for target in &targets.files {
-        let fixed = match fix_file(&target.path, &target.lines, config.builtin()) {
+        let fixed = match fix_file(
+            &target.path,
+            &target.lines,
+            config.builtin(),
+            config.filters(),
+        ) {
             Ok(fixed) => fixed,
             Err(e) => {
                 errors.push(format!("jafix: {}: {e}", target.path.display()));
@@ -191,6 +222,11 @@ fn run_hook(agent: Agent) -> ExitCode {
             config.builtin(),
             &target.lines,
             &fixed.fixes,
+            &fixed.ignored,
+            &Links {
+                file: &target.path,
+                urls: None,
+            },
         );
         for report in reports_in_file {
             let (line, column) = index.line_col(report.range.start);
@@ -226,19 +262,26 @@ fn run_hook(agent: Agent) -> ExitCode {
     ExitCode::from(2)
 }
 
-/// `fix_file` が直した結果。`document` と `fixes` は `content` のものである
+/// `fix_file` が直した結果。`document`・`fixes`・`ignored` は `content` のものである
 struct Fixed {
     content: String,
     document: prose::Document,
     fixes: Vec<rules::FixRuleFinding>,
+    ignored: Ignored,
 }
 
 /// 対象行に、利用者の置き換えを1回当て、その結果に組み込みの修正ルールを内容が変わらなくなるまで繰り返し当てた
-/// 内容を返す。変更が無ければ書き戻さない
-fn fix_file(path: &Path, lines: &TargetLines, builtin: &Builtin) -> std::io::Result<Fixed> {
+/// 内容を返す。`filters` の外す範囲は、その時点の内容から求め直す。変更が無ければ書き戻さない
+fn fix_file(
+    path: &Path,
+    lines: &TargetLines,
+    builtin: &Builtin,
+    filters: &Filters,
+) -> std::io::Result<Fixed> {
     let src = fs::read_to_string(path)?;
     let document = prose::parse(&src);
-    let replacements = rules::replacements(&src, &document, builtin, lines);
+    let ignored = Ignored::new(&src, &document, filters);
+    let replacements = rules::replacements(&src, &document, builtin, lines, &ignored);
     let mut fixed = apply::apply(&src, &replacements, lines);
     // 利用者の置き換えと組み込みの修正ルールは改行を足し引きしないので、対象行は直した後の内容でも同じ行番号である
     let mut document = if fixed == src {
@@ -249,7 +292,8 @@ fn fix_file(path: &Path, lines: &TargetLines, builtin: &Builtin) -> std::io::Res
     // ある修正ルールの結果に別の修正ルールが当たることがある (全角英字を半角にした後の `日本語 Rust` の空白)。
     // 組み込みの修正ルールは文字を消すか字種を一方向に変え、逆向きの組は設定の不正になるので、繰り返しは止まる
     loop {
-        let fixes = rules::fix_findings(&fixed, &document, builtin);
+        let ignored = Ignored::new(&fixed, &document, filters);
+        let fixes = rules::fix_findings(&fixed, &document, builtin, &ignored);
         let next = apply::apply(&fixed, &rules::fixable(&fixes), lines);
         if next == fixed {
             if fixed != src {
@@ -259,6 +303,7 @@ fn fix_file(path: &Path, lines: &TargetLines, builtin: &Builtin) -> std::io::Res
                 content: fixed,
                 document,
                 fixes,
+                ignored,
             });
         }
         document = prose::parse(&next);

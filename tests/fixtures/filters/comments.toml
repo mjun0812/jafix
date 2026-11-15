@@ -1,0 +1,393 @@
+# comments filterの例。期待値は、textlint 15.8.0 と textlint-filter-rule-comments 1.3.0 の実行結果から作った。外れるかを見るルールは、textlint-rule-no-todo 2.0.1、
+# @textlint-rule/textlint-rule-pattern 2.0.2、textlint-rule-preset-ja-technical-writing 12.0.2 の sentence-length、
+# textlint-rule-preset-ja-spacing 3.0.4 の ja-space-between-half-and-full-width である。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値は設計の規則から決めた。
+#
+# rule:     外れるかを見るルールのID。指摘の行の `[<rule-id>]` がこのIDの指摘だけを比べる。ファイルの先頭の rule を全caseに当て、caseに rule があればその代わりに使う
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭の builtin は全caseに当たり、caseに builtin があればその代わりに使う
+# filters:  設定ファイルの [filters] の表に書く内容。ファイルの先頭の filters は全caseに当たり、caseに filters があればその代わりに使う
+# files:    入力 (t.md) と同じディレクトリを根にして置くファイル。キーがパス、値が中身である (省略可)。
+#           設定ファイルは `<一時ディレクトリ>/xdg/jafix/config.toml` にあるので、そこからの相対パスは `../..` が入力のあるディレクトリになる
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、rule の指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    `jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる (省略可)
+
+rule = "no-todo"
+builtin = 'no-todo = true'
+filters = 'comments = true'
+
+[[cases]]
+name = "cm-basic"
+text = "TODO: 前\n\n<!-- textlint-disable -->\n\nTODO: 中\n\n<!-- textlint-enable -->\n\nTODO: 後"
+findings = ["1:1", "9:1"]
+messages = ["TODOが残っている: 「TODO: 前」", "TODOが残っている: 「TODO: 後」"]
+
+[[cases]]
+name = "cm-open-until-end"
+text = "TODO: 前\n\n<!-- textlint-disable -->\n\nTODO: 後\n\n- [ ] 末尾のタスク"
+findings = ["1:1"]
+messages = ["TODOが残っている: 「TODO: 前」"]
+
+[[cases]]
+name = "cm-adjacent-lines"
+text = "TODO: 前\n<!-- textlint-disable -->\nTODO: 中\n<!-- textlint-enable -->\nTODO: 後"
+findings = ["1:1", "5:1"]
+messages = ["TODOが残っている: 「TODO: 前」", "TODOが残っている: 「TODO: 後」"]
+
+[[cases]]
+name = "cm-inline"
+text = "TODO: 前 <!-- textlint-disable --> TODO: 中 <!-- textlint-enable --> TODO: 後"
+findings = ["1:1", "1:68"]
+messages = ["TODOが残っている: 「TODO: 前 」", "TODOが残っている: 「TODO: 後」"]
+
+[[cases]]
+name = "cm-start-edge"
+text = "TODO:<!-- textlint-disable --> の後\n\n前 <!-- textlint-disable -->TODO: 直後"
+findings = ["1:1"]
+messages = ["TODOが残っている: 「TODO:」"]
+
+[[cases]]
+name = "cm-end-edge"
+text = "前 <!-- textlint-disable -->TODO:<!-- textlint-enable --> 後\n\n前 <!-- textlint-enable -->TODO: 直後"
+findings = ["3:27"]
+messages = ["TODOが残っている: 「TODO: 直後」"]
+
+[[cases]]
+name = "cm-multiline-comment"
+text = "<!--\ntextlint-disable\n-->\n\nTODO: 後"
+findings = []
+
+[[cases]]
+name = "cm-no-spaces"
+text = "<!--textlint-disable-->\n\nTODO: 後"
+findings = []
+
+[[cases]]
+name = "cm-two-comments-in-one-html-block"
+text = "<!-- textlint-disable --> <!-- textlint-enable -->\n\nTODO: 後"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 後」"]
+
+[[cases]]
+name = "cm-comment-inside-html-block"
+text = "<div>\n<!-- textlint-disable -->\n</div>\n\nTODO: 後"
+findings = []
+
+[[cases]]
+name = "cm-reopen"
+text = "<!-- textlint-disable -->\n\nTODO: 一\n\n<!-- textlint-enable -->\n\nTODO: 二\n\n<!-- textlint-disable -->\n\nTODO: 三"
+findings = ["7:1"]
+messages = ["TODOが残っている: 「TODO: 二」"]
+
+[[cases]]
+name = "cm-enable-without-disable"
+text = "<!-- textlint-enable -->\n\nTODO: 後"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 後」"]
+
+[[cases]]
+name = "cm-in-list-item"
+text = "- 項目 <!-- textlint-disable --> TODO: 項目の中\n- [ ] 次の項目"
+findings = []
+
+[[cases]]
+name = "cm-in-blockquote"
+text = "> <!-- textlint-disable -->\n\nTODO: 後"
+findings = []
+
+[[cases]]
+name = "cm-in-table-cell"
+text = "| 項目 <!-- textlint-disable --> |\n| --- |\n| TODO: セル |\n\nTODO: 後"
+findings = []
+
+[[cases]]
+name = "cm-in-heading"
+text = "# 見出し <!-- textlint-disable -->\n\nTODO: 後"
+findings = []
+
+[[cases]]
+name = "cm-in-inline-code"
+text = "`<!-- textlint-disable -->` の後 TODO: 後"
+findings = ["1:32"]
+messages = ["TODOが残っている: 「TODO: 後」"]
+
+[[cases]]
+name = "cm-in-code-block"
+text = "```\n<!-- textlint-disable -->\n```\n\nTODO: 後"
+findings = ["5:1"]
+messages = ["TODOが残っている: 「TODO: 後」"]
+
+[[cases]]
+name = "id-rule"
+text = "<!-- textlint-disable no-todo -->\n\nTODO: 後\n\n- [ ] タスク"
+findings = []
+
+[[cases]]
+name = "id-other-rule"
+text = "<!-- textlint-disable max-ten -->\n\nTODO: 後"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 後」"]
+
+[[cases]]
+name = "id-list"
+text = "<!-- textlint-disable max-ten,no-todo -->\n\nTODO: 後"
+findings = []
+
+[[cases]]
+name = "id-list-spaces"
+text = "<!-- textlint-disable  max-ten ,  no-todo  -->\n\nTODO: 後"
+findings = []
+
+[[cases]]
+name = "id-description"
+text = "<!-- textlint-disable no-todo -- 移行の後に消す -->\n\nTODO: 後"
+findings = []
+
+[[cases]]
+name = "id-description-only"
+text = "<!-- textlint-disable -- 移行の後に消す -->\n\nTODO: 後"
+findings = []
+
+[[cases]]
+name = "id-unknown"
+text = "<!-- textlint-disable no-such-rule -->\n\nTODO: 後"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 後」"]
+
+[[cases]]
+name = "id-rule-prefix"
+text = "<!-- textlint-disable textlint-rule-no-todo -->\n\nTODO: 後"
+findings = []
+
+[[cases]]
+name = "id-preset-form-other-rule"
+text = "<!-- textlint-disable ja-technical-writing/no-todo -->\n\nTODO: 後"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 後」"]
+
+[[cases]]
+name = "id-case-sensitive-directive"
+text = "<!-- TEXTLINT-DISABLE -->\n\nTODO: 後"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 後」"]
+
+[[cases]]
+name = "id-case-sensitive-rule"
+text = "<!-- textlint-disable NO-TODO -->\n\nTODO: 後"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 後」"]
+
+[[cases]]
+name = "id-next-line"
+text = "<!-- textlint-disable-next-line -->\nTODO: 後\n\n<!-- textlint-disable-next-line no-todo -->\nTODO: 後"
+findings = ["2:1", "5:1"]
+messages = ["TODOが残っている: 「TODO: 後」", "TODOが残っている: 「TODO: 後」"]
+
+[[cases]]
+name = "sl-not-disabled"
+rule = "sentence-length"
+builtin = 'sentence-length = true'
+text = "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ。"
+findings = ["1:1"]
+messages = ["1文が100文字を超えている (102文字)"]
+
+[[cases]]
+name = "sl-jafix-name"
+note = "jafixは、presetの下のルールにもjafixのルールのIDで当てる。textlintでは `sentence-length` とだけ書くと、presetの下のルールに当たらない"
+rule = "sentence-length"
+builtin = 'sentence-length = true'
+text = "<!-- textlint-disable sentence-length -->\n\nあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ。"
+findings = []
+
+[[cases]]
+name = "sl-preset-form"
+rule = "sentence-length"
+builtin = 'sentence-length = true'
+text = "<!-- textlint-disable ja-technical-writing/sentence-length -->\n\nあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ。"
+findings = []
+
+[[cases]]
+name = "sl-preset-prefix"
+rule = "sentence-length"
+builtin = 'sentence-length = true'
+text = "<!-- textlint-disable preset-ja-technical-writing/sentence-length -->\n\nあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ。"
+findings = []
+
+[[cases]]
+name = "sl-preset-full-prefix"
+rule = "sentence-length"
+builtin = 'sentence-length = true'
+text = "<!-- textlint-disable textlint-rule-preset-ja-technical-writing/sentence-length -->\n\nあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ。"
+findings = []
+
+[[cases]]
+name = "sl-preset-form-rule-prefix"
+rule = "sentence-length"
+builtin = 'sentence-length = true'
+text = "<!-- textlint-disable ja-technical-writing/textlint-rule-sentence-length -->\n\nあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ。"
+findings = []
+
+[[cases]]
+name = "sl-wrong-preset"
+rule = "sentence-length"
+builtin = 'sentence-length = true'
+text = "<!-- textlint-disable ja-spacing/sentence-length -->\n\nあああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ。"
+findings = ["3:1"]
+messages = ["1文が100文字を超えている (102文字)"]
+
+[[cases]]
+name = "pattern-org-id"
+rule = "@textlint-rule/pattern"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = "照合を見直す"
+pattern = "照合"
+'''
+text = "<!-- textlint-disable @textlint-rule/pattern -->\n\n照合する"
+findings = []
+
+[[cases]]
+name = "pattern-org-prefixed-id"
+rule = "@textlint-rule/pattern"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = "照合を見直す"
+pattern = "照合"
+'''
+text = "<!-- textlint-disable @textlint-rule/textlint-rule-pattern -->\n\n照合する"
+findings = []
+
+[[cases]]
+name = "enable-id-closes-that-id"
+text = "<!-- textlint-disable no-todo -->\n\n<!-- textlint-disable max-ten -->\n\nTODO: 一\n\n<!-- textlint-enable no-todo -->\n\nTODO: 二"
+findings = ["9:1"]
+messages = ["TODOが残っている: 「TODO: 二」"]
+
+[[cases]]
+name = "enable-id-keeps-all-rules"
+text = "<!-- textlint-disable -->\n\nTODO: 一\n\n<!-- textlint-enable no-todo -->\n\nTODO: 二"
+findings = []
+
+[[cases]]
+name = "enable-all-closes-ids"
+text = "<!-- textlint-disable max-ten, no-todo -->\n\nTODO: 一\n\n<!-- textlint-enable -->\n\nTODO: 二"
+findings = ["7:1"]
+messages = ["TODOが残っている: 「TODO: 二」"]
+
+[[cases]]
+name = "enable-id-closes-last"
+text = "<!-- textlint-disable no-todo -->\n\nTODO: 一\n\n<!-- textlint-disable no-todo -->\n\nTODO: 二\n\n<!-- textlint-enable no-todo -->\n\nTODO: 三"
+findings = []
+
+[[cases]]
+name = "enable-other-id"
+text = "<!-- textlint-disable no-todo -->\n\nTODO: 一\n\n<!-- textlint-enable max-ten -->\n\nTODO: 二"
+findings = []
+
+[[cases]]
+name = "opt-custom-directives"
+filters = 'comments = { disablingComment = "jafix-off", enablingComment = "jafix-on" }'
+text = "<!-- jafix-off -->\n\nTODO: 一\n\n<!-- jafix-on -->\n\nTODO: 二\n\n<!-- textlint-disable -->\n\nTODO: 三"
+findings = ["7:1", "11:1"]
+messages = ["TODOが残っている: 「TODO: 二」", "TODOが残っている: 「TODO: 三」"]
+
+[[cases]]
+name = "opt-empty-table"
+filters = 'comments = {  }'
+text = "<!-- textlint-disable -->\n\nTODO: 後"
+findings = []
+
+[[cases]]
+name = "opt-false"
+filters = 'comments = false'
+text = "<!-- textlint-disable -->\n\nTODO: 後"
+findings = ["3:1"]
+messages = ["TODOが残っている: 「TODO: 後」"]
+
+[[cases]]
+name = "fix-user-replacement"
+rule = "@textlint-rule/pattern"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = "突き合わせと書く"
+pattern = "照合"
+replace = "突き合わせ"
+'''
+text = "照合する\n\n<!-- textlint-disable -->\n\n照合する\n\n<!-- textlint-enable -->\n\n照合する"
+findings = ["1:1", "9:1"]
+messages = ["「照合」: 突き合わせと書く", "「照合」: 突き合わせと書く"]
+fixed = "突き合わせする\n\n<!-- textlint-disable -->\n\n照合する\n\n<!-- textlint-enable -->\n\n突き合わせする"
+
+[[cases]]
+name = "fix-user-replacement-inline"
+rule = "@textlint-rule/pattern"
+builtin = '''
+[[builtin."@textlint-rule/pattern".patterns]]
+message = "突き合わせと書く"
+pattern = "照合"
+replace = "突き合わせ"
+'''
+text = "照合する <!-- textlint-disable -->照合する<!-- textlint-enable --> 照合する"
+findings = ["1:1", "1:60"]
+messages = ["「照合」: 突き合わせと書く", "「照合」: 突き合わせと書く"]
+fixed = "突き合わせする <!-- textlint-disable -->照合する<!-- textlint-enable --> 突き合わせする"
+
+[[cases]]
+name = "fix-builtin"
+rule = "ja-space-between-half-and-full-width"
+builtin = '''
+ja-space-between-half-and-full-width = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語 Rust\n\n<!-- textlint-disable -->\n\n日本語 Rust\n\n<!-- textlint-enable -->\n\n日本語 Rust"
+findings = ["1:4", "9:4"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語Rust\n\n<!-- textlint-disable -->\n\n日本語 Rust\n\n<!-- textlint-enable -->\n\n日本語Rust"
+
+[[cases]]
+name = "fix-builtin-rule-id"
+rule = "ja-space-between-half-and-full-width"
+builtin = '''
+ja-space-between-half-and-full-width = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語 Rust\n\n<!-- textlint-disable ja-space-between-half-and-full-width -->\n\n日本語 Rust"
+findings = ["1:4"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語Rust\n\n<!-- textlint-disable ja-space-between-half-and-full-width -->\n\n日本語 Rust"
+
+[[cases]]
+name = "fix-builtin-other-rule-id"
+rule = "ja-space-between-half-and-full-width"
+builtin = '''
+ja-space-between-half-and-full-width = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "<!-- textlint-disable no-todo -->\n\n日本語 Rust"
+findings = ["3:4"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "<!-- textlint-disable no-todo -->\n\n日本語Rust"
+
+[[cases]]
+name = "fix-builtin-preset-form"
+note = "jafixは、presetの形のIDを、presetの名前で有効にしたかによらず、presetの束ねるルールに当てる。textlintでは、presetを使わずに有効にしたルールの指摘のIDにpresetの名前が付かないので、presetの形のIDが当たらない"
+rule = "ja-space-between-half-and-full-width"
+builtin = '''
+ja-space-between-half-and-full-width = true
+space-between-ja-and-alnum = false
+space-between-ja-and-paren = false
+fullwidth-paren = false
+'''
+text = "日本語 Rust\n\n<!-- textlint-disable ja-spacing/ja-space-between-half-and-full-width -->\n\n日本語 Rust"
+findings = ["1:4"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語Rust\n\n<!-- textlint-disable ja-spacing/ja-space-between-half-and-full-width -->\n\n日本語 Rust"

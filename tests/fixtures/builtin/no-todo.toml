@@ -1,0 +1,413 @@
+# no-todo の例。期待値は、textlint 15.8.0 と textlint-rule-no-todo 2.0.1 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、Markdownの解析の違いが出る箇所で、期待値は設計の規則から決めた。
+# textlintは本文の範囲ごとに最初の `todo:` だけを、リスト項目は項目の原文の全体に当てる。jafixはすべての `todo:` を、項目の直下の段落の文字列とタスクの記号だけに当てる。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当てる
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+builtin = 'no-todo = true'
+
+[[cases]]
+name = "td-basic"
+text = "TODO: 手順を書く"
+findings = ["1:1"]
+messages = ["TODOが残っている: 「TODO: 手順を書く」"]
+
+[[cases]]
+name = "td-lowercase"
+text = "todo: 手順を書く"
+findings = ["1:1"]
+messages = ["TODOが残っている: 「todo: 手順を書く」"]
+
+[[cases]]
+name = "td-mixed-case"
+text = "ToDo: 手順を書く"
+findings = ["1:1"]
+messages = ["TODOが残っている: 「ToDo: 手順を書く」"]
+
+[[cases]]
+name = "td-mid-text"
+text = "ここに TODO: を書く"
+findings = ["1:5"]
+messages = ["TODOが残っている: 「TODO: を書く」"]
+
+[[cases]]
+name = "td-no-colon"
+text = "TODO 手順を書く"
+findings = []
+
+[[cases]]
+name = "td-space-before-colon"
+text = "TODO : 手順を書く"
+findings = []
+
+[[cases]]
+name = "td-fullwidth"
+text = "ＴＯＤＯ：手順を書く"
+findings = []
+
+[[cases]]
+name = "td-fullwidth-colon"
+text = "TODO：手順を書く"
+findings = []
+
+[[cases]]
+name = "td-no-word-boundary"
+text = "mastodo: のように語の途中にもある"
+findings = ["1:4"]
+messages = ["TODOが残っている: 「todo: のように語の途中にもある」"]
+
+[[cases]]
+name = "td-two-in-one-text"
+note = "textlintは本文の範囲ごとに最初の `todo:` だけを指摘する。jafixはすべての一致を指摘する"
+text = "TODO: 一つ目。TODO: 二つ目"
+findings = ["1:1", "1:11"]
+messages = ["TODOが残っている: 「TODO: 一つ目。TODO: 二つ目」", "TODOが残っている: 「TODO: 二つ目」"]
+
+[[cases]]
+name = "td-two-lines-one-paragraph"
+note = "textlintは本文の範囲ごとに最初の `todo:` だけを指摘する。jafixはすべての一致を指摘する。改行を含む本文の範囲の文面は、改行を `\\n` にする"
+text = "TODO: 一つ目\nTODO: 二つ目"
+findings = ["1:1", "2:1"]
+messages = ["TODOが残っている: 「TODO: 一つ目\\nTODO: 二つ目」", "TODOが残っている: 「TODO: 二つ目」"]
+
+[[cases]]
+name = "td-two-paragraphs"
+text = "TODO: 一つ目\n\nTODO: 二つ目"
+findings = ["1:1", "3:1"]
+messages = ["TODOが残っている: 「TODO: 一つ目」", "TODOが残っている: 「TODO: 二つ目」"]
+
+[[cases]]
+name = "td-message-until-text-end"
+text = "前置き TODO: 残り **太字** の後"
+findings = ["1:5"]
+messages = ["TODOが残っている: 「TODO: 残り 」"]
+
+[[cases]]
+name = "td-astral-before"
+text = "\U0001f600TODO: 絵文字の後"
+findings = ["1:2"]
+messages = ["TODOが残っている: 「TODO: 絵文字の後」"]
+
+[[cases]]
+name = "td-escaped-colon"
+text = "TODO\\: エスケープした"
+findings = []
+
+[[cases]]
+name = "td-second-line"
+text = "一行目\n\n二行目 TODO: ここ"
+findings = ["3:5"]
+messages = ["TODOが残っている: 「TODO: ここ」"]
+
+[[cases]]
+name = "ctx-heading"
+text = "# TODO: 見出し"
+findings = ["1:3"]
+messages = ["TODOが残っている: 「TODO: 見出し」"]
+
+[[cases]]
+name = "ctx-setext-heading"
+text = "TODO: 見出し\n==="
+findings = ["1:1"]
+messages = ["TODOが残っている: 「TODO: 見出し」"]
+
+[[cases]]
+name = "ctx-table-cell"
+text = "| 項目 | 内容 |\n| --- | --- |\n| TODO: 項目 | 本文 |"
+findings = ["3:3"]
+messages = ["TODOが残っている: 「TODO: 項目」"]
+
+[[cases]]
+name = "ctx-list-item"
+text = "- TODO: 項目"
+findings = ["1:3"]
+messages = ["TODOが残っている: 「TODO: 項目」"]
+
+[[cases]]
+name = "ctx-nested-list-item"
+text = "- 親\n  - TODO: 子"
+findings = ["2:5"]
+messages = ["TODOが残っている: 「TODO: 子」"]
+
+[[cases]]
+name = "ctx-emphasis"
+text = "*TODO: 強調*"
+findings = ["1:2"]
+messages = ["TODOが残っている: 「TODO: 強調」"]
+
+[[cases]]
+name = "ctx-strong"
+text = "**TODO: 太字**"
+findings = ["1:3"]
+messages = ["TODOが残っている: 「TODO: 太字」"]
+
+[[cases]]
+name = "ctx-strikethrough"
+text = "~~TODO: 取り消し~~"
+findings = ["1:3"]
+messages = ["TODOが残っている: 「TODO: 取り消し」"]
+
+[[cases]]
+name = "ctx-footnote"
+text = "本文[^1]。\n\n[^1]: TODO: 脚注"
+findings = ["3:7"]
+messages = ["TODOが残っている: 「TODO: 脚注」"]
+
+[[cases]]
+name = "ctx-inline-html"
+text = "前 <span>TODO: タグの間</span> 後"
+findings = ["1:9"]
+messages = ["TODOが残っている: 「TODO: タグの間」"]
+
+[[cases]]
+name = "ctx-link-text"
+text = "[TODO: リンク](https://example.com)"
+findings = []
+
+[[cases]]
+name = "ctx-link-in-emphasis"
+text = "*強調 [TODO: リンク](https://example.com)*"
+findings = []
+
+[[cases]]
+name = "ctx-link-reference-full"
+text = "[TODO: 参照][r]\n\n[r]: https://example.com"
+findings = ["1:2"]
+messages = ["TODOが残っている: 「TODO: 参照」"]
+
+[[cases]]
+name = "ctx-link-reference-shortcut"
+note = "textlintは参照リンクの文字列を見る。jafixは定義を持つ省略形の参照リンクの文字列を本文の範囲にしない"
+text = "[TODO: 参照]\n\n[TODO: 参照]: https://example.com"
+findings = []
+
+[[cases]]
+name = "ctx-link-reference-collapsed"
+note = "textlintは参照リンクの文字列を見る。jafixは定義を持つcollapsed形の参照リンクの文字列を本文の範囲にしない"
+text = "[TODO: 参照][]\n\n[TODO: 参照]: https://example.com"
+findings = []
+
+[[cases]]
+name = "ctx-blockquote"
+text = "> TODO: 引用"
+findings = []
+
+[[cases]]
+name = "ctx-blockquote-list"
+text = "> - TODO: 引用の中の項目"
+findings = []
+
+[[cases]]
+name = "ctx-inline-code"
+text = "`TODO: コード` の中"
+findings = []
+
+[[cases]]
+name = "ctx-code-block"
+text = "```\nTODO: コード\n```"
+findings = []
+
+[[cases]]
+name = "ctx-html-block"
+text = "<div>TODO: HTML</div>"
+findings = []
+
+[[cases]]
+name = "ctx-html-comment"
+text = "前 <!-- TODO: コメント --> 後"
+findings = []
+
+[[cases]]
+name = "ctx-image-alt"
+text = "![TODO: 画像](a.png)"
+findings = []
+
+[[cases]]
+name = "ctx-front-matter"
+text = "---\ntitle: \"TODO: 題\"\n---\n\n本文"
+findings = []
+
+[[cases]]
+name = "ctx-bare-url"
+text = "https://example.com/todo:x を見る"
+findings = []
+
+[[cases]]
+name = "ctx-autolink"
+text = "<https://example.com/todo:x>"
+findings = []
+
+[[cases]]
+name = "ctx-after-bare-url-paren"
+note = "textlintは裸のURLのLinkの中の文字列を見ない。jafixは対にならない `）` から後ろを本文の範囲にする"
+text = "公式（https://example.com）todo:確かめる"
+findings = ["1:24"]
+messages = ["TODOが残っている: 「todo:確かめる」"]
+
+[[cases]]
+name = "ctx-document-end-no-newline"
+text = "末尾 todo:"
+findings = ["1:4"]
+messages = ["TODOが残っている: 「todo:」"]
+
+[[cases]]
+name = "tk-basic"
+text = "- [ ] やること"
+findings = ["1:3"]
+messages = ["未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-checked"
+text = "- [x] 済み\n- [X] 済み"
+findings = []
+
+[[cases]]
+name = "tk-empty-brackets"
+text = "- [] 空"
+findings = []
+
+[[cases]]
+name = "tk-two-spaces"
+text = "- [  ] 空白が2つ"
+findings = ["1:3"]
+messages = ["未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-fullwidth-space"
+text = "- [\u3000] 全角空白"
+findings = ["1:3"]
+messages = ["未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-tab"
+text = "- [\t] タブ"
+findings = ["1:3"]
+messages = ["未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-end-of-line"
+text = "- [ ]"
+findings = []
+
+[[cases]]
+name = "tk-end-of-line-then-task"
+text = "- [ ]\n- [ ] 次の項目"
+findings = ["2:3"]
+messages = ["未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-no-space-after"
+text = "- 本文 [ ]後ろに空白が無い"
+findings = []
+
+[[cases]]
+name = "tk-in-text"
+text = "- 途中に [ ] がある"
+findings = ["1:7"]
+messages = ["未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-first-only"
+text = "- [ ] 一つ目 [ ] 二つ目"
+findings = ["1:3"]
+messages = ["未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-first-in-text-only"
+text = "- 一つ目 [ ] 二つ目 [ ] 三つ目"
+findings = ["1:7"]
+messages = ["未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-ordered"
+text = "1. [ ] 番号付き"
+findings = ["1:4"]
+messages = ["未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-markers"
+text = "* [ ] 星\n+ [ ] 足す"
+findings = ["1:3", "2:3"]
+messages = ["未完了のタスクが残っている", "未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-blockquote"
+text = "> - [ ] 引用の中"
+findings = ["1:5"]
+messages = ["未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-second-paragraph"
+text = "- 一つ目の段落\n\n  [ ] 二つ目の段落"
+findings = ["3:3"]
+messages = ["未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-with-todo"
+text = "- [ ] TODO: 両方"
+findings = ["1:3", "1:7"]
+messages = ["未完了のタスクが残っている", "TODOが残っている: 「TODO: 両方」"]
+
+[[cases]]
+name = "tk-each-item"
+text = "- [ ] 一つ目\n- [ ] 二つ目"
+findings = ["1:3", "2:3"]
+messages = ["未完了のタスクが残っている", "未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-nested-both"
+text = "- [ ] 親\n  - [ ] 子"
+findings = ["1:3", "2:5"]
+messages = ["未完了のタスクが残っている", "未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-nested-child-only"
+note = "textlintは親の項目の原文の全体に当てるので、子の `[ ]` を親でも指摘する (同じ位置に2件)。jafixは子の項目だけで指摘する"
+text = "- 親\n  - [ ] 子"
+findings = ["2:5"]
+messages = ["未完了のタスクが残っている"]
+
+[[cases]]
+name = "tk-inline-code"
+note = "textlintは項目の原文の全体に当てるので、インラインコードの中にも当てる。jafixは項目の直下の段落の文字列だけを見る"
+text = "- `[ ] コード` の中"
+findings = []
+
+[[cases]]
+name = "tk-code-block"
+note = "textlintは項目の原文の全体に当てるので、コードブロックの中にも当てる。jafixは項目の直下の段落の文字列だけを見る"
+text = "- 項目\n\n  ```\n  [ ] コード\n  ```"
+findings = []
+
+[[cases]]
+name = "tk-html-comment"
+note = "textlintは項目の原文の全体に当てるので、HTMLの中にも当てる。jafixは項目の直下の段落の文字列だけを見る"
+text = "- 項目 <!-- [ ] コメント -->"
+findings = []
+
+[[cases]]
+name = "tk-link-text"
+note = "textlintは項目の原文の全体に当てるので、リンクの文字列の中にも当てる。jafixは項目の直下の段落の文字列だけを見る"
+text = "- [リンク [ ] の中](https://example.com)"
+findings = []
+
+[[cases]]
+name = "tk-emphasis"
+note = "textlintは項目の原文の全体に当てるので、強調の中にも当てる。jafixは項目の直下の段落の文字列だけを見る"
+text = "- *強調 [ ] の中*"
+findings = []
+
+[[cases]]
+name = "tk-not-list"
+text = "段落の [ ] は対象外"
+findings = []
+
+[[cases]]
+name = "tk-table"
+text = "| [ ] セル |\n| --- |\n| 本文 |"
+findings = []

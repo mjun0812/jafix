@@ -101,6 +101,14 @@ pub fn escape(value: &str) -> String {
     escaped
 }
 
+/// `text` の中の `regex` の一致を、左から重ねずにすべて取り除いた文字列を返す。長さ0の一致は取り除くものが無いので、
+/// 次の文字へ進む
+#[allow(dead_code)] // skeleton: not implemented
+pub fn remove_all<'t>(regex: &Regex, text: &'t str) -> Cow<'t, str> {
+    let _ = (regex, text);
+    todo!("skeleton: not implemented")
+}
+
 /// `source` を `u` と `flags` を付けて読む。読めなければ理由を返す
 pub fn compile(source: &str, flags: Flags) -> Result<Regex, String> {
     Regex::with_flags(

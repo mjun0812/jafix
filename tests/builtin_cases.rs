@@ -1,38 +1,80 @@
 mod common;
 
+use std::collections::BTreeMap;
+use std::path::Path;
+
 use common::{Sandbox, fixture, read, stdout};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Fixture {
-    /// 指摘の行の `[<rule-id>]` のID。無ければfixtureのファイル名である
+    /// 指摘の行の `[<rule-id>]` のID。caseに `rule` があればそちらを使い、どちらも無ければfixtureのファイル名である
     rule: Option<String>,
     /// 全caseに当てる `[builtin]` の中身。caseに `builtin` があれば、そちらを使う
     builtin: Option<String>,
+    /// 全caseに当てる `[filters]` の中身。caseに `filters` があれば、そちらを使う
+    filters: Option<String>,
     cases: Vec<Case>,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Case {
     name: String,
+    /// textlintと変える理由。検査には使わない
+    #[allow(dead_code)]
+    note: Option<String>,
+    rule: Option<String>,
     builtin: Option<String>,
+    filters: Option<String>,
+    /// 入力 `t.md` と同じディレクトリを根にして置くファイル。キーがパス、値が中身である
+    #[serde(default)]
+    files: BTreeMap<String, String>,
     text: String,
     findings: Vec<String>,
     messages: Option<Vec<String>>,
     fixed: Option<String>,
 }
 
-/// `tests/fixtures/builtin/<rule>.toml` の各caseを `jafix check` (と `fixed` があれば `jafix fix`) にかけ、
-/// 食い違ったcaseを名前と一緒にまとめて報告する
+/// `tests/fixtures/<path>` のfixtureを読む
+fn load(path: &str) -> Fixture {
+    toml::from_str(&fixture(path)).unwrap_or_else(|e| panic!("{path}: {e}"))
+}
+
+/// `tests/fixtures/builtin/<rule>.toml` の各caseを検査する
 fn assert_cases(rule: &str) {
-    let fixture: Fixture = toml::from_str(&fixture(&format!("builtin/{rule}.toml"))).unwrap();
-    let suffix = format!(" [{}]", fixture.rule.as_deref().unwrap_or(rule));
+    assert_fixture(&format!("builtin/{rule}.toml"), rule);
+}
+
+/// `tests/fixtures/<path>` の各caseを `jafix check` (と `fixed` があれば `jafix fix`) にかけ、食い違ったcaseを名前と
+/// 一緒にまとめて報告する。`name` は、caseにもfixtureにも `rule` が無いときの指摘のID (fixtureのファイル名) である
+fn assert_fixture(path: &str, name: &str) {
+    let fixture = load(path);
     let mut failures = Vec::new();
     for case in &fixture.cases {
+        let rule = case
+            .rule
+            .as_deref()
+            .or(fixture.rule.as_deref())
+            .unwrap_or(name);
+        let suffix = format!(" [{rule}]");
         let sandbox = Sandbox::new();
+        for (name, content) in &case.files {
+            sandbox.write(name, content);
+        }
         let path = sandbox.write("t.md", &format!("{}\n", case.text));
-        if let Some(builtin) = case.builtin.as_ref().or(fixture.builtin.as_ref()) {
-            sandbox.write_xdg_config(&format!("[builtin]\n{builtin}\n"));
+        let builtin = case.builtin.as_ref().or(fixture.builtin.as_ref());
+        let filters = case.filters.as_ref().or(fixture.filters.as_ref());
+        if builtin.is_some() || filters.is_some() {
+            let mut config = String::new();
+            if let Some(builtin) = builtin {
+                config.push_str(&format!("[builtin]\n{builtin}\n"));
+            }
+            if let Some(filters) = filters {
+                config.push_str(&format!("[filters]\n{filters}\n"));
+            }
+            sandbox.write_xdg_config(&config);
         }
         let output = sandbox.run(&["check", "t.md"]);
         // exit 2は設定の誤りか読み書きの失敗で、出力が空になり `findings = []` のcaseが素通りするので落とす
@@ -76,6 +118,23 @@ fn assert_cases(rule: &str) {
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+/// `tests/fixtures/builtin/` と `tests/fixtures/filters/` のfixtureが、すべてfixtureの形で読める
+#[test]
+fn fixtures_have_the_fixture_shape() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let mut count = 0;
+    for dir in ["builtin", "filters"] {
+        for entry in std::fs::read_dir(root.join(dir)).unwrap() {
+            let name = entry.unwrap().file_name().into_string().unwrap();
+            if name.ends_with(".toml") {
+                load(&format!("{dir}/{name}"));
+                count += 1;
+            }
+        }
+    }
+    assert!(count > 0);
 }
 
 #[test]

@@ -1,0 +1,347 @@
+# no-dead-link の例。期待値は、textlint 15.8.0 と textlint-rule-no-dead-link 6.2.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所で、期待値は設計の規則から決めた。
+# `jafix check` は外部のURLに接続するので、`http:`・`https:` の宛先は `ignore` に当たるものだけを書く。外部のURLの確かめ方は `tests/no_dead_link.rs` で確かめる。
+# 設定ファイルは `<一時ディレクトリ>/xdg/jafix/config.toml` にあるので、`baseURI` のパスはそこからの相対で書く (`../..` が入力のあるディレクトリ)。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭の builtin は全caseに当たり、caseに builtin があればその代わりに使う
+# files:    入力 (t.md) と同じディレクトリを根にして置くファイル。キーがパス、値が中身である (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+builtin = 'no-dead-link = true'
+
+[[cases]]
+name = "rel-missing"
+text = "[設定](missing.md)"
+findings = ["1:6"]
+messages = ["リンク先のファイルが無い: missing.md"]
+
+[[cases]]
+name = "rel-exists"
+files = { "exists.md" = "" }
+text = "[設定](exists.md)"
+findings = []
+
+[[cases]]
+name = "rel-dot-slash"
+files = { "exists.md" = "" }
+text = "[a](./exists.md) と [b](./missing.md)"
+findings = ["1:24"]
+messages = ["リンク先のファイルが無い: ./missing.md"]
+
+[[cases]]
+name = "rel-subdir"
+files = { "docs/a.md" = "" }
+text = "[a](docs/a.md) と [b](docs/b.md)"
+findings = ["1:22"]
+messages = ["リンク先のファイルが無い: docs/b.md"]
+
+[[cases]]
+name = "rel-dot-dot-inside"
+files = { "exists.md" = "" }
+text = "[a](docs/../exists.md)"
+findings = []
+
+[[cases]]
+name = "rel-directory"
+files = { "docs/a.md" = "" }
+text = "[a](docs) と [b](docs/) と [c](other/)"
+findings = ["1:30"]
+messages = ["リンク先のファイルが無い: other/"]
+
+[[cases]]
+name = "rel-self"
+text = "[a](t.md)"
+findings = []
+
+[[cases]]
+name = "rel-anchor-only"
+text = "[a](#top)"
+findings = []
+
+[[cases]]
+name = "rel-anchor"
+files = { "exists.md" = "" }
+text = "[a](exists.md#sec) と [b](missing.md#sec)"
+findings = ["1:26"]
+messages = ["リンク先のファイルが無い: missing.md#sec"]
+
+[[cases]]
+name = "rel-query"
+files = { "exists.md" = "" }
+text = "[a](exists.md?x=1) と [b](missing.md?x=1)"
+findings = ["1:26"]
+messages = ["リンク先のファイルが無い: missing.md?x=1"]
+
+[[cases]]
+name = "rel-percent-encoded"
+files = { "a b.md" = "" }
+text = "[a](a%20b.md)"
+findings = []
+
+[[cases]]
+name = "rel-angle-brackets"
+files = { "a b.md" = "" }
+text = "[a](<a b.md>)"
+findings = []
+
+[[cases]]
+name = "rel-parens"
+text = "[a](missing(1).md)"
+findings = ["1:5"]
+messages = ["リンク先のファイルが無い: missing(1).md"]
+
+[[cases]]
+name = "rel-title"
+text = "[a](missing.md \"題\")"
+findings = ["1:5"]
+messages = ["リンク先のファイルが無い: missing.md"]
+
+[[cases]]
+name = "rel-escaped"
+note = "宛先の文字列は、エスケープを解決したリンクの宛先である。textlintはその文字列をリンクの原文から探して位置を決めるので、見つからないとリンクの1文字前に指摘を出す。jafixは宛先の元のソースの位置に出す"
+text = "[a](missing\\_x.md)"
+findings = ["1:5"]
+messages = ["リンク先のファイルが無い: missing_x.md"]
+
+[[cases]]
+name = "rel-text-equals-destination"
+note = "textlintは宛先の文字列をリンクの原文の先頭から探すので、リンクの文字列の位置に指摘を出す。jafixは宛先の位置に出す"
+text = "[missing.md](missing.md)"
+findings = ["1:14"]
+messages = ["リンク先のファイルが無い: missing.md"]
+
+[[cases]]
+name = "rel-two-links"
+text = "[a](missing.md) と [b](missing.md)"
+findings = ["1:5", "1:23"]
+messages = ["リンク先のファイルが無い: missing.md", "リンク先のファイルが無い: missing.md"]
+
+[[cases]]
+name = "rel-file-url"
+text = "[a](file:///nonexistent-jafix-dead-link) と <file:///nonexistent-jafix-dead-link>"
+findings = ["1:5", "1:45"]
+messages = ["リンク先のファイルが無い: file:///nonexistent-jafix-dead-link", "リンク先のファイルが無い: file:///nonexistent-jafix-dead-link"]
+
+[[cases]]
+name = "abs-missing"
+text = "[a](/nonexistent-jafix-dead-link/x.md)"
+findings = ["1:5"]
+messages = ["リンク先のファイルが無い: /nonexistent-jafix-dead-link/x.md"]
+
+[[cases]]
+name = "abs-exists"
+text = "[a](/)"
+findings = []
+
+[[cases]]
+name = "check-relative-false"
+builtin = 'no-dead-link = { checkRelative = false }'
+text = "[a](missing.md) と [b](/nonexistent-jafix-dead-link)"
+findings = ["1:23"]
+messages = ["リンク先のファイルが無い: /nonexistent-jafix-dead-link"]
+
+[[cases]]
+name = "base-uri-dir"
+note = "jafixは `baseURI` のパスをディレクトリとして扱い、その中で解決する。textlintは `file://<baseURI>` を基準のURLにするので、末尾に `/` が無いと1つ上のディレクトリで解決する"
+builtin = 'no-dead-link = { baseURI = "../../docs" }'
+files = { "docs/a.md" = "" }
+text = "[a](a.md) と [b](b.md)"
+findings = ["1:17"]
+messages = ["リンク先のファイルが無い: b.md"]
+
+[[cases]]
+name = "base-uri-dir-slash"
+builtin = 'no-dead-link = { baseURI = "../../docs/" }'
+files = { "docs/a.md" = "" }
+text = "[a](a.md) と [b](b.md)"
+findings = ["1:17"]
+messages = ["リンク先のファイルが無い: b.md"]
+
+[[cases]]
+name = "base-uri-home"
+builtin = 'no-dead-link = { baseURI = "~/docs/" }'
+files = { "home/docs/a.md" = "" }
+text = "[a](a.md) と [b](b.md)"
+findings = ["1:17"]
+messages = ["リンク先のファイルが無い: b.md"]
+
+[[cases]]
+name = "scheme-not-http"
+text = "[a](mailto:a@example.com) と [b](ftp://example.com/x) と <mailto:a@example.com> と <a@example.com> と [c](data:text/plain,x)"
+findings = []
+
+[[cases]]
+name = "scheme-bare-mailto"
+text = "連絡先は mailto:a@example.com です"
+findings = []
+
+[[cases]]
+name = "scheme-bare-email"
+text = "連絡先は a@example.com です"
+findings = []
+
+[[cases]]
+name = "scheme-bare-email-after-fullwidth-paren"
+text = "連絡先（a@example.com）を参照"
+findings = []
+
+[[cases]]
+name = "ignore-star"
+builtin = 'no-dead-link = { ignore = ["*.md"] }'
+text = "[a](missing-a.md) と [b](missing-b.md) と [c](sub/missing-c.md)"
+findings = ["1:45"]
+messages = ["リンク先のファイルが無い: sub/missing-c.md"]
+
+[[cases]]
+name = "ignore-double-star"
+builtin = 'no-dead-link = { ignore = ["**/missing-*.md"] }'
+text = "[a](missing-a.md) と [c](sub/missing-c.md) と [d](missing-d.txt)"
+findings = ["1:49"]
+messages = ["リンク先のファイルが無い: missing-d.txt"]
+
+[[cases]]
+name = "ignore-question"
+builtin = 'no-dead-link = { ignore = ["missing-?.md"] }'
+text = "[a](missing-a.md) と [b](missing-bb.md)"
+findings = ["1:25"]
+messages = ["リンク先のファイルが無い: missing-bb.md"]
+
+[[cases]]
+name = "ignore-dotfile"
+note = "jafixの `ignore` は `globset` で読み、`.` で始まる要素にも `*` が当たる。textlintの `dotInIgnore` の既定 (false) では当たらない"
+builtin = 'no-dead-link = { ignore = ["*.md"] }'
+text = "[a](.missing.md)"
+findings = []
+
+[[cases]]
+name = "ignore-before-resolve"
+builtin = 'no-dead-link = { ignore = ["missing.md"] }'
+text = "[a](./missing.md)"
+findings = ["1:5"]
+messages = ["リンク先のファイルが無い: ./missing.md"]
+
+[[cases]]
+name = "ignore-http"
+builtin = 'no-dead-link = { ignore = ["https://example.com/**"] }'
+text = "[a](https://example.com/x) と https://example.com/y と <https://example.com/z>\n\n[r]: https://example.com/w"
+findings = []
+
+[[cases]]
+name = "ignore-www"
+builtin = 'no-dead-link = { ignore = ["http://www.example.com"] }'
+text = "www.example.com を見る"
+findings = []
+
+[[cases]]
+name = "ignore-bare-url-before-fullwidth-paren"
+note = "裸のURLの宛先は、対にならない `）` の手前で終える。textlintは `）を参照。` までを宛先にするので、`ignore` に当たらない"
+builtin = 'no-dead-link = { ignore = ["https://example.com/a"] }'
+text = "公式（https://example.com/a）を参照。"
+findings = []
+
+[[cases]]
+name = "skip-blockquote"
+text = "> [a](missing.md) と <file:///nonexistent-jafix-dead-link>"
+findings = []
+
+[[cases]]
+name = "skip-blockquote-definition"
+note = "jafixは引用の中の定義の宛先も確かめない。textlintは引用の中のLinkと裸のURLを確かめないが、定義 (Definition) は引用の中でも確かめる"
+text = "> [a][r]\n>\n> [r]: missing-def.md"
+findings = []
+
+[[cases]]
+name = "skip-image"
+text = "![a](missing.png)"
+findings = []
+
+[[cases]]
+name = "skip-inline-code"
+text = "`[a](missing.md)` と\n\n```\n[b](missing.md)\n```"
+findings = []
+
+[[cases]]
+name = "skip-html"
+text = "<a href=\"missing.md\">a</a>\n\n前 <a href=\"missing.md\">b</a> 後"
+findings = []
+
+[[cases]]
+name = "skip-reference-without-definition"
+text = "[missing.md] と [a][missing.md]"
+findings = []
+
+[[cases]]
+name = "def-missing"
+text = "[a][r]\n\n[r]: missing.md"
+findings = ["3:6"]
+messages = ["リンク先のファイルが無い: missing.md"]
+
+[[cases]]
+name = "def-angle"
+text = "[a][r]\n\n[r]: <missing-def.md>"
+findings = ["3:7"]
+messages = ["リンク先のファイルが無い: missing-def.md"]
+
+[[cases]]
+name = "def-title"
+text = "[a][r]\n\n[r]: missing.md \"題\""
+findings = ["3:6"]
+messages = ["リンク先のファイルが無い: missing.md"]
+
+[[cases]]
+name = "def-unused"
+text = "[r]: missing.md"
+findings = ["1:6"]
+messages = ["リンク先のファイルが無い: missing.md"]
+
+[[cases]]
+name = "def-image-reference"
+text = "![a][img]\n\n[img]: missing.png"
+findings = ["3:8"]
+messages = ["リンク先のファイルが無い: missing.png"]
+
+[[cases]]
+name = "ctx-heading"
+text = "# [a](missing.md)"
+findings = ["1:7"]
+messages = ["リンク先のファイルが無い: missing.md"]
+
+[[cases]]
+name = "ctx-table-cell"
+text = "| リンク |\n| --- |\n| [a](missing.md) |"
+findings = ["3:7"]
+messages = ["リンク先のファイルが無い: missing.md"]
+
+[[cases]]
+name = "ctx-list-item"
+text = "- [a](missing.md)\n  - [b](missing-b.md)"
+findings = ["1:7", "2:9"]
+messages = ["リンク先のファイルが無い: missing.md", "リンク先のファイルが無い: missing-b.md"]
+
+[[cases]]
+name = "ctx-footnote"
+text = "本文[^1]。\n\n[^1]: [a](missing.md)"
+findings = ["3:11"]
+messages = ["リンク先のファイルが無い: missing.md"]
+
+[[cases]]
+name = "ctx-emphasis"
+text = "*[a](missing.md)* と **[b](missing-b.md)**"
+findings = ["1:6", "1:27"]
+messages = ["リンク先のファイルが無い: missing.md", "リンク先のファイルが無い: missing-b.md"]
+
+[[cases]]
+name = "ctx-second-line"
+text = "一行目\n\n[a](missing.md)"
+findings = ["3:5"]
+messages = ["リンク先のファイルが無い: missing.md"]
+
+[[cases]]
+name = "ctx-astral-before"
+text = "\U0001f600[a](missing.md)"
+findings = ["1:6"]
+messages = ["リンク先のファイルが無い: missing.md"]

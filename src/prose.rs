@@ -18,6 +18,36 @@ pub struct Document {
     /// 文書のどこにあるかによらない、すべてのインラインコード・リンク・太字・強調・画像。出現順に並び、
     /// 入れ子のnodeは外側のnodeの後に来る。段落・見出し・表のセル・リンクの文字列・太字の中を含む
     pub inline_nodes: Vec<InlineNode>,
+    /// 文書のどこにあるかによらない、すべてのHTMLのnode (ブロックとインライン) の中のコメント。出現順に並ぶ。
+    /// 引用・リスト項目・表のセル・見出しの中を含み、コードブロックとインラインコードの中はHTMLのnodeにならないので入らない
+    pub comments: Vec<HtmlComment>,
+    /// 文書のどこにあるかによらない、インラインのリンク・自動リンク・裸のURL・参照リンクの定義の宛先。出現順に並ぶ。
+    /// 画像の宛先と、インラインコード・コードブロック・HTMLの中のURLは入らない
+    pub links: Vec<LinkDestination>,
+}
+
+/// HTMLのコメント (`<!--` から次の `-->` まで)
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HtmlComment {
+    /// `<!--` の元のソース上の位置
+    pub start: usize,
+    /// `<!--` と `-->` の間の中身の、元のソース上のバイト範囲
+    pub content: Range<usize>,
+}
+
+/// リンクの宛先
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LinkDestination {
+    /// 宛先の文字列。インラインのリンク・自動リンク・定義と、`http://`・`https://` で始まらない裸のURL
+    /// (メールアドレス) では、markdown-rsの `url` (エスケープと文字参照を解いた文字列) である。`http://`・`https://`
+    /// の裸のURLでは、本文の範囲と同じく対にならない最初の `）` の手前で切った元のソースで、`www.` で始まれば
+    /// 先頭に `http://` を足す
+    pub url: String,
+    /// 宛先の元のソース上のバイト範囲。インラインのリンクでは `](` の後 (`<` で囲めばその内側)、自動リンクでは
+    /// `<` と `>` の内側、裸のURLでは切った元のソース、定義では `]:` の後の宛先の文字列である
+    pub range: Range<usize>,
+    /// 引用の中
+    pub blockquote: bool,
 }
 
 /// インラインのnodeの前後を見るルールが当てるnode
@@ -52,6 +82,8 @@ pub struct ListItem {
     /// 項目が属するリストの、文書の中での出現順の番号。同じリストの項目は同じ番号を持ち、入れ子のリストは
     /// 親のリストと別の番号を持つ
     pub list: usize,
+    /// GFMのタスクの記号。未完了 (`[ ]`) なら `Some(false)`、完了 (`[x]`) なら `Some(true)`、無ければ `None` である
+    pub checked: Option<bool>,
 }
 
 /// 本文の1つの範囲
@@ -172,7 +204,24 @@ pub fn parse(src: &str) -> Document {
         headings: blocks.headings,
         list_items: blocks.list_items,
         inline_nodes,
+        // skeleton: not implemented (`collect_comments` と `collect_links` で集める)
+        comments: Vec::new(),
+        links: Vec::new(),
     }
+}
+
+/// `node` の中のHTMLのnodeから、コメントを出現順に集める
+#[allow(dead_code)] // skeleton: not implemented
+fn collect_comments(node: &Node, src: &str, comments: &mut Vec<HtmlComment>) {
+    let _ = (node, src, comments);
+    todo!("skeleton: not implemented")
+}
+
+/// `node` の中のリンクの宛先を出現順に集める。`blockquote` は、`node` が引用の中にあるか
+#[allow(dead_code)] // skeleton: not implemented
+fn collect_links(node: &Node, src: &str, blockquote: bool, links: &mut Vec<LinkDestination>) {
+    let _ = (node, src, blockquote, links);
+    todo!("skeleton: not implemented")
 }
 
 /// `node` の中のインラインコード・リンク・太字・強調・画像を `nodes` に集める。`heading` は、`node` が見出しの中にあるか
@@ -348,7 +397,7 @@ fn collect_paragraphs(
                 children_ancestors.list = blocks.lists;
                 blocks.lists += 1;
             }
-            if matches!(node, Node::ListItem(_)) {
+            if let Node::ListItem(item) = node {
                 children_ancestors.list_item = Some(blocks.list_items.len());
                 // markdown-rsは、空行が続く項目の範囲に、続く改行 (引用の中では次の行の `>` まで) を含めるので、
                 // textlintと同じく最後の子のブロックの終わりで項目を終える
@@ -359,6 +408,7 @@ fn collect_paragraphs(
                 blocks.list_items.push(ListItem {
                     range: range.start..end,
                     list: ancestors.list,
+                    checked: item.checked,
                 });
             }
             for (i, child) in children.iter().enumerate() {
