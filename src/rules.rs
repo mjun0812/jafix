@@ -342,7 +342,7 @@ pub fn report(
         reports.extend(textlint_rule_pattern::report(src, &texts, rule));
     }
     reports.extend(
-        user_replacements(src, &texts, builtin)
+        user_replacements(src, &texts, builtin, ignored)
             .into_iter()
             .filter_map(|replacement| {
                 let reason = unfixable(src, &replacement)?;
@@ -373,7 +373,7 @@ pub fn report(
     reports.extend(spacing::report(src, document, builtin));
     reports.extend(jtf_style::report(src, document, builtin, &texts));
     reports.extend(general::report(src, document, builtin, links, ignored));
-    // skeleton: not implemented (`ignored` に含まれる指摘を除く)
+    reports.retain(|report| !ignored.covers(&report.range, report.rule));
     reports.sort_by_key(|report| report.range.start);
     reports
 }
@@ -394,18 +394,22 @@ pub fn replacements(
     targets: &TargetLines,
     ignored: &Ignored,
 ) -> Vec<Finding> {
-    // skeleton: not implemented (`ignored` に含まれる箇所を、重なりを解く前に除く)
-    let _ = ignored;
     let texts = target_texts(src, document, builtin, targets);
-    user_replacements(src, &texts, builtin)
+    user_replacements(src, &texts, builtin, ignored)
         .into_iter()
         .filter(|replacement| unfixable(src, replacement).is_none())
         .map(|replacement| replacement.finding)
         .collect()
 }
 
-/// 利用者の置き換えの箇所を、重なりを解いて位置の順に返す。範囲が同じ箇所は、`prh`、`patterns` の前の要素の順に残す
-fn user_replacements(src: &str, texts: &[&Prose], builtin: &Builtin) -> Vec<UserReplacement> {
+/// 利用者の置き換えの箇所を、`ignored` に含まれるものを除き、重なりを解いて位置の順に返す。範囲が同じ箇所は、
+/// `prh`、`patterns` の前の要素の順に残す
+fn user_replacements(
+    src: &str,
+    texts: &[&Prose],
+    builtin: &Builtin,
+    ignored: &Ignored,
+) -> Vec<UserReplacement> {
     let mut replacements = Vec::new();
     if let Some(rule) = &builtin.prh {
         replacements.extend(prh::replacements(src, texts, rule));
@@ -413,6 +417,9 @@ fn user_replacements(src: &str, texts: &[&Prose], builtin: &Builtin) -> Vec<User
     if let Some(rule) = &builtin.textlint_rule_pattern {
         replacements.extend(textlint_rule_pattern::replacements(src, texts, rule));
     }
+    replacements.retain(|replacement| {
+        !ignored.covers(&replacement.finding.range, replacement.finding.rule.name())
+    });
     drop_overlaps(&mut replacements, |replacement| &replacement.finding.range);
     replacements
 }
@@ -534,9 +541,8 @@ pub fn fix_findings(
     builtin: &Builtin,
     ignored: &Ignored,
 ) -> Vec<FixRuleFinding> {
-    // skeleton: not implemented (`ignored` に含まれる箇所を、重なりを解く前に除く)
-    let _ = ignored;
     let mut findings = fix_rule_findings(src, document, builtin);
+    findings.retain(|fix| !ignored.covers(&fix.finding.range, fix.finding.rule.name()));
     drop_overlaps(&mut findings, |fix| &fix.finding.range);
     findings
 }

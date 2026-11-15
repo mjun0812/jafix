@@ -2,7 +2,7 @@
 
 use toml::Table;
 
-use super::{IgnoredRange, rule_id};
+use super::{IgnoredRange, IgnoredRules, rule_id};
 use crate::prose::HtmlComment;
 use crate::rules::builtin::{non_empty_string, unknown_option};
 
@@ -10,10 +10,8 @@ use crate::rules::builtin::{non_empty_string, unknown_option};
 #[derive(Debug)]
 pub struct Comments {
     /// `disablingComment`。コメントの中身がこれを含めば無効化である
-    #[allow(dead_code)] // skeleton: not implemented
     pub disabling_comment: String,
     /// `enablingComment`。コメントの中身がこれを含めば有効化で、無効化より先に判定する
-    #[allow(dead_code)] // skeleton: not implemented
     pub enabling_comment: String,
 }
 
@@ -47,6 +45,63 @@ impl Comments {
 /// `comments` (`src` のHTMLのコメントの出現順の一覧) を順に読み、外す範囲を返す。文書の末尾で開いたままの無効化は、
 /// 文書の末尾 (`src.len()`) で閉じる。どのルールにも当たらないIDの無効化は、外す範囲にしない
 pub(super) fn ranges(src: &str, comments: &[HtmlComment], filter: &Comments) -> Vec<IgnoredRange> {
-    let _ = (src, comments, filter, rule_id::rules);
-    todo!("skeleton: not implemented")
+    // 開いている無効化の始まりと、書いたID (`None` はIDを書かない、すべてのルールの無効化)
+    let mut open: Vec<(usize, Option<String>)> = Vec::new();
+    let mut closed = Vec::new();
+    for comment in comments {
+        let content = &src[comment.content.clone()];
+        if content.contains(filter.enabling_comment.as_str()) {
+            let ids = rule_ids(content, &filter.enabling_comment);
+            if ids.is_empty() {
+                closed.extend(open.drain(..).map(|(start, id)| (start..comment.start, id)));
+                continue;
+            }
+            for id in ids {
+                if let Some(i) = open
+                    .iter()
+                    .rposition(|(_, open_id)| open_id.as_ref() == Some(&id))
+                {
+                    let (start, id) = open.remove(i);
+                    closed.push((start..comment.start, id));
+                }
+            }
+        } else if content.contains(filter.disabling_comment.as_str()) {
+            let ids = rule_ids(content, &filter.disabling_comment);
+            if ids.is_empty() {
+                open.push((comment.start, None));
+            }
+            open.extend(ids.into_iter().map(|id| (comment.start, Some(id))));
+        }
+    }
+    closed.extend(open.into_iter().map(|(start, id)| (start..src.len(), id)));
+    closed
+        .into_iter()
+        .filter_map(|(range, id)| {
+            let rules = match id {
+                None => IgnoredRules::All,
+                Some(id) => {
+                    let rules = rule_id::rules(&id);
+                    if rules.is_empty() {
+                        return None;
+                    }
+                    IgnoredRules::Only(rules)
+                }
+            };
+            Some(IgnoredRange { range, rules })
+        })
+        .collect()
+}
+
+/// コメントの中身から最初の指示の文字列を除き、`--` から後ろを捨て、カンマで区切った空でないID
+/// (textlintの `parse-comment.js` と同じ)
+fn rule_ids(content: &str, directive: &str) -> Vec<String> {
+    let rest = content.replacen(directive, "", 1);
+    let ids = rest
+        .split_once("--")
+        .map_or(rest.as_str(), |(head, _)| head);
+    ids.split(',')
+        .map(str::trim)
+        .filter(|id| !id.is_empty())
+        .map(str::to_owned)
+        .collect()
 }

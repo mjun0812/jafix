@@ -1,5 +1,7 @@
 # ADR-0012: 利用者が書く正規表現はJavaScriptの構文と意味で読み、組み込みのルールのオプションは今のまま読む
 
+Status: superseded by ADR-0014 (組み込みのルールのオプションのパターンをRustの `regex` crateで読む部分だけ)
+
 prhの辞書(`pattern`・`patterns`)と `@textlint-rule/pattern` のパターン(`pattern`・`allows`)は、JavaScriptの正規表現(`u` フラグ付き)の構文と意味で読む。読むのには `regress` crateを使う。組み込みのルールのオプションのパターン(`allow`・`skipPatterns` など)は、今のままRustの `regex` crateで読む。
 
 利用者が書く辞書とパターンは、textlintで使っているものをそのまま書けることが大事である。公開のprhの辞書は、後読み・先読み・後方参照を多く使う。`regex` crateはこれらを読めない。`fancy-regex` は読めるが、`\b`・`\d`・`\w` をUnicodeの意味で読むので、`日本語Rust` の `R` の前が単語の境界にならず、prhの `wordBoundary` の結果が変わる。`regress` はECMAScriptの構文と意味を目標にしたcrateである。試作では、後読み、後方参照、`\p{Script=Han}`、ASCIIの `\b` と `\d` がJavaScriptと同じに働き、公開の3つの辞書の `specs` 335件がすべて通った。

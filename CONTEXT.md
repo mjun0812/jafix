@@ -20,8 +20,11 @@ _Avoid_: 変えた行、変更行、diff行。
 **指摘ルール**: 直さずに指摘だけを出す書き方の規則。組み込みの指摘ルール(`replace` の無い `@textlint-rule/pattern` の要素を含む)と、直さない修正ルールの箇所(見出しの中の修正ルールと利用者の置き換え、改行を含む利用者の置き換え)があり、`jafix check` とhookが指摘として出す。当てる単位は、本文の範囲ごと、段落と文の単位、リスト、リスト項目、見出し、文書の直下の段落とその次のブロック、インラインコード・リンク・太字・強調の前後、リンクの宛先、文書の全体である。文書の全体で当てるもの(`no-mix-dearu-desumasu`、`ai-tech-writing-guideline` の件数の要約、`1.1.1.本文`、`1.1.5.図表のキャプション`、`@textlint-ja/no-synonyms`)と、リストごとに数える `1.1.3.箇条書き`、段落ごとに記号の対を数える `4.3.3`〜`4.3.7` は、その単位の全体を数えてから指摘を決め、hookでは対象行にある指摘だけを返す。段落と文の単位で当てるものは、本文に含めない画像のaltも数える。段落ごとに記号の対を数える `4.3.3`〜`4.3.7` は、textlintと同じく画像のaltを数えない。インラインコードの中身を数えるのは、形態素解析を使わない段落と文の単位の4つのルールだけで、形態素解析を使うルールは数えない。
 _Avoid_: report rule、lintルール、検出ルール。
 
+**filter**: 指摘を出さず、文書の中の外す範囲を求める仕組み。`[filters]` に `comments`(HTMLのコメントの無効化から有効化まで)と `allowlist`(許可したパターンに一致した範囲)を書いて有効にする。範囲の始まりと終わりがどちらも外す範囲の中か端にある指摘ルールの指摘と、組み込みの修正ルールと利用者の置き換えの箇所を、`jafix check` とhookの出力から除き、`jafix fix` とhookも直さない。
+_Avoid_: フィルタールール、除外(ファイルの単位の `exclude` と紛れるので)。
+
 **preset**: textlintで、複数のルールを1つの名前で束ねたもの。jafixの `[builtin]` には、`preset-ja-technical-writing`・`@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`・`preset-ja-spacing`・`preset-jtf-style` の名前を `true` か `false` で書き、そのpresetのルールをまとめて有効・無効にする。同じ表にそのpresetのルールのIDのキーもあれば、ルールのIDのキーの値を使う。
 _Avoid_: ルールセット、ルール集。
 
-**パターン**: 設定に書く、`/source/flags` の形の正規表現か、文字列そのもの。組み込みのルールのオプション・`prh`・`@textlint-rule/pattern` のどこに書いても、JavaScriptの正規表現(`u` フラグ付き)として読む。Rustの `regex` crateだけが読む書き方は、設定の不正になる。
+**パターン**: 設定に書く、`/source/flags` の形の正規表現か、文字列そのもの。組み込みのルールのオプション・`prh`・`@textlint-rule/pattern`・`allowlist` のどこに書いても、JavaScriptの正規表現(`u` フラグ付き)として読む。Rustの `regex` crateだけが読む書き方は、設定の不正になる。
 _Avoid_: 正規表現(文字列そのものも含むので)。

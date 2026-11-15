@@ -200,23 +200,42 @@ pub fn parse(src: &str) -> Document {
     collect_inline_nodes(&root, src, false, &mut inline_nodes);
     let mut links = Vec::new();
     collect_links(&root, src, false, &mut links);
+    let mut comments = Vec::new();
+    collect_comments(&root, src, &mut comments);
     Document {
         texts,
         paragraphs: blocks.paragraphs,
         headings: blocks.headings,
         list_items: blocks.list_items,
         inline_nodes,
-        // skeleton: not implemented (`collect_comments` で集める)
-        comments: Vec::new(),
+        comments,
         links,
     }
 }
 
-/// `node` の中のHTMLのnodeから、コメントを出現順に集める
-#[allow(dead_code)] // skeleton: not implemented
+/// `node` の中のHTMLのnodeから、コメントを出現順に集める。textlintと同じく、nodeの元のソースの中の `<!--` から
+/// 次の `-->` までをコメントとし、`-->` で閉じない `<!--` は数えない
 fn collect_comments(node: &Node, src: &str, comments: &mut Vec<HtmlComment>) {
-    let _ = (node, src, comments);
-    todo!("skeleton: not implemented")
+    if let Node::Html(_) = node {
+        let range = node_range(node);
+        let html = &src[range.clone()];
+        let mut from = 0;
+        while let Some(open) = html[from..].find("<!--") {
+            let start = from + open;
+            let content_start = start + "<!--".len();
+            let Some(close) = html[content_start..].find("-->") else {
+                break;
+            };
+            comments.push(HtmlComment {
+                start: range.start + start,
+                content: range.start + content_start..range.start + content_start + close,
+            });
+            from = content_start + close + "-->".len();
+        }
+    }
+    for child in node.children().into_iter().flatten() {
+        collect_comments(child, src, comments);
+    }
 }
 
 /// `node` の中のリンクの宛先を出現順に集める。`blockquote` は、`node` が引用の中にあるか
@@ -1073,5 +1092,43 @@ mod tests {
         let link = &paragraph.children[1];
         assert_eq!(&src[link.range.clone()], "https://example.com）を参照。");
         assert!(matches!(link.kind, InlineKind::Link { .. }));
+    }
+
+    /// HTMLのコメントの `<!--` の位置と中身
+    fn comments(src: &str) -> Vec<(usize, &str)> {
+        parse(src)
+            .comments
+            .into_iter()
+            .map(|comment| (comment.start, &src[comment.content]))
+            .collect()
+    }
+
+    #[test]
+    fn collects_html_comments_in_blocks_and_inline() {
+        assert_eq!(
+            comments("<!-- a --> <!-- b -->\n\n> 引用 <!--c-->\n\n| 表 <!-- d --> |\n| --- |\n"),
+            vec![(0, " a "), (11, " b "), (32, "c"), (48, " d ")]
+        );
+        assert_eq!(comments("日本<!--語-->本\n"), vec![(6, "語")]);
+        assert_eq!(comments("<!---->\n"), vec![(0, "")]);
+    }
+
+    #[test]
+    fn skips_html_comments_in_code_escapes_and_unclosed_comments() {
+        for src in [
+            "`<!-- a -->`\n",
+            "```\n<!-- a -->\n```\n",
+            "    <!-- a -->\n",
+            "\\<!-- a -->\n",
+            "<!-- 閉じない",
+            "<!-- 閉じない\n\n段落\n",
+            "段落 <!-- 閉じない",
+            "<!--",
+            "<!-->",
+            "<!-- a --",
+        ] {
+            assert_eq!(comments(src), vec![], "{src:?}");
+        }
+        assert_eq!(comments("<!-- a --> <!-- 閉じない"), vec![(0, " a ")]);
     }
 }

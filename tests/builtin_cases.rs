@@ -596,3 +596,13 @@ fn date_weekday_mismatch() {
 fn no_dead_link() {
     assert_cases("no-dead-link");
 }
+
+#[test]
+fn comments() {
+    assert_fixture("filters/comments.toml", "comments");
+}
+
+#[test]
+fn allowlist() {
+    assert_fixture("filters/allowlist.toml", "allowlist");
+}

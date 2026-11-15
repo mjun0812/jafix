@@ -330,3 +330,26 @@ fn check_reads_an_image_whose_alt_has_a_bracket_inside_a_code_span() {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn check_without_config_reads_unusual_html_comments() {
+    for content in [
+        "`<!-- a -->`\n",
+        "```\n<!-- a -->\n```\n",
+        "\\<!-- a -->\n",
+        "<!-- 閉じない",
+        "段落 <!-- 閉じない",
+        "<!-->",
+        "<!-- a --> <!-- 閉じない",
+        "> <!--\n> textlint-disable\n> -->\n",
+    ] {
+        let sandbox = Sandbox::new();
+        sandbox.write("t.md", content);
+        let output = sandbox.run(&["check", "t.md"]);
+        // 箇所の有無で0か1になる。panicすると101で、標準エラーに理由が出る
+        assert!(
+            matches!(output.status.code(), Some(0 | 1)) && output.stderr.is_empty(),
+            "{content:?}: {output:?}"
+        );
+    }
+}

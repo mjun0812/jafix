@@ -92,7 +92,7 @@ impl UrlChecker {
     }
 
     /// `url` の確認の結果。同じURLと最初の方式の組を前に確かめていれば、その結果を待って使う。`#` から後ろは
-    /// サーバーに送らないので、それだけが違うURLは同じURLとして確かめ、リダイレクト先に付け直す
+    /// サーバーに送らないので、それだけが違うURLは同じURLとして確かめ、`#` の無いリダイレクト先に付け直す
     fn outcome(&self, url: &Url, rule: &NoDeadLink) -> Outcome {
         let method = if rule.prefer_get.contains(&url.origin()) {
             Method::Get
@@ -111,8 +111,8 @@ impl UrlChecker {
         let mut outcome = pending
             .get_or_init(|| self.probe(&target, method, 0, 0, rule))
             .clone();
-        if let (Outcome::Redirected { to, .. }, Some(fragment)) = (&mut outcome, url.fragment()) {
-            to.set_fragment(Some(fragment));
+        if let Outcome::Redirected { to, .. } = &mut outcome {
+            inherit_fragment(to, url);
         }
         outcome
     }
@@ -162,9 +162,7 @@ impl UrlChecker {
                 Outcome::Redirected { to, .. } => to,
                 Outcome::Dead { .. } => return dead,
             };
-            if let Some(fragment) = url.fragment() {
-                to.set_fragment(Some(fragment));
-            }
+            inherit_fragment(&mut to, url);
             return Outcome::Redirected {
                 to,
                 status: status_text(status),
@@ -198,6 +196,13 @@ impl UrlChecker {
             .header("User-Agent", &rule.user_agent)
             .header("Accept", "*/*")
             .call()
+    }
+}
+
+/// RFC 7231 §7.1.2と同じく、リダイレクト先 `to` に `#` が無ければ、リダイレクトの元の `from` の `#` から後ろを引き継ぐ
+fn inherit_fragment(to: &mut Url, from: &Url) {
+    if to.fragment().is_none() {
+        to.set_fragment(from.fragment());
     }
 }
 

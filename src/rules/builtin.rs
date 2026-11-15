@@ -674,7 +674,7 @@ fn integer(key: &str, value: &Value, min: usize) -> Result<usize, String> {
         .ok_or_else(|| format!("`{key}` は{min}以上の整数で書く"))
 }
 
-pub(crate) fn boolean(key: &str, value: &Value) -> Result<bool, String> {
+fn boolean(key: &str, value: &Value) -> Result<bool, String> {
     value
         .as_bool()
         .ok_or_else(|| format!("`{key}` は `true` か `false` で書く"))
@@ -686,7 +686,7 @@ fn string<'v>(key: &str, value: &'v Value) -> Result<&'v str, String> {
         .ok_or_else(|| format!("`{key}` は文字列で書く"))
 }
 
-pub(crate) fn strings<'v>(key: &str, value: &'v Value) -> Result<Vec<&'v str>, String> {
+fn strings<'v>(key: &str, value: &'v Value) -> Result<Vec<&'v str>, String> {
     value
         .as_array()
         .and_then(|values| values.iter().map(Value::as_str).collect())
@@ -707,7 +707,7 @@ pub(crate) fn non_empty_strings(key: &str, value: &Value) -> Result<Vec<String>,
     Ok(values.into_iter().map(str::to_owned).collect())
 }
 
-fn patterns(key: &str, value: &Value) -> Result<Vec<Regex>, String> {
+pub(crate) fn patterns(key: &str, value: &Value) -> Result<Vec<Regex>, String> {
     non_empty_strings(key, value)?
         .iter()
         .map(|value| js_regex::pattern(value).map_err(|reason| format!("`{key}`: {reason}")))

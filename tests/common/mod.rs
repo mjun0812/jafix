@@ -376,3 +376,50 @@ pub fn hiragana_and_synonyms_rule_lines(stderr: &str) -> Vec<&str> {
         })
         .collect()
 }
+
+/// `no-todo`・`date-weekday-mismatch`・`no-dead-link` と、`comments`・`allowlist` を有効にする設定。`allowlist` は
+/// `allowed.md` を許す
+pub const GENERAL_RULES_AND_FILTERS_CONFIG: &str = "[builtin]
+no-todo = true
+date-weekday-mismatch = true
+no-dead-link = true
+
+[filters]
+comments = true
+allowlist = { allow = [\"allowed.md\"] }
+";
+
+/// `<!-- textlint-disable -->` の前の1行目と後の5行目が、3つのルールに当たる文書。1行目と5行目を対象行にする。
+/// 5行目は、全角括弧の修正ルールにも当たる
+pub const GENERAL_RULES_HOOK_INPUT: &str =
+    "TODO: 2024年4月23日(月)に[設定](missing.md)と[別](allowed.md)を見る。
+
+<!-- textlint-disable -->
+
+TODO: 2024年4月23日(月)に[設定](missing.md)と[別](allowed.md)を見る（補足）。
+";
+
+/// `GENERAL_RULES_HOOK_INPUT` の1行目と5行目を対象行にしたhookが、`path` について返す3つのルールの指摘の行。
+/// 5行目は無効化の後なので出ず、`allowlist` が許す `allowed.md` のリンクも出ない
+pub fn general_rule_reports(path: &Path) -> Vec<String> {
+    let path = path.display();
+    vec![
+        format!("{path}:1:1: TODOが残っている: 「TODO: 2024年4月23日(月)に」 [no-todo]"),
+        format!(
+            "{path}:1:18: 「2024年4月23日(」の曜日は「火」で、「月」ではない [date-weekday-mismatch]"
+        ),
+        format!("{path}:1:26: リンク先のファイルが無い: missing.md [no-dead-link]"),
+    ]
+}
+
+/// 標準エラーの行のうち、`no-todo`・`date-weekday-mismatch`・`no-dead-link` の行
+pub fn general_rule_lines(stderr: &str) -> Vec<&str> {
+    stderr
+        .lines()
+        .filter(|line| {
+            ["no-todo", "date-weekday-mismatch", "no-dead-link"]
+                .iter()
+                .any(|id| line.ends_with(&format!(" [{id}]")))
+        })
+        .collect()
+}

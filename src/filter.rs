@@ -80,7 +80,6 @@ struct IgnoredRange {
 
 /// 外す範囲の対象のルール
 #[derive(Debug)]
-#[allow(dead_code)] // skeleton: not implemented
 enum IgnoredRules {
     All,
     Only(Vec<RuleId>),
@@ -89,11 +88,21 @@ enum IgnoredRules {
 impl Ignored {
     /// `src` (`document` はその解析の結果) から、有効なfilterの外す範囲を求める。どちらのfilterも無効なら空である
     pub fn new(src: &str, document: &Document, filters: &Filters) -> Self {
-        if filters.comments.is_none() && filters.allowlist.is_none() {
-            return Self::default();
+        let mut ranges = Vec::new();
+        if let Some(filter) = &filters.comments {
+            ranges.extend(comments::ranges(src, &document.comments, filter));
         }
-        let _ = (src, document, comments::ranges, allowlist::ranges);
-        todo!("skeleton: not implemented")
+        if let Some(filter) = &filters.allowlist {
+            ranges.extend(
+                allowlist::ranges(src, filter)
+                    .into_iter()
+                    .map(|range| IgnoredRange {
+                        range,
+                        rules: IgnoredRules::All,
+                    }),
+            );
+        }
+        Self { ranges }
     }
 
     /// `range` が外す範囲のどれかに完全に含まれ (始まりと終わりがどちらも外す範囲の中か端にあり)、名前が `rule` の

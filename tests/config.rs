@@ -2551,3 +2551,172 @@ fn general_rule_options_are_validated() {
         assert_check_rejects_builtin(builtin, &expected);
     }
 }
+
+/// `[filters]` に `filters` を書いた設定で `jafix check` がexit 2で終わり、標準エラーが `expected` をすべて含むことを確かめる
+fn assert_check_rejects_filters(filters: &str, expected: &[&str]) {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "日本語Rust\n");
+    sandbox.write_xdg_config(&format!("[filters]\n{filters}\n"));
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(2), "{filters}");
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    for needle in expected {
+        assert!(stderr.contains(needle), "{filters}: {stderr}");
+    }
+}
+
+#[test]
+fn filter_options_are_validated() {
+    for (filters, expected) in [
+        ("no-such-filter = true", &["filters", "no-such-filter"][..]),
+        ("comments = 1", &["filters", "comments"]),
+        (
+            "comments = { disable = \"x\" }",
+            &["filters", "comments", "disable"],
+        ),
+        (
+            "comments = { disablingComment = \"\" }",
+            &["filters", "comments", "disablingComment"],
+        ),
+        (
+            "allowlist = { allow = [\"/(/\"] }",
+            &["filters", "allowlist", "allow", "/(/"],
+        ),
+        (
+            "allowlist = { allow = [\"\"] }",
+            &["filters", "allowlist", "allow"],
+        ),
+        (
+            "allowlist = { allowlistConfigPaths = [\"\"] }",
+            &["filters", "allowlist", "allowlistConfigPaths"],
+        ),
+    ] {
+        assert_check_rejects_filters(filters, expected);
+    }
+}
+
+#[test]
+fn allowlist_reads_config_paths() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "TODO: a\n\nTODO: b\n\nTODO: c\n");
+    sandbox.write("xdg/jafix/a.json", "[\"TODO: a\"]\n");
+    sandbox.write("xdg/jafix/b.yml", "- \"TODO: b\"\n");
+    sandbox.write_xdg_config(
+        "[builtin]\nno-todo = true\n\n[filters]\nallowlist = { allowlistConfigPaths = [\"a.json\", \"b.yml\"] }\n",
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(
+        findings_of(stdout(&output), "no-todo"),
+        ["t.md:5:1: TODOが残っている: 「TODO: c」 [no-todo]"]
+    );
+}
+
+#[test]
+fn allowlist_rejects_invalid_config_paths() {
+    for (name, content) in [
+        ("missing.json", None),
+        ("allow.txt", Some("TODO: a\n")),
+        ("table.json", Some("{\"TODO\": \"a\"}\n")),
+    ] {
+        let sandbox = Sandbox::new();
+        if let Some(content) = content {
+            sandbox.write(&format!("xdg/jafix/{name}"), content);
+        }
+        sandbox.write("t.md", "TODO: a\n");
+        sandbox.write_xdg_config(&format!(
+            "[builtin]\nno-todo = true\n\n[filters]\nallowlist = {{ allowlistConfigPaths = [\"{name}\"] }}\n"
+        ));
+        let output = sandbox.run(&["check", "t.md"]);
+        assert_eq!(output.status.code(), Some(2), "{name}");
+        let stderr = String::from_utf8(output.stderr).unwrap();
+        let path = sandbox.path(&format!("xdg/jafix/{name}"));
+        assert!(
+            stderr.contains(&path.display().to_string()),
+            "{name}: {stderr}"
+        );
+    }
+}
+
+#[test]
+fn comments_filter_keeps_fixes_inside_disabled_range() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write(
+        "t.md",
+        "日本語 Rust の（補足）\n\n<!-- textlint-disable -->\n\n日本語 Rust の（補足）\n\n<!-- textlint-enable -->\n\n日本語 Rust の（補足）\n",
+    );
+    sandbox.write_xdg_config("[filters]\ncomments = true\n");
+    let output = sandbox.run(&["fix", "t.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(
+        read(&path),
+        "日本語Rustの(補足)\n\n<!-- textlint-disable -->\n\n日本語 Rust の（補足）\n\n<!-- textlint-enable -->\n\n日本語Rustの(補足)\n"
+    );
+}
+
+#[test]
+fn filtered_fix_findings_do_not_win_overlaps() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\npreset-ja-spacing = true\n\n[filters]\ncomments = true\n");
+    // 無効化が無ければ、同じ空白の箇所は `RuleId` で前にある `space-between-ja-and-alnum` が残る
+    sandbox.write("t.md", "日本語 Rust\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    assert_eq!(
+        findings_of(found, "space-between-ja-and-alnum"),
+        ["t.md:1:4: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]"],
+        "{found}"
+    );
+    assert!(
+        findings_of(found, "ja-space-between-half-and-full-width").is_empty(),
+        "{found}"
+    );
+
+    sandbox.write(
+        "t.md",
+        "<!-- textlint-disable space-between-ja-and-alnum -->\n\n日本語 Rust\n",
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    assert!(
+        findings_of(found, "space-between-ja-and-alnum").is_empty(),
+        "{found}"
+    );
+    assert_eq!(
+        findings_of(found, "ja-space-between-half-and-full-width"),
+        ["t.md:3:4: 全角文字と半角文字の間の空白を削除する [ja-space-between-half-and-full-width]"],
+        "{found}"
+    );
+}
+
+#[test]
+fn comments_filter_accepts_textlint_rule_ids() {
+    let long_sentence = format!("{}。", "あ".repeat(101));
+    for (id, rule, body) in [
+        (
+            "ja-technical-writing/sentence-length",
+            "sentence-length",
+            long_sentence.as_str(),
+        ),
+        ("sentence-length", "sentence-length", long_sentence.as_str()),
+        ("textlint-rule-no-todo", "no-todo", "TODO: 手順を書く"),
+    ] {
+        let sandbox = Sandbox::new();
+        sandbox.write_xdg_config(
+            "[builtin]\nsentence-length = true\nno-todo = true\n\n[filters]\ncomments = true\n",
+        );
+        sandbox.write("t.md", &format!("{body}\n"));
+        let output = sandbox.run(&["check", "t.md"]);
+        assert_eq!(findings_of(stdout(&output), rule).len(), 1, "{id}");
+
+        sandbox.write(
+            "t.md",
+            &format!("<!-- textlint-disable {id} -->\n\n{body}\n"),
+        );
+        let output = sandbox.run(&["check", "t.md"]);
+        assert!(
+            findings_of(stdout(&output), rule).is_empty(),
+            "{id}: {}",
+            stdout(&output)
+        );
+    }
+}

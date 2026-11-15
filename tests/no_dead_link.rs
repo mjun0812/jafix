@@ -8,7 +8,8 @@ use common::{Sandbox, stdout};
 use serde_json::json;
 
 /// 127.0.0.1の空いたportで要求を受け、宛先ごとに決めた応答を返し、受けた要求の方式と宛先を記録するHTTPサーバー。
-/// `/ok` と `/skip` は200、`/moved` は `/ok` への301、`/head-not-allowed` は `HEAD` に405で `GET` に200、それ以外は404を返す
+/// `/ok` と `/skip` は200、`/moved` は `/ok` への301、`/moved-to-fragment` は `/ok#loc` への301、`/head-not-allowed` は
+/// `HEAD` に405で `GET` に200、それ以外は404を返す
 struct Server {
     port: u16,
     requests: Arc<Mutex<Vec<(String, String)>>>,
@@ -59,6 +60,7 @@ fn respond(mut stream: TcpStream, log: &Mutex<Vec<(String, String)>>) {
     let (status, location) = match (method.as_str(), path.as_str()) {
         (_, "/ok" | "/skip") => ("200 OK", ""),
         (_, "/moved") => ("301 Moved Permanently", "Location: /ok\r\n"),
+        (_, "/moved-to-fragment") => ("301 Moved Permanently", "Location: /ok#loc\r\n"),
         ("HEAD", "/head-not-allowed") => ("405 Method Not Allowed", ""),
         (_, "/head-not-allowed") => ("200 OK", ""),
         _ => ("404 Not Found", ""),
@@ -270,5 +272,24 @@ fn urls_differing_only_in_fragment_are_requested_once() {
     assert_eq!(
         server.requests(),
         [request("HEAD", "/moved"), request("HEAD", "/ok")]
+    );
+}
+
+#[test]
+fn location_fragment_wins_over_the_original_fragment() {
+    let server = Server::start();
+    let sandbox = Sandbox::new();
+    sandbox.write(
+        "t.md",
+        &format!("[a]({}#sec)\n", server.url("/moved-to-fragment")),
+    );
+    sandbox.write_xdg_config("[builtin]\nno-dead-link = true\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    let to = server.url("/ok#loc");
+    assert_eq!(
+        dead_link_lines(stdout(&output)),
+        [format!(
+            "t.md:1:5: リンク先が {to} へリダイレクトする (301 Moved Permanently)。宛先を {to} にする [no-dead-link]"
+        )]
     );
 }

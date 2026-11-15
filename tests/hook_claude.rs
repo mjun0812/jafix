@@ -3,10 +3,11 @@ mod common;
 use std::path::Path;
 
 use common::{
-    AI_RULES_CONFIG, AI_RULES_INPUT, AI_WORDS_PATTERN, HIRAGANA_AND_SYNONYMS_HOOK_INPUT,
-    JTF_STYLE_RULES_CONFIG, JTF_STYLE_RULES_HOOK_FIXED, JTF_STYLE_RULES_HOOK_INPUT,
-    SPACING_RULES_CONFIG, SPACING_RULES_FIXED, SPACING_RULES_INPUT, Sandbox,
-    USER_REPLACEMENTS_CONFIG, USER_REPLACEMENTS_FIXED, USER_REPLACEMENTS_INPUT,
+    AI_RULES_CONFIG, AI_RULES_INPUT, AI_WORDS_PATTERN, GENERAL_RULES_AND_FILTERS_CONFIG,
+    GENERAL_RULES_HOOK_INPUT, HIRAGANA_AND_SYNONYMS_HOOK_INPUT, JTF_STYLE_RULES_CONFIG,
+    JTF_STYLE_RULES_HOOK_FIXED, JTF_STYLE_RULES_HOOK_INPUT, SPACING_RULES_CONFIG,
+    SPACING_RULES_FIXED, SPACING_RULES_INPUT, Sandbox, USER_REPLACEMENTS_CONFIG,
+    USER_REPLACEMENTS_FIXED, USER_REPLACEMENTS_INPUT, general_rule_lines, general_rule_reports,
     hiragana_and_synonyms_rule_lines, hiragana_and_synonyms_rule_reports,
     hiragana_and_synonyms_rules_config, jtf_style_rule_lines, jtf_style_rule_reports, read,
     spacing_rule_lines, spacing_rule_reports, stdout, user_replacement_reports,
@@ -465,6 +466,23 @@ fn reports_hiragana_and_synonyms_findings_on_target_lines() {
     assert_eq!(
         hiragana_and_synonyms_rule_lines(stderr(&output)),
         hiragana_and_synonyms_rule_reports(&path),
+        "{}",
+        stderr(&output)
+    );
+}
+
+#[test]
+fn reports_general_findings_outside_disabled_ranges() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(GENERAL_RULES_AND_FILTERS_CONFIG);
+    let path = sandbox.write("t.md", GENERAL_RULES_HOOK_INPUT);
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[1, 5]));
+    assert_eq!(output.status.code(), Some(2));
+    // 無効化の後の5行目の全角括弧は直さない
+    assert_eq!(read(&path), GENERAL_RULES_HOOK_INPUT);
+    assert_eq!(
+        general_rule_lines(stderr(&output)),
+        general_rule_reports(&path),
         "{}",
         stderr(&output)
     );

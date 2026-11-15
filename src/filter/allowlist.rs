@@ -7,14 +7,13 @@ use regress::Regex;
 use toml::Table;
 
 use crate::js_regex;
-use crate::rules::builtin::{non_empty_strings, resolve_path, strings, unknown_option};
+use crate::rules::builtin::{non_empty_strings, patterns, resolve_path, unknown_option};
 use crate::rules::parse_yaml;
 
 /// `allowlist` のオプション
 #[derive(Debug, Default)]
 pub struct Allowlist {
     /// `allow` の要素と、`allowlistConfigPaths` のファイルの要素を、この順に連結したパターン
-    #[allow(dead_code)] // skeleton: not implemented
     pub patterns: Vec<Regex>,
 }
 
@@ -25,12 +24,7 @@ impl Allowlist {
         let mut config_paths = Vec::new();
         for (key, value) in options {
             match key.as_str() {
-                "allow" => {
-                    allow = strings(key, value)?
-                        .into_iter()
-                        .map(|value| pattern(value).map_err(|reason| format!("`{key}`: {reason}")))
-                        .collect::<Result<_, _>>()?;
-                }
+                "allow" => allow = patterns(key, value)?,
                 "allowlistConfigPaths" => config_paths = non_empty_strings(key, value)?,
                 _ => return Err(unknown_option(key)),
             }
@@ -51,10 +45,10 @@ impl Allowlist {
     }
 }
 
-/// 許可するパターンを、`@textlint-rule/pattern` と同じく読む。空の文字列は、どこにでも当たるので不正にする
+/// `allowlistConfigPaths` のファイルの要素を、`allow` と同じく読む。空の文字列は、どこにでも当たるので不正にする
 fn pattern(value: &str) -> Result<Regex, String> {
     if value.is_empty() {
-        return Err("空の文字列はパターンにできない".to_owned());
+        return Err("要素は空でない文字列で書く".to_owned());
     }
     js_regex::pattern(value)
 }
@@ -77,6 +71,9 @@ fn read_strings(path: &Path) -> Result<Vec<String>, String> {
 
 /// `src` の全体に `allowlist` の各パターンを当て、長さ0を含むすべての一致の範囲を返す
 pub(super) fn ranges(src: &str, allowlist: &Allowlist) -> Vec<Range<usize>> {
-    let _ = (src, allowlist);
-    todo!("skeleton: not implemented")
+    allowlist
+        .patterns
+        .iter()
+        .flat_map(|pattern| pattern.find_iter(src).map(|m| m.range()))
+        .collect()
 }

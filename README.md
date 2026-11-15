@@ -320,7 +320,7 @@ no-dead-link = { ignore = ["https://example.com/**"], retry = 1 }
 
 相対のリンク(`exists.md`・`./x`・`#anchor`)は、`baseURI` があればそれを、無ければMarkdownのファイルの場所を基準に解決します。解決したパスから `?` と `#` から後ろを除き、そのファイルかディレクトリがあるかを確かめます。ページの中のアンカーがあるかは確かめません。`/` で始まる絶対パスは、ローカルのファイルとして確かめます。文面は `リンク先のファイルが無い: <宛先>` です。
 
-`no-dead-link` は、hookでは外部のURLに接続しません。`http:`・`https:` のURLに接続して確かめるのは `jafix check` だけで、hookと `jafix fix` はローカルのファイルだけを確かめます。hookは編集のたびに速く終わる必要があり、外部のサーバーへの接続はそれを満たせないためです。`jafix check` は `HEAD` で要求し、2xxでなければ `GET` で `retry` の回数まで、間を空けて再試行します。`preferGET` のoriginのURLは、最初から `GET` で要求します。1回の要求は10秒で打ち切ります。リダイレクトを辿った先が2xxなら、リダイレクト先のURLを文面に入れて指摘します。同じ `jafix check` の中の同じURLは1回だけ確かめ、1つのファイルの宛先を最大 `concurrency` 個ずつ同時に確かめます。文面は `リンク先に届かない: <URL> (404 Not Found)` と、`リンク先が <最後のURL> へリダイレクトする (301 Moved Permanently)。宛先を <最後のURL> にする` です。TLSの証明書は、binaryに入れた `webpki-roots` の一覧で検証します。
+`no-dead-link` は、hookでは外部のURLに接続しません。`http:`・`https:` のURLに接続して確かめるのは `jafix check` だけで、hookと `jafix fix` はローカルのファイルだけを確かめます。hookは編集のたびに速く終わる必要があり、外部のサーバーへの接続はそれを満たせないためです。`jafix check` は `HEAD` で要求し、2xxでなければ `GET` で `retry` の回数まで、間を空けて再試行します。`preferGET` のoriginのURLは、最初から `GET` で要求します。1回の要求は10秒で打ち切ります。リダイレクトを辿った先が2xxなら、リダイレクト先のURLを文面に入れて指摘します。同じ `jafix check` の中の同じURLは1回だけ確かめ、1つのファイルの宛先を最大 `concurrency` 個ずつ同時に確かめます。文面は `リンク先に届かない: <URL> (404 Not Found)` と、`リンク先が <最後のURL> へリダイレクトする (301 Moved Permanently)。宛先を <最後のURL> にする` です。TLSの証明書は、binaryに入れた `webpki-roots` の一覧で検証します。外部のURLへの接続は、環境変数の `ALL_PROXY`・`HTTPS_PROXY`・`HTTP_PROXY`(小文字の名前も読みます)のうち最初に見つかったproxyを通り、`NO_PROXY` に当たるホストへは直に接続します。
 
 オプションは、次のとおりです。
 
@@ -556,7 +556,7 @@ print -r -- "$input" | jafix hook claude
 
 ## 設定ファイル
 
-設定ファイルは `$XDG_CONFIG_HOME/jafix/config.toml` です。`XDG_CONFIG_HOME` が未設定なら `~/.config/jafix/config.toml` を読みます。設定ファイルが無ければ、組み込みのルールを既定の設定にし(AIらしい書き方を指摘する7ルール、空白と字種の13ルール、JTFスタイルガイドの37ルール、ひらがな・さ入れ・同義語の7ルール、`prh`・`@textlint-rule/pattern` は無効、ほかは有効)、何も除外しません。
+設定ファイルは `$XDG_CONFIG_HOME/jafix/config.toml` です。`XDG_CONFIG_HOME` が未設定なら `~/.config/jafix/config.toml` を読みます。設定ファイルが無ければ、組み込みのルールを既定の設定にし(AIらしい書き方を指摘する7ルール、空白と字種の13ルール、JTFスタイルガイドの37ルール、ひらがな・さ入れ・同義語の7ルール、言語によらない3ルール、`prh`・`@textlint-rule/pattern` は無効、ほかは有効)、何も除外しません。指摘を外す2つのfilterも無効です。
 
 ```toml
 exclude = ["~/.dotfiles/docs/bad-examples.md", "**/drafts/**"]
@@ -646,11 +646,39 @@ fullwidth-paren = false
 
 JavaScriptの正規表現なので、後読み・先読み・後方参照を使え、`\p{sc=Han}` や `\p{Script=Han}` のようにscriptの名前を `sc=` か `Script=` 付きで書けます。`\d`・`\w`・`\b` はASCIIで判定するので、`/\d!/` は `1!` に当たり、`１!` に当たりません。行の区切りと空白の扱いもJavaScriptのとおりで、`.` は `\r`・U+2028・U+2029に当たらず、`m` 付きの `^`・`$` はこの3つも行の区切りとし、`\s` はU+FEFFを含みます。Rustの `regex` だけが読む書き方(`\p{Han}`・`(?i)`・`[[:alpha:]]`・`\z`)と、`u` 付きのJavaScriptが断る書き方(`\-` のような意味の無い退避、閉じていない `{`)は、設定の不正です。空の文字列も不正です。
 
+### `[filters]`
+
+`[filters]` の表は、文書の中の範囲を指定して指摘と修正の箇所を外すfilterを設定します。filterは、textlintの `textlint-filter-rule-comments` 1.3.0と `textlint-filter-rule-allowlist` 4.0.0から移したもので、IDは `comments` と `allowlist` です。値は、`false`(無効)、`true`(既定のオプションで有効)、オプションの表(書いたオプションで有効)のどれかです。書かなければ、どちらのfilterも無効です。
+
+```toml
+[filters]
+comments = true
+allowlist = { allow = ["/TODO: 移行の後に消す/"], allowlistConfigPaths = ["allow.yml"] }
+```
+
+filterは指摘を出さず、ほかのルールの指摘と修正の箇所から、外す範囲に入るものを除きます。除くのは、指摘ルールの指摘、組み込みの修正ルールの箇所、利用者の置き換えの箇所です。指摘は指摘の範囲で、修正の箇所は置き換える範囲で判定し、始まりと終わりがどちらも外す範囲の中か端にあれば除きます。除いた修正の箇所は、`jafix check` に出ず、`jafix fix` とhookが直しません。修正の箇所は重なりを解く前に除くので、除いた箇所が、同じ空白に当たるほかのルールの箇所を捨てさせることはありません。`jafix fix` とhookは、利用者の置き換えの前と、組み込みの修正ルールを当てる繰り返しの1回ごとに、その時点の内容から外す範囲を求め直します。外す範囲は文書の全体から求めるので、hookでも、対象行の外にあるコメントとパターンの一致で対象行の指摘を外せます。
+
+`comments` は、HTMLのコメントで書いた無効化から有効化までを外します。コメントの中身が `enablingComment`(既定は `textlint-enable`)を含めば有効化で、含まずに `disablingComment`(既定は `textlint-disable`)を含めば無効化です。2つのオプションは空でない文字列で、大文字と小文字を区別します。外す範囲は、無効化のコメントの `<!--` から、それを閉じる有効化のコメントの `<!--` までです。閉じる有効化が無ければ、文書の末尾までです。コメントは、引用・リスト項目・表のセル・見出しの中でも読み、コードブロックとインラインコードの中では読みません。
+
+```markdown
+<!-- textlint-disable no-todo, sentence-length -- 移行の後に消す -->
+
+TODO: この段落の指摘は出ません
+
+<!-- textlint-enable -->
+```
+
+コメントの中身から指示の文字列を除き、`--` から後ろを捨てた残りを、カンマで区切ったものがルールのIDの一覧です。一覧が空なら、すべてのルールを外します。IDを書いた有効化は、そのIDの開いている無効化のうち最後のものを閉じ、IDの無い有効化は、開いている無効化をすべて閉じます。IDを書いた有効化は、IDを書かない無効化を閉じません。`textlint-disable-next-line` は、textlintと同じく、存在しないID `-next-line` の無効化になり、何も外しません。
+
+IDは、jafixのルールのID(`sentence-length`)でも、textlintがpresetの下のルールに付けるID(`ja-technical-writing/sentence-length`)でも書けます。textlintと同じく、presetの部分からは前置きの `preset-`・`textlint-rule-preset-` を、ルールの部分からは `textlint-rule-` を除いて比べます。そのため、`preset-ja-technical-writing/sentence-length`・`textlint-rule-no-todo`・`@textlint-rule/textlint-rule-pattern` も当たります。presetの部分は、`ja-technical-writing`・`@textlint-ja/ai-writing`・`ai-words-ja`・`ja-spacing`・`jtf-style` のどれかで、そのpresetの束ねるルールに当たります。presetの名前で有効にしたかは問いません。どのルールにも当たらないIDは、何も外しません。半角のカンマを含む `1.2.2.ピリオド(.)とカンマ(,)` と `4.1.3.ピリオド(.)、カンマ(,)` は、一覧の区切りと衝突するので、どちらの書き方でも書けません。この2つのルールは、IDを書かない無効化でだけ止まります。
+
+`allowlist` は、許可したパターンに一致した範囲を、すべてのルールについて外します。パターンは、`allow`(パターンの配列)と、`allowlistConfigPaths` のファイルの要素を、この順に合わせたものです。各要素は「[パターン](#パターン)」と同じく読み、空の文字列は不正です。パターンは、コード・URL・HTML・front matterを含む文書の元のソースの全体に当て、長さ0を含むすべての一致の範囲を外します。`^` は、`m` を付けなければ文書の先頭だけに当たります。`allowlistConfigPaths` は、文字列の配列を書いたJSONかYAMLのファイルのパスの配列で、空でない文字列です。拡張子は `.json`・`.yml`・`.yaml` のどれかです。相対パスは設定ファイルのあるディレクトリから解決し、`~/` で始まればホームディレクトリに展開します。
+
 ### 不正な設定
 
 次のときは、設定ファイルが不正です。理由を標準エラーに書いて終え、終了コードは `jafix check` と `jafix fix` が2、hookが1です。`[builtin]` が不正なときは、理由にルールのIDかpresetの名前を含め、オプションの誤りでは、オプションの名前も含めます。
 
-- TOMLとして読めないか、`exclude`・`report-exclude`・`builtin` 以外のキーがある。`rules` の表は、知らないキーなので不正です。利用者のパターンは `[builtin]` の `@textlint-rule/pattern` に書きます
+- TOMLとして読めないか、`exclude`・`report-exclude`・`builtin`・`filters` 以外のキーがある。`rules` の表は、知らないキーなので不正です。利用者のパターンは `[builtin]` の `@textlint-rule/pattern` に書きます
 - `exclude` か `report-exclude` の値が、`/`・`~/`・`**/` のどれでも始まらないか、globとして読めない
 - `[builtin]` のキーが組み込みのルールのIDでもpresetの名前でもない
 - `[builtin]` のpresetの名前の値が、`true` か `false` でない
@@ -681,6 +709,8 @@ JavaScriptの正規表現なので、後読み・先読み・後方参照を使�
   - `requireOutsideHalfParentheses = true` の `3.3.かっこ類と隣接する文字の間のスペースの有無` と、`space-between-ja-and-paren`
   - `prefer = "全角"` の `no-mixed-zenkaku-and-hankaku-alphabet` と、`2.1.9.アルファベット`。どちらも修正ルールなので、修正を繰り返すたびに英字が全角と半角を行き来します
 - 逆の置き換え。利用者の置き換えの固定の部分を、有効な組み込みの修正ルールが直す場合です。理由にはルールのID、その置き換え(`expected` か `replace`)、組み込みの修正ルールのIDを含めます。同じ箇所に当たる組み込みの修正ルールが2つ以上あれば、重なりを解く前のものをすべて挙げます
+- `[filters]` のキーが、`comments`・`allowlist` のどちらでもない。値が `true`・`false`・表のどれでもない。`comments` に知らないオプションがあるか、`disablingComment`・`enablingComment` が空でない文字列でない。`allowlist` に知らないオプションがあるか、`allow` の要素が「[パターン](#パターン)」のとおりに読めない(空の文字列を含む)。理由には `filters`、filterのID、オプションの名前を含めます
+- `allowlistConfigPaths` が、空でない文字列の配列でない。またはそのファイルが、読めない・拡張子が `.json`・`.yml`・`.yaml` のどれでもない・中身が文字列の配列でない・要素がパターンとして読めない(空の文字列を含む)のどれかに当たる。ファイルの誤りでは、理由にファイルのパスを含めます
 
 ## textlintとの違い
 
@@ -806,6 +836,13 @@ JTFスタイルガイドの37ルールも、判定の条件を `textlint-rule-pr
 - `no-dead-link` は、`httpOnly` が `true` で `baseURI` が無いとき、相対のリンクと絶対パスを確かめません。textlintは、実行したディレクトリから見たファイルとして確かめます
 - `no-dead-link` の `dotInIgnore`・`interval`・`intervalCap`・`linkMaxAge` は使えません。`ignore` のglobは `exclude` のglobと同じ読み方で、`*` と `?` は `/` をまたがず、`.` で始まる要素にも `*` が当たります
 - 3つとも、textlintと違って自動で直さず、指摘だけを出します。曜日とリダイレクト先のURLは文面に入れます
+
+2つのfilterも、外す範囲の求め方を `textlint-filter-rule-comments` 1.3.0と `textlint-filter-rule-allowlist` 4.0.0から写しています。ほかに次の点が違います。
+
+- `comments` の外す範囲は、コメントを含むHTMLのnodeの先頭ではなく、そのコメントの `<!--` から始まります。textlintでは、1つのHTMLのブロックに複数のコメントがあると、どの範囲もブロックの先頭から始まります
+- presetの下のルールにも、jafixのルールのIDで当たります。textlintでは、presetの下のルールに `sentence-length` とだけ書いても外れません
+- `allowlist` のパターンは、`@textlint-rule/pattern` と同じくJavaScriptの正規表現(`u` フラグ付き)で読みます。textlintの4.0.0は `@textlint/regexp-string-matcher` 1.1.1で読むので、`u` を付けず、`s` と `d` をフラグとみなしません。空の文字列は設定の不正で、`//` は文字列そのものです。textlintの4.0.0は、`//` を書くと止まらなくなります
+- 外すかどうかは、jafixの指摘と修正の箇所の範囲で判定します。textlintでは多くのルールが1文字の幅で報告するので、同じ設定でも外れる指摘は変わりえます。たとえば `allow = ["TODO"]` は、`TODO:` の5文字を範囲とする `no-todo` の指摘を外しません
 
 ## ライセンス
 
