@@ -28,7 +28,7 @@ static DEFAULT_ALLOWS: LazyLock<Vec<Vec<Regex>>> = LazyLock::new(|| {
 pub(super) fn targets(rule: &JaNoRedundantExpression, paragraph: &Paragraph) -> bool {
     let allowed = |node_type| rule.allow_node_types.contains(&node_type);
     !(paragraph.blockquote && allowed(NodeType::BlockQuote))
-        && !(paragraph.list_item && allowed(NodeType::ListItem))
+        && !(paragraph.list_item_index.is_some() && allowed(NodeType::ListItem))
 }
 
 /// 辞書の項目の並びに一致した箇所のうち、`allows` に当たらず、`allowNodeTypes` の要素の中にないものに指摘を出す

@@ -47,7 +47,7 @@ pub fn report(
     let mut reports = Vec::new();
     let mut counts = [0; CATEGORIES.len()];
     let mut push = |range: Range<usize>, category: GuidelineCategory, message: String| {
-        counts[category as usize] += 1;
+        counts[index(category)] += 1;
         reports.push(Report {
             range,
             rule: RuleId::AiTechWritingGuideline.name(),
@@ -90,8 +90,8 @@ pub fn report(
     if rule.enable_document_analysis && total > 0 {
         let details: Vec<String> = CATEGORIES
             .into_iter()
-            .filter(|&category| counts[category as usize] > 0)
-            .map(|category| format!("{}: {}件", name(category), counts[category as usize]))
+            .filter(|&category| counts[index(category)] > 0)
+            .map(|category| format!("{}: {}件", name(category), counts[index(category)]))
             .collect();
         reports.insert(
             0,
@@ -106,6 +106,17 @@ pub fn report(
         );
     }
     reports
+}
+
+/// `CATEGORIES` の並びでの、カテゴリーの位置
+fn index(category: GuidelineCategory) -> usize {
+    match category {
+        GuidelineCategory::Redundancy => 0,
+        GuidelineCategory::Voice => 1,
+        GuidelineCategory::Clarity => 2,
+        GuidelineCategory::Consistency => 3,
+        GuidelineCategory::Structure => 4,
+    }
 }
 
 fn name(category: GuidelineCategory) -> &'static str {

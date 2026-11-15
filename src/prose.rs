@@ -10,7 +10,7 @@ pub struct Document {
     pub texts: Vec<Prose>,
     /// 段落。文に区切るルールと、段落の末尾を見るルールが使う。見出しと表のセルは段落ではない
     pub paragraphs: Vec<Paragraph>,
-    /// 見出し。段落と同じ形で持つ。`list_item`・`footnote`・`list_item_index`・`next_block` は使わない。
+    /// 見出し。段落と同じ形で持つ。`footnote`・`list_item_index`・`next_block` は使わない。
     /// `paragraphs` には入らない
     pub headings: Vec<Paragraph>,
     /// リスト項目。出現順に並び、入れ子の項目は親の項目の後に来る
@@ -53,8 +53,6 @@ pub struct Paragraph {
     pub range: Range<usize>,
     /// 引用の中
     pub blockquote: bool,
-    /// リスト項目の中
-    pub list_item: bool,
     /// 脚注の定義の中
     pub footnote: bool,
     /// 段落を含むリスト項目のうち、最も内側のものの `Document::list_items` での番号
@@ -233,7 +231,6 @@ fn collect_paragraphs(
     target.push(Paragraph {
         range: node_range(node),
         blockquote: ancestors.blockquote,
-        list_item: ancestors.list_item.is_some(),
         footnote: ancestors.footnote,
         list_item_index: ancestors.list_item,
         next_block,
@@ -543,7 +540,14 @@ mod tests {
         parse(src)
             .paragraphs
             .into_iter()
-            .map(|p| (&src[p.range], p.blockquote, p.list_item, p.footnote))
+            .map(|p| {
+                (
+                    &src[p.range],
+                    p.blockquote,
+                    p.list_item_index.is_some(),
+                    p.footnote,
+                )
+            })
             .collect()
     }
 

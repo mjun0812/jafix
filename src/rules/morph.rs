@@ -77,7 +77,7 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report<'
                 reports.extend(no_doubled_conjunctive_particle_ga::report(sentence));
             }
             if let Some(rule) = &builtin.no_mix_dearu_desumasu {
-                let kind = if paragraph.list_item {
+                let kind = if paragraph.list_item_index.is_some() {
                     Kind::List
                 } else {
                     Kind::Body

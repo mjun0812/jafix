@@ -73,6 +73,15 @@ pub fn find<F: Fields>(tokens: &[Token], pattern: &[Expect<F>]) -> Vec<Match> {
 
 /// `start` のトークンから `pattern` を当てる。一致の途中で外れても、ほかの開始位置の結果には影響しない
 fn match_at<F: Fields>(tokens: &[Token], pattern: &[Expect<F>], start: usize) -> Option<Match> {
+    // 先頭が飛ばせない期待で外れる開始位置が大半なので、外れるなら確保の前に返す
+    if let Some(first) = pattern.first()
+        && !first.skippable
+        && !tokens
+            .get(start)
+            .is_some_and(|token| first.fields.matches(token))
+    {
+        return None;
+    }
     let mut next = start;
     let mut matched = Vec::with_capacity(pattern.len());
     for expect in pattern {

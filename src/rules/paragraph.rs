@@ -198,7 +198,7 @@ fn mixed_period(
     paragraph: &Paragraph,
     rule: &JaNoMixedPeriod,
 ) -> Option<Report<'static>> {
-    if paragraph.list_item || paragraph.blockquote || paragraph.footnote {
+    if paragraph.list_item_index.is_some() || paragraph.blockquote || paragraph.footnote {
         return None;
     }
     let last = paragraph
