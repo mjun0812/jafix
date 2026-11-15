@@ -4,12 +4,11 @@ pub mod dictionary;
 
 use std::borrow::Cow;
 
-use crate::apply::TargetLines;
-use crate::prose::{Context, Document};
+use crate::prose::{Context, Prose};
 
 use self::dictionary::Replacement;
 use super::builtin::Prh;
-use super::{Finding, RuleId, UserReplacement, one_line, target_texts};
+use super::{Finding, RuleId, UserReplacement, one_line};
 
 /// `check*` のオプション。本文の範囲のうち、辞書を当てるものを決める。既定はtextlint-rule-prhと同じである
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -51,14 +50,9 @@ impl Checks {
 
 /// 対象行と重なる本文の範囲のうち `rule.checks` が見るものに辞書を当て、置き換えの箇所を返す。
 /// 本文の範囲の中の重なりは辞書が解き、`@textlint-rule/pattern` の箇所との重なりは `rules::replacements` が解く
-pub fn replacements(
-    src: &str,
-    document: &Document,
-    rule: &Prh,
-    targets: &TargetLines,
-) -> Vec<UserReplacement> {
+pub fn replacements(src: &str, texts: &[&Prose], rule: &Prh) -> Vec<UserReplacement> {
     let mut replacements = Vec::new();
-    for prose in target_texts(src, &document.texts, targets) {
+    for prose in texts {
         if !rule.checks.covers(&prose.context) {
             continue;
         }

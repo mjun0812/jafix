@@ -3,11 +3,10 @@
 
 use std::borrow::Cow;
 
-use crate::apply::TargetLines;
-use crate::prose::{Context, Document, Prose};
+use crate::prose::{Context, Prose};
 
 use super::builtin::{PatternNodeType, TextlintRulePattern, UserPattern};
-use super::{Finding, Report, RuleId, UserReplacement, one_line, target_texts};
+use super::{Finding, Report, RuleId, UserReplacement, one_line};
 
 /// `context` の本文の範囲が、`node_type` の型のnodeの中にあるか
 fn contains(node_type: PatternNodeType, context: &Context) -> bool {
@@ -28,12 +27,11 @@ fn contains(node_type: PatternNodeType, context: &Context) -> bool {
 /// 対象行と重なる本文の範囲に `replace` のある要素を当て、置き換えの箇所を返す。重なりは `rules::replacements` が解く
 pub fn replacements(
     src: &str,
-    document: &Document,
+    texts: &[&Prose],
     rule: &TextlintRulePattern,
-    targets: &TargetLines,
 ) -> Vec<UserReplacement> {
     let mut replacements = Vec::new();
-    for (prose, pattern, m) in matches(src, document, rule, targets, true) {
+    for (prose, pattern, m) in matches(src, texts, rule, true) {
         let Some(replace) = &pattern.replace else {
             continue;
         };
@@ -59,13 +57,8 @@ pub fn replacements(
 }
 
 /// 対象行と重なる本文の範囲に `replace` の無い要素を当て、指摘を返す。重なってもすべて出す
-pub fn report(
-    src: &str,
-    document: &Document,
-    rule: &TextlintRulePattern,
-    targets: &TargetLines,
-) -> Vec<Report> {
-    matches(src, document, rule, targets, false)
+pub fn report(src: &str, texts: &[&Prose], rule: &TextlintRulePattern) -> Vec<Report> {
+    matches(src, texts, rule, false)
         .map(|(prose, pattern, m)| Report {
             range: prose.range.start + m.start()..prose.range.start + m.end(),
             rule: RuleId::TextlintRulePattern.name(),
@@ -82,12 +75,11 @@ fn message(matched: &str, pattern: &UserPattern) -> String {
 /// `allowNodeTypes` で除く一致は含めない。本文の範囲ごとに、要素の順、位置の順に並ぶ
 fn matches<'a>(
     src: &'a str,
-    document: &'a Document,
+    texts: &'a [&'a Prose],
     rule: &'a TextlintRulePattern,
-    targets: &'a TargetLines,
     replace: bool,
 ) -> impl Iterator<Item = (&'a Prose, &'a UserPattern, regress::Match)> {
-    target_texts(src, &document.texts, targets).flat_map(move |prose| {
+    texts.iter().copied().flat_map(move |prose| {
         let text = &src[prose.range.clone()];
         rule.patterns
             .iter()

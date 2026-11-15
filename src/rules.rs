@@ -204,11 +204,12 @@ pub fn report(
     reports.extend(paragraph::report(src, &document.paragraphs, builtin));
     reports.extend(morph::report(src, document, builtin));
     reports.extend(ai_writing::report(src, document, builtin));
+    let texts = target_texts(src, document, builtin, targets);
     if let Some(rule) = &builtin.textlint_rule_pattern {
-        reports.extend(textlint_rule_pattern::report(src, document, rule, targets));
+        reports.extend(textlint_rule_pattern::report(src, &texts, rule));
     }
     reports.extend(
-        user_replacements(src, document, builtin, targets)
+        user_replacements(src, &texts, builtin)
             .into_iter()
             .filter_map(|replacement| {
                 let reason = unfixable(src, &replacement)?;
@@ -258,7 +259,8 @@ pub fn replacements(
     builtin: &Builtin,
     targets: &TargetLines,
 ) -> Vec<Finding> {
-    user_replacements(src, document, builtin, targets)
+    let texts = target_texts(src, document, builtin, targets);
+    user_replacements(src, &texts, builtin)
         .into_iter()
         .filter(|replacement| unfixable(src, replacement).is_none())
         .map(|replacement| replacement.finding)
@@ -266,20 +268,13 @@ pub fn replacements(
 }
 
 /// 利用者の置き換えの箇所を、重なりを解いて位置の順に返す。範囲が同じ箇所は、`prh`、`patterns` の前の要素の順に残す
-fn user_replacements(
-    src: &str,
-    document: &Document,
-    builtin: &Builtin,
-    targets: &TargetLines,
-) -> Vec<UserReplacement> {
+fn user_replacements(src: &str, texts: &[&Prose], builtin: &Builtin) -> Vec<UserReplacement> {
     let mut replacements = Vec::new();
     if let Some(rule) = &builtin.prh {
-        replacements.extend(prh::replacements(src, document, rule, targets));
+        replacements.extend(prh::replacements(src, texts, rule));
     }
     if let Some(rule) = &builtin.textlint_rule_pattern {
-        replacements.extend(textlint_rule_pattern::replacements(
-            src, document, rule, targets,
-        ));
+        replacements.extend(textlint_rule_pattern::replacements(src, texts, rule));
     }
     drop_overlaps(&mut replacements, |replacement| &replacement.finding.range);
     replacements
@@ -339,20 +334,29 @@ pub fn fix_rules_hitting(text: &str, builtin: &Builtin) -> Vec<RuleId> {
     rules
 }
 
-/// `texts` のうち、最初の行から最後の行までのどれかが `targets` の対象行であるもの
+/// 利用者の置き換えを当てる本文の範囲。最初の行から最後の行までのどれかが `targets` の対象行であるもの。
+/// 行の索引を1回で作るために、`prh` と `@textlint-rule/pattern` で共有する。どちらも無効なら空
 fn target_texts<'a>(
     src: &str,
-    texts: &'a [Prose],
-    targets: &'a TargetLines,
-) -> impl Iterator<Item = &'a Prose> {
+    document: &'a Document,
+    builtin: &Builtin,
+    targets: &TargetLines,
+) -> Vec<&'a Prose> {
+    if builtin.prh.is_none() && builtin.textlint_rule_pattern.is_none() {
+        return Vec::new();
+    }
     let index = matches!(targets, TargetLines::Lines(_)).then(|| LineIndex::new(src));
-    texts.iter().filter(move |prose| {
-        index.as_ref().is_none_or(|index| {
-            let (first, _) = index.line_col(prose.range.start);
-            let (last, _) = index.line_col(prose.range.end);
-            targets.overlaps(first..=last)
+    document
+        .texts
+        .iter()
+        .filter(|prose| {
+            index.as_ref().is_none_or(|index| {
+                let (first, _) = index.line_col(prose.range.start);
+                let (last, _) = index.line_col(prose.range.end);
+                targets.overlaps(first..=last)
+            })
         })
-    })
+        .collect()
 }
 
 /// 文面に埋め込む文字列。出力は1件1行なので、改行を `\n` の2文字にする
