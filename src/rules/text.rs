@@ -321,17 +321,19 @@ static UNNATURAL_ALPHABET: LazyLock<Regex> = LazyLock::new(|| {
     .unwrap()
 });
 
-/// `arabic-kanji-numbers` の1つのパターン。範囲ごとに最初の一致だけを指摘する
-struct NumberPattern {
-    regex: Regex,
-    /// 範囲のどこかに一致すれば、このパターンを指摘しない
-    ignore: Vec<Regex>,
+/// `arabic-kanji-numbers` と `2.2.2.算用数字と漢数字の使い分け` の1つのパターン。`arabic-kanji-numbers` は
+/// 範囲ごとに最初の一致だけを、`2.2.2` はすべての一致を指摘する
+pub struct NumberPattern {
+    pub regex: Regex,
+    /// 無視パターン。`arabic-kanji-numbers` は範囲のどこかに一致すればこのパターンを指摘せず、`2.2.2` は
+    /// 一致の範囲と重なる無視パターンの一致があればその一致だけを指摘しない
+    pub ignore: Vec<Regex>,
     /// 一致の直後にこの文字があれば、その一致を使わない。`regex` crateが先読みを持たないので分けて持つ
-    not_followed_by: Option<char>,
-    message: &'static str,
+    pub not_followed_by: Option<char>,
+    pub message: &'static str,
 }
 
-static NUMBER_PATTERNS: LazyLock<Vec<NumberPattern>> = LazyLock::new(|| {
+pub static NUMBER_PATTERNS: LazyLock<Vec<NumberPattern>> = LazyLock::new(|| {
     const K: &str = "[一二三四五六七八九十壱弐参拾百〇]+";
     let pattern = |regex: &str, ignore: &[&str], message| NumberPattern {
         regex: Regex::new(regex).unwrap(),

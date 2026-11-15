@@ -1,0 +1,167 @@
+# 2.2.3.一部の助数詞の表記 の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "2.2.3.一部の助数詞の表記"
+builtin = '''
+"2.2.3.一部の助数詞の表記" = true
+'''
+
+[[cases]]
+name = "cn-basic"
+text = "3ヶ月と10ヶ所と5ヶ年計画"
+findings = ["1:1", "1:5", "1:10"]
+messages = ["「3ヶ月」を「3か月」にする", "「10ヶ所」を「10か所」にする", "「5ヶ年」を「5か年」にする"]
+
+[[cases]]
+name = "cn-month"
+text = "3ヶ月未満"
+findings = ["1:1"]
+messages = ["「3ヶ月」を「3か月」にする"]
+
+[[cases]]
+name = "cn-place"
+text = "10ヶ所"
+findings = ["1:1"]
+messages = ["「10ヶ所」を「10か所」にする"]
+
+[[cases]]
+name = "cn-country"
+text = "5ヶ国語"
+findings = ["1:1"]
+messages = ["「5ヶ国」を「5か国」にする"]
+
+[[cases]]
+name = "cn-year"
+text = "5ヶ年計画"
+findings = ["1:1"]
+messages = ["「5ヶ年」を「5か年」にする"]
+
+[[cases]]
+name = "cn-several-digits"
+text = "123ヶ月"
+findings = ["1:1"]
+messages = ["「123ヶ月」を「123か月」にする"]
+
+[[cases]]
+name = "cn-other-small-ke"
+text = "3ヵ月と3カ月と3ケ月と3箇月と3個月"
+findings = []
+
+[[cases]]
+name = "cn-no-number"
+text = "ヶ月"
+findings = []
+
+[[cases]]
+name = "cn-fullwidth-number-is-not-checked"
+text = "３ヶ月"
+findings = []
+
+[[cases]]
+name = "cn-kanji-number-is-not-checked"
+text = "三ヶ月"
+findings = []
+
+[[cases]]
+name = "cn-other-counter"
+text = "3ヶ人"
+findings = []
+
+[[cases]]
+name = "cn-correct"
+text = "3か月と10か所"
+findings = []
+
+[[cases]]
+name = "cn-adjacent"
+text = "3ヶ月3ヶ所"
+findings = ["1:1", "1:4"]
+messages = ["「3ヶ月」を「3か月」にする", "「3ヶ所」を「3か所」にする"]
+
+[[cases]]
+name = "cn-newline-between-is-not-matched"
+text = "3\nヶ月"
+findings = []
+
+[[cases]]
+name = "cn-after-inline-code"
+text = "`x`3ヶ月"
+findings = ["1:4"]
+messages = ["「3ヶ月」を「3か月」にする"]
+
+[[cases]]
+name = "cn-shortcut-reference-link"
+note = "定義を持つ省略形の参照リンクの文字列は、本文でないので見ない。textlintは見て、指摘する"
+text = "[3ヶ月]\n\n[3ヶ月]: https://example.com"
+findings = []
+
+[[cases]]
+name = "cn-heading"
+text = "# 3ヶ月"
+findings = ["1:3"]
+messages = ["「3ヶ月」を「3か月」にする"]
+
+[[cases]]
+name = "cn-quote"
+text = "> 3ヶ月"
+findings = []
+
+[[cases]]
+name = "cn-table"
+text = "| 列 |\n| - |\n| 3ヶ月 |"
+findings = ["3:3"]
+messages = ["「3ヶ月」を「3か月」にする"]
+
+[[cases]]
+name = "cn-list"
+text = "- 3ヶ月"
+findings = ["1:3"]
+messages = ["「3ヶ月」を「3か月」にする"]
+
+[[cases]]
+name = "cn-link"
+text = "[3ヶ月](https://example.com)"
+findings = []
+
+[[cases]]
+name = "cn-strong"
+text = "**3ヶ月**"
+findings = ["1:3"]
+messages = ["「3ヶ月」を「3か月」にする"]
+
+[[cases]]
+name = "cn-emphasis"
+text = "*3ヶ月*"
+findings = []
+
+[[cases]]
+name = "cn-strike"
+text = "~~3ヶ月~~"
+findings = ["1:3"]
+messages = ["「3ヶ月」を「3か月」にする"]
+
+[[cases]]
+name = "cn-code"
+text = "`3ヶ月`"
+findings = []
+
+[[cases]]
+name = "cn-footnote"
+text = "[^1]: 3ヶ月"
+findings = ["1:7"]
+messages = ["「3ヶ月」を「3か月」にする"]
+
+[[cases]]
+name = "cn-html"
+text = "<span>3ヶ月</span>"
+findings = ["1:7"]
+messages = ["「3ヶ月」を「3か月」にする"]

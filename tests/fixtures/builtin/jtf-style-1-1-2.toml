@@ -1,0 +1,127 @@
+# 1.1.2.見出し の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "1.1.2.見出し"
+builtin = '''
+"1.1.2.見出し" = true
+'''
+
+[[cases]]
+name = "hd-basic"
+text = "# 見出し。"
+findings = ["1:6"]
+messages = ["見出しの文末に「。」を付けない"]
+
+[[cases]]
+name = "hd-levels"
+text = "## 見出し。\n\n### 見出し。\n\n#### 見出し。\n\n##### 見出し。\n\n###### 見出し。"
+findings = ["1:7", "3:8", "5:9", "7:10", "9:11"]
+messages = ["見出しの文末に「。」を付けない", "見出しの文末に「。」を付けない", "見出しの文末に「。」を付けない", "見出しの文末に「。」を付けない", "見出しの文末に「。」を付けない"]
+
+[[cases]]
+name = "hd-no-period"
+text = "# 見出し"
+findings = []
+
+[[cases]]
+name = "hd-period-in-the-middle"
+text = "# 見。出し"
+findings = []
+
+[[cases]]
+name = "hd-halfwidth-period"
+text = "# 見出し."
+findings = []
+
+[[cases]]
+name = "hd-trailing-spaces"
+text = "# 見出し。  "
+findings = ["1:6"]
+messages = ["見出しの文末に「。」を付けない"]
+
+[[cases]]
+name = "hd-double-period"
+text = "# 見出し。。"
+findings = ["1:7"]
+messages = ["見出しの文末に「。」を付けない"]
+
+[[cases]]
+name = "hd-closing-hashes"
+text = "# 見出し。 #"
+findings = []
+
+[[cases]]
+name = "hd-setext"
+text = "見出し。\n====="
+findings = []
+
+[[cases]]
+name = "hd-setext-level2"
+text = "見出し。\n-----"
+findings = []
+
+[[cases]]
+name = "hd-period-after-strong"
+text = "# 見出し **強調**。"
+findings = ["1:13"]
+messages = ["見出しの文末に「。」を付けない"]
+
+[[cases]]
+name = "hd-period-after-link"
+text = "# [見出し](https://example.com)。"
+findings = ["1:29"]
+messages = ["見出しの文末に「。」を付けない"]
+
+[[cases]]
+name = "hd-period-after-code"
+text = "# 見出し`code`。"
+findings = ["1:12"]
+messages = ["見出しの文末に「。」を付けない"]
+
+[[cases]]
+name = "hd-period-inside-strong"
+text = "# **見出し。**"
+findings = []
+
+[[cases]]
+name = "hd-surrogate-pair-before"
+text = "# \U00020bb7見出し。"
+findings = ["1:7"]
+messages = ["見出しの文末に「。」を付けない"]
+
+[[cases]]
+name = "hd-two-headings"
+text = "# 一つ目。\n\n本文。\n\n## 二つ目"
+findings = ["1:6"]
+messages = ["見出しの文末に「。」を付けない"]
+
+[[cases]]
+name = "hd-in-list-item"
+text = "- # 見出し。"
+findings = ["1:8"]
+messages = ["見出しの文末に「。」を付けない"]
+
+[[cases]]
+name = "hd-in-quote"
+text = "> # 見出し。"
+findings = []
+
+[[cases]]
+name = "hd-paragraph-is-not-heading"
+text = "これは見出しではない。"
+findings = []
+
+[[cases]]
+name = "hd-period-in-the-middle-of-text-and-end"
+text = "# 見出し。です。"
+findings = ["1:9"]
+messages = ["見出しの文末に「。」を付けない"]

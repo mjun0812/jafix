@@ -106,6 +106,7 @@ fn rule_of<'a>(
             &builtin.ja_space_around_emphasis,
             "強調",
         ),
+        InlineNodeKind::Image { .. } => return None,
     };
     Some((rule, options.as_ref()?, name))
 }

@@ -1,0 +1,166 @@
+# 4.3.2.大かっこ［］ の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "4.3.2.大かっこ［］"
+builtin = '''
+"4.3.2.大かっこ［］" = true
+'''
+
+[[cases]]
+name = "sq-japanese-before-both"
+text = "日本語[補足]です"
+findings = ["1:4", "1:7"]
+messages = ["半角の大括弧「[」を全角の「［」にする", "半角の大括弧「]」を全角の「］」にする"]
+
+[[cases]]
+name = "sq-array-index"
+text = "配列[0]を参照"
+findings = ["1:3"]
+messages = ["半角の大括弧「[」を全角の「［」にする"]
+
+[[cases]]
+name = "sq-japanese-before-closing-only"
+text = "日本語 [補足]"
+findings = ["1:8"]
+messages = ["半角の大括弧「]」を全角の「］」にする"]
+
+[[cases]]
+name = "sq-japanese-before-opening-only"
+text = "日本語[abc]"
+findings = ["1:4"]
+messages = ["半角の大括弧「[」を全角の「［」にする"]
+
+[[cases]]
+name = "sq-english-only"
+text = "see [1] here"
+findings = []
+
+[[cases]]
+name = "sq-fullwidth-is-allowed"
+text = "日本語［補足］です"
+findings = []
+
+[[cases]]
+name = "sq-with-space-before-opening"
+text = "日本語 [補足] です"
+findings = ["1:8"]
+messages = ["半角の大括弧「]」を全角の「］」にする"]
+
+[[cases]]
+name = "sq-adjacent"
+text = "日本語[][]"
+findings = ["1:4"]
+messages = ["半角の大括弧「[」を全角の「［」にする"]
+
+[[cases]]
+name = "sq-two-brackets-after-japanese"
+text = "日本語[a]日本語[b]"
+findings = ["1:4", "1:10"]
+messages = ["半角の大括弧「[」を全角の「［」にする", "半角の大括弧「[」を全角の「［」にする"]
+
+[[cases]]
+name = "sq-long-vowel-is-not-japanese"
+text = "サーバー[補足]"
+findings = ["1:8"]
+messages = ["半角の大括弧「]」を全角の「］」にする"]
+
+[[cases]]
+name = "sq-repetition-mark-is-japanese"
+text = "人々[補足]"
+findings = ["1:3", "1:6"]
+messages = ["半角の大括弧「[」を全角の「［」にする", "半角の大括弧「]」を全角の「］」にする"]
+
+[[cases]]
+name = "sq-surrogate-pair-kanji"
+text = "\U00020bb7[野]"
+findings = ["1:2", "1:4"]
+messages = ["半角の大括弧「[」を全角の「［」にする", "半角の大括弧「]」を全角の「］」にする"]
+
+[[cases]]
+name = "sq-two-lines"
+text = "日本語[補足]\nです[1]"
+findings = ["1:4", "1:7", "2:3"]
+messages = ["半角の大括弧「[」を全角の「［」にする", "半角の大括弧「]」を全角の「］」にする", "半角の大括弧「[」を全角の「［」にする"]
+
+[[cases]]
+name = "sq-after-inline-code"
+text = "`x`[日本語]"
+findings = ["1:8"]
+messages = ["半角の大括弧「]」を全角の「］」にする"]
+
+[[cases]]
+name = "sq-markdown-link-text"
+text = "日本語[リンク](https://example.com)です"
+findings = []
+
+[[cases]]
+name = "sq-reference-link"
+text = "日本語[リンク][r]です\n\n[r]: https://example.com"
+findings = []
+
+[[cases]]
+name = "sq-heading"
+text = "# 日本語[補足]です"
+findings = []
+
+[[cases]]
+name = "sq-quote"
+text = "> 日本語[補足]です"
+findings = []
+
+[[cases]]
+name = "sq-table"
+text = "| 列 |\n| - |\n| 日本語[補足]です |"
+findings = []
+
+[[cases]]
+name = "sq-list"
+text = "- 日本語[補足]です"
+findings = ["1:6", "1:9"]
+messages = ["半角の大括弧「[」を全角の「［」にする", "半角の大括弧「]」を全角の「］」にする"]
+
+[[cases]]
+name = "sq-link"
+text = "[日本語[補足]です](https://example.com)"
+findings = []
+
+[[cases]]
+name = "sq-strong"
+text = "**日本語[補足]です**"
+findings = []
+
+[[cases]]
+name = "sq-emphasis"
+text = "*日本語[補足]です*"
+findings = []
+
+[[cases]]
+name = "sq-strike"
+text = "~~日本語[補足]です~~"
+findings = []
+
+[[cases]]
+name = "sq-code"
+text = "`日本語[補足]です`"
+findings = []
+
+[[cases]]
+name = "sq-footnote"
+text = "[^1]: 日本語[補足]です"
+findings = ["1:10", "1:13"]
+messages = ["半角の大括弧「[」を全角の「［」にする", "半角の大括弧「]」を全角の「］」にする"]
+
+[[cases]]
+name = "sq-html"
+text = "<span>日本語[補足]です</span>"
+findings = ["1:10", "1:13"]
+messages = ["半角の大括弧「[」を全角の「［」にする", "半角の大括弧「]」を全角の「］」にする"]

@@ -1,0 +1,208 @@
+# 2.1.9.アルファベット の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "2.1.9.アルファベット"
+builtin = '''
+"2.1.9.アルファベット" = true
+'''
+
+[[cases]]
+name = "al-uppercase"
+text = "ＡＢＣ"
+findings = ["1:1"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "ABC"
+
+[[cases]]
+name = "al-uppercase-in-sentence"
+text = "これはＲＵＳＴです"
+findings = ["1:4"]
+messages = ["全角のアルファベット「ＲＵＳＴ」を半角にする"]
+fixed = "これはRUSTです"
+
+[[cases]]
+name = "al-halfwidth-only"
+text = "ABCとabc"
+findings = []
+fixed = "ABCとabc"
+
+[[cases]]
+name = "al-lowercase"
+note = "全角の小文字 `ａ`〜`ｚ` も半角にする。textlintは全角の大文字 `Ａ`〜`Ｚ` だけを半角にする"
+text = "ＡＢＣとａｂｃ"
+findings = ["1:1", "1:5"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする", "全角のアルファベット「ａｂｃ」を半角にする"]
+fixed = "ABCとabc"
+
+[[cases]]
+name = "al-lowercase-only"
+note = "全角の小文字だけの続きも半角にする。textlintは当たらない"
+text = "ａｂｃ"
+findings = ["1:1"]
+messages = ["全角のアルファベット「ａｂｃ」を半角にする"]
+fixed = "abc"
+
+[[cases]]
+name = "al-mixed-case-run"
+note = "全角の大文字と小文字の続きを1件にして半角にする。textlintは大文字の `Ｒ` だけを半角にして、`Rｕｓｔ` にする"
+text = "Ｒｕｓｔで書く"
+findings = ["1:1"]
+messages = ["全角のアルファベット「Ｒｕｓｔ」を半角にする"]
+fixed = "Rustで書く"
+
+[[cases]]
+name = "al-lowercase-before-uppercase"
+note = "全角の小文字と大文字の続きを1件にして半角にする。textlintは大文字の続きだけを指摘する"
+text = "ａｂｃとＡＢＣ"
+findings = ["1:1", "1:5"]
+messages = ["全角のアルファベット「ａｂｃ」を半角にする", "全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "abcとABC"
+
+[[cases]]
+name = "al-alternating-case"
+note = "全角の大文字と小文字が交互に続いても1件にして半角にする。textlintは大文字を1文字ずつ指摘する"
+text = "ＡａＢｂ"
+findings = ["1:1"]
+messages = ["全角のアルファベット「ＡａＢｂ」を半角にする"]
+fixed = "AaBb"
+
+[[cases]]
+name = "al-digits-are-not-alphabet"
+text = "Ａ１Ｂ２"
+findings = ["1:1", "1:3"]
+messages = ["全角のアルファベット「Ａ」を半角にする", "全角のアルファベット「Ｂ」を半角にする"]
+fixed = "A１B２"
+
+[[cases]]
+name = "al-fullwidth-digits-only"
+text = "１２３"
+findings = []
+fixed = "１２３"
+
+[[cases]]
+name = "al-two-lines"
+text = "ＡＢ\nＣＤ"
+findings = ["1:1", "2:1"]
+messages = ["全角のアルファベット「ＡＢ」を半角にする", "全角のアルファベット「ＣＤ」を半角にする"]
+fixed = "AB\nCD"
+
+[[cases]]
+name = "al-surrogate-pair-before"
+text = "\U00020bb7野家はＡＢＣ"
+findings = ["1:5"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "\U00020bb7野家はABC"
+
+[[cases]]
+name = "al-after-inline-code"
+text = "`x`ＡＢＣ"
+findings = ["1:4"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "`x`ABC"
+
+[[cases]]
+name = "al-before-strong"
+text = "ＡＢＣ**強調**"
+findings = ["1:1"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "ABC**強調**"
+
+[[cases]]
+name = "al-repeats-with-space-between-ja-and-alnum"
+note = "`2.1.9` が `ＡＢＣ` を半角にした後、`space-between-ja-and-alnum` が日本語と英数字の間の空白に当たる。1回の `jafix fix` で、2つの修正が続けて当たる"
+builtin = '''
+"2.1.9.アルファベット" = true
+'''
+text = "日本語 ＡＢＣ です"
+findings = ["1:5"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "日本語ABCです"
+
+[[cases]]
+name = "al-overlaps-no-mixed-zenkaku-and-hankaku-alphabet"
+note = "`no-mixed-zenkaku-and-hankaku-alphabet` が有効(`prefer = \"半角\"`)で、同じ全角英字の続きに当たるなら、ルールの一覧で前にある `no-mixed-zenkaku-and-hankaku-alphabet` の箇所が残り、`2.1.9` の箇所は出ない。結果は同じである"
+builtin = '''
+"2.1.9.アルファベット" = true
+no-mixed-zenkaku-and-hankaku-alphabet = true
+'''
+text = "これはＲＵＳＴです"
+findings = []
+fixed = "これはRUSTです"
+
+[[cases]]
+name = "al-heading"
+text = "# ＡＢＣ"
+findings = []
+fixed = "# ＡＢＣ"
+
+[[cases]]
+name = "al-quote"
+text = "> ＡＢＣ"
+findings = []
+fixed = "> ＡＢＣ"
+
+[[cases]]
+name = "al-table"
+text = "| 列 |\n| - |\n| ＡＢＣ |"
+findings = []
+fixed = "| 列 |\n| - |\n| ＡＢＣ |"
+
+[[cases]]
+name = "al-list"
+text = "- ＡＢＣ"
+findings = ["1:3"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "- ABC"
+
+[[cases]]
+name = "al-link"
+text = "[ＡＢＣ](https://example.com)"
+findings = []
+fixed = "[ＡＢＣ](https://example.com)"
+
+[[cases]]
+name = "al-strong"
+text = "**ＡＢＣ**"
+findings = []
+fixed = "**ＡＢＣ**"
+
+[[cases]]
+name = "al-emphasis"
+text = "*ＡＢＣ*"
+findings = []
+fixed = "*ＡＢＣ*"
+
+[[cases]]
+name = "al-strike"
+text = "~~ＡＢＣ~~"
+findings = []
+fixed = "~~ＡＢＣ~~"
+
+[[cases]]
+name = "al-code"
+text = "`ＡＢＣ`"
+findings = []
+fixed = "`ＡＢＣ`"
+
+[[cases]]
+name = "al-footnote"
+text = "[^1]: ＡＢＣ"
+findings = ["1:7"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "[^1]: ABC"
+
+[[cases]]
+name = "al-html"
+text = "<span>ＡＢＣ</span>"
+findings = ["1:7"]
+messages = ["全角のアルファベット「ＡＢＣ」を半角にする"]
+fixed = "<span>ABC</span>"

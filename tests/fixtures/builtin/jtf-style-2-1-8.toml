@@ -1,0 +1,192 @@
+# 2.1.8.算用数字 の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "2.1.8.算用数字"
+builtin = '''
+"2.1.8.算用数字" = true
+'''
+
+[[cases]]
+name = "dg-basic"
+text = "１２３と４５"
+findings = ["1:1", "1:5"]
+messages = ["全角の数字「１２３」を半角にする", "全角の数字「４５」を半角にする"]
+fixed = "123と45"
+
+[[cases]]
+name = "dg-all-digits"
+text = "０１２３４５６７８９"
+findings = ["1:1"]
+messages = ["全角の数字「０１２３４５６７８９」を半角にする"]
+fixed = "0123456789"
+
+[[cases]]
+name = "dg-single"
+text = "第１章"
+findings = ["1:2"]
+messages = ["全角の数字「１」を半角にする"]
+fixed = "第1章"
+
+[[cases]]
+name = "dg-mixed-with-halfwidth"
+text = "1２3"
+findings = ["1:2"]
+messages = ["全角の数字「２」を半角にする"]
+fixed = "123"
+
+[[cases]]
+name = "dg-halfwidth-only"
+text = "123と45"
+findings = []
+fixed = "123と45"
+
+[[cases]]
+name = "dg-with-kanji-number"
+text = "２０２６年の三月"
+findings = ["1:1"]
+messages = ["全角の数字「２０２６」を半角にする"]
+fixed = "2026年の三月"
+
+[[cases]]
+name = "dg-with-fullwidth-letters"
+text = "Ａ１Ｂ２"
+findings = ["1:2", "1:4"]
+messages = ["全角の数字「１」を半角にする", "全角の数字「２」を半角にする"]
+fixed = "Ａ1Ｂ2"
+
+[[cases]]
+name = "dg-with-separators"
+text = "１，０００と３．１４と１０％"
+findings = ["1:1", "1:3", "1:7", "1:9", "1:12"]
+messages = ["全角の数字「１」を半角にする", "全角の数字「０００」を半角にする", "全角の数字「３」を半角にする", "全角の数字「１４」を半角にする", "全角の数字「１０」を半角にする"]
+fixed = "1，000と3．14と10％"
+
+[[cases]]
+name = "dg-two-lines"
+text = "１行目は１\n２行目は２"
+findings = ["1:1", "1:5", "2:1", "2:5"]
+messages = ["全角の数字「１」を半角にする", "全角の数字「１」を半角にする", "全角の数字「２」を半角にする", "全角の数字「２」を半角にする"]
+fixed = "1行目は1\n2行目は2"
+
+[[cases]]
+name = "dg-surrogate-pair-before"
+text = "\U00020bb7野家は１２３円"
+findings = ["1:5"]
+messages = ["全角の数字「１２３」を半角にする"]
+fixed = "\U00020bb7野家は123円"
+
+[[cases]]
+name = "dg-after-inline-code"
+text = "`x`１２３"
+findings = ["1:4"]
+messages = ["全角の数字「１２３」を半角にする"]
+fixed = "`x`123"
+
+[[cases]]
+name = "dg-before-strong"
+text = "１２３**強調**"
+findings = ["1:1"]
+messages = ["全角の数字「１２３」を半角にする"]
+fixed = "123**強調**"
+
+[[cases]]
+name = "dg-url-text"
+text = "https://example.com/１２３ です"
+findings = []
+fixed = "https://example.com/１２３ です"
+
+[[cases]]
+name = "dg-ordered-list-marker-lookalike"
+text = "１．項目"
+findings = ["1:1"]
+messages = ["全角の数字「１」を半角にする"]
+fixed = "1．項目"
+
+[[cases]]
+name = "dg-repeats-with-space-between-ja-and-alnum"
+note = "`2.1.8` が `１２３` を半角にした後、`space-between-ja-and-alnum` が日本語と英数字の間の空白に当たる。1回の `jafix fix` で、2つの修正が続けて当たる"
+builtin = '''
+"2.1.8.算用数字" = true
+'''
+text = "日本語 １２３ です"
+findings = ["1:5"]
+messages = ["全角の数字「１２３」を半角にする"]
+fixed = "日本語123です"
+
+[[cases]]
+name = "dg-heading"
+text = "# １２３"
+findings = []
+fixed = "# １２３"
+
+[[cases]]
+name = "dg-quote"
+text = "> １２３"
+findings = []
+fixed = "> １２３"
+
+[[cases]]
+name = "dg-table"
+text = "| 列 |\n| - |\n| １２３ |"
+findings = []
+fixed = "| 列 |\n| - |\n| １２３ |"
+
+[[cases]]
+name = "dg-list"
+text = "- １２３"
+findings = ["1:3"]
+messages = ["全角の数字「１２３」を半角にする"]
+fixed = "- 123"
+
+[[cases]]
+name = "dg-link"
+text = "[１２３](https://example.com)"
+findings = []
+fixed = "[１２３](https://example.com)"
+
+[[cases]]
+name = "dg-strong"
+text = "**１２３**"
+findings = []
+fixed = "**１２３**"
+
+[[cases]]
+name = "dg-emphasis"
+text = "*１２３*"
+findings = []
+fixed = "*１２３*"
+
+[[cases]]
+name = "dg-strike"
+text = "~~１２３~~"
+findings = []
+fixed = "~~１２３~~"
+
+[[cases]]
+name = "dg-code"
+text = "`１２３`"
+findings = []
+fixed = "`１２３`"
+
+[[cases]]
+name = "dg-footnote"
+text = "[^1]: １２３"
+findings = ["1:7"]
+messages = ["全角の数字「１２３」を半角にする"]
+fixed = "[^1]: 123"
+
+[[cases]]
+name = "dg-html"
+text = "<span>１２３</span>"
+findings = ["1:7"]
+messages = ["全角の数字「１２３」を半角にする"]
+fixed = "<span>123</span>"

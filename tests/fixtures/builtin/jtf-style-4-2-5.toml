@@ -1,0 +1,132 @@
+# 4.2.5.波線(〜) の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "4.2.5.波線(〜)"
+builtin = '''
+"4.2.5.波線(〜)" = true
+'''
+
+[[cases]]
+name = "tl-basic"
+text = "1~10"
+findings = ["1:2"]
+messages = ["数値の範囲は「~」ではなく全角の「〜」にする"]
+
+[[cases]]
+name = "tl-several-digits"
+text = "100~200"
+findings = ["1:4"]
+messages = ["数値の範囲は「~」ではなく全角の「〜」にする"]
+
+[[cases]]
+name = "tl-in-sentence"
+text = "10~20個、30~40個"
+findings = []
+
+[[cases]]
+name = "tl-space-around-is-not-checked"
+text = "1 ~ 10"
+findings = []
+
+[[cases]]
+name = "tl-letter-neighbour-is-not-checked"
+text = "a~b と a~1 と 1~a"
+findings = []
+
+[[cases]]
+name = "tl-fullwidth-digit-is-not-checked"
+text = "１~１０"
+findings = []
+
+[[cases]]
+name = "tl-japanese-neighbour-is-not-checked"
+text = "日~本"
+findings = []
+
+[[cases]]
+name = "tl-fullwidth-tilde-is-allowed"
+text = "1〜10"
+findings = []
+
+[[cases]]
+name = "tl-wave-dash-is-allowed"
+text = "1～10"
+findings = []
+
+[[cases]]
+name = "tl-two-lines"
+text = "1~2\n3~4"
+findings = []
+
+[[cases]]
+name = "tl-after-inline-code"
+text = "`x`1~2"
+findings = ["1:5"]
+messages = ["数値の範囲は「~」ではなく全角の「〜」にする"]
+
+[[cases]]
+name = "tl-heading"
+text = "# 1~10"
+findings = []
+
+[[cases]]
+name = "tl-quote"
+text = "> 1~10"
+findings = []
+
+[[cases]]
+name = "tl-table"
+text = "| 列 |\n| - |\n| 1~10 |"
+findings = []
+
+[[cases]]
+name = "tl-list"
+text = "- 1~10"
+findings = ["1:4"]
+messages = ["数値の範囲は「~」ではなく全角の「〜」にする"]
+
+[[cases]]
+name = "tl-link"
+text = "[1~10](https://example.com)"
+findings = []
+
+[[cases]]
+name = "tl-strong"
+text = "**1~10**"
+findings = []
+
+[[cases]]
+name = "tl-emphasis"
+text = "*1~10*"
+findings = []
+
+[[cases]]
+name = "tl-strike"
+text = "~~1~10~~"
+findings = []
+
+[[cases]]
+name = "tl-code"
+text = "`1~10`"
+findings = []
+
+[[cases]]
+name = "tl-footnote"
+text = "[^1]: 1~10"
+findings = ["1:8"]
+messages = ["数値の範囲は「~」ではなく全角の「〜」にする"]
+
+[[cases]]
+name = "tl-html"
+text = "<span>1~10</span>"
+findings = ["1:8"]
+messages = ["数値の範囲は「~」ではなく全角の「〜」にする"]

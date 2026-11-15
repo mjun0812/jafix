@@ -1,0 +1,209 @@
+# 4.2.2.疑問符(？) の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "4.2.2.疑問符(？)"
+builtin = '''
+"4.2.2.疑問符(？)" = true
+'''
+
+[[cases]]
+name = "qu-halfwidth"
+text = "本当?"
+findings = ["1:3"]
+messages = ["疑問符は全角の「？」にする"]
+
+[[cases]]
+name = "qu-halfwidth-before-text"
+text = "本当?日本語?"
+findings = ["1:3", "1:7"]
+messages = ["疑問符は全角の「？」にする", "疑問符は全角の「？」にする"]
+
+[[cases]]
+name = "qu-halfwidth-after-english"
+text = "Really? 日本語"
+findings = []
+
+[[cases]]
+name = "qu-halfwidth-after-english-only"
+text = "Really? yes"
+findings = []
+
+[[cases]]
+name = "qu-halfwidth-after-digit"
+text = "123?です"
+findings = []
+
+[[cases]]
+name = "qu-repetition-mark-is-japanese"
+text = "人々?と〇?"
+findings = ["1:3", "1:6"]
+messages = ["疑問符は全角の「？」にする", "疑問符は全角の「？」にする"]
+
+[[cases]]
+name = "qu-long-vowel-is-not-japanese"
+text = "サーバー?"
+findings = []
+
+[[cases]]
+name = "qu-surrogate-pair-kanji"
+text = "\U00020bb7?"
+findings = ["1:2"]
+messages = ["疑問符は全角の「？」にする"]
+
+[[cases]]
+name = "qu-fullwidth-is-allowed"
+text = "本当？"
+findings = []
+
+[[cases]]
+name = "qu-space-after-fullwidth"
+text = "本当？ 次"
+findings = ["1:4"]
+messages = ["文末の「？」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "qu-space-after-fullwidth-english"
+text = "Really？ yes"
+findings = ["1:8"]
+messages = ["文末の「？」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "qu-fullwidth-space-after-fullwidth-is-allowed"
+text = "本当？\u3000次"
+findings = []
+
+[[cases]]
+name = "qu-no-space-after-fullwidth"
+text = "本当？次"
+findings = []
+
+[[cases]]
+name = "qu-space-at-end-of-text"
+text = "本当？ "
+findings = []
+
+[[cases]]
+name = "qu-space-before-newline"
+text = "本当？ \n次"
+findings = []
+
+[[cases]]
+name = "qu-two-spaces"
+text = "本当？  次"
+findings = ["1:4"]
+messages = ["文末の「？」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "qu-space-then-bracket"
+text = "あ？ 「い」"
+findings = ["1:3"]
+messages = ["文末の「？」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "qu-halfwidth-and-space"
+text = "本当?と聞いた？ 次"
+findings = ["1:3", "1:9"]
+messages = ["疑問符は全角の「？」にする", "文末の「？」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "qu-space-after-halfwidth-is-not-checked"
+text = "本当? 次"
+findings = ["1:3"]
+messages = ["疑問符は全角の「？」にする"]
+
+[[cases]]
+name = "qu-every-fullwidth-with-space"
+note = "前後の文字で判定するので、すべての `？` の後の空白を指摘する。textlintは一致を重ねずに探すので、`？ ？` の2つ目の `？` の後の空白を見落とす"
+text = "あ？ ？ これ"
+findings = ["1:3", "1:5"]
+messages = ["文末の「？」の後に別の文が続くので、直後の半角空白を全角空白にする", "文末の「？」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "qu-two-lines"
+text = "本当?\n本当？ 次"
+findings = ["1:3", "2:4"]
+messages = ["疑問符は全角の「？」にする", "文末の「？」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "qu-after-inline-code"
+text = "`x`？ 次"
+findings = ["1:5"]
+messages = ["文末の「？」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "qu-heading"
+text = "# 本当?"
+findings = []
+
+[[cases]]
+name = "qu-quote"
+text = "> 本当?"
+findings = []
+
+[[cases]]
+name = "qu-table"
+text = "| 列 |\n| - |\n| 本当? |"
+findings = []
+
+[[cases]]
+name = "qu-list"
+text = "- 本当?"
+findings = ["1:5"]
+messages = ["疑問符は全角の「？」にする"]
+
+[[cases]]
+name = "qu-link"
+text = "[本当?](https://example.com)"
+findings = []
+
+[[cases]]
+name = "qu-strong"
+text = "**本当?**"
+findings = []
+
+[[cases]]
+name = "qu-emphasis"
+text = "*本当?*"
+findings = []
+
+[[cases]]
+name = "qu-strike"
+text = "~~本当?~~"
+findings = []
+
+[[cases]]
+name = "qu-code"
+text = "`本当?`"
+findings = []
+
+[[cases]]
+name = "qu-footnote"
+text = "[^1]: 本当?"
+findings = ["1:9"]
+messages = ["疑問符は全角の「？」にする"]
+
+[[cases]]
+name = "qu-html"
+text = "<span>本当?</span>"
+findings = ["1:9"]
+messages = ["疑問符は全角の「？」にする"]
+
+[[cases]]
+name = "qu-heading-space"
+text = "# 本当？ 次"
+findings = []
+
+[[cases]]
+name = "qu-list-space"
+text = "- 本当？ 次"
+findings = ["1:6"]
+messages = ["文末の「？」の後に別の文が続くので、直後の半角空白を全角空白にする"]

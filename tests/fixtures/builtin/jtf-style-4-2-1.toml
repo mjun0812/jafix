@@ -1,0 +1,221 @@
+# 4.2.1.感嘆符(！) の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "4.2.1.感嘆符(！)"
+builtin = '''
+"4.2.1.感嘆符(！)" = true
+'''
+
+[[cases]]
+name = "ex-halfwidth"
+text = "すごい!"
+findings = ["1:4"]
+messages = ["感嘆符は全角の「！」にする"]
+
+[[cases]]
+name = "ex-halfwidth-before-text"
+text = "すごい!日本語!"
+findings = ["1:4", "1:8"]
+messages = ["感嘆符は全角の「！」にする", "感嘆符は全角の「！」にする"]
+
+[[cases]]
+name = "ex-halfwidth-after-english"
+text = "Wow! 次"
+findings = []
+
+[[cases]]
+name = "ex-halfwidth-after-digit"
+text = "123!です"
+findings = []
+
+[[cases]]
+name = "ex-halfwidth-after-hiragana-katakana"
+text = "ひらがな!とカタカナ!"
+findings = ["1:5", "1:11"]
+messages = ["感嘆符は全角の「！」にする", "感嘆符は全角の「！」にする"]
+
+[[cases]]
+name = "ex-repetition-mark-is-not-japanese"
+text = "人々!と〇!"
+findings = []
+
+[[cases]]
+name = "ex-long-vowel-is-not-japanese"
+text = "サーバー!"
+findings = []
+
+[[cases]]
+name = "ex-surrogate-pair-kanji"
+text = "\U00020bb7!"
+findings = ["1:2"]
+messages = ["感嘆符は全角の「！」にする"]
+
+[[cases]]
+name = "ex-fullwidth-is-allowed"
+text = "すごい！"
+findings = []
+
+[[cases]]
+name = "ex-space-after-fullwidth"
+text = "すごい！ 次の文"
+findings = ["1:5"]
+messages = ["文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "ex-space-after-fullwidth-english"
+text = "Wow！ Next"
+findings = ["1:5"]
+messages = ["文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "ex-fullwidth-space-after-fullwidth-is-allowed"
+text = "すごい！\u3000次の文"
+findings = []
+
+[[cases]]
+name = "ex-no-space-after-fullwidth"
+text = "すごい！次の文"
+findings = []
+
+[[cases]]
+name = "ex-space-at-end-of-text"
+text = "すごい！ "
+findings = []
+
+[[cases]]
+name = "ex-space-before-newline"
+text = "すごい！ \n次の文"
+findings = []
+
+[[cases]]
+name = "ex-two-spaces"
+text = "すごい！  次の文"
+findings = ["1:5"]
+messages = ["文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "ex-space-then-bracket"
+text = "あ！ 「い」"
+findings = ["1:3"]
+messages = ["文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "ex-halfwidth-and-space"
+text = "すごい!と驚いた！ 次の文"
+findings = ["1:4", "1:10"]
+messages = ["感嘆符は全角の「！」にする", "文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "ex-space-after-halfwidth-is-not-checked"
+text = "すごい! 次の文"
+findings = ["1:4"]
+messages = ["感嘆符は全角の「！」にする"]
+
+[[cases]]
+name = "ex-every-fullwidth-with-space"
+note = "前後の文字で判定するので、すべての `！` の後の空白を指摘する。textlintは一致を重ねずに探すので、`！ ！` の2つ目の `！` の後の空白を見落とす"
+text = "あ！ ！ これ"
+findings = ["1:3", "1:5"]
+messages = ["文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする", "文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "ex-every-fullwidth-with-space-in-sentences"
+note = "すべての `！` の後の空白を指摘する。textlintは `！ ！` の2つ目の `！` の後の空白だけを見落とす"
+text = "すごい！ 次の文。あ！ ！ い！ う"
+findings = ["1:5", "1:12", "1:14", "1:17"]
+messages = ["文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする", "文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする", "文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする", "文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "ex-two-lines"
+text = "すごい!\nすごい！ 次"
+findings = ["1:4", "2:5"]
+messages = ["感嘆符は全角の「！」にする", "文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "ex-after-inline-code"
+text = "`x`！ 次"
+findings = ["1:5"]
+messages = ["文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする"]
+
+[[cases]]
+name = "ex-before-inline-code"
+text = "すごい！ `x`"
+findings = []
+
+[[cases]]
+name = "ex-heading"
+text = "# すごい!"
+findings = []
+
+[[cases]]
+name = "ex-quote"
+text = "> すごい!"
+findings = []
+
+[[cases]]
+name = "ex-table"
+text = "| 列 |\n| - |\n| すごい! |"
+findings = []
+
+[[cases]]
+name = "ex-list"
+text = "- すごい!"
+findings = ["1:6"]
+messages = ["感嘆符は全角の「！」にする"]
+
+[[cases]]
+name = "ex-link"
+text = "[すごい!](https://example.com)"
+findings = []
+
+[[cases]]
+name = "ex-strong"
+text = "**すごい!**"
+findings = []
+
+[[cases]]
+name = "ex-emphasis"
+text = "*すごい!*"
+findings = []
+
+[[cases]]
+name = "ex-strike"
+text = "~~すごい!~~"
+findings = []
+
+[[cases]]
+name = "ex-code"
+text = "`すごい!`"
+findings = []
+
+[[cases]]
+name = "ex-footnote"
+text = "[^1]: すごい!"
+findings = ["1:10"]
+messages = ["感嘆符は全角の「！」にする"]
+
+[[cases]]
+name = "ex-html"
+text = "<span>すごい!</span>"
+findings = ["1:10"]
+messages = ["感嘆符は全角の「！」にする"]
+
+[[cases]]
+name = "ex-heading-space"
+text = "# すごい！ 次"
+findings = []
+
+[[cases]]
+name = "ex-list-space"
+text = "- すごい！ 次"
+findings = ["1:7"]
+messages = ["文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする"]

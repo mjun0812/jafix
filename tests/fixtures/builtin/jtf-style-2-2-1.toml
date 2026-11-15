@@ -1,0 +1,267 @@
+# 2.2.1.ひらがなと漢字の使い分け の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。textlintでは、presetの既定で無効なルールを `{}` で有効にした。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "2.2.1.ひらがなと漢字の使い分け"
+builtin = '''
+"2.2.1.ひらがなと漢字の使い分け" = true
+'''
+
+[[cases]]
+name = "hk-basic"
+text = "予め下さい出来る"
+findings = ["1:1", "1:3", "1:6"]
+messages = ["「予め」を「あらかじめ」にする", "「下さい」を「ください」にする", "「出来る」を「できる」にする"]
+
+[[cases]]
+name = "hk-to-hiragana-a"
+text = "何れ、何時、凡そ、徐に、却って、且つ"
+findings = ["1:1", "1:4", "1:7", "1:10", "1:13", "1:17"]
+messages = ["「何れ」を「いずれ」にする", "「何時」を「いつ」にする", "「凡そ」を「およそ」にする", "「徐に」を「おもむろに」にする", "「却って」を「かえって」にする", "「且つ」を「かつ」にする"]
+
+[[cases]]
+name = "hk-to-hiragana-b"
+text = "かも知れない。これ程。然し、暫く、即ち、可き、折角"
+findings = ["1:1", "1:8", "1:12", "1:15", "1:18", "1:21", "1:24"]
+messages = ["「かも知れない」を「かもしれない」にする", "「これ程」を「これほど」にする", "「然し」を「しかし」にする", "「暫く」を「しばらく」にする", "「即ち」を「すなわち」にする", "「可き」を「すべき」にする", "「折角」を「せっかく」にする"]
+
+[[cases]]
+name = "hk-to-hiragana-c"
+text = "度々、但し、何処、乃至、尚さら、又は、寧ろ、滅多に"
+findings = ["1:1", "1:4", "1:7", "1:10", "1:13", "1:17", "1:20", "1:23"]
+messages = ["「度々」を「たびたび」にする", "「但し」を「ただし」にする", "「何処」を「どこ」にする", "「乃至」を「ないし」にする", "「尚さら」を「なおさら」にする", "「又は」を「または」にする", "「寧ろ」を「むしろ」にする", "「滅多に」を「めったに」にする"]
+
+[[cases]]
+name = "hk-to-hiragana-d"
+text = "最早、若しくは、以てと以って、余程、及び"
+findings = ["1:1", "1:4", "1:9", "1:12", "1:16", "1:19"]
+messages = ["「最早」を「もはや」にする", "「若しくは」を「もしくは」にする", "「以て」を「もって」にする", "「以って」を「もって」にする", "「余程」を「よほど」にする", "「及び」を「および」にする"]
+
+[[cases]]
+name = "hk-to-kanji"
+text = "いっさい、かならず、おおいに、しいて、ときどき、なにしろ、なにも、なんらかの、なんとも"
+findings = ["1:1", "1:6", "1:11", "1:16", "1:20", "1:25", "1:30", "1:34", "1:40"]
+messages = ["「いっさい」を「一切」にする", "「かならず」を「必ず」にする", "「おおいに」を「大いに」にする", "「しいて」を「強いて」にする", "「ときどき」を「時々」にする", "「なにしろ」を「何しろ」にする", "「なにも」を「何も」にする", "「なんらかの」を「何らかの」にする", "「なんとも」を「何とも」にする"]
+
+[[cases]]
+name = "hk-kanji-variants"
+text = "個所、個条書き、附属する、磨耗、磨滅"
+findings = ["1:1", "1:4", "1:9", "1:14", "1:17"]
+messages = ["「個所」を「箇所」にする", "「個条書き」を「箇条書き」にする", "「附属する」を「付属する」にする", "「磨耗」を「摩耗」にする", "「磨滅」を「摩滅」にする"]
+
+[[cases]]
+name = "hk-two-patterns-same-expected"
+text = "子供とこども"
+findings = ["1:1", "1:4"]
+messages = ["「子供」を「子ども」にする", "「こども」を「子ども」にする"]
+
+[[cases]]
+name = "hk-capture-expected-go"
+text = "御覧ください。御意見をいただく"
+findings = ["1:1", "1:8"]
+messages = ["「御覧」を「ご覧」にする", "「御意見」を「ご意見」にする"]
+
+[[cases]]
+name = "hk-capture-expected-naka"
+text = "一日じゅうと世界じゅう"
+findings = ["1:2", "1:7"]
+messages = ["「日じゅう」を「日中」にする", "「世界じゅう」を「世界中」にする"]
+
+[[cases]]
+name = "hk-capture-expected-dasu"
+text = "動き出す、笑い出す、探しだす、見つけだす"
+findings = ["1:1", "1:6", "1:11", "1:16"]
+messages = ["「動き出す」を「動きだす」にする", "「笑い出す」を「笑いだす」にする", "「探しだす」を「探し出す」にする", "「見つけだす」を「見つけ出す」にする"]
+
+[[cases]]
+name = "hk-capture-expected-tsuku"
+text = "気がつく、利子がつく"
+findings = ["1:1", "1:6"]
+messages = ["「気がつく」を「気が付く」にする", "「利子がつく」を「利子が付く」にする"]
+
+[[cases]]
+name = "hk-capture-expected-tsuki"
+text = "手付きと目付きと腰付き"
+findings = ["1:1", "1:5", "1:9"]
+messages = ["「手付き」を「手つき」にする", "「目付き」を「目つき」にする", "「腰付き」を「腰つき」にする"]
+
+[[cases]]
+name = "hk-capture-expected-toori"
+text = "以下の通りです。思った通りに進む。2とおりの方法"
+findings = ["1:1", "1:9", "1:18"]
+messages = ["「以下の通り」を「以下のとおり」にする", "「思った通り」を「思ったとおり」にする", "「2とおり」を「2通り」にする"]
+
+[[cases]]
+name = "hk-must-empty-ni-shitagatte"
+text = "に従って進む。従ってこうなる"
+findings = ["1:8"]
+messages = ["「従って」を「したがって」にする"]
+
+[[cases]]
+name = "hk-sarani-after-separator"
+text = "加速すると更に加速した。\n更に続く。Aは加速した、更に加速した"
+findings = ["1:5", "1:13", "2:12"]
+messages = ["「と更に」を「とさらに」にする", "「\\n更に」を「\\nさらに」にする", "「、更に」を「、さらに」にする"]
+
+[[cases]]
+name = "hk-sarani-at-the-start"
+text = "更に加速した。"
+findings = ["1:1"]
+messages = ["「更に」を「さらに」にする"]
+
+[[cases]]
+name = "hk-sarani-is-not-matched-in-word"
+text = "変更に加えて"
+findings = []
+
+[[cases]]
+name = "hk-no-pattern-sarani-at-start-of-second-line"
+text = "加速した。\n更に加速した"
+findings = ["1:6"]
+messages = ["「\\n更に」を「\\nさらに」にする"]
+
+[[cases]]
+name = "hk-yo-ni"
+text = "犬の様にと一様に"
+findings = ["1:2"]
+messages = ["「の様に」を「のように」にする"]
+
+[[cases]]
+name = "hk-hiragana-verbs"
+text = "考えて欲しい。この本がほしい。影響がおよぶ。思いをいたす。活気付く。凍り付く"
+findings = ["1:3", "1:11", "1:18", "1:26", "1:30", "1:35"]
+messages = ["「て欲しい」を「てほしい」にする", "「がほしい」を「が欲しい」にする", "「がおよぶ」を「が及ぶ」にする", "「いたす」を「致す」にする", "「活気付く」を「活気づく」にする", "「凍り付く」を「凍りつく」にする"]
+
+[[cases]]
+name = "hk-spec-without-s"
+text = "探しだす。なんとも言えない。一日じゅう"
+findings = ["1:1", "1:6", "1:16"]
+messages = ["「探しだす」を「探し出す」にする", "「なんとも」を「何とも」にする", "「日じゅう」を「日中」にする"]
+
+[[cases]]
+name = "hk-no-match"
+text = "あらかじめください"
+findings = []
+
+[[cases]]
+name = "hk-expected-with-newline-in-match"
+text = "更に\n更に"
+findings = ["1:1", "1:3"]
+messages = ["「更に」を「さらに」にする", "「\\n更に」を「\\nさらに」にする"]
+
+[[cases]]
+name = "hk-prh-disable-is-not-supported"
+note = "`prh:disable` のプラグマを扱わない。textlintは同じ本文の範囲に書いた `prh:disable` で、その本文の範囲を外す"
+text = "予め prh:disable 予め"
+findings = ["1:1", "1:16"]
+messages = ["「予め」を「あらかじめ」にする", "「予め」を「あらかじめ」にする"]
+
+[[cases]]
+name = "hk-prh-disable-comment-is-not-supported"
+text = "<!-- prh:disable -->\n予め"
+findings = ["2:1"]
+messages = ["「予め」を「あらかじめ」にする"]
+
+[[cases]]
+name = "hk-shortcut-reference-link"
+note = "定義を持つ省略形の参照リンクの文字列は、本文でないので見ない。textlintは見て、指摘する"
+text = "[予め]\n\n[予め]: https://example.com"
+findings = []
+
+[[cases]]
+name = "hk-collapsed-reference-link"
+note = "定義を持つcollapsed形の参照リンクの文字列は、本文でないので見ない。textlintは見て、指摘する"
+text = "[予め][]\n\n[予め]: https://example.com"
+findings = []
+
+[[cases]]
+name = "hk-full-reference-link"
+text = "[予め][r]\n\n[r]: https://example.com"
+findings = ["1:2"]
+messages = ["「予め」を「あらかじめ」にする"]
+
+[[cases]]
+name = "hk-reference-without-definition"
+text = "[予め]"
+findings = ["1:2"]
+messages = ["「予め」を「あらかじめ」にする"]
+
+[[cases]]
+name = "hk-heading"
+text = "# 予め"
+findings = ["1:3"]
+messages = ["「予め」を「あらかじめ」にする"]
+
+[[cases]]
+name = "hk-quote"
+text = "> 予め"
+findings = []
+
+[[cases]]
+name = "hk-table"
+text = "| 列 |\n| - |\n| 予め |"
+findings = ["3:3"]
+messages = ["「予め」を「あらかじめ」にする"]
+
+[[cases]]
+name = "hk-list"
+text = "- 予め"
+findings = ["1:3"]
+messages = ["「予め」を「あらかじめ」にする"]
+
+[[cases]]
+name = "hk-link"
+text = "[予め](https://example.com)"
+findings = []
+
+[[cases]]
+name = "hk-strong"
+text = "**予め**"
+findings = ["1:3"]
+messages = ["「予め」を「あらかじめ」にする"]
+
+[[cases]]
+name = "hk-emphasis"
+text = "*予め*"
+findings = []
+
+[[cases]]
+name = "hk-strike"
+text = "~~予め~~"
+findings = ["1:3"]
+messages = ["「予め」を「あらかじめ」にする"]
+
+[[cases]]
+name = "hk-code"
+text = "`予め`"
+findings = []
+
+[[cases]]
+name = "hk-footnote"
+text = "[^1]: 予め"
+findings = ["1:7"]
+messages = ["「予め」を「あらかじめ」にする"]
+
+[[cases]]
+name = "hk-html"
+text = "<span>予め</span>"
+findings = ["1:7"]
+messages = ["「予め」を「あらかじめ」にする"]
+
+[[cases]]
+name = "hk-image-alt-is-not-checked"
+text = "![予め](a.png)"
+findings = []
+
+[[cases]]
+name = "hk-autolink-is-not-checked"
+text = "<https://example.com/予め>"
+findings = []

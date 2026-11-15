@@ -4,6 +4,7 @@ use std::sync::LazyLock;
 
 mod ai_writing;
 pub mod builtin;
+mod jtf_style;
 mod morph;
 mod paragraph;
 mod prh;
@@ -17,9 +18,10 @@ use crate::apply::{LineIndex, TargetLines};
 use crate::prose::{Context, Document, Prose};
 
 use self::builtin::Builtin;
+use self::jtf_style::JtfRule;
 
 /// 組み込みのルール。全角括弧と空白の3つ以外は、textlintのpreset (`preset-ja-technical-writing`・
-/// `@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`・`preset-ja-spacing`) の中の名前か、
+/// `@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`・`preset-ja-spacing`・`preset-jtf-style`) の中の名前か、
 /// textlintの設定に書くルールの名前と同じIDである。宣言の順は `ALL` と同じで、組み込みの修正ルールの箇所の
 /// 範囲が同じときに、前にあるルールの箇所を残すのに使う
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -72,11 +74,13 @@ pub enum RuleId {
     JaSpaceAroundStrong,
     NoMixedZenkakuAndHankakuAlphabet,
     NoKangxiRadicals,
+    /// `preset-jtf-style` の37ルール
+    JtfStyle(JtfRule),
 }
 
 impl RuleId {
     /// 組み込みのルールのすべて。設定の `[builtin]` のキーをルールのIDとして読むのに使う
-    pub const ALL: [RuleId; 48] = [
+    pub const ALL: [RuleId; 85] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
         RuleId::SpaceBetweenJaAndParen,
@@ -125,6 +129,43 @@ impl RuleId {
         RuleId::JaSpaceAroundStrong,
         RuleId::NoMixedZenkakuAndHankakuAlphabet,
         RuleId::NoKangxiRadicals,
+        RuleId::JtfStyle(JtfRule::R1_1_1),
+        RuleId::JtfStyle(JtfRule::R1_1_2),
+        RuleId::JtfStyle(JtfRule::R1_1_3),
+        RuleId::JtfStyle(JtfRule::R1_1_5),
+        RuleId::JtfStyle(JtfRule::R1_2_1),
+        RuleId::JtfStyle(JtfRule::R1_2_2),
+        RuleId::JtfStyle(JtfRule::R2_1_2),
+        RuleId::JtfStyle(JtfRule::R2_1_5),
+        RuleId::JtfStyle(JtfRule::R2_1_6),
+        RuleId::JtfStyle(JtfRule::R2_1_8),
+        RuleId::JtfStyle(JtfRule::R2_1_9),
+        RuleId::JtfStyle(JtfRule::R2_1_10),
+        RuleId::JtfStyle(JtfRule::R2_2_1),
+        RuleId::JtfStyle(JtfRule::R2_2_2),
+        RuleId::JtfStyle(JtfRule::R2_2_3),
+        RuleId::JtfStyle(JtfRule::R3_1_1),
+        RuleId::JtfStyle(JtfRule::R3_1_2),
+        RuleId::JtfStyle(JtfRule::R3_2),
+        RuleId::JtfStyle(JtfRule::R3_3),
+        RuleId::JtfStyle(JtfRule::R4_1_1),
+        RuleId::JtfStyle(JtfRule::R4_1_3),
+        RuleId::JtfStyle(JtfRule::R4_2_1),
+        RuleId::JtfStyle(JtfRule::R4_2_2),
+        RuleId::JtfStyle(JtfRule::R4_2_4),
+        RuleId::JtfStyle(JtfRule::R4_2_5),
+        RuleId::JtfStyle(JtfRule::R4_2_6),
+        RuleId::JtfStyle(JtfRule::R4_2_7),
+        RuleId::JtfStyle(JtfRule::R4_2_8),
+        RuleId::JtfStyle(JtfRule::R4_2_9),
+        RuleId::JtfStyle(JtfRule::R4_3_1),
+        RuleId::JtfStyle(JtfRule::R4_3_2),
+        RuleId::JtfStyle(JtfRule::R4_3_3),
+        RuleId::JtfStyle(JtfRule::R4_3_4),
+        RuleId::JtfStyle(JtfRule::R4_3_5),
+        RuleId::JtfStyle(JtfRule::R4_3_6),
+        RuleId::JtfStyle(JtfRule::R4_3_7),
+        RuleId::JtfStyle(JtfRule::R4_3_8),
     ];
 
     /// `check` の出力の `[<rule-id>]` に使う名前
@@ -180,6 +221,7 @@ impl RuleId {
             RuleId::JaSpaceAroundStrong => "ja-space-around-strong",
             RuleId::NoMixedZenkakuAndHankakuAlphabet => "no-mixed-zenkaku-and-hankaku-alphabet",
             RuleId::NoKangxiRadicals => "no-kangxi-radicals",
+            RuleId::JtfStyle(rule) => rule.name(),
         }
     }
 }

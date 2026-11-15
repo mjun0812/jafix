@@ -1,0 +1,624 @@
+# 3.3.かっこ類と隣接する文字の間のスペースの有無 の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "3.3.かっこ類と隣接する文字の間のスペースの有無"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = true
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+
+[[cases]]
+name = "pa-halfwidth-outside-space-is-allowed"
+text = "日本語 (補足) です"
+findings = []
+fixed = "日本語 (補足) です"
+
+[[cases]]
+name = "pa-halfwidth-without-space"
+text = "日本語(補足)です"
+findings = []
+fixed = "日本語(補足)です"
+
+[[cases]]
+name = "pa-fullwidth-outside-space"
+text = "日本語 （補足） です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語（補足）です"
+
+[[cases]]
+name = "pa-fullwidth-without-space"
+text = "日本語（補足）です"
+findings = []
+fixed = "日本語（補足）です"
+
+[[cases]]
+name = "pa-halfwidth-inside-space"
+text = "日本語( 補足 )です"
+findings = ["1:5", "1:8"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語(補足)です"
+
+[[cases]]
+name = "pa-halfwidth-outside-and-inside-space"
+text = "日本語 ( 補足 ) です"
+findings = ["1:6", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語 (補足) です"
+
+[[cases]]
+name = "pa-quotes"
+text = "「 引用 」と『 題 』"
+findings = ["1:2", "1:5", "1:9", "1:11"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "「引用」と『題』"
+
+[[cases]]
+name = "pa-quotes-outside-space"
+text = "日本語 「引用」 です と 『題』 です"
+findings = ["1:4", "1:9", "1:14", "1:18"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語「引用」です と『題』です"
+
+[[cases]]
+name = "pa-square-brackets"
+text = "日本語 [補足] です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語[補足]です"
+
+[[cases]]
+name = "pa-fullwidth-square-brackets"
+text = "日本語 ［補足］ です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語［補足］です"
+
+[[cases]]
+name = "pa-each-bracket"
+text = "「 a 」\n『 a 』\n（ a ）\n［ a ］\n[ a ]\n( a )"
+findings = ["1:2", "1:4", "2:2", "2:4", "3:2", "3:4", "4:2", "4:4", "5:2", "5:4", "6:2", "6:4"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "「a」\n『a』\n（a）\n［a］\n[a]\n(a)"
+
+[[cases]]
+name = "pa-fullwidth-space-outside-halfwidth"
+text = "日本語\u3000(補足)\u3000です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語(補足)です"
+
+[[cases]]
+name = "pa-fullwidth-space-outside-quote"
+text = "日本語\u3000「引用」\u3000です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語「引用」です"
+
+[[cases]]
+name = "pa-fullwidth-then-halfwidth-before-halfwidth-paren"
+text = "日本語\u3000 (補足) です"
+findings = []
+fixed = "日本語\u3000 (補足) です"
+
+[[cases]]
+name = "pa-halfwidth-then-fullwidth-before-halfwidth-paren"
+note = "括弧に隣り合って続く空白の並びを1件にして消す。並びの括弧に接する文字が全角空白なので、半角空白も含めて消す。textlintは括弧に接する全角空白の1文字だけを消し、半角空白が残る"
+text = "日本語 \u3000(補足)"
+findings = ["1:4"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "日本語(補足)"
+
+[[cases]]
+name = "pa-start-of-text"
+text = "( 補足 ) です"
+findings = ["1:2", "1:5"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "(補足) です"
+
+[[cases]]
+name = "pa-adjacent-brackets"
+text = "「」 （）"
+findings = ["1:3"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "「」（）"
+
+[[cases]]
+name = "pa-nested"
+text = "（「 引用 」）"
+findings = ["1:3", "1:6"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "（「引用」）"
+
+[[cases]]
+name = "pa-shared-space-between-brackets"
+text = "「a」 「b」"
+findings = ["1:4"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "「a」「b」"
+
+[[cases]]
+name = "pa-closing-then-opening"
+text = "（a） 「b」 『c』 ［d］"
+findings = ["1:4", "1:8", "1:12"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "（a）「b」『c』［d］"
+
+[[cases]]
+name = "pa-two-lines"
+text = "日本語 （補足）\n日本語 「引用」"
+findings = ["1:4", "2:4"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語（補足）\n日本語「引用」"
+
+[[cases]]
+name = "pa-non-japanese-neighbours"
+text = "see [1] here x （ y ） z"
+findings = ["1:4", "1:8", "1:15", "1:17", "1:19", "1:21"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "see[1]here x（y）z"
+
+[[cases]]
+name = "pa-two-spaces-each-side"
+note = "括弧に隣り合って続く空白の並びを1件にして消す。位置は並びの先頭で、消した後に空白は残らない。textlintは括弧に接する1文字だけを指摘し、位置は括弧に接する側で、`--fix` の後も1文字が残る"
+text = "日本語  「x」  です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語「x」です"
+
+[[cases]]
+name = "pa-two-spaces-between-brackets"
+note = "2つの括弧に挟まれた空白の並びは1件にして消す。textlintは `」` に接する空白と `「` に接する空白を別の指摘にし、`--fix` の後に空白が残る"
+text = "「a」  「b」"
+findings = ["1:4"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "「a」「b」"
+
+[[cases]]
+name = "pa-two-spaces-inside"
+note = "括弧の内側に続く空白の並びも1件にして消す。textlintは括弧に接する1文字だけを指摘する"
+text = "「  引用  」"
+findings = ["1:2", "1:6"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "「引用」"
+
+[[cases]]
+name = "pa-mixed-spaces-before-quote"
+note = "全角空白と半角空白が混ざった並びも1件にして消す。textlintは括弧に接する半角空白の1文字だけを指摘する"
+text = "日本語 \u3000 「x」"
+findings = ["1:4"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "日本語「x」"
+
+[[cases]]
+name = "pa-list-continuation-indent"
+note = "行頭から続く空白の並び(リストの継続行の字下げ)は消さない。textlintは字下げの1文字も指摘して消す"
+text = "- 項目\n  「続き」"
+findings = []
+fixed = "- 項目\n  「続き」"
+
+[[cases]]
+name = "pa-list-continuation-indent-and-inside-space"
+note = "字下げは消さず、括弧の内側の空白の並びは消す。textlintは字下げの1文字も指摘して消す"
+text = "- 項目\n  「 続き 」"
+findings = ["2:4", "2:7"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "- 項目\n  「続き」"
+
+[[cases]]
+name = "pa-paragraph-continuation-indent"
+note = "段落の継続行の字下げは消さない。括弧の外側の空白は消す。textlintは字下げの1文字も指摘して消す"
+text = "日本語\n  「続き」 です"
+findings = ["2:7"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "日本語\n  「続き」です"
+
+[[cases]]
+name = "pa-continuation-tab-indent"
+text = "日本語\n\t「続き」"
+findings = []
+fixed = "日本語\n\t「続き」"
+
+[[cases]]
+name = "pa-continuation-text-before-space"
+text = "日本語\n  x 「続き」"
+findings = ["2:4"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "日本語\n  x「続き」"
+
+[[cases]]
+name = "pa-fullwidth-space-indent"
+note = "行頭から続く並びは、全角空白を含んでいても消さない。textlintは括弧に接する全角空白の1文字を指摘して消す"
+text = "- 項目\n  \u3000「続き」"
+findings = []
+fixed = "- 項目\n  \u3000「続き」"
+
+[[cases]]
+name = "pa-allow-default-explicit-halfwidth-outside"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { allowOutsideHalfParentheses = true, requireOutsideHalfParentheses = false }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語 (補足) です"
+findings = []
+fixed = "日本語 (補足) です"
+
+[[cases]]
+name = "pa-allow-default-explicit-fullwidth-outside"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { allowOutsideHalfParentheses = true, requireOutsideHalfParentheses = false }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語 （補足） です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語（補足）です"
+
+[[cases]]
+name = "pa-allow-false-halfwidth-outside"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { allowOutsideHalfParentheses = false }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語 (補足) です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語(補足)です"
+
+[[cases]]
+name = "pa-allow-false-fullwidth-outside"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { allowOutsideHalfParentheses = false }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語 （補足） です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語（補足）です"
+
+[[cases]]
+name = "pa-allow-false-halfwidth-without-space"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { allowOutsideHalfParentheses = false }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語(補足)です"
+findings = []
+fixed = "日本語(補足)です"
+
+[[cases]]
+name = "pa-allow-false-halfwidth-inside"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { allowOutsideHalfParentheses = false }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語 ( 補足 ) です"
+findings = ["1:4", "1:6", "1:9", "1:11"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語(補足)です"
+
+[[cases]]
+name = "pa-allow-false-english"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { allowOutsideHalfParentheses = false }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "Use the API (see docs) here."
+findings = ["1:12", "1:23"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "Use the API(see docs)here."
+
+[[cases]]
+name = "pa-allow-false-require-false-explicit"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { allowOutsideHalfParentheses = false, requireOutsideHalfParentheses = false }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語 (補足) です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語(補足)です"
+
+[[cases]]
+name = "pa-allow-false-two-spaces"
+note = "括弧に隣り合って続く空白の並びを1件にして消す。textlintは括弧に接する1文字だけを指摘する"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { allowOutsideHalfParentheses = false }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語  (補足)  です"
+findings = ["1:4", "1:10"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語(補足)です"
+
+[[cases]]
+name = "pa-allow-true-two-spaces"
+text = "日本語  (補足)  です"
+findings = []
+fixed = "日本語  (補足)  です"
+
+[[cases]]
+name = "pa-require-without-space"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { requireOutsideHalfParentheses = true }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語(補足)です"
+findings = ["1:4", "1:7"]
+messages = ["半角の括弧の外側に半角空白を入れる", "半角の括弧の外側に半角空白を入れる"]
+fixed = "日本語(補足)です"
+
+[[cases]]
+name = "pa-require-opening-only"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { requireOutsideHalfParentheses = true }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語(補足"
+findings = ["1:4"]
+messages = ["半角の括弧の外側に半角空白を入れる"]
+fixed = "日本語(補足"
+
+[[cases]]
+name = "pa-require-closing-only"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { requireOutsideHalfParentheses = true }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "補足)です"
+findings = ["1:3"]
+messages = ["半角の括弧の外側に半角空白を入れる"]
+fixed = "補足)です"
+
+[[cases]]
+name = "pa-require-with-space"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { requireOutsideHalfParentheses = true }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語 (補足) です"
+findings = []
+fixed = "日本語 (補足) です"
+
+[[cases]]
+name = "pa-require-two-spaces"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { requireOutsideHalfParentheses = true }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語  (補足)  です"
+findings = []
+fixed = "日本語  (補足)  です"
+
+[[cases]]
+name = "pa-require-english-neighbours"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { requireOutsideHalfParentheses = true }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "abc(def)ghi"
+findings = []
+fixed = "abc(def)ghi"
+
+[[cases]]
+name = "pa-require-fullwidth-is-not-required"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { requireOutsideHalfParentheses = true }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語（補足）です"
+findings = []
+fixed = "日本語（補足）です"
+
+[[cases]]
+name = "pa-require-square-brackets-are-not-required"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { requireOutsideHalfParentheses = true }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語[補足]です"
+findings = []
+fixed = "日本語[補足]です"
+
+[[cases]]
+name = "pa-require-fullwidth-outside-space-is-deleted"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { requireOutsideHalfParentheses = true }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語 （補足） です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語（補足）です"
+
+[[cases]]
+name = "pa-require-halfwidth-inside-space-is-deleted"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { requireOutsideHalfParentheses = true }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語 ( 補足 ) です"
+findings = ["1:6", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語 (補足) です"
+
+[[cases]]
+name = "pa-require-allow-true-explicit"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { allowOutsideHalfParentheses = true, requireOutsideHalfParentheses = true }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語(補足)です"
+findings = ["1:4", "1:7"]
+messages = ["半角の括弧の外側に半角空白を入れる", "半角の括弧の外側に半角空白を入れる"]
+fixed = "日本語(補足)です"
+
+[[cases]]
+name = "pa-require-fullwidth-space-outside"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { requireOutsideHalfParentheses = true }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語\u3000(補足)\u3000です"
+findings = ["1:4", "1:9"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語(補足)です"
+
+[[cases]]
+name = "pa-require-two-lines"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = { requireOutsideHalfParentheses = true }
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語(補足)\nです(補足)"
+findings = ["1:4", "2:3"]
+messages = ["半角の括弧の外側に半角空白を入れる", "半角の括弧の外側に半角空白を入れる"]
+fixed = "日本語(補足)\nです(補足)"
+
+[[cases]]
+name = "pa-overlaps-space-between-ja-and-paren"
+note = "`space-between-ja-and-paren` が有効なら、同じ範囲の箇所はルールの一覧で前にある `space-between-ja-and-paren` の箇所が残り、`3.3` の箇所は出ない。結果は同じである"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = true
+fullwidth-paren = false
+'''
+text = "日本語 （補足） です"
+findings = []
+fixed = "日本語（補足）です"
+
+[[cases]]
+name = "pa-overlaps-space-between-ja-and-paren-halfwidth"
+note = "`space-between-ja-and-paren` が有効なら、半角括弧の外側の半角空白も `space-between-ja-and-paren` が消す。`3.3` は既定でこの空白を許すので、どちらの箇所も出ない"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = true
+fullwidth-paren = false
+'''
+text = "日本語 (補足) です"
+findings = []
+fixed = "日本語(補足)です"
+
+[[cases]]
+name = "pa-overlaps-space-between-ja-and-paren-partly"
+note = "`space-between-ja-and-paren` は、日本語と括弧の間の空白だけを消す。`）` と `「` の間と `」` と `で` の間の空白は、`3.3` の箇所が残る"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = true
+fullwidth-paren = false
+'''
+text = "日本語 （補足） 「引用」 です"
+findings = ["1:9", "1:14"]
+messages = ["括弧の外側と内側の空白を削除する", "括弧の外側と内側の空白を削除する"]
+fixed = "日本語（補足）「引用」です"
+
+[[cases]]
+name = "pa-overlaps-ja-no-space-around-parentheses"
+note = "`ja-no-space-around-parentheses` が有効なら、同じ範囲の箇所はルールの一覧で前にある `ja-no-space-around-parentheses` の箇所が残り、`3.3` の箇所は出ない。結果は同じである"
+builtin = '''
+"3.3.かっこ類と隣接する文字の間のスペースの有無" = true
+ja-no-space-around-parentheses = true
+fullwidth-paren = false
+space-between-ja-and-paren = false
+'''
+text = "日本語 「引用」 です"
+findings = []
+fixed = "日本語「引用」です"
+
+[[cases]]
+name = "pa-heading"
+text = "# 日本語 （補足）"
+findings = []
+fixed = "# 日本語 （補足）"
+
+[[cases]]
+name = "pa-quote"
+text = "> 日本語 （補足）"
+findings = []
+fixed = "> 日本語 （補足）"
+
+[[cases]]
+name = "pa-table"
+text = "| 列 |\n| - |\n| 日本語 （補足） |"
+findings = []
+fixed = "| 列 |\n| - |\n| 日本語 （補足） |"
+
+[[cases]]
+name = "pa-list"
+text = "- 日本語 （補足）"
+findings = ["1:6"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "- 日本語（補足）"
+
+[[cases]]
+name = "pa-link"
+text = "[日本語 （補足）](https://example.com)"
+findings = []
+fixed = "[日本語 （補足）](https://example.com)"
+
+[[cases]]
+name = "pa-strong"
+text = "**日本語 （補足）**"
+findings = []
+fixed = "**日本語 （補足）**"
+
+[[cases]]
+name = "pa-emphasis"
+text = "*日本語 （補足）*"
+findings = []
+fixed = "*日本語 （補足）*"
+
+[[cases]]
+name = "pa-strike"
+text = "~~日本語 （補足）~~"
+findings = []
+fixed = "~~日本語 （補足）~~"
+
+[[cases]]
+name = "pa-code"
+text = "`日本語 （補足）`"
+findings = []
+fixed = "`日本語 （補足）`"
+
+[[cases]]
+name = "pa-footnote"
+text = "[^1]: 日本語 （補足）"
+findings = ["1:10"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "[^1]: 日本語（補足）"
+
+[[cases]]
+name = "pa-html"
+text = "<span>日本語 （補足）</span>"
+findings = ["1:10"]
+messages = ["括弧の外側と内側の空白を削除する"]
+fixed = "<span>日本語（補足）</span>"

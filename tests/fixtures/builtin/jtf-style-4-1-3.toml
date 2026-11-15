@@ -1,0 +1,174 @@
+# 4.1.3.ピリオド(.)、カンマ(,) の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "4.1.3.ピリオド(.)、カンマ(,)"
+builtin = '''
+"4.1.3.ピリオド(.)、カンマ(,)" = true
+'''
+
+[[cases]]
+name = "pd-basic"
+text = "日本語. 次"
+findings = ["1:4"]
+messages = ["和文の句点に「.」を使わず「。」にする"]
+
+[[cases]]
+name = "pd-end"
+text = "日本語."
+findings = ["1:4"]
+messages = ["和文の句点に「.」を使わず「。」にする"]
+
+[[cases]]
+name = "pd-hiragana-katakana"
+text = "ひらがな.とカタカナ."
+findings = ["1:5", "1:11"]
+messages = ["和文の句点に「.」を使わず「。」にする", "和文の句点に「.」を使わず「。」にする"]
+
+[[cases]]
+name = "pd-comma-is-not-checked"
+text = "日本語,です"
+findings = []
+
+[[cases]]
+name = "pd-english-before"
+text = "English. 日本語"
+findings = []
+
+[[cases]]
+name = "pd-digit-before"
+text = "3.14 と v1.2.3"
+findings = []
+
+[[cases]]
+name = "pd-file-name"
+text = "日本語.md を読む"
+findings = ["1:4"]
+messages = ["和文の句点に「.」を使わず「。」にする"]
+
+[[cases]]
+name = "pd-japanese-after-period"
+text = "a.日本語"
+findings = []
+
+[[cases]]
+name = "pd-long-vowel-is-not-japanese"
+text = "サーバー."
+findings = []
+
+[[cases]]
+name = "pd-repetition-mark-is-not-japanese"
+text = "人々.と〇.と〻."
+findings = []
+
+[[cases]]
+name = "pd-katakana-small"
+text = "ヶ.と ヴ."
+findings = ["1:2", "1:6"]
+messages = ["和文の句点に「.」を使わず「。」にする", "和文の句点に「.」を使わず「。」にする"]
+
+[[cases]]
+name = "pd-surrogate-pair-kanji"
+text = "\U00020bb7."
+findings = ["1:2"]
+messages = ["和文の句点に「.」を使わず「。」にする"]
+
+[[cases]]
+name = "pd-extension-a-kanji"
+text = "㐀."
+findings = ["1:2"]
+messages = ["和文の句点に「.」を使わず「。」にする"]
+
+[[cases]]
+name = "pd-compatibility-kanji"
+text = "豈."
+findings = ["1:2"]
+messages = ["和文の句点に「.」を使わず「。」にする"]
+
+[[cases]]
+name = "pd-two-lines"
+text = "日本語.\n日本語."
+findings = ["1:4", "2:4"]
+messages = ["和文の句点に「.」を使わず「。」にする", "和文の句点に「.」を使わず「。」にする"]
+
+[[cases]]
+name = "pd-before-inline-code"
+text = "日本語.`x`"
+findings = ["1:4"]
+messages = ["和文の句点に「.」を使わず「。」にする"]
+
+[[cases]]
+name = "pd-after-inline-code"
+text = "`x`.日本語"
+findings = []
+
+[[cases]]
+name = "pd-fullwidth-period-is-not-checked"
+text = "日本語．"
+findings = []
+
+[[cases]]
+name = "pd-heading"
+text = "# 日本語."
+findings = []
+
+[[cases]]
+name = "pd-quote"
+text = "> 日本語."
+findings = []
+
+[[cases]]
+name = "pd-table"
+text = "| 列 |\n| - |\n| 日本語. |"
+findings = []
+
+[[cases]]
+name = "pd-list"
+text = "- 日本語."
+findings = ["1:6"]
+messages = ["和文の句点に「.」を使わず「。」にする"]
+
+[[cases]]
+name = "pd-link"
+text = "[日本語.](https://example.com)"
+findings = []
+
+[[cases]]
+name = "pd-strong"
+text = "**日本語.**"
+findings = []
+
+[[cases]]
+name = "pd-emphasis"
+text = "*日本語.*"
+findings = []
+
+[[cases]]
+name = "pd-strike"
+text = "~~日本語.~~"
+findings = []
+
+[[cases]]
+name = "pd-code"
+text = "`日本語.`"
+findings = []
+
+[[cases]]
+name = "pd-footnote"
+text = "[^1]: 日本語."
+findings = ["1:10"]
+messages = ["和文の句点に「.」を使わず「。」にする"]
+
+[[cases]]
+name = "pd-html"
+text = "<span>日本語.</span>"
+findings = ["1:10"]
+messages = ["和文の句点に「.」を使わず「。」にする"]

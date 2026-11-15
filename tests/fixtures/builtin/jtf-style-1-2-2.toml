@@ -1,0 +1,129 @@
+# 1.2.2.ピリオド(.)とカンマ(,) の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "1.2.2.ピリオド(.)とカンマ(,)"
+builtin = '''
+"1.2.2.ピリオド(.)とカンマ(,)" = true
+'''
+
+[[cases]]
+name = "fw-comma"
+text = "これは，テストです"
+findings = ["1:4"]
+messages = ["全角の「，」を使わず半角の「,」にする"]
+
+[[cases]]
+name = "fw-period"
+text = "これはテストです．"
+findings = ["1:9"]
+messages = ["全角の「．」を使わず半角の「.」にする"]
+
+[[cases]]
+name = "fw-all-matches"
+note = "本文の範囲のすべての `，` `．` を指摘する。textlintは本文の範囲ごとに最初の1件だけを指摘する"
+text = "これは，テスト，です．"
+findings = ["1:4", "1:8", "1:11"]
+messages = ["全角の「，」を使わず半角の「,」にする", "全角の「，」を使わず半角の「,」にする", "全角の「．」を使わず半角の「.」にする"]
+
+[[cases]]
+name = "fw-digits"
+note = "本文の範囲のすべての `，` `．` を指摘する。textlintは最初の `．` だけを指摘する"
+text = "3．14と1，000と．"
+findings = ["1:2", "1:7", "1:12"]
+messages = ["全角の「．」を使わず半角の「.」にする", "全角の「，」を使わず半角の「,」にする", "全角の「．」を使わず半角の「.」にする"]
+
+[[cases]]
+name = "fw-first-in-each-paragraph"
+text = "一つ目，です\n\n二つ目．です"
+findings = ["1:4", "3:4"]
+messages = ["全角の「，」を使わず半角の「,」にする", "全角の「．」を使わず半角の「.」にする"]
+
+[[cases]]
+name = "fw-all-matches-on-lines"
+note = "本文の範囲のすべての `，` `．` を指摘する。textlintは最初の1件だけを指摘する"
+text = "これは，テスト\nです，ね．"
+findings = ["1:4", "2:3", "2:5"]
+messages = ["全角の「，」を使わず半角の「,」にする", "全角の「，」を使わず半角の「,」にする", "全角の「．」を使わず半角の「.」にする"]
+
+[[cases]]
+name = "fw-halfwidth-is-not-checked"
+text = "これは,テスト.です"
+findings = []
+
+[[cases]]
+name = "fw-japanese-punctuation-is-not-checked"
+text = "これは、テスト。です"
+findings = []
+
+[[cases]]
+name = "fw-after-inline-code"
+text = "`x`，です．"
+findings = ["1:4"]
+messages = ["全角の「，」を使わず半角の「,」にする"]
+
+[[cases]]
+name = "fw-heading"
+text = "# これは，テスト"
+findings = []
+
+[[cases]]
+name = "fw-quote"
+text = "> これは，テスト"
+findings = []
+
+[[cases]]
+name = "fw-table"
+text = "| 列 |\n| - |\n| これは，テスト |"
+findings = []
+
+[[cases]]
+name = "fw-list"
+text = "- これは，テスト"
+findings = ["1:6"]
+messages = ["全角の「，」を使わず半角の「,」にする"]
+
+[[cases]]
+name = "fw-link"
+text = "[これは，テスト](https://example.com)"
+findings = []
+
+[[cases]]
+name = "fw-strong"
+text = "**これは，テスト**"
+findings = []
+
+[[cases]]
+name = "fw-emphasis"
+text = "*これは，テスト*"
+findings = []
+
+[[cases]]
+name = "fw-strike"
+text = "~~これは，テスト~~"
+findings = []
+
+[[cases]]
+name = "fw-code"
+text = "`これは，テスト`"
+findings = []
+
+[[cases]]
+name = "fw-footnote"
+text = "[^1]: これは，テスト"
+findings = ["1:10"]
+messages = ["全角の「，」を使わず半角の「,」にする"]
+
+[[cases]]
+name = "fw-html"
+text = "<span>これは，テスト</span>"
+findings = ["1:10"]
+messages = ["全角の「，」を使わず半角の「,」にする"]

@@ -1,0 +1,173 @@
+# 3.2.カタカナ語間のスペースの有無 の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "3.2.カタカナ語間のスペースの有無"
+builtin = '''
+"3.2.カタカナ語間のスペースの有無" = true
+'''
+
+[[cases]]
+name = "kc-basic"
+text = "カタカナ\u3000カタカナ"
+findings = ["1:5"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "kc-halfwidth-space"
+text = "カタカナ カタカナ"
+findings = []
+
+[[cases]]
+name = "kc-nakaguro"
+text = "カタカナ・カタカナ"
+findings = []
+
+[[cases]]
+name = "kc-long-vowel"
+text = "サーバー\u3000クライアント"
+findings = ["1:5"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "kc-long-vowel-first"
+text = "ー\u3000ア"
+findings = ["1:2"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "kc-small-and-voiced"
+text = "ヶ\u3000ヴ と ァ\u3000ッ"
+findings = ["1:2", "1:8"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る", "カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "kc-kanji-neighbour"
+text = "カタカナ\u3000漢字と漢字\u3000カタカナ"
+findings = []
+
+[[cases]]
+name = "kc-hiragana-neighbour"
+text = "カタカナ\u3000ひらがな"
+findings = []
+
+[[cases]]
+name = "kc-two-fullwidth-spaces"
+text = "カタカナ\u3000\u3000カタカナ"
+findings = []
+
+[[cases]]
+name = "kc-fullwidth-space-then-halfwidth-space"
+text = "カタカナ\u3000 カタカナ"
+findings = []
+
+[[cases]]
+name = "kc-english-neighbour"
+text = "カタカナ\u3000Rust"
+findings = []
+
+[[cases]]
+name = "kc-halfwidth-katakana-neighbour"
+text = "\uff71\u3000\uff72"
+findings = []
+
+[[cases]]
+name = "kc-tab"
+text = "カタカナ\tカタカナ"
+findings = []
+
+[[cases]]
+name = "kc-newline"
+text = "カタカナ\nカタカナ"
+findings = []
+
+[[cases]]
+name = "kc-two-lines"
+text = "カタカナ\u3000カタカナ\nカタカナ\u3000カタカナ"
+findings = ["1:5", "2:5"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る", "カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "kc-every-space-of-a-run"
+note = "前後の文字で判定するので、すべての全角空白を指摘する。textlintは一致を重ねずに探すので、`ア\u3000イ\u3000ウ` の2つ目の全角空白を見落とす"
+text = "ア\u3000イ\u3000ウ"
+findings = ["1:2", "1:4"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る", "カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "kc-three-spaces-in-a-line"
+text = "カタカナ\u3000カタカナ\u3000カタカナ\u3000カタカナ"
+findings = ["1:5", "1:10", "1:15"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る", "カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る", "カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "kc-surrogate-pair-before"
+text = "\U00020bb7野家とカタカナ\u3000カタカナ"
+findings = ["1:9"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "kc-heading"
+text = "# カタカナ\u3000カタカナ"
+findings = []
+
+[[cases]]
+name = "kc-quote"
+text = "> カタカナ\u3000カタカナ"
+findings = []
+
+[[cases]]
+name = "kc-table"
+text = "| 列 |\n| - |\n| カタカナ\u3000カタカナ |"
+findings = []
+
+[[cases]]
+name = "kc-list"
+text = "- カタカナ\u3000カタカナ"
+findings = ["1:7"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "kc-link"
+text = "[カタカナ\u3000カタカナ](https://example.com)"
+findings = []
+
+[[cases]]
+name = "kc-strong"
+text = "**カタカナ\u3000カタカナ**"
+findings = []
+
+[[cases]]
+name = "kc-emphasis"
+text = "*カタカナ\u3000カタカナ*"
+findings = []
+
+[[cases]]
+name = "kc-strike"
+text = "~~カタカナ\u3000カタカナ~~"
+findings = []
+
+[[cases]]
+name = "kc-code"
+text = "`カタカナ\u3000カタカナ`"
+findings = []
+
+[[cases]]
+name = "kc-footnote"
+text = "[^1]: カタカナ\u3000カタカナ"
+findings = ["1:11"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]
+
+[[cases]]
+name = "kc-html"
+text = "<span>カタカナ\u3000カタカナ</span>"
+findings = ["1:11"]
+messages = ["カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る"]

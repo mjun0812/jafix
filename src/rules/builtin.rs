@@ -7,6 +7,7 @@ use toml::{Table, Value};
 
 use super::RuleId;
 use super::fix_rules_hitting;
+use super::jtf_style::JtfRule;
 use super::morph::pattern::{Expect, Field, OwnedFields};
 use super::prh::Checks;
 use super::prh::dictionary::{Dictionary, Source};
@@ -15,7 +16,7 @@ use super::prh::dictionary::{Dictionary, Source};
 /// 既定では、`preset-ja-technical-writing` の23ルールと修正ルールの3つが有効で、オプションはtextlintの
 /// `preset-ja-technical-writing` と同じである。`@textlint-ja/preset-ai-writing` と `preset-ai-words-ja` の
 /// 7ルール、利用者の置き換えの2ルール (`prh`・`@textlint-rule/pattern`)、`preset-ja-spacing` の11ルール、
-/// `no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals` は無効である
+/// `no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals`、`preset-jtf-style` の37ルールは無効である
 #[derive(Debug)]
 pub struct Builtin {
     pub fullwidth_paren: bool,
@@ -66,6 +67,7 @@ pub struct Builtin {
     pub ja_space_around_strong: Option<JaSpaceAround>,
     pub no_mixed_zenkaku_and_hankaku_alphabet: Option<NoMixedZenkakuAndHankakuAlphabet>,
     pub no_kangxi_radicals: bool,
+    pub jtf_style: JtfStyle,
 }
 
 impl Default for Builtin {
@@ -119,6 +121,7 @@ impl Default for Builtin {
             ja_space_around_strong: None,
             no_mixed_zenkaku_and_hankaku_alphabet: None,
             no_kangxi_radicals: false,
+            jtf_style: JtfStyle::default(),
         }
     }
 }
@@ -362,6 +365,7 @@ impl Builtin {
                     .transpose()?;
             }
             RuleId::NoKangxiRadicals => self.no_kangxi_radicals = enabled(options)?,
+            RuleId::JtfStyle(rule) => self.jtf_style.set(rule, options)?,
         }
         Ok(())
     }
@@ -381,14 +385,70 @@ struct OppositeRules {
     fixes: &'static str,
 }
 
-/// 組み込みのルールどうしの逆の書き方の組
-const OPPOSITE_RULES: [OppositeRules; 1] = [OppositeRules {
-    rule: RuleId::JaSpaceBetweenHalfAndFullWidth,
-    demand: half_and_full_width_demands_space,
-    fix_rule: RuleId::SpaceBetweenJaAndAlnum,
-    fix_rule_enabled: |builtin| builtin.space_between_ja_and_alnum,
-    fixes: "その空白を削除する",
-}];
+/// 組み込みのルールどうしの逆の書き方の組。判定はこの順に行い、最初に当たった組の理由を出す
+const OPPOSITE_RULES: [OppositeRules; 5] = [
+    OppositeRules {
+        rule: RuleId::JaSpaceBetweenHalfAndFullWidth,
+        demand: half_and_full_width_demands_space,
+        fix_rule: RuleId::SpaceBetweenJaAndAlnum,
+        fix_rule_enabled: |builtin| builtin.space_between_ja_and_alnum,
+        fixes: "その空白を削除する",
+    },
+    OppositeRules {
+        rule: RuleId::JtfStyle(JtfRule::R4_3_1),
+        demand: |builtin| {
+            builtin
+                .jtf_style
+                .enabled(JtfRule::R4_3_1)
+                .then(|| "日本語の隣の丸括弧を全角にすることを求め".to_owned())
+        },
+        fix_rule: RuleId::FullwidthParen,
+        fix_rule_enabled: |builtin| builtin.fullwidth_paren,
+        fixes: "全角の丸括弧を半角にする",
+    },
+    OppositeRules {
+        rule: RuleId::JtfStyle(JtfRule::R3_3),
+        demand: |builtin| {
+            (builtin.jtf_style.enabled(JtfRule::R3_3)
+                && builtin.jtf_style.parentheses.require_outside_half_parentheses)
+                .then(|| {
+                    "`requireOutsideHalfParentheses = true` は日本語と半角の括弧の間に半角空白を求め"
+                        .to_owned()
+                })
+        },
+        fix_rule: RuleId::SpaceBetweenJaAndParen,
+        fix_rule_enabled: |builtin| builtin.space_between_ja_and_paren,
+        fixes: "その空白を削除する",
+    },
+    OppositeRules {
+        rule: RuleId::JaSpaceBetweenHalfAndFullWidth,
+        demand: half_and_full_width_demands_space,
+        fix_rule: RuleId::JtfStyle(JtfRule::R3_1_1),
+        fix_rule_enabled: |builtin| builtin.jtf_style.enabled(JtfRule::R3_1_1),
+        fixes: "その空白を削除する",
+    },
+    OppositeRules {
+        rule: RuleId::NoMixedZenkakuAndHankakuAlphabet,
+        demand: |builtin| {
+            builtin
+                .no_mixed_zenkaku_and_hankaku_alphabet
+                .as_ref()
+                .filter(|rule| rule.prefer == AlphabetWidth::Full)
+                .map(|_| "`prefer` の \"全角\" は英字を全角にすることを求め".to_owned())
+        },
+        fix_rule: RuleId::JtfStyle(JtfRule::R2_1_9),
+        fix_rule_enabled: |builtin| builtin.jtf_style.enabled(JtfRule::R2_1_9),
+        fixes: "全角の英字を半角にする",
+    },
+];
+
+/// 逆の書き方の理由の最後の文に書く、ルールのIDの設定のキー。TOMLの裸のキー (英数字・`-`・`_` だけ) に書けない
+/// IDは引用符で囲む (`fullwidth-paren`、`"4.3.1.丸かっこ（）"`)
+#[allow(dead_code)] // skeleton: not implemented
+fn toml_key(name: &str) -> Cow<'_, str> {
+    let _ = name;
+    todo!("skeleton: not implemented")
+}
 
 /// `ja-space-between-half-and-full-width` が有効で、`space` が英字か数字の隣に空白を求めるなら、その文面を返す
 fn half_and_full_width_demands_space(builtin: &Builtin) -> Option<String> {
@@ -408,14 +468,16 @@ pub enum Preset {
     AiWriting,
     AiWordsJa,
     JaSpacing,
+    JtfStyle,
 }
 
 impl Preset {
-    pub const ALL: [Preset; 4] = [
+    pub const ALL: [Preset; 5] = [
         Preset::JaTechnicalWriting,
         Preset::AiWriting,
         Preset::AiWordsJa,
         Preset::JaSpacing,
+        Preset::JtfStyle,
     ];
 
     /// `[builtin]` のキーに使う名前
@@ -425,6 +487,7 @@ impl Preset {
             Preset::AiWriting => "@textlint-ja/preset-ai-writing",
             Preset::AiWordsJa => "preset-ai-words-ja",
             Preset::JaSpacing => "preset-ja-spacing",
+            Preset::JtfStyle => "preset-jtf-style",
         }
     }
 
@@ -484,6 +547,46 @@ impl Preset {
                 (RuleId::JaSpaceAroundEmphasis, false),
                 (RuleId::JaSpaceAroundLink, true),
                 (RuleId::JaSpaceAroundStrong, false),
+            ],
+            // presetの既定のオプションは、どれもルールの既定値と同じである。辞書の3ルールと `2.1.2` は既定で無効である
+            Preset::JtfStyle => &[
+                (RuleId::JtfStyle(JtfRule::R1_1_1), true),
+                (RuleId::JtfStyle(JtfRule::R1_1_2), true),
+                (RuleId::JtfStyle(JtfRule::R1_1_3), true),
+                (RuleId::JtfStyle(JtfRule::R1_1_5), true),
+                (RuleId::JtfStyle(JtfRule::R1_2_1), true),
+                (RuleId::JtfStyle(JtfRule::R1_2_2), true),
+                (RuleId::JtfStyle(JtfRule::R2_1_2), false),
+                (RuleId::JtfStyle(JtfRule::R2_1_5), false),
+                (RuleId::JtfStyle(JtfRule::R2_1_6), false),
+                (RuleId::JtfStyle(JtfRule::R2_1_8), true),
+                (RuleId::JtfStyle(JtfRule::R2_1_9), true),
+                (RuleId::JtfStyle(JtfRule::R2_1_10), true),
+                (RuleId::JtfStyle(JtfRule::R2_2_1), false),
+                (RuleId::JtfStyle(JtfRule::R2_2_2), true),
+                (RuleId::JtfStyle(JtfRule::R2_2_3), true),
+                (RuleId::JtfStyle(JtfRule::R3_1_1), true),
+                (RuleId::JtfStyle(JtfRule::R3_1_2), true),
+                (RuleId::JtfStyle(JtfRule::R3_2), true),
+                (RuleId::JtfStyle(JtfRule::R3_3), true),
+                (RuleId::JtfStyle(JtfRule::R4_1_1), true),
+                (RuleId::JtfStyle(JtfRule::R4_1_3), true),
+                (RuleId::JtfStyle(JtfRule::R4_2_1), true),
+                (RuleId::JtfStyle(JtfRule::R4_2_2), true),
+                (RuleId::JtfStyle(JtfRule::R4_2_4), true),
+                (RuleId::JtfStyle(JtfRule::R4_2_5), true),
+                (RuleId::JtfStyle(JtfRule::R4_2_6), true),
+                (RuleId::JtfStyle(JtfRule::R4_2_7), true),
+                (RuleId::JtfStyle(JtfRule::R4_2_8), true),
+                (RuleId::JtfStyle(JtfRule::R4_2_9), true),
+                (RuleId::JtfStyle(JtfRule::R4_3_1), true),
+                (RuleId::JtfStyle(JtfRule::R4_3_2), true),
+                (RuleId::JtfStyle(JtfRule::R4_3_3), true),
+                (RuleId::JtfStyle(JtfRule::R4_3_4), true),
+                (RuleId::JtfStyle(JtfRule::R4_3_5), true),
+                (RuleId::JtfStyle(JtfRule::R4_3_6), true),
+                (RuleId::JtfStyle(JtfRule::R4_3_7), true),
+                (RuleId::JtfStyle(JtfRule::R4_3_8), true),
             ],
         }
     }
@@ -1889,6 +1992,64 @@ impl NoMixedZenkakuAndHankakuAlphabet {
             }
         }
         Ok(rule)
+    }
+}
+
+/// `preset-jtf-style` の37ルールの有効・無効と、`3.3.かっこ類と隣接する文字の間のスペースの有無` のオプション
+#[derive(Debug)]
+pub struct JtfStyle {
+    /// `JtfRule` の宣言の順に並べた、各ルールが有効か
+    enabled: [bool; JtfRule::ALL.len()],
+    /// `3.3` のオプション。`3.3` が無効なら既定値のままである
+    pub parentheses: JtfParentheses,
+}
+
+impl Default for JtfStyle {
+    fn default() -> Self {
+        Self {
+            enabled: [false; JtfRule::ALL.len()],
+            parentheses: JtfParentheses::default(),
+        }
+    }
+}
+
+impl JtfStyle {
+    pub fn enabled(&self, rule: JtfRule) -> bool {
+        self.enabled[rule as usize]
+    }
+
+    /// `rule` を、`options` が無ければ無効にし、あればそのオプションで有効にする。`3.3` だけがオプションを持つ
+    fn set(&mut self, rule: JtfRule, options: Option<&Table>) -> Result<(), String> {
+        let _ = (rule, options, JtfParentheses::from_options);
+        todo!("skeleton: not implemented")
+    }
+}
+
+/// `3.3.かっこ類と隣接する文字の間のスペースの有無` のオプション
+#[derive(Debug)]
+pub struct JtfParentheses {
+    /// `allowOutsideHalfParentheses`。真なら、半角の括弧の外側に接する半角空白を消さない
+    #[allow(dead_code)] // skeleton: not implemented
+    pub allow_outside_half_parentheses: bool,
+    /// `requireOutsideHalfParentheses`。真なら、日本語に接する半角の括弧の外側に半角空白を求める
+    pub require_outside_half_parentheses: bool,
+}
+
+impl Default for JtfParentheses {
+    fn default() -> Self {
+        Self {
+            allow_outside_half_parentheses: true,
+            require_outside_half_parentheses: false,
+        }
+    }
+}
+
+impl JtfParentheses {
+    /// `allowOutsideHalfParentheses = false` と `requireOutsideHalfParentheses = true` の組は、同じ空白を消す修正と
+    /// 求める指摘が往復するので、2つのオプションの名前を含む理由を返す
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let _ = options;
+        todo!("skeleton: not implemented")
     }
 }
 

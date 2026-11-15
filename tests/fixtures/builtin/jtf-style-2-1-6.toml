@@ -1,0 +1,220 @@
+# 2.1.6.カタカナの長音 の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。textlintでは、presetの既定で無効なルールを `{}` で有効にした。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "2.1.6.カタカナの長音"
+builtin = '''
+"2.1.6.カタカナの長音" = true
+'''
+
+[[cases]]
+name = "ch-end-of-text"
+text = "サーバ"
+findings = ["1:1"]
+messages = ["「サーバ」を「サーバー」にする"]
+
+[[cases]]
+name = "ch-followed-by-hiragana"
+text = "サーバです"
+findings = ["1:1"]
+messages = ["「サーバです」を「サーバーです」にする"]
+
+[[cases]]
+name = "ch-followed-by-punctuation"
+text = "サーバ、です"
+findings = ["1:1"]
+messages = ["「サーバ、で」を「サーバー、で」にする"]
+
+[[cases]]
+name = "ch-followed-by-one-character-at-end"
+text = "ユーザ。"
+findings = ["1:1"]
+messages = ["「ユーザ。」を「ユーザー。」にする"]
+
+[[cases]]
+name = "ch-followed-by-two-characters"
+text = "サーバです。"
+findings = ["1:1"]
+messages = ["「サーバです」を「サーバーです」にする"]
+
+[[cases]]
+name = "ch-followed-by-space"
+text = "ユーザ 登録"
+findings = ["1:1"]
+messages = ["「ユーザ 登」を「ユーザー 登」にする"]
+
+[[cases]]
+name = "ch-long-vowel-already"
+text = "サーバーです"
+findings = []
+
+[[cases]]
+name = "ch-followed-by-katakana"
+text = "サーバーとユーザ"
+findings = ["1:6"]
+messages = ["「ユーザ」を「ユーザー」にする"]
+
+[[cases]]
+name = "ch-two-words-sharing-the-run"
+text = "ユーザ登録とユーザ"
+findings = ["1:1", "1:7"]
+messages = ["「ユーザ登録」を「ユーザー登録」にする", "「ユーザ」を「ユーザー」にする"]
+
+[[cases]]
+name = "ch-adjacent-words"
+text = "サーバとユーザ"
+findings = ["1:1", "1:5"]
+messages = ["「サーバと」を「サーバーと」にする", "「ユーザ」を「ユーザー」にする"]
+
+[[cases]]
+name = "ch-newline-in-match"
+text = "コンピュータ\nサーバ"
+findings = ["1:1", "2:1"]
+messages = ["「コンピュータ\\n」を「コンピューター\\n」にする", "「サーバ」を「サーバー」にする"]
+
+[[cases]]
+name = "ch-several-words"
+text = "プリンタとスキャナとモニタ"
+findings = ["1:1", "1:6", "1:11"]
+messages = ["「プリンタと」を「プリンターと」にする", "「スキャナと」を「スキャナーと」にする", "「モニタ」を「モニター」にする"]
+
+[[cases]]
+name = "ch-words-a"
+text = "アドベンチャと、アクセサリと、アダプタと、エディタと、エントリと"
+findings = ["1:1", "1:9", "1:16", "1:22", "1:28"]
+messages = ["「アドベンチャと、」を「アドベンチャーと、」にする", "「アクセサリと、」を「アクセサリーと、」にする", "「アダプタと、」を「アダプターと、」にする", "「エディタと、」を「エディターと、」にする", "「エントリと」を「エントリーと」にする"]
+
+[[cases]]
+name = "ch-words-b"
+text = "オペレータと、カテゴリと、コネクタと、コンパイラと、ディレクトリと"
+findings = ["1:1", "1:8", "1:14", "1:20", "1:27"]
+messages = ["「オペレータと、」を「オペレーターと、」にする", "「カテゴリと、」を「カテゴリーと、」にする", "「コネクタと、」を「コネクターと、」にする", "「コンパイラと、」を「コンパイラーと、」にする", "「ディレクトリと」を「ディレクトリーと」にする"]
+
+[[cases]]
+name = "ch-words-c"
+text = "ドライバと、バッファと、パラメータと、ブラウザと、ライブラリと"
+findings = ["1:1", "1:7", "1:13", "1:20", "1:26"]
+messages = ["「ドライバと、」を「ドライバーと、」にする", "「バッファと、」を「バッファーと、」にする", "「パラメータと、」を「パラメーターと、」にする", "「ブラウザと、」を「ブラウザーと、」にする", "「ライブラリと」を「ライブラリーと」にする"]
+
+[[cases]]
+name = "ch-words-d"
+text = "ヘッダと、メモリと、メンバと、リポジトリと、レイヤと"
+findings = ["1:1", "1:6", "1:11", "1:16", "1:23"]
+messages = ["「ヘッダと、」を「ヘッダーと、」にする", "「メモリと、」を「メモリーと、」にする", "「メンバと、」を「メンバーと、」にする", "「リポジトリと、」を「リポジトリーと、」にする", "「レイヤと」を「レイヤーと」にする"]
+
+[[cases]]
+name = "ch-not-in-dictionary"
+text = "ゲームとアプリとデータ"
+findings = []
+
+[[cases]]
+name = "ch-after-inline-code"
+text = "`x`サーバです"
+findings = ["1:4"]
+messages = ["「サーバです」を「サーバーです」にする"]
+
+[[cases]]
+name = "ch-before-inline-code"
+text = "サーバ`x`"
+findings = ["1:1"]
+messages = ["「サーバ」を「サーバー」にする"]
+
+[[cases]]
+name = "ch-before-strong"
+text = "サーバ**強調**"
+findings = ["1:1"]
+messages = ["「サーバ」を「サーバー」にする"]
+
+[[cases]]
+name = "ch-before-link"
+text = "サーバ[リンク](https://example.com)"
+findings = ["1:1"]
+messages = ["「サーバ」を「サーバー」にする"]
+
+[[cases]]
+name = "ch-shortcut-reference-link"
+note = "定義を持つ省略形の参照リンクの文字列は、本文でないので見ない。textlintは見て、指摘する"
+text = "[サーバ]\n\n[サーバ]: https://example.com"
+findings = []
+
+[[cases]]
+name = "ch-collapsed-reference-link"
+note = "定義を持つcollapsed形の参照リンクの文字列は、本文でないので見ない。textlintは見て、指摘する"
+text = "[サーバ][]\n\n[サーバ]: https://example.com"
+findings = []
+
+[[cases]]
+name = "ch-full-reference-link"
+text = "[サーバ][r]\n\n[r]: https://example.com"
+findings = ["1:2"]
+messages = ["「サーバ」を「サーバー」にする"]
+
+[[cases]]
+name = "ch-heading"
+text = "# サーバです"
+findings = ["1:3"]
+messages = ["「サーバです」を「サーバーです」にする"]
+
+[[cases]]
+name = "ch-quote"
+text = "> サーバです"
+findings = []
+
+[[cases]]
+name = "ch-table"
+text = "| 列 |\n| - |\n| サーバです |"
+findings = ["3:3"]
+messages = ["「サーバです」を「サーバーです」にする"]
+
+[[cases]]
+name = "ch-list"
+text = "- サーバです"
+findings = ["1:3"]
+messages = ["「サーバです」を「サーバーです」にする"]
+
+[[cases]]
+name = "ch-link"
+text = "[サーバです](https://example.com)"
+findings = []
+
+[[cases]]
+name = "ch-strong"
+text = "**サーバです**"
+findings = ["1:3"]
+messages = ["「サーバです」を「サーバーです」にする"]
+
+[[cases]]
+name = "ch-emphasis"
+text = "*サーバです*"
+findings = []
+
+[[cases]]
+name = "ch-strike"
+text = "~~サーバです~~"
+findings = ["1:3"]
+messages = ["「サーバです」を「サーバーです」にする"]
+
+[[cases]]
+name = "ch-code"
+text = "`サーバです`"
+findings = []
+
+[[cases]]
+name = "ch-footnote"
+text = "[^1]: サーバです"
+findings = ["1:7"]
+messages = ["「サーバです」を「サーバーです」にする"]
+
+[[cases]]
+name = "ch-html"
+text = "<span>サーバです</span>"
+findings = ["1:7"]
+messages = ["「サーバです」を「サーバーです」にする"]

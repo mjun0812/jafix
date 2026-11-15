@@ -1,0 +1,199 @@
+# 1.1.3.箇条書き の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "1.1.3.箇条書き"
+builtin = '''
+"1.1.3.箇条書き" = true
+'''
+
+[[cases]]
+name = "lb-period-minority"
+text = "- a。\n- b。\n- c"
+findings = ["3:1"]
+messages = ["箇条書きの文末の「。」の有無を揃える: 「。」を付ける"]
+
+[[cases]]
+name = "lb-period-majority-none"
+text = "- a\n- b\n- c。"
+findings = ["3:1"]
+messages = ["箇条書きの文末の「。」の有無を揃える: 「。」を外す"]
+
+[[cases]]
+name = "lb-period-tie-flags-none"
+text = "- a。\n- b"
+findings = ["2:1"]
+messages = ["箇条書きの文末の「。」の有無を揃える: 「。」を付ける"]
+
+[[cases]]
+name = "lb-all-period"
+text = "- a。\n- b。\n- c。"
+findings = []
+
+[[cases]]
+name = "lb-none-period"
+text = "- a\n- b\n- c"
+findings = []
+
+[[cases]]
+name = "lb-single-item"
+text = "- a。"
+findings = []
+
+[[cases]]
+name = "lb-trailing-space-after-period"
+text = "- a。 \n- b。\n- c"
+findings = ["3:1"]
+messages = ["箇条書きの文末の「。」の有無を揃える: 「。」を付ける"]
+
+[[cases]]
+name = "lb-ordered-list"
+text = "1. a。\n2. b。\n3. c"
+findings = ["3:1"]
+messages = ["箇条書きの文末の「。」の有無を揃える: 「。」を付ける"]
+
+[[cases]]
+name = "lb-star-and-plus-markers"
+text = "* a。\n* b。\n* c\n\n+ d\n+ e。\n+ f。"
+findings = ["3:1", "5:1"]
+messages = ["箇条書きの文末の「。」の有無を揃える: 「。」を付ける", "箇条書きの文末の「。」の有無を揃える: 「。」を付ける"]
+
+[[cases]]
+name = "lb-checkbox"
+text = "- [ ] a。\n- [x] b。\n- [ ] c"
+findings = ["3:1"]
+messages = ["箇条書きの文末の「。」の有無を揃える: 「。」を付ける"]
+
+[[cases]]
+name = "lb-two-lists-are-separate"
+text = "- a。\n- b。\n\n段落\n\n- c\n- d"
+findings = []
+
+[[cases]]
+name = "lb-adjacent-lists-by-marker"
+text = "- a。\n- b。\n\n* c\n* d"
+findings = []
+
+[[cases]]
+name = "lb-desumasu-major"
+text = "- これは本です。\n- それは本です。\n- あれは本です。\n- 私は学生だ。"
+findings = ["4:7"]
+messages = ["箇条書きを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "lb-dearu-major"
+text = "- これは本だ。\n- それは本だ。\n- あれは本です。"
+findings = ["3:7"]
+messages = ["箇条書きを常体(である調)に揃える: 「です。」は敬体"]
+
+[[cases]]
+name = "lb-tie-flags-dearu"
+text = "- これは本です。\n- あれは本だ。"
+findings = ["2:7"]
+messages = ["箇条書きを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "lb-only-desumasu"
+text = "- これは本です。\n- それは本です。"
+findings = []
+
+[[cases]]
+name = "lb-connectives-desumasu"
+text = "- ペンでしたが、折れた。\n- 机でしたので、使った。\n- これですので、読む。\n- 本ですが、薄い。\n- これは本だ。\n- これは本だ。\n- これは本だ。\n- これは本だ。\n- これは本だ。\n- これは本だ。\n- これは本だ。\n- これは本だ。\n- これは本だ。"
+findings = ["1:5", "2:4", "3:5", "4:4"]
+messages = ["箇条書きを常体(である調)に揃える: 「でしたが」は敬体", "箇条書きを常体(である調)に揃える: 「でしたので」は敬体", "箇条書きを常体(である調)に揃える: 「ですので」は敬体", "箇条書きを常体(である調)に揃える: 「ですが」は敬体"]
+
+[[cases]]
+name = "lb-connectives-dearu"
+text = "- 読むのだが、遅い。\n- 行かないかと思う。\n- 暑いであるから、休む。\n- これは本です。\n- これは本です。\n- これは本です。\n- これは本です。"
+findings = ["1:5", "2:5", "3:5"]
+messages = ["箇条書きを敬体(ですます調)に揃える: 「のだが」は常体", "箇条書きを敬体(ですます調)に揃える: 「ないかと」は常体", "箇条書きを敬体(ですます調)に揃える: 「であるから」は常体"]
+
+[[cases]]
+name = "lb-end-forms-desumasu"
+text = "- これは本です。\n- 私が読みます。\n- 私が読みました。\n- 私は読みません。\n- 本ですね。\n- 本でしょうか。\n- 読んでください。\n- いらっしゃいませ。\n- これは本だ。\n- これは本だ。\n- これは本だ。\n- これは本だ。\n- これは本だ。\n- これは本だ。\n- これは本だ。\n- これは本だ。\n- これは本だ。"
+findings = ["1:7", "2:7", "3:7", "4:7", "5:4", "6:4", "7:6", "8:9"]
+messages = ["箇条書きを常体(である調)に揃える: 「です。」は敬体", "箇条書きを常体(である調)に揃える: 「ます。」は敬体", "箇条書きを常体(である調)に揃える: 「ました。」は敬体", "箇条書きを常体(である調)に揃える: 「ません。」は敬体", "箇条書きを常体(である調)に揃える: 「ですね。」は敬体", "箇条書きを常体(である調)に揃える: 「でしょうか。」は敬体", "箇条書きを常体(である調)に揃える: 「ください。」は敬体", "箇条書きを常体(である調)に揃える: 「ませ。」は敬体"]
+
+[[cases]]
+name = "lb-end-forms-dearu"
+text = "- これは本だ。\n- それは本である。\n- 彼は行った。\n- 早くしろ。\n- 早くしなさい。\n- 見ていただきたい。\n- 見ていただく。\n- 行かねばならない。\n- それもあろう。\n- 見られる。\n- これは本です。\n- これは本です。\n- これは本です。\n- これは本です。\n- これは本です。\n- これは本です。\n- これは本です。\n- これは本です。\n- これは本です。\n- これは本です。\n- これは本です。"
+findings = ["1:7", "2:7", "3:6", "4:5", "5:5", "6:5", "7:5", "8:7", "9:6", "10:4"]
+messages = ["箇条書きを敬体(ですます調)に揃える: 「だ。」は常体", "箇条書きを敬体(ですます調)に揃える: 「である。」は常体", "箇条書きを敬体(ですます調)に揃える: 「った。」は常体", "箇条書きを敬体(ですます調)に揃える: 「しろ。」は常体", "箇条書きを敬体(ですます調)に揃える: 「しなさい。」は常体", "箇条書きを敬体(ですます調)に揃える: 「いただきたい。」は常体", "箇条書きを敬体(ですます調)に揃える: 「いただく。」は常体", "箇条書きを敬体(ですます調)に揃える: 「ならない。」は常体", "箇条書きを敬体(ですます調)に揃える: 「あろう。」は常体", "箇条書きを敬体(ですます調)に揃える: 「られる。」は常体"]
+
+[[cases]]
+name = "lb-dewanai-is-dearu"
+note = "常体の文末の形 `ではない｜ないか` を、`ではない` と `ないか` の2つの形として読む。textlintは `ではない。` を常体に数えない"
+text = "- これは本です。\n- それは本です。\n- 彼は医者ではない。"
+findings = ["3:7"]
+messages = ["箇条書きを敬体(ですます調)に揃える: 「ではない。」は常体"]
+
+[[cases]]
+name = "lb-naika-is-dearu"
+note = "`ないか。` を常体の文末の形に数える。textlintは数えない"
+text = "- これは本です。\n- それは本です。\n- それは本ではないか。"
+findings = ["3:9"]
+messages = ["箇条書きを敬体(ですます調)に揃える: 「ないか。」は常体"]
+
+[[cases]]
+name = "lb-all-end-forms-per-line"
+note = "1行の文末の形をすべて数える。textlintは1行に1件だけ数えるので、敬体の `です。` を指摘する。jafixは敬体2件と常体2件で同数なので、常体の2件を指摘する"
+text = "- これは本です。それも本です。\n- あれは本だ。\n- それは本だ。"
+findings = ["2:7", "3:7"]
+messages = ["箇条書きを敬体(ですます調)に揃える: 「だ。」は常体", "箇条書きを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "lb-nested-list-counted-per-list"
+note = "入れ子のリストは、リストごとに、直下の項目だけで数える。textlintは子の項目を親のリストでも数え直し、子の `だ` と `です` に互いに逆の指摘を出す。親は `です` と `だ` の同数で常体を、子も同数で常体を指摘する"
+text = "- 親です。\n  - 子だ。\n  - 子です。\n- 親だ。"
+findings = ["2:6", "4:4"]
+messages = ["箇条書きを敬体(ですます調)に揃える: 「だ。」は常体", "箇条書きを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "lb-nested-list-period-per-list"
+note = "親の項目の `。` の有無は、入れ子のリストを除いた直下の段落で決める。親の2項目はどちらも `。` なしで、子の2項目はどちらも `。` ありなので、指摘しない。textlintは親の1項目目を入れ子のリストの末尾の `。` で `。` ありに数え、親の2項目目を指摘する"
+text = "- 親\n  - 子。\n  - 子。\n- 親"
+findings = []
+
+[[cases]]
+name = "lb-nested-list-last-block"
+note = "項目の `。` の有無は、直下の段落の末尾で決め、入れ子のリストは見ない。textlintは1項目目を入れ子の項目 `子` の末尾で `。` なしに数える"
+text = "- 項目。\n  - 子\n- 項目。"
+findings = []
+
+[[cases]]
+name = "lb-inline-code-content-excluded"
+note = "インラインコードの中身を項目の文字列に入れない。textlintは項目の元の文字列を見るので、コードの中の `だ。` を常体に数えて指摘する"
+text = "- これは本です。\n- これは本です。\n- コード`それは本だ。`です。"
+findings = []
+
+[[cases]]
+name = "lb-code-block-excluded"
+note = "コードブロックを項目の文字列に入れない。textlintは項目の元の文字列を見るので、コードブロックの中の `だ。` を常体に数えて指摘する"
+text = "- これは本です。\n- これは本です。\n- これは本です。\n\n  ```\n  だ。\n  ```"
+findings = []
+
+[[cases]]
+name = "lb-nested-inner-period-tie"
+text = "- a\n  - b。\n  - c"
+findings = ["3:3"]
+messages = ["箇条書きの文末の「。」の有無を揃える: 「。」を付ける"]
+
+[[cases]]
+name = "lb-paragraph-not-list"
+text = "これは本です。\n\nあれは本だ。"
+findings = []
+
+[[cases]]
+name = "lb-item-with-two-paragraphs"
+text = "- a。\n\n  b\n- c。\n\n  d。"
+findings = ["1:1"]
+messages = ["箇条書きの文末の「。」の有無を揃える: 「。」を付ける"]

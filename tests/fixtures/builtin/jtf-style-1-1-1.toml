@@ -1,0 +1,225 @@
+# 1.1.1.本文 の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "1.1.1.本文"
+builtin = '''
+"1.1.1.本文" = true
+'''
+
+[[cases]]
+name = "bt-tie-flags-dearu"
+text = "これは本です。\n\nあれは本だ。"
+findings = ["3:5"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-desumasu-major"
+text = "これは本です。\n\nそれは本です。\n\nあれは本です。\n\n私は学生だ。"
+findings = ["7:5"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-dearu-major"
+text = "これは本だ。\n\nそれは本だ。\n\nあれは本です。"
+findings = ["5:5"]
+messages = ["本文を常体(である調)に揃える: 「です。」は敬体"]
+
+[[cases]]
+name = "bt-only-desumasu"
+text = "これは本です。\n\nそれは本です。"
+findings = []
+
+[[cases]]
+name = "bt-only-dearu"
+text = "これは本だ。\n\nそれは本だ。"
+findings = []
+
+[[cases]]
+name = "bt-no-period-not-counted"
+text = "これは本です\n\nあれは本だ"
+findings = []
+
+[[cases]]
+name = "bt-same-paragraph-lines"
+text = "これは本です。\nそれは本です。\nあれは本だ。\nそれも本です。"
+findings = ["3:5"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-desumasu-connectives"
+text = "ペンでしたが、折れた\n\n机でしたので、使った\n\nこれですので、読む\n\n本ですが、薄い\n\nこれは本だ。\n\nこれは本だ。\n\nこれは本だ。\n\nこれは本だ。\n\nこれは本だ。\n\nこれは本だ。\n\nこれは本だ。\n\nこれは本だ。\n\nこれは本だ。"
+findings = ["1:3", "3:2", "5:3", "7:2"]
+messages = ["本文を常体(である調)に揃える: 「でしたが」は敬体", "本文を常体(である調)に揃える: 「でしたので」は敬体", "本文を常体(である調)に揃える: 「ですので」は敬体", "本文を常体(である調)に揃える: 「ですが」は敬体"]
+
+[[cases]]
+name = "bt-dearu-connectives"
+text = "読むのだが、遅い\n\n行かないかと思う\n\n暑いであるから、休む\n\nこれは本です。\n\nこれは本です。\n\nこれは本です。\n\nこれは本です。"
+findings = ["1:3", "3:3", "5:3"]
+messages = ["本文を敬体(ですます調)に揃える: 「のだが」は常体", "本文を敬体(ですます調)に揃える: 「ないかと」は常体", "本文を敬体(ですます調)に揃える: 「であるから」は常体"]
+
+[[cases]]
+name = "bt-desumasu-end-forms"
+text = "これは本です。\n\n私が読みます。\n\n私が読みました。\n\n私は読みません。\n\n本ですね。\n\n本でしょうか。\n\n読んでください。\n\nいらっしゃいませ。\n\nこれは本だ。\n\nこれは本だ。\n\nこれは本だ。\n\nこれは本だ。\n\nこれは本だ。\n\nこれは本だ。\n\nこれは本だ。\n\nこれは本だ。\n\nこれは本だ。"
+findings = ["1:5", "3:5", "5:5", "7:5", "9:2", "11:2", "13:4", "15:7"]
+messages = ["本文を常体(である調)に揃える: 「です。」は敬体", "本文を常体(である調)に揃える: 「ます。」は敬体", "本文を常体(である調)に揃える: 「ました。」は敬体", "本文を常体(である調)に揃える: 「ません。」は敬体", "本文を常体(である調)に揃える: 「ですね。」は敬体", "本文を常体(である調)に揃える: 「でしょうか。」は敬体", "本文を常体(である調)に揃える: 「ください。」は敬体", "本文を常体(である調)に揃える: 「ませ。」は敬体"]
+
+[[cases]]
+name = "bt-dearu-end-forms"
+text = "これは本だ。\n\nそれは本である。\n\n彼は行った。\n\n早くしろ。\n\n早くしなさい。\n\n見ていただきたい。\n\n見ていただく。\n\n行かねばならない。\n\nそれもあろう。\n\n見られる。\n\nこれは本です。\n\nこれは本です。\n\nこれは本です。\n\nこれは本です。\n\nこれは本です。\n\nこれは本です。\n\nこれは本です。\n\nこれは本です。\n\nこれは本です。\n\nこれは本です。\n\nこれは本です。"
+findings = ["1:5", "3:5", "5:4", "7:3", "9:3", "11:3", "13:3", "15:5", "17:4", "19:2"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体", "本文を敬体(ですます調)に揃える: 「である。」は常体", "本文を敬体(ですます調)に揃える: 「った。」は常体", "本文を敬体(ですます調)に揃える: 「しろ。」は常体", "本文を敬体(ですます調)に揃える: 「しなさい。」は常体", "本文を敬体(ですます調)に揃える: 「いただきたい。」は常体", "本文を敬体(ですます調)に揃える: 「いただく。」は常体", "本文を敬体(ですます調)に揃える: 「ならない。」は常体", "本文を敬体(ですます調)に揃える: 「あろう。」は常体", "本文を敬体(ですます調)に揃える: 「られる。」は常体"]
+
+[[cases]]
+name = "bt-dewanai-is-dearu"
+note = "常体の文末の形 `ではない｜ないか` を、全角の縦線の文字列でなく、`ではない` と `ないか` の2つの形として読む。textlintは `ではない。` を常体に数えない"
+text = "これは本です。\n\nそれは本です。\n\nあれは本です。\n\n彼は医者ではない。\n\n私は学生だ。"
+findings = ["7:5", "9:5"]
+messages = ["本文を敬体(ですます調)に揃える: 「ではない。」は常体", "本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-dewanai-only"
+note = "`ではない。` だけが常体のとき、textlintは常体が0件で指摘しない。jafixは常体1件を数えて指摘する"
+text = "これは本です。\n\nそれは本です。\n\n彼は医者ではない。"
+findings = ["5:5"]
+messages = ["本文を敬体(ですます調)に揃える: 「ではない。」は常体"]
+
+[[cases]]
+name = "bt-naika-only"
+note = "`ないか。` を常体の文末の形に数える。textlintは数えない"
+text = "これは本です。\n\nそれは本です。\n\nそれは本ではないか。"
+findings = ["5:7"]
+messages = ["本文を敬体(ですます調)に揃える: 「ないか。」は常体"]
+
+[[cases]]
+name = "bt-all-end-forms-per-line"
+note = "1行の文末の形をすべて数える。textlintは1行に1件だけ数えるので、`です。` は1件で常体2件より少なく、敬体の `です。` を指摘する。jafixは敬体2件と常体2件で同数なので、常体の2件を指摘する"
+text = "これは本です。それも本です。\nあれは本だ。\nそれは本だ。"
+findings = ["2:5", "3:5"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体", "本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-end-form-and-connective-both-counted"
+text = "これは本ですが、読みます。\n\nそれは本だ。\n\nあれは本だ。"
+findings = ["3:5", "5:5"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体", "本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-surrogate-pair-column"
+text = "これは本です。\U00020bb7あれは本だ。"
+findings = ["1:13"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-heading-counted"
+text = "これは本です。\n\n# あれは本だ。"
+findings = ["3:7"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-heading-setext-counted"
+text = "これは本です。\n\nあれは本だ。\n===="
+findings = ["3:5"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-strong-counted"
+text = "これは本です。\n\n**あれは本だ。**"
+findings = ["3:7"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-strike-counted"
+text = "これは本です。\n\n~~あれは本だ。~~"
+findings = ["3:7"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-table-cell-counted"
+text = "これは本です。\n\n| 列 |\n| - |\n| あれは本だ。 |"
+findings = ["5:7"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-footnote-counted"
+text = "これは本です。\n\n[^1]: あれは本だ。"
+findings = ["3:11"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-inline-html-counted"
+text = "これは本です。\n\n<span>あれは本だ。</span>"
+findings = ["3:11"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-full-reference-link-counted"
+text = "これは本です。\n\n[あれは本だ。][r]\n\n[r]: https://example.com"
+findings = ["3:6"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-reference-without-definition-counted"
+text = "これは本です。\n\n[あれは本だ。]"
+findings = ["3:6"]
+messages = ["本文を敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "bt-shortcut-reference-link-skipped"
+note = "定義を持つ省略形の参照リンクの文字列は、本文でないので見ない。textlintは数えて、常体を指摘する"
+text = "これは本です。\n\n[あれは本だ。]\n\n[あれは本だ。]: https://example.com"
+findings = []
+
+[[cases]]
+name = "bt-collapsed-reference-link-skipped"
+note = "定義を持つcollapsed形の参照リンクの文字列は、本文でないので見ない。textlintは数えて、常体を指摘する"
+text = "これは本です。\n\n[あれは本だ。][]\n\n[あれは本だ。]: https://example.com"
+findings = []
+
+[[cases]]
+name = "bt-list-not-counted"
+text = "これは本です。\n\n- あれは本だ。"
+findings = []
+
+[[cases]]
+name = "bt-nested-list-not-counted"
+text = "これは本です。\n\n- 項目\n  - あれは本だ。"
+findings = []
+
+[[cases]]
+name = "bt-link-not-counted"
+text = "これは本です。\n\n[あれは本だ。](https://example.com)"
+findings = []
+
+[[cases]]
+name = "bt-emphasis-not-counted"
+text = "これは本です。\n\n*あれは本だ。*"
+findings = []
+
+[[cases]]
+name = "bt-quote-not-counted"
+text = "これは本です。\n\n> あれは本だ。"
+findings = []
+
+[[cases]]
+name = "bt-inline-code-not-counted"
+text = "これは本です。\n\n`あれは本だ。`"
+findings = []
+
+[[cases]]
+name = "bt-image-alt-not-counted"
+text = "これは本です。\n\n![あれは本だ。](a.png)"
+findings = []
+
+[[cases]]
+name = "bt-autolink-not-counted"
+text = "これは本です。\n\n<https://example.com/だ。>"
+findings = []

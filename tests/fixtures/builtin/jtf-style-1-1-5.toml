@@ -1,0 +1,177 @@
+# 1.1.5.図表のキャプション の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "1.1.5.図表のキャプション"
+builtin = '''
+"1.1.5.図表のキャプション" = true
+'''
+
+[[cases]]
+name = "ic-tie-flags-dearu"
+text = "![図です。](i0.png)\n![図だ。](i1.png)"
+findings = ["2:4"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "ic-desumasu-major"
+text = "![図です。](i0.png)\n![図です。](i1.png)\n![図です。](i2.png)\n![図だ。](i3.png)"
+findings = ["4:4"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "ic-dearu-major"
+text = "![図だ。](i0.png)\n![図だ。](i1.png)\n![図です。](i2.png)"
+findings = ["3:4"]
+messages = ["図表のキャプションを常体(である調)に揃える: 「です。」は敬体"]
+
+[[cases]]
+name = "ic-only-desumasu"
+text = "![図です。](i0.png)\n![図です。](i1.png)"
+findings = []
+
+[[cases]]
+name = "ic-only-dearu"
+text = "![図だ。](i0.png)\n![図だ。](i1.png)"
+findings = []
+
+[[cases]]
+name = "ic-single-image"
+text = "![図です。](a.png)"
+findings = []
+
+[[cases]]
+name = "ic-no-period-not-counted"
+text = "![図です](i0.png)\n![図だ](i1.png)"
+findings = []
+
+[[cases]]
+name = "ic-connectives-desumasu"
+text = "![ペンでしたが、折れた](i0.png)\n![机でしたので、使った](i1.png)\n![これですので、読む](i2.png)\n![本ですが、薄い](i3.png)\n![図だ。](i4.png)\n![図だ。](i5.png)\n![図だ。](i6.png)\n![図だ。](i7.png)\n![図だ。](i8.png)\n![図だ。](i9.png)\n![図だ。](i10.png)\n![図だ。](i11.png)\n![図だ。](i12.png)"
+findings = ["1:5", "2:4", "3:5", "4:4"]
+messages = ["図表のキャプションを常体(である調)に揃える: 「でしたが」は敬体", "図表のキャプションを常体(である調)に揃える: 「でしたので」は敬体", "図表のキャプションを常体(である調)に揃える: 「ですので」は敬体", "図表のキャプションを常体(である調)に揃える: 「ですが」は敬体"]
+
+[[cases]]
+name = "ic-connectives-dearu"
+text = "![読むのだが、遅い](i0.png)\n![行かないかと思う](i1.png)\n![暑いであるから、休む](i2.png)\n![図です。](i3.png)\n![図です。](i4.png)\n![図です。](i5.png)\n![図です。](i6.png)"
+findings = ["1:5", "2:5", "3:5"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「のだが」は常体", "図表のキャプションを敬体(ですます調)に揃える: 「ないかと」は常体", "図表のキャプションを敬体(ですます調)に揃える: 「であるから」は常体"]
+
+[[cases]]
+name = "ic-end-forms-desumasu"
+text = "![図です。](i0.png)\n![私が読みます。](i1.png)\n![私が読みました。](i2.png)\n![私は読みません。](i3.png)\n![本ですね。](i4.png)\n![本でしょうか。](i5.png)\n![読んでください。](i6.png)\n![いらっしゃいませ。](i7.png)\n![図だ。](i8.png)\n![図だ。](i9.png)\n![図だ。](i10.png)\n![図だ。](i11.png)\n![図だ。](i12.png)\n![図だ。](i13.png)\n![図だ。](i14.png)\n![図だ。](i15.png)\n![図だ。](i16.png)"
+findings = ["1:4", "2:7", "3:7", "4:7", "5:4", "6:4", "7:6", "8:9"]
+messages = ["図表のキャプションを常体(である調)に揃える: 「です。」は敬体", "図表のキャプションを常体(である調)に揃える: 「ます。」は敬体", "図表のキャプションを常体(である調)に揃える: 「ました。」は敬体", "図表のキャプションを常体(である調)に揃える: 「ません。」は敬体", "図表のキャプションを常体(である調)に揃える: 「ですね。」は敬体", "図表のキャプションを常体(である調)に揃える: 「でしょうか。」は敬体", "図表のキャプションを常体(である調)に揃える: 「ください。」は敬体", "図表のキャプションを常体(である調)に揃える: 「ませ。」は敬体"]
+
+[[cases]]
+name = "ic-end-forms-dearu"
+text = "![図だ。](i0.png)\n![図である。](i1.png)\n![彼は行った。](i2.png)\n![早くしろ。](i3.png)\n![早くしなさい。](i4.png)\n![見ていただきたい。](i5.png)\n![見ていただく。](i6.png)\n![行かねばならない。](i7.png)\n![それもあろう。](i8.png)\n![見られる。](i9.png)\n![図です。](i10.png)\n![図です。](i11.png)\n![図です。](i12.png)\n![図です。](i13.png)\n![図です。](i14.png)\n![図です。](i15.png)\n![図です。](i16.png)\n![図です。](i17.png)\n![図です。](i18.png)\n![図です。](i19.png)\n![図です。](i20.png)"
+findings = ["1:4", "2:4", "3:6", "4:5", "5:5", "6:5", "7:5", "8:7", "9:6", "10:4"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体", "図表のキャプションを敬体(ですます調)に揃える: 「である。」は常体", "図表のキャプションを敬体(ですます調)に揃える: 「った。」は常体", "図表のキャプションを敬体(ですます調)に揃える: 「しろ。」は常体", "図表のキャプションを敬体(ですます調)に揃える: 「しなさい。」は常体", "図表のキャプションを敬体(ですます調)に揃える: 「いただきたい。」は常体", "図表のキャプションを敬体(ですます調)に揃える: 「いただく。」は常体", "図表のキャプションを敬体(ですます調)に揃える: 「ならない。」は常体", "図表のキャプションを敬体(ですます調)に揃える: 「あろう。」は常体", "図表のキャプションを敬体(ですます調)に揃える: 「られる。」は常体"]
+
+[[cases]]
+name = "ic-dewanai-is-dearu"
+note = "常体の文末の形 `ではない｜ないか` を、`ではない` と `ないか` の2つの形として読む。textlintは `ではない。` を常体に数えない"
+text = "![図です。](i0.png)\n![図です。](i1.png)\n![図ではない。](i2.png)"
+findings = ["3:4"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「ではない。」は常体"]
+
+[[cases]]
+name = "ic-naika-is-dearu"
+note = "`ないか。` を常体の文末の形に数える。textlintは数えない"
+text = "![図です。](i0.png)\n![図です。](i1.png)\n![図ではないか。](i2.png)"
+findings = ["3:6"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「ないか。」は常体"]
+
+[[cases]]
+name = "ic-all-end-forms-per-alt"
+note = "altの文末の形をすべて数える。textlintは1行に1件だけ数えるので、敬体の `です。` を指摘する。jafixは敬体2件と常体2件で同数なので、常体の2件を指摘する"
+text = "![図です。それも図です。](i0.png)\n![図だ。](i1.png)\n![図だ。](i2.png)"
+findings = ["2:4", "3:4"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体", "図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "ic-alt-position-is-in-the-source"
+note = "altの位置は元のソースでの位置で、エスケープも1文字に数える。textlintはエスケープを外したaltの中の位置に `![` の2文字を足すので、1列手前になる"
+text = "![図です。](a.png)\n![\\*図だ。](a.png)"
+findings = ["2:6"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "ic-surrogate-pair-in-alt"
+text = "![図です。](i0.png)\n![\U00020bb7図だ。](i1.png)"
+findings = ["2:5"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "ic-two-images-on-a-line"
+text = "![図です。](a.png) と ![図だ。](b.png)"
+findings = ["1:21"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "ic-image-with-title"
+text = "![図です。](a.png \"題\")\n![図だ。](b.png \"題\")"
+findings = ["2:4"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "ic-in-link"
+text = "![図です。](a.png)\n[![図だ。](b.png)](https://example.com)"
+findings = ["2:5"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "ic-in-heading"
+text = "![図です。](a.png)\n\n# ![図だ。](b.png)"
+findings = ["3:6"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "ic-in-table-cell"
+text = "![図です。](a.png)\n\n| 列 |\n| - |\n| ![図だ。](b.png) |"
+findings = ["5:6"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "ic-in-quote"
+text = "![図です。](a.png)\n\n> ![図だ。](b.png)"
+findings = ["3:6"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "ic-in-list-item"
+text = "![図です。](a.png)\n\n- ![図だ。](b.png)"
+findings = ["3:6"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "ic-in-strong"
+text = "![図です。](a.png)\n\n**![図だ。](b.png)**"
+findings = ["3:6"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "ic-reference-image-not-counted"
+note = "参照形式の画像はtextlintの `Image` nodeではないので数えない。textlintも数えないので、期待値は同じである"
+text = "![図だ。][r]\n\n![図です。][r]\n\n[r]: a.png"
+findings = []
+
+[[cases]]
+name = "ic-empty-alt"
+text = "![](a.png)\n![図です。](a.png)\n![図だ。](b.png)"
+findings = ["3:4"]
+messages = ["図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体"]
+
+[[cases]]
+name = "ic-text-is-not-counted"
+text = "![図です。](a.png)\n\nこれは本だ。"
+findings = []

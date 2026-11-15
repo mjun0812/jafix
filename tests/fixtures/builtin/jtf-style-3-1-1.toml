@@ -1,0 +1,270 @@
+# 3.1.1.全角文字と半角文字の間 の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "3.1.1.全角文字と半角文字の間"
+builtin = '''
+"3.1.1.全角文字と半角文字の間" = true
+space-between-ja-and-alnum = false
+'''
+
+[[cases]]
+name = "sp-basic"
+text = "日本語 English と 123 です"
+findings = ["1:4", "1:12", "1:14", "1:18"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語Englishと123です"
+
+[[cases]]
+name = "sp-japanese-then-alnum"
+text = "日本語 English"
+findings = ["1:4"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語English"
+
+[[cases]]
+name = "sp-alnum-then-japanese"
+text = "English 日本語"
+findings = ["1:8"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "English日本語"
+
+[[cases]]
+name = "sp-digits"
+text = "日本語 123 と 456 日本語"
+findings = ["1:4", "1:8", "1:10", "1:14"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語123と456日本語"
+
+[[cases]]
+name = "sp-hiragana-and-katakana"
+text = "ひらがな abc とカタカナ abc"
+findings = ["1:5", "1:9", "1:15"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "ひらがなabcとカタカナabc"
+
+[[cases]]
+name = "sp-kanji-then-alnum-then-kanji"
+text = "漢 A 字"
+findings = ["1:2", "1:4"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "漢A字"
+
+[[cases]]
+name = "sp-fullwidth-space-is-not-checked"
+text = "日本語\u3000English"
+findings = []
+fixed = "日本語\u3000English"
+
+[[cases]]
+name = "sp-two-spaces-are-not-checked"
+text = "日本語  English"
+findings = []
+fixed = "日本語  English"
+
+[[cases]]
+name = "sp-three-spaces-are-not-checked"
+text = "日本語   English と  123"
+findings = ["1:14"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語   Englishと  123"
+
+[[cases]]
+name = "sp-tab-is-not-checked"
+text = "日本語\tEnglish"
+findings = []
+fixed = "日本語\tEnglish"
+
+[[cases]]
+name = "sp-long-vowel-is-not-japanese"
+text = "サーバー Linux と日本語 API"
+findings = ["1:11", "1:16"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "サーバー Linuxと日本語API"
+
+[[cases]]
+name = "sp-repetition-mark-is-not-japanese"
+text = "人々 Rust と〇 Rust"
+findings = ["1:8"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "人々 Rustと〇 Rust"
+
+[[cases]]
+name = "sp-punctuation-is-not-japanese"
+text = "日本語。 English と、 Rust"
+findings = ["1:13"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語。 Englishと、 Rust"
+
+[[cases]]
+name = "sp-symbol-between"
+text = "日本語 + English と日本語 - 1"
+findings = ["1:14"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語 + Englishと日本語 - 1"
+
+[[cases]]
+name = "sp-halfwidth-katakana-is-not-japanese"
+builtin = '''
+"3.1.1.全角文字と半角文字の間" = true
+space-between-ja-and-alnum = false
+no-hankaku-kana = false
+'''
+text = "\uff71\uff72\uff73 abc"
+findings = []
+fixed = "\uff71\uff72\uff73 abc"
+
+[[cases]]
+name = "sp-fullwidth-alphabet-is-not-halfwidth"
+text = "日本語 ＡＢＣ"
+findings = []
+fixed = "日本語 ＡＢＣ"
+
+[[cases]]
+name = "sp-surrogate-pair-kanji"
+text = "\U00020bb7野家 abc と abc \U00020bb7"
+findings = ["1:4", "1:8", "1:10", "1:14"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "\U00020bb7野家abcとabc\U00020bb7"
+
+[[cases]]
+name = "sp-newline-is-not-space"
+text = "日本語\nEnglish"
+findings = []
+fixed = "日本語\nEnglish"
+
+[[cases]]
+name = "sp-underscore-and-hyphen"
+text = "日本語 _a と日本語 -a"
+findings = ["1:7"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語 _aと日本語 -a"
+
+[[cases]]
+name = "sp-two-lines"
+text = "日本語 English\n日本語 Rust"
+findings = ["1:4", "2:4"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "日本語English\n日本語Rust"
+
+[[cases]]
+name = "sp-around-inline-code"
+text = "日本語 `code` 日本語"
+findings = []
+fixed = "日本語 `code` 日本語"
+
+[[cases]]
+name = "sp-before-strong"
+text = "日本語 **Strong**"
+findings = []
+fixed = "日本語 **Strong**"
+
+[[cases]]
+name = "sp-after-link"
+text = "[リンク](https://example.com) English"
+findings = []
+fixed = "[リンク](https://example.com) English"
+
+[[cases]]
+name = "sp-between-japanese-and-English-in-sentence"
+text = "これは Rust のコードです。次は Go のコードです"
+findings = ["1:4", "1:9", "1:19", "1:22"]
+messages = ["全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する", "全角文字と半角文字の間の空白を削除する"]
+fixed = "これはRustのコードです。次はGoのコードです"
+
+[[cases]]
+name = "sp-overlaps-space-between-ja-and-alnum"
+note = "`space-between-ja-and-alnum` が有効なら、同じ範囲の箇所はルールの一覧で前にある `space-between-ja-and-alnum` の箇所が残り、`3.1.1` の箇所は出ない。結果は同じである"
+builtin = '''
+"3.1.1.全角文字と半角文字の間" = true
+'''
+text = "日本語 Rust と Go です"
+findings = []
+fixed = "日本語RustとGoです"
+
+[[cases]]
+name = "sp-long-vowel-is-removed-only-by-space-between-ja-and-alnum"
+note = "`ー` は `3.1.1` の日本語に含まれないので当たらない。`space-between-ja-and-alnum` の日本語には含まれるので、有効なら空白を消す。`3.1.1` の箇所は出ない"
+builtin = '''
+"3.1.1.全角文字と半角文字の間" = true
+'''
+text = "サーバー Linux"
+findings = []
+fixed = "サーバーLinux"
+
+[[cases]]
+name = "sp-heading"
+text = "# 日本語 English"
+findings = []
+fixed = "# 日本語 English"
+
+[[cases]]
+name = "sp-quote"
+text = "> 日本語 English"
+findings = []
+fixed = "> 日本語 English"
+
+[[cases]]
+name = "sp-table"
+text = "| 列 |\n| - |\n| 日本語 English |"
+findings = []
+fixed = "| 列 |\n| - |\n| 日本語 English |"
+
+[[cases]]
+name = "sp-list"
+text = "- 日本語 English"
+findings = ["1:6"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "- 日本語English"
+
+[[cases]]
+name = "sp-link"
+text = "[日本語 English](https://example.com)"
+findings = []
+fixed = "[日本語 English](https://example.com)"
+
+[[cases]]
+name = "sp-strong"
+text = "**日本語 English**"
+findings = []
+fixed = "**日本語 English**"
+
+[[cases]]
+name = "sp-emphasis"
+text = "*日本語 English*"
+findings = []
+fixed = "*日本語 English*"
+
+[[cases]]
+name = "sp-strike"
+text = "~~日本語 English~~"
+findings = []
+fixed = "~~日本語 English~~"
+
+[[cases]]
+name = "sp-code"
+text = "`日本語 English`"
+findings = []
+fixed = "`日本語 English`"
+
+[[cases]]
+name = "sp-footnote"
+text = "[^1]: 日本語 English"
+findings = ["1:10"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "[^1]: 日本語English"
+
+[[cases]]
+name = "sp-html"
+text = "<span>日本語 English</span>"
+findings = ["1:10"]
+messages = ["全角文字と半角文字の間の空白を削除する"]
+fixed = "<span>日本語English</span>"

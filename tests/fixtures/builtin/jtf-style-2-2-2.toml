@@ -1,0 +1,270 @@
+# 2.2.2.算用数字と漢数字の使い分け の例。期待値は、textlint 15.8.0 と textlint-rule-preset-jtf-style 3.0.3 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、既存の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# rule:     指摘の行の `[<rule-id>]` のID (fixtureのファイル名はIDを使えないので、ここに書く)
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    修正ルールだけが持つ。`jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+rule = "2.2.2.算用数字と漢数字の使い分け"
+builtin = '''
+"2.2.2.算用数字と漢数字の使い分け" = true
+'''
+
+[[cases]]
+name = "nk-basic"
+text = "三回と三つと十億"
+findings = ["1:1", "1:4", "1:7"]
+messages = ["算用数字で書く: 三回", "算用数字で書く: 三つ", "算用数字で書く: 十億"]
+
+[[cases]]
+name = "nk-large-units"
+note = "パターンごとの最初の一致だけでなく、すべての一致を指摘する。textlintは `K[兆億万]` のパターンで最初の `一万` だけを指摘する"
+text = "一万と二兆と三億"
+findings = ["1:1", "1:4", "1:7"]
+messages = ["算用数字で書く: 一万", "算用数字で書く: 二兆", "算用数字で書く: 三億"]
+
+[[cases]]
+name = "nk-counters"
+text = "三か月、五番目、二進法、四次元"
+findings = ["1:1", "1:5", "1:9", "1:13"]
+messages = ["算用数字で書く: 三か月", "算用数字で書く: 五番目", "算用数字で書く: 二進法", "算用数字で書く: 四次元"]
+
+[[cases]]
+name = "nk-chapters"
+text = "第三章と第五節"
+findings = ["1:1", "1:5"]
+messages = ["算用数字で書く: 第三章", "算用数字で書く: 第五節"]
+
+[[cases]]
+name = "nk-kanji-number-chars"
+note = "パターンごとの最初の一致だけでなく、すべての一致を指摘する。textlintは `K回` のパターンで最初の `十一回` だけを指摘する"
+text = "十一回、百二十回、壱回、〇回、拾回"
+findings = ["1:1", "1:5", "1:10", "1:13", "1:16"]
+messages = ["算用数字で書く: 十一回", "算用数字で書く: 百二十回", "算用数字で書く: 壱回", "算用数字で書く: 〇回", "算用数字で書く: 拾回"]
+
+[[cases]]
+name = "nk-to-kanji"
+text = "世界1、1時的、1部分、第3者"
+findings = ["1:1", "1:5", "1:9", "1:13"]
+messages = ["漢数字で書く: 世界1", "漢数字で書く: 1時的", "漢数字で書く: 1部分", "漢数字で書く: 第3者"]
+
+[[cases]]
+name = "nk-to-kanji-b"
+text = "と1種、1部の話、1番に、3次関数、5大陸"
+findings = ["1:1", "1:5", "1:10", "1:14", "1:19"]
+messages = ["漢数字で書く: と1種", "漢数字で書く: 1部の", "漢数字で書く: 1番に", "漢数字で書く: 3次関数", "漢数字で書く: 5大陸"]
+
+[[cases]]
+name = "nk-to-kanji-sho"
+note = "パターンごとの最初の一致だけでなく、すべての一致を指摘する。textlintは `数10+[兆億万]` のパターンで最初の `数100万` だけを指摘し、`数10兆` は指摘しない"
+text = "数10倍、数100万、数10年、数10兆"
+findings = ["1:1", "1:6", "1:12", "1:17"]
+messages = ["漢数字で書く: 数10倍", "漢数字で書く: 数100万", "漢数字で書く: 数10年", "漢数字で書く: 数10兆"]
+
+[[cases]]
+name = "nk-shu-rui"
+text = "と1種類と1種"
+findings = ["1:5"]
+messages = ["漢数字で書く: と1種"]
+
+[[cases]]
+name = "nk-shu-at-the-start"
+text = "1種のみ"
+findings = []
+
+[[cases]]
+name = "nk-shu-rui-only"
+text = "この1種類だけ"
+findings = []
+
+[[cases]]
+name = "nk-shu-after-digit"
+text = "11種と21種"
+findings = []
+
+[[cases]]
+name = "nk-already-arabic"
+text = "3回と3つと10億と第3章"
+findings = []
+
+[[cases]]
+name = "nk-already-kanji"
+text = "世界一と一時的と第三者と一部分"
+findings = []
+
+[[cases]]
+name = "nk-not-in-the-patterns"
+text = "一人と二日と三年と四月"
+findings = []
+
+[[cases]]
+name = "nk-all-matches"
+note = "パターンごとの最初の一致だけでなく、すべての一致を指摘する。textlintはパターンごとに最初の1件だけを指摘する"
+text = "三回、四回、五回"
+findings = ["1:1", "1:4", "1:7"]
+messages = ["算用数字で書く: 三回", "算用数字で書く: 四回", "算用数字で書く: 五回"]
+
+[[cases]]
+name = "nk-all-matches-across-patterns"
+note = "パターンごとの最初の一致だけでなく、すべての一致を指摘する。textlintは `回` と `万` のパターンで1件ずつ、2件だけを指摘する"
+text = "三回と二回と一万と二万"
+findings = ["1:1", "1:4", "1:7", "1:10"]
+messages = ["算用数字で書く: 三回", "算用数字で書く: 二回", "算用数字で書く: 一万", "算用数字で書く: 二万"]
+
+[[cases]]
+name = "nk-ignore-overlapping-match"
+note = "無視パターンは、その一致に重なる箇所に当たるときだけ、その一致を外す。`数十万` の `十万` だけを外し、2つ目の `十万` を指摘する。textlintは文字列のどこかに無視パターンが当たれば、パターンの指摘を全部やめる"
+text = "数十万と十万"
+findings = ["1:5"]
+messages = ["算用数字で書く: 十万"]
+
+[[cases]]
+name = "nk-ignore-tada-hitotsu"
+note = "`ただ一つ` の `一つ` だけを外し、`三つ` を指摘する。textlintは無視パターンが文字列のどこかに当たるので、`三つ` も指摘しない"
+text = "ただ一つ、三つ"
+findings = ["1:6"]
+messages = ["算用数字で書く: 三つ"]
+
+[[cases]]
+name = "nk-ignore-hitotsu-henji"
+note = "`一つ返事` の `一つ` だけを外し、`三つ` を指摘する。textlintは `三つ` も指摘しない"
+text = "一つ返事と三つ"
+findings = ["1:6"]
+messages = ["算用数字で書く: 三つ"]
+
+[[cases]]
+name = "nk-ignore-all-ignored"
+text = "三つ子と二つ星と男手一つと穴二つ"
+findings = []
+
+[[cases]]
+name = "nk-ignore-nani"
+note = "`何百万` の `百万` だけを外し、2つ目の `百万` を指摘する。textlintは `百万` も指摘しない"
+text = "何百万と百万"
+findings = ["1:5"]
+messages = ["算用数字で書く: 百万"]
+
+[[cases]]
+name = "nk-ignore-other-ignore-patterns"
+note = "無視パターンに重なる `一つ` `二つ` だけを外し、`三つ` を指摘する。textlintは `三つ` も指摘しない"
+text = "唯一つと馬鹿の二つと瓜二つと三つ"
+findings = ["1:15"]
+messages = ["算用数字で書く: 三つ"]
+
+[[cases]]
+name = "nk-ignore-in-another-line"
+note = "無視パターンが別の行に当たっても、その一致に重ならなければ外さない。textlintは同じ文字列の別の行の無視パターンで、2行目の `三つ` も指摘しない"
+text = "三つ子\n三つ"
+findings = ["2:1"]
+messages = ["算用数字で書く: 三つ"]
+
+[[cases]]
+name = "nk-ignore-in-another-paragraph"
+text = "三つ子\n\n三つ"
+findings = ["3:1"]
+messages = ["算用数字で書く: 三つ"]
+
+[[cases]]
+name = "nk-invalid-kanji-sequence"
+note = "不正な漢数字の並びでも止まらず、指摘する。textlintは例外で検査全体が止まる"
+text = "十十回です"
+findings = ["1:1"]
+messages = ["算用数字で書く: 十十回"]
+
+[[cases]]
+name = "nk-invalid-kanji-sequence-b"
+note = "不正な漢数字の並びでも止まらず、指摘する。textlintは例外で検査全体が止まる"
+text = "二十三十回です。三回"
+findings = ["1:1", "1:9"]
+messages = ["算用数字で書く: 二十三十回", "算用数字で書く: 三回"]
+
+[[cases]]
+name = "nk-two-lines"
+text = "一行目は三回\n二行目は五番目"
+findings = ["1:5", "2:5"]
+messages = ["算用数字で書く: 三回", "算用数字で書く: 五番目"]
+
+[[cases]]
+name = "nk-surrogate-pair-before"
+text = "\U00020bb7野家は三回"
+findings = ["1:5"]
+messages = ["算用数字で書く: 三回"]
+
+[[cases]]
+name = "nk-after-inline-code"
+text = "`x`三回"
+findings = ["1:4"]
+messages = ["算用数字で書く: 三回"]
+
+[[cases]]
+name = "nk-split-by-inline-code"
+text = "三`x`回"
+findings = []
+
+[[cases]]
+name = "nk-split-by-strong"
+text = "三**回**"
+findings = []
+
+[[cases]]
+name = "nk-heading"
+text = "# 二回実行する"
+findings = []
+
+[[cases]]
+name = "nk-quote"
+text = "> 二回実行する"
+findings = []
+
+[[cases]]
+name = "nk-table"
+text = "| 列 |\n| - |\n| 二回実行する |"
+findings = []
+
+[[cases]]
+name = "nk-list"
+text = "- 二回実行する"
+findings = ["1:3"]
+messages = ["算用数字で書く: 二回"]
+
+[[cases]]
+name = "nk-link"
+text = "[二回実行する](https://example.com)"
+findings = []
+
+[[cases]]
+name = "nk-strong"
+text = "**二回実行する**"
+findings = []
+
+[[cases]]
+name = "nk-emphasis"
+text = "*二回実行する*"
+findings = []
+
+[[cases]]
+name = "nk-strike"
+text = "~~二回実行する~~"
+findings = []
+
+[[cases]]
+name = "nk-code"
+text = "`二回実行する`"
+findings = []
+
+[[cases]]
+name = "nk-footnote"
+text = "[^1]: 二回実行する"
+findings = ["1:7"]
+messages = ["算用数字で書く: 二回"]
+
+[[cases]]
+name = "nk-html"
+text = "<span>二回実行する</span>"
+findings = ["1:7"]
+messages = ["算用数字で書く: 二回"]

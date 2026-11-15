@@ -30,13 +30,19 @@ pub struct InlineNode {
     pub heading: bool,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum InlineNodeKind {
     Code,
     /// インラインのリンク (`[x](u)`) と自動リンク (`<…>`)。裸のURLと参照形式のリンクは含めない
     Link,
     Strong,
     Emphasis,
+    /// インラインの画像 (`![alt](url)`)。参照形式の画像は含めない
+    #[allow(dead_code)] // skeleton: not implemented
+    Image {
+        /// altの元のソース上のバイト範囲。`![` の直後から、対応する `]` の直前までである
+        alt: Range<usize>,
+    },
 }
 
 /// リスト項目
@@ -44,6 +50,10 @@ pub enum InlineNodeKind {
 pub struct ListItem {
     /// 元のソース上のバイト範囲。リストの記号から、入れ子の項目と継続行を含む項目の終わりまでである
     pub range: Range<usize>,
+    /// 項目が属するリストの、文書の中での出現順の番号。同じリストの項目は同じ番号を持ち、入れ子のリストは
+    /// 親のリストと別の番号を持つ
+    #[allow(dead_code)] // skeleton: not implemented
+    pub list: usize,
 }
 
 /// 本文の1つの範囲
@@ -167,7 +177,8 @@ pub fn parse(src: &str) -> Document {
     }
 }
 
-/// `node` の中のインラインコード・リンク・太字・強調を `nodes` に集める。`heading` は、`node` が見出しの中にあるか
+/// `node` の中のインラインコード・リンク・太字・強調・画像を `nodes` に集める。`heading` は、`node` が見出しの中にあるか
+// skeleton: not implemented (インラインの画像とaltの範囲を集める)
 fn collect_inline_nodes(node: &Node, src: &str, heading: bool, nodes: &mut Vec<InlineNode>) {
     let kind = match node {
         Node::InlineCode(_) => Some(InlineNodeKind::Code),
@@ -284,6 +295,8 @@ fn collect_paragraphs(
                     .map_or(range.end, |last| node_range(last).end);
                 blocks.list_items.push(ListItem {
                     range: range.start..end,
+                    // skeleton: not implemented (項目が属するリストの番号)
+                    list: 0,
                 });
             }
             for (i, child) in children.iter().enumerate() {
