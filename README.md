@@ -235,6 +235,8 @@ patterns = [
 - 文書の直下の段落と、その次のブロックに当てるルール: `no-ai-colon-continuation` と、`ai-tech-writing-guideline` の構造化の一部です。リスト項目・引用・脚注の定義の中の段落は見ません。`no-ai-colon-continuation` は、次のブロックがコードブロック・リスト・引用・表の段落を、`ai-tech-writing-guideline` は、次のブロックがリストの段落を見ます
 - 文書の全体で当てるルール: `no-mix-dearu-desumasu` と、`ai-tech-writing-guideline` の件数の要約です。`no-mix-dearu-desumasu` は、引用の外の見出し・箇条書き(リスト項目の中の段落)・本文(それ以外の段落)のそれぞれで、「である」と「ですます」を文書の全体で数えてから、指摘する箇所を決めます。hookでは、全体を数えたうえで、対象行にある指摘だけを返します
 
+`2.2.2.算用数字と漢数字の使い分け` は `arabic-kanji-numbers` と同じパターンで判定するので、両方を有効にすると、同じ箇所に2つの指摘が出ます。設定を書かなければ `arabic-kanji-numbers` だけが有効なので、重なるのは `preset-jtf-style = true` かルールのIDのキーで `2.2.2` を有効にしたときだけです。指摘する一致の数も違い、`arabic-kanji-numbers` はパターンごとに最初の一致だけを、`2.2.2` はすべての一致を指摘します。片方だけを使うには、`arabic-kanji-numbers = false` か `"2.2.2.算用数字と漢数字の使い分け" = false` を書きます。
+
 ## 導入
 
 GitHub Releasesに、macOS(Apple Silicon)とLinux(x86_64・aarch64)のバイナリを置いています。[mise](https://mise.jdx.dev/) では次のコマンドで入れられます。

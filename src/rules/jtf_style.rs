@@ -199,7 +199,6 @@ const JAPANESE_WITHOUT_MARKS: &[RangeInclusive<char>] = &[
 ];
 
 /// textlintの `kanjiRegExp`。`2.1.2` が使う。`々` を含まない
-#[allow(dead_code)] // skeleton: not implemented
 const KANJI: &[RangeInclusive<char>] = &[
     '〇'..='〇',
     '〻'..='〻',
@@ -209,7 +208,6 @@ const KANJI: &[RangeInclusive<char>] = &[
 ];
 
 /// `3.2` のカタカナ語の文字
-#[allow(dead_code)] // skeleton: not implemented
 const KATAKANA_WORD: &[RangeInclusive<char>] = &['ァ'..='ヶ', 'ー'..='ー'];
 
 /// `2.1.5` の半角カナ

@@ -138,3 +138,11 @@ pub const JOYO_KANJI: [char; 2136] = [
     '鬱', '鬼', '魂', '魅', '魔', '魚', '鮮', '鯨', '鳥', '鳴', '鶏', '鶴', '鹿', '麓', '麗', '麦',
     '麺', '麻', '黄', '黒', '黙', '鼓', '鼻', '齢',
 ];
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn joyo_kanji_are_sorted_without_duplicates() {
+        assert!(super::JOYO_KANJI.windows(2).all(|pair| pair[0] < pair[1]));
+    }
+}

@@ -304,6 +304,21 @@ fn no_kangxi_radicals() {
 }
 
 #[test]
+fn jtf_style_1_2_1() {
+    assert_cases("jtf-style-1-2-1");
+}
+
+#[test]
+fn jtf_style_1_2_2() {
+    assert_cases("jtf-style-1-2-2");
+}
+
+#[test]
+fn jtf_style_2_1_2() {
+    assert_cases("jtf-style-2-1-2");
+}
+
+#[test]
 fn jtf_style_2_1_5() {
     assert_cases("jtf-style-2-1-5");
 }
@@ -324,8 +339,18 @@ fn jtf_style_2_1_9() {
 }
 
 #[test]
+fn jtf_style_2_1_10() {
+    assert_cases("jtf-style-2-1-10");
+}
+
+#[test]
 fn jtf_style_2_2_1() {
     assert_cases("jtf-style-2-2-1");
+}
+
+#[test]
+fn jtf_style_2_2_2() {
+    assert_cases("jtf-style-2-2-2");
 }
 
 #[test]
@@ -344,11 +369,71 @@ fn jtf_style_3_1_2() {
 }
 
 #[test]
+fn jtf_style_3_2() {
+    assert_cases("jtf-style-3-2");
+}
+
+#[test]
 fn jtf_style_3_3() {
     assert_cases("jtf-style-3-3");
 }
 
 #[test]
+fn jtf_style_4_1_1() {
+    assert_cases("jtf-style-4-1-1");
+}
+
+#[test]
+fn jtf_style_4_1_3() {
+    assert_cases("jtf-style-4-1-3");
+}
+
+#[test]
+fn jtf_style_4_2_1() {
+    assert_cases("jtf-style-4-2-1");
+}
+
+#[test]
+fn jtf_style_4_2_2() {
+    assert_cases("jtf-style-4-2-2");
+}
+
+#[test]
 fn jtf_style_4_2_4() {
     assert_cases("jtf-style-4-2-4");
+}
+
+#[test]
+fn jtf_style_4_2_5() {
+    assert_cases("jtf-style-4-2-5");
+}
+
+#[test]
+fn jtf_style_4_2_6() {
+    assert_cases("jtf-style-4-2-6");
+}
+
+#[test]
+fn jtf_style_4_2_7() {
+    assert_cases("jtf-style-4-2-7");
+}
+
+#[test]
+fn jtf_style_4_2_8() {
+    assert_cases("jtf-style-4-2-8");
+}
+
+#[test]
+fn jtf_style_4_2_9() {
+    assert_cases("jtf-style-4-2-9");
+}
+
+#[test]
+fn jtf_style_4_3_1() {
+    assert_cases("jtf-style-4-3-1");
+}
+
+#[test]
+fn jtf_style_4_3_2() {
+    assert_cases("jtf-style-4-3-2");
 }

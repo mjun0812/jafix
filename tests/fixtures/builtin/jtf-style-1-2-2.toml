@@ -66,9 +66,10 @@ findings = []
 
 [[cases]]
 name = "fw-after-inline-code"
+note = "本文の範囲のすべての `，` `．` を指摘する。textlintは最初の `，` だけを指摘する"
 text = "`x`，です．"
-findings = ["1:4"]
-messages = ["全角の「，」を使わず半角の「,」にする"]
+findings = ["1:4", "1:7"]
+messages = ["全角の「，」を使わず半角の「,」にする", "全角の「．」を使わず半角の「.」にする"]
 
 [[cases]]
 name = "fw-heading"

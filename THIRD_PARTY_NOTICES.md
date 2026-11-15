@@ -16,6 +16,8 @@ jafixの組み込みのルールのうち、textlintと同じIDのものは、�
 | textlint-rule-max-comma                                       | 4.0.0   | Copyright (c) 2016 azu           |
 | textlint-rule-max-kanji-continuous-len                        | 1.1.1   | Copyright (c) 2016 azu           |
 | textlint-rule-preset-jtf-style                                | 3.0.3   | Copyright (c) 2015 azu           |
+| analyze-desumasu-dearu                                        | 2.1.5   | Copyright (c) 2015 azu           |
+| moji                                                          | 0.5.1   | Copyright (c) 2015 niwaringo     |
 | textlint-rule-ja-no-mixed-period                              | 3.0.2   | Copyright (c) 2016 azu           |
 | check-ends-with-period                                        | 3.0.2   | Copyright (c) 2017 azu           |
 | textlint-rule-no-nfd                                          | 2.0.2   | Copyright (c) 2016 azu           |
@@ -60,6 +62,22 @@ jafixの組み込みのルールのうち、textlintと同じIDのものは、�
 | textlint-rule-no-kangxi-radicals                              | 0.2.2   | 著作権表示なし(作者は xl1)       |
 
 `textlint-rule-no-kangxi-radicals` は、LICENSEのファイルを持たず、`package.json` に作者 `xl1` とMIT Licenseを書いています。
+
+## JTF日本語標準スタイルガイドの辞書
+
+jafixのbinaryは、textlint-rule-preset-jtf-style 3.0.3の辞書の4つのファイル `dict/2.1.5.yml`・`dict/2.1.6.yml`・`dict/2.2.1.yml`・`dict/2.2.3.yml` を、改変せずに含みます。packageのREADMEは、JTF日本語標準スタイルガイドに由来する部分を次のように表示しています。
+
+```text
+by Japan Translation Federation (CC BY-SA) www.jtf.jp
+本著作物は「JTF日本語標準スタイルガイド2.0」(JTF, CC BY-SA)を改変して作成したものです。
+```
+
+4つの辞書は、このCC BY-SA(表示 - 継承)の条件で利用しています。CC BY-SAのversionは、packageのREADMEにもJTFのページにも書かれていません。条件は次の2つです。
+
+- 表示: 原著作者がJapan Translation Federation(JTF)であることと、CC BY-SAで公開されていることを示す
+- 継承: 辞書を改変して配布するときは、同じCC BY-SAの条件で公開する
+
+READMEは、辞書以外のコードをMIT Licenseとしています。`2.1.2.漢字` が使う常用漢字の表は、packageの `src/2.1.2.js` から写したコードで、MIT Licenseの部分です。
 
 ## MIT License
 
