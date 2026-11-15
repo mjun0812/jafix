@@ -1756,6 +1756,211 @@ fn preset_jtf_style_alone_conflicts_with_fullwidth_paren() {
     );
 }
 
+const JTF_STYLE_RULES: [&str; 37] = [
+    "1.1.1.本文",
+    "1.1.2.見出し",
+    "1.1.3.箇条書き",
+    "1.1.5.図表のキャプション",
+    "1.2.1.句点(。)と読点(、)",
+    "1.2.2.ピリオド(.)とカンマ(,)",
+    "2.1.2.漢字",
+    "2.1.5.カタカナ",
+    "2.1.6.カタカナの長音",
+    "2.1.8.算用数字",
+    "2.1.9.アルファベット",
+    "2.1.10.算用数字の位取りの表記",
+    "2.2.1.ひらがなと漢字の使い分け",
+    "2.2.2.算用数字と漢数字の使い分け",
+    "2.2.3.一部の助数詞の表記",
+    "3.1.1.全角文字と半角文字の間",
+    "3.1.2.全角文字どうし",
+    "3.2.カタカナ語間のスペースの有無",
+    JTF_PARENTHESES,
+    "4.1.1.句点(。)",
+    "4.1.3.ピリオド(.)、カンマ(,)",
+    "4.2.1.感嘆符(！)",
+    "4.2.2.疑問符(？)",
+    "4.2.4.中黒(・)",
+    "4.2.5.波線(〜)",
+    "4.2.6.ハイフン(-)",
+    "4.2.7.コロン(：)",
+    "4.2.8.セミコロン(;)",
+    "4.2.9.ダッシュ(-)",
+    "4.3.1.丸かっこ（）",
+    "4.3.2.大かっこ［］",
+    "4.3.3.かぎかっこ「」",
+    "4.3.4.二重かぎかっこ『』",
+    "4.3.5.二重引用符",
+    "4.3.6.中かっこ{ }",
+    "4.3.7.山かっこ<>",
+    "4.3.8.一重引用符",
+];
+
+/// `JTF_STYLE_RULES` の各ルールに当たる段落を、同じ順に並べた文書。`4.3.8.一重引用符` は何も指摘しない
+const JTF_STYLE_RULES_INPUT: &str = "本文は敬体です。本文は常体である。
+
+# 見出し。
+
+- 項目です。
+- 項目である
+
+![図は敬体です。図は常体である。](a.png)
+
+日本語,です
+
+これは，テスト
+
+彼は躓いた
+
+ｻｰﾊﾞｰとアジヤ
+
+サーバ
+
+全角の１２３
+
+全角のＡＢＣ
+
+値は0,5です
+
+予め決める
+
+三回実行する
+
+3ヶ月
+
+日本語 Rust
+
+日本語 日本語
+
+カタカナ\u{3000}カタカナ
+
+日本語 「引用」 です
+
+「これは。」と言う
+
+日本語.
+
+すごい!
+
+本当?
+
+ア･イ
+
+1~10
+
+日本語-日本語
+
+例:これ
+
+日本語;です
+
+日本語—です
+
+日本語(補足)です
+
+日本語[補足]です
+
+「閉じない
+
+『閉じない
+
+\"閉じない
+
+{閉じない
+
+<閉じない
+
+'一重'
+";
+
+/// `preset-jtf-style = true` でも有効にならない、presetの既定で無効な4ルール
+const JTF_STYLE_PRESET_OFF_RULES: [&str; 4] = [
+    "2.1.2.漢字",
+    "2.1.5.カタカナ",
+    "2.1.6.カタカナの長音",
+    "2.2.1.ひらがなと漢字の使い分け",
+];
+
+#[test]
+fn jtf_style_rules_are_off_by_default() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", JTF_STYLE_RULES_INPUT);
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in JTF_STYLE_RULES {
+        assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+}
+
+#[test]
+fn preset_jtf_style_enables_its_rules() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", JTF_STYLE_RULES_INPUT);
+    let preset = "[builtin]\npreset-jtf-style = true\nfullwidth-paren = false\n";
+    sandbox.write_xdg_config(preset);
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    // 同じ範囲に当たる `space-between-ja-and-alnum`・`no-hankaku-kana` の箇所が、重なりの規則で残る
+    let covered_by_fix_rules = ["3.1.1.全角文字と半角文字の間", "4.2.4.中黒(・)"];
+    for rule in JTF_STYLE_RULES {
+        let expected = !JTF_STYLE_PRESET_OFF_RULES.contains(&rule)
+            && rule != "4.3.8.一重引用符"
+            && !covered_by_fix_rules.contains(&rule);
+        assert_eq!(
+            !findings_of(found, rule).is_empty(),
+            expected,
+            "{rule}: {found}"
+        );
+    }
+
+    sandbox.write_xdg_config(&format!(
+        "{preset}space-between-ja-and-alnum = false\nno-hankaku-kana = false\n"
+    ));
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in covered_by_fix_rules {
+        assert!(!findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+    for rule in JTF_STYLE_PRESET_OFF_RULES {
+        assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+}
+
+#[test]
+fn rule_key_overrides_preset_jtf_style() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", JTF_STYLE_RULES_INPUT);
+    let preset = "preset-jtf-style = true\nfullwidth-paren = false\n";
+    sandbox.write_xdg_config(&format!("[builtin]\n{preset}"));
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    assert!(findings_of(found, "2.1.2.漢字").is_empty(), "{found}");
+    assert!(
+        !findings_of(found, "4.2.7.コロン(：)").is_empty(),
+        "{found}"
+    );
+
+    sandbox.write_xdg_config(&format!("[builtin]\n{preset}\"2.1.2.漢字\" = true\n"));
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    assert!(!findings_of(found, "2.1.2.漢字").is_empty(), "{found}");
+    assert!(
+        !findings_of(found, "4.2.7.コロン(：)").is_empty(),
+        "{found}"
+    );
+
+    sandbox.write_xdg_config("[builtin]\npreset-jtf-style = false\n\"4.2.7.コロン(：)\" = true\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in JTF_STYLE_RULES {
+        assert_eq!(
+            findings_of(found, rule).is_empty(),
+            rule != "4.2.7.コロン(：)",
+            "{rule}: {found}"
+        );
+    }
+}
+
 #[test]
 fn jtf_style_rule_options_are_validated() {
     for (builtin, expected) in [
@@ -1850,11 +2055,59 @@ fn jtf_style_fix_rules_repeat_with_other_fix_rules() {
 }
 
 #[test]
+fn overlapping_jtf_style_fix_rules_fix_once() {
+    let sandbox = Sandbox::new();
+    let config =
+        "[builtin]\npreset-jtf-style = true\nfullwidth-paren = false\n\"2.1.5.カタカナ\" = true\n";
+    sandbox.write_xdg_config(config);
+    let input = "日本語 Rust、ｻｰﾊﾞｰ、項目 （補足）\n";
+    sandbox.write("t.md", input);
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    assert_eq!(
+        findings_of(found, "space-between-ja-and-alnum"),
+        ["t.md:1:4: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]"],
+        "{found}"
+    );
+    assert_eq!(
+        findings_of(found, "no-hankaku-kana"),
+        ["t.md:1:10: 半角カナを全角にする [no-hankaku-kana]"],
+        "{found}"
+    );
+    assert_eq!(
+        findings_of(found, "space-between-ja-and-paren"),
+        ["t.md:1:18: 日本語と括弧の間の空白を削除する [space-between-ja-and-paren]"],
+        "{found}"
+    );
+    for rule in [
+        "3.1.1.全角文字と半角文字の間",
+        "2.1.5.カタカナ",
+        JTF_PARENTHESES,
+    ] {
+        assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+    assert_eq!(
+        fix_with_config(&sandbox, input),
+        "日本語Rust、サーバー、項目（補足）\n"
+    );
+
+    sandbox.write_xdg_config(&format!("{config}no-hankaku-kana = false\n"));
+    sandbox.write("t.md", input);
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    assert_eq!(
+        findings_of(found, "2.1.5.カタカナ"),
+        ["t.md:1:10: 半角カナ「ｻｰﾊﾞｰ」を全角にする [2.1.5.カタカナ]"],
+        "{found}"
+    );
+}
+
+#[test]
 fn prh_rejects_a_replacement_opposite_to_a_jtf_style_fix_rule() {
     let fullwidth_digits = prh_rule("１２３", "いちにさん");
     assert_check_rejects_builtin(
         &format!("\"2.1.8.算用数字\" = true\n{fullwidth_digits}"),
-        &["１２３", "2.1.8.算用数字"],
+        &["１２３", "`\"2.1.8.算用数字\" = false`"],
     );
     let sandbox = Sandbox::new();
     sandbox.write_xdg_config(&format!("[builtin]\n{fullwidth_digits}"));

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# 既定で無効な組み込みのルールもすべて有効にし、`prh` に1,300ルールの辞書を、`@textlint-rule/pattern` に30語と
-# 1つの正規表現の31要素を書いた設定で、約30KBのMarkdownへのEditの入力の `jafix hook claude` をhyperfineで計り、
+# 既定で無効な組み込みのルールもすべて有効にし (`4.3.1.丸かっこ（）` と逆の `fullwidth-paren` は無効にする)、
+# `prh` に1,300ルールの辞書を、`@textlint-rule/pattern` に30語と1つの正規表現の31要素を書いた設定で、
+# 約30KBのMarkdownへのEditの入力の `jafix hook claude` をhyperfineで計り、
 # 平均が0.05秒未満ならexit 0、以上ならexit 1で終える
 set -euo pipefail
 
@@ -42,6 +43,12 @@ ja-space-around-emphasis = true
 ja-space-around-strong = true
 no-mixed-zenkaku-and-hankaku-alphabet = true
 no-kangxi-radicals = true
+preset-jtf-style = true
+fullwidth-paren = false
+"2.1.2.漢字" = true
+"2.1.5.カタカナ" = true
+"2.1.6.カタカナの長音" = true
+"2.2.1.ひらがなと漢字の使い分け" = true
 prh = { rulePaths = ["prh.yml"] }
 TOML
     for word in "${words[@]}"; do

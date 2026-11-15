@@ -243,3 +243,68 @@ pub fn spacing_rule_lines(stderr: &str) -> Vec<&str> {
         .filter(|line| IDS.iter().any(|id| line.ends_with(&format!(" [{id}]"))))
         .collect()
 }
+
+/// `preset-jtf-style` と、presetの既定で無効な4ルールを有効にする設定。`preset-jtf-style` の `4.3.1.丸かっこ（）` と
+/// 逆の `fullwidth-paren` は無効にする
+pub const JTF_STYLE_RULES_CONFIG: &str = "[builtin]
+preset-jtf-style = true
+fullwidth-paren = false
+\"2.1.2.漢字\" = true
+\"2.1.5.カタカナ\" = true
+\"2.1.6.カタカナの長音\" = true
+\"2.2.1.ひらがなと漢字の使い分け\" = true
+";
+
+/// 見出し・本文・リスト・`例:` のある行・全角の数字のある行・辞書の語のある行を持つ文書。3行目と7行目を対象行にする。
+/// 本文の敬体と常体、リストの項目の `。` の有無は、対象行の外の行を含めて数えると、対象行の側が少ない
+pub const JTF_STYLE_RULES_HOOK_INPUT: &str = "# 見出し。
+
+本文は１２３だ。例:これを読みます。
+
+本文は４５６です。例:それを読みます。
+
+- サーバは７８９です
+- 項目はサーバを予め使います。
+- 項目は３つです。
+
+本文は１０個だ。
+";
+
+/// `JTF_STYLE_RULES_HOOK_INPUT` の3行目と7行目を対象行にして直した文書。対象行の全角の数字だけが半角になる
+pub const JTF_STYLE_RULES_HOOK_FIXED: &str = "# 見出し。
+
+本文は123だ。例:これを読みます。
+
+本文は４５６です。例:それを読みます。
+
+- サーバは789です
+- 項目はサーバを予め使います。
+- 項目は３つです。
+
+本文は１０個だ。
+";
+
+/// `JTF_STYLE_RULES_HOOK_INPUT` の3行目と7行目を対象行にしたhookが、`path` について返す37ルールの指摘の行。
+/// 1行目の `1.1.2`、5行目の `4.2.7`、8行目の辞書の2ルール、11行目の `1.1.1` は、対象行の外なので出ない
+pub fn jtf_style_rule_reports(path: &Path) -> Vec<String> {
+    let path = path.display();
+    vec![
+        format!("{path}:3:7: 本文を敬体(ですます調)に揃える: 「だ。」は常体 [1.1.1.本文]"),
+        format!("{path}:3:10: コロンは全角の「：」にする [4.2.7.コロン(：)]"),
+        format!(
+            "{path}:7:1: 箇条書きの文末の「。」の有無を揃える: 「。」を付ける [1.1.3.箇条書き]"
+        ),
+        format!("{path}:7:3: 「サーバは7」を「サーバーは7」にする [2.1.6.カタカナの長音]"),
+    ]
+}
+
+/// 標準エラーの行のうち、`preset-jtf-style` の37ルールの行。37ルールのIDだけが数字で始まる
+pub fn jtf_style_rule_lines(stderr: &str) -> Vec<&str> {
+    stderr
+        .lines()
+        .filter(|line| {
+            line.rsplit_once(" [")
+                .is_some_and(|(_, id)| id.starts_with(|c: char| c.is_ascii_digit()))
+        })
+        .collect()
+}

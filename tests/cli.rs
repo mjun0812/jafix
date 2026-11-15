@@ -318,3 +318,15 @@ fn version_prints_name_and_version() {
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stdout(&output), "jafix 0.1.0\n");
 }
+
+#[test]
+fn check_reads_an_image_whose_alt_has_a_bracket_inside_a_code_span() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "![a `[` b](x.png)\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert!(
+        matches!(output.status.code(), Some(0 | 1)),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}

@@ -77,7 +77,7 @@ by Japan Translation Federation (CC BY-SA) www.jtf.jp
 - 表示: 原著作者がJapan Translation Federation(JTF)であることと、CC BY-SAで公開されていることを示す
 - 継承: 辞書を改変して配布するときは、同じCC BY-SAの条件で公開する
 
-READMEは、辞書以外のコードをMIT Licenseとしています。`2.1.2.漢字` が使う常用漢字の表は、packageの `src/2.1.2.js` から写したコードで、MIT Licenseの部分です。
+packageのREADMEは、辞書以外のコードをMIT Licenseとしています。`2.1.2.漢字` が使う常用漢字の表は、packageの `src/2.1.2.js` から写したコードで、MIT Licenseの部分です。
 
 ## MIT License
 

@@ -1695,7 +1695,7 @@ fn opposite_reason(hits: &[RuleId]) -> Option<String> {
     let quoted: Vec<String> = names.iter().map(|name| format!("`{name}`")).collect();
     let disabled: Vec<String> = names
         .iter()
-        .map(|name| format!("`{name} = false`"))
+        .map(|name| format!("`{} = false`", toml_key(name)))
         .collect();
     Some(format!(
         "{} が直す文字を含む。{} にするか",

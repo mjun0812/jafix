@@ -10,7 +10,7 @@ mod style;
 mod texts;
 
 use std::collections::HashSet;
-use std::ops::RangeInclusive;
+use std::ops::{Range, RangeInclusive};
 
 use crate::prose::{Document, Prose};
 
@@ -216,4 +216,12 @@ const HANKAKU_KANA: RangeInclusive<char> = '\u{FF65}'..='\u{FF9F}';
 /// `c` が `ranges` のどれかに入るか
 fn contains(ranges: &[RangeInclusive<char>], c: char) -> bool {
     ranges.iter().any(|range| range.contains(&c))
+}
+
+/// `texts` のうち、元のソースの `range` (段落の範囲) の中にある本文の範囲。`texts` は出現順に並び、段落の範囲の中と外の
+/// 本文の範囲は入り交じらない
+fn texts_in<'a>(texts: &'a [Prose], range: &Range<usize>) -> &'a [Prose] {
+    let start = texts.partition_point(|prose| prose.range.start < range.start);
+    let end = texts.partition_point(|prose| prose.range.start < range.end);
+    &texts[start..end]
 }

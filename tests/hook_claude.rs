@@ -3,10 +3,11 @@ mod common;
 use std::path::Path;
 
 use common::{
-    AI_RULES_CONFIG, AI_RULES_INPUT, AI_WORDS_PATTERN, SPACING_RULES_CONFIG, SPACING_RULES_FIXED,
-    SPACING_RULES_INPUT, Sandbox, USER_REPLACEMENTS_CONFIG, USER_REPLACEMENTS_FIXED,
-    USER_REPLACEMENTS_INPUT, read, spacing_rule_lines, spacing_rule_reports, stdout,
-    user_replacement_reports,
+    AI_RULES_CONFIG, AI_RULES_INPUT, AI_WORDS_PATTERN, JTF_STYLE_RULES_CONFIG,
+    JTF_STYLE_RULES_HOOK_FIXED, JTF_STYLE_RULES_HOOK_INPUT, SPACING_RULES_CONFIG,
+    SPACING_RULES_FIXED, SPACING_RULES_INPUT, Sandbox, USER_REPLACEMENTS_CONFIG,
+    USER_REPLACEMENTS_FIXED, USER_REPLACEMENTS_INPUT, jtf_style_rule_lines, jtf_style_rule_reports,
+    read, spacing_rule_lines, spacing_rule_reports, stdout, user_replacement_reports,
 };
 use serde_json::{Value, json};
 
@@ -430,6 +431,22 @@ fn fixes_spacing_rules_on_target_lines() {
     assert_eq!(
         spacing_rule_lines(stderr(&output)),
         spacing_rule_reports(&path),
+        "{}",
+        stderr(&output)
+    );
+}
+
+#[test]
+fn reports_jtf_style_findings_on_target_lines() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(JTF_STYLE_RULES_CONFIG);
+    let path = sandbox.write("t.md", JTF_STYLE_RULES_HOOK_INPUT);
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[3, 7]));
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(read(&path), JTF_STYLE_RULES_HOOK_FIXED);
+    assert_eq!(
+        jtf_style_rule_lines(stderr(&output)),
+        jtf_style_rule_reports(&path),
         "{}",
         stderr(&output)
     );

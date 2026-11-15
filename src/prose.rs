@@ -15,7 +15,7 @@ pub struct Document {
     pub headings: Vec<Paragraph>,
     /// リスト項目。出現順に並び、入れ子の項目は親の項目の後に来る
     pub list_items: Vec<ListItem>,
-    /// 文書のどこにあるかによらない、すべてのインラインコード・リンク・太字・強調。出現順に並び、
+    /// 文書のどこにあるかによらない、すべてのインラインコード・リンク・太字・強調・画像。出現順に並び、
     /// 入れ子のnodeは外側のnodeの後に来る。段落・見出し・表のセル・リンクの文字列・太字の中を含む
     pub inline_nodes: Vec<InlineNode>,
 }
@@ -38,7 +38,6 @@ pub enum InlineNodeKind {
     Strong,
     Emphasis,
     /// インラインの画像 (`![alt](url)`)。参照形式の画像は含めない
-    #[allow(dead_code)] // skeleton: not implemented
     Image {
         /// altの元のソース上のバイト範囲。`![` の直後から、対応する `]` の直前までである
         alt: Range<usize>,
@@ -52,7 +51,6 @@ pub struct ListItem {
     pub range: Range<usize>,
     /// 項目が属するリストの、文書の中での出現順の番号。同じリストの項目は同じ番号を持ち、入れ子のリストは
     /// 親のリストと別の番号を持つ
-    #[allow(dead_code)] // skeleton: not implemented
     pub list: usize,
 }
 
@@ -178,7 +176,6 @@ pub fn parse(src: &str) -> Document {
 }
 
 /// `node` の中のインラインコード・リンク・太字・強調・画像を `nodes` に集める。`heading` は、`node` が見出しの中にあるか
-// skeleton: not implemented (インラインの画像とaltの範囲を集める)
 fn collect_inline_nodes(node: &Node, src: &str, heading: bool, nodes: &mut Vec<InlineNode>) {
     let kind = match node {
         Node::InlineCode(_) => Some(InlineNodeKind::Code),
@@ -188,6 +185,13 @@ fn collect_inline_nodes(node: &Node, src: &str, heading: bool, nodes: &mut Vec<I
         }
         Node::Strong(_) => Some(InlineNodeKind::Strong),
         Node::Emphasis(_) => Some(InlineNodeKind::Emphasis),
+        Node::Image(_) => {
+            let image = node_range(node);
+            let alt_start = image.start + "![".len();
+            Some(InlineNodeKind::Image {
+                alt: alt_start..alt_end(&src[..image.end], alt_start),
+            })
+        }
         _ => None,
     };
     if let Some(kind) = kind {
@@ -201,6 +205,57 @@ fn collect_inline_nodes(node: &Node, src: &str, heading: bool, nodes: &mut Vec<I
     for child in node.children().into_iter().flatten() {
         collect_inline_nodes(child, src, heading, nodes);
     }
+}
+
+/// `start` から始まる画像のaltの終わり (対応する `]` の位置) を返す。`image` は、元のソースの先頭から画像の
+/// 終わりまでである。mdastの画像はaltの位置を持たないので、元のソースの括弧を数える。CommonMarkと同じく、
+/// altの中の対になった `[` `]`、エスケープした `\]`、コードスパンの中の `[` `]` では終わらない
+fn alt_end(image: &str, start: usize) -> usize {
+    let bytes = image.as_bytes();
+    let mut depth = 0;
+    let mut i = start;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'\\' => i += 1,
+            b'`' => {
+                let run = backtick_run(bytes, i);
+                // 閉じの並びが無いバッククォートは、コードスパンを始めず文字のまま残る
+                i = code_span_end(bytes, i + run, run).unwrap_or(i + run);
+                continue;
+            }
+            b'[' => depth += 1,
+            b']' if depth == 0 => return i,
+            b']' => depth -= 1,
+            _ => {}
+        }
+        i += 1;
+    }
+    // 自動リンクやHTMLのタグの中の `]` など、上で数えない書き方のaltでは、画像の最後の `](` を終わりとみなす
+    image[start..]
+        .rfind("](")
+        .map_or(bytes.len(), |end| start + end)
+}
+
+/// `i` から続くバッククォートの数
+fn backtick_run(bytes: &[u8], i: usize) -> usize {
+    bytes[i..].iter().take_while(|&&b| b == b'`').count()
+}
+
+/// `from` より後ろで、長さがちょうど `run` のバッククォートの並びを探し、その並びの直後の位置を返す
+fn code_span_end(bytes: &[u8], from: usize, run: usize) -> Option<usize> {
+    let mut i = from;
+    while i < bytes.len() {
+        if bytes[i] != b'`' {
+            i += 1;
+            continue;
+        }
+        let len = backtick_run(bytes, i);
+        if len == run {
+            return Some(i + len);
+        }
+        i += len;
+    }
+    None
 }
 
 fn node_range(node: &Node) -> Range<usize> {
@@ -256,6 +311,8 @@ struct Blocks {
     paragraphs: Vec<Paragraph>,
     headings: Vec<Paragraph>,
     list_items: Vec<ListItem>,
+    /// これまでに見たリストの数
+    lists: usize,
 }
 
 /// `node` の祖先にある、段落の性質を決めるブロック
@@ -264,6 +321,8 @@ struct Ancestors {
     blockquote: bool,
     /// 最も内側のリスト項目の `Blocks::list_items` での番号
     list_item: Option<usize>,
+    /// 最も内側のリストの、文書の中での出現順の番号。リストの外では使わない
+    list: usize,
     footnote: bool,
 }
 
@@ -285,6 +344,10 @@ fn collect_paragraphs(
                 ..ancestors
             };
             let children = node.children().map(Vec::as_slice).unwrap_or_default();
+            if matches!(node, Node::List(_)) {
+                children_ancestors.list = blocks.lists;
+                blocks.lists += 1;
+            }
             if matches!(node, Node::ListItem(_)) {
                 children_ancestors.list_item = Some(blocks.list_items.len());
                 // markdown-rsは、空行が続く項目の範囲に、続く改行 (引用の中では次の行の `>` まで) を含めるので、
@@ -295,8 +358,7 @@ fn collect_paragraphs(
                     .map_or(range.end, |last| node_range(last).end);
                 blocks.list_items.push(ListItem {
                     range: range.start..end,
-                    // skeleton: not implemented (項目が属するリストの番号)
-                    list: 0,
+                    list: ancestors.list,
                 });
             }
             for (i, child) in children.iter().enumerate() {
@@ -734,6 +796,57 @@ mod tests {
                 ("段", None)
             ]
         );
+    }
+
+    #[test]
+    fn numbers_each_list_and_gives_nested_lists_their_own_number() {
+        let src = "- a\n  - b\n  - c\n- d\n\n段\n\n* e\n";
+        let lists: Vec<(&str, usize)> = parse(src)
+            .list_items
+            .iter()
+            .map(|item| (&src[item.range.start + 2..item.range.start + 3], item.list))
+            .collect();
+        assert_eq!(
+            lists,
+            vec![("a", 0), ("b", 1), ("c", 1), ("d", 0), ("e", 2)]
+        );
+    }
+
+    #[test]
+    fn collects_inline_images_with_the_source_range_of_their_alt() {
+        let src =
+            "![図 \\] [a] 図](x.png \"t\") ![](y.png) ![参照][r]\n\n# ![見](z.png)\n\n[r]: u\n";
+        let alts: Vec<(&str, bool)> = parse(src)
+            .inline_nodes
+            .into_iter()
+            .filter_map(|node| match node.kind {
+                InlineNodeKind::Image { alt } => Some((&src[alt], node.heading)),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            alts,
+            vec![("図 \\] [a] 図", false), ("", false), ("見", true)]
+        );
+    }
+
+    fn image_alts(src: &str) -> Vec<&str> {
+        parse(src)
+            .inline_nodes
+            .into_iter()
+            .filter_map(|node| match node.kind {
+                InlineNodeKind::Image { alt } => Some(&src[alt]),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn does_not_end_an_image_alt_at_brackets_inside_a_code_span() {
+        assert_eq!(image_alts("![a `[` b](x.png)\n"), vec!["a `[` b"]);
+        assert_eq!(image_alts("![a `]` b](x.png)\n"), vec!["a `]` b"]);
+        assert_eq!(image_alts("![a `[` b](x.png) c]\n"), vec!["a `[` b"]);
+        assert_eq!(image_alts("![a ``x`]`` b](x.png)\n"), vec!["a ``x`]`` b"]);
     }
 
     #[test]
