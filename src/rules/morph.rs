@@ -30,7 +30,7 @@ use super::builtin::Builtin;
 use super::{Report, RuleId};
 
 /// 有効なルールの指摘を返す。順は問わない (`rules::report` が位置の順に並べる)
-pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report<'static>> {
+pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> {
     let mut reports = Vec::new();
     let mut styles = Styles::default();
     // `ja-no-redundant-expression` 以外の文の単位のルールは、引用の中の段落を対象にしない
@@ -158,7 +158,7 @@ struct AnalyzedProse<'a> {
 
 impl AnalyzedProse<'_> {
     /// `range` (`text` の中のバイト範囲) への指摘
-    fn report(&self, range: Range<usize>, rule: RuleId, message: String) -> Report<'static> {
+    fn report(&self, range: Range<usize>, rule: RuleId, message: String) -> Report {
         Report {
             range: self.start + range.start..self.start + range.end,
             rule: rule.name(),
@@ -193,7 +193,7 @@ impl<'a> Analyzed<'a> {
         self.projection.source(token.range.start)..self.projection.source(token.range.end)
     }
 
-    fn report(&self, token: &Token, rule: RuleId, message: String) -> Report<'static> {
+    fn report(&self, token: &Token, rule: RuleId, message: String) -> Report {
         Report {
             range: self.source(token),
             rule: rule.name(),

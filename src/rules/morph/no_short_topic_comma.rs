@@ -4,7 +4,7 @@ use crate::rules::builtin::NoShortTopicComma;
 use crate::rules::{Report, RuleId};
 
 /// 係助詞の `は` の直後の読点のうち、文頭から読点の手前までの文字数が `maxLength` 以下のものを指摘する
-pub fn report(prose: &AnalyzedProse, rule: &NoShortTopicComma) -> Vec<Report<'static>> {
+pub fn report(prose: &AnalyzedProse, rule: &NoShortTopicComma) -> Vec<Report> {
     let tokens = prose.tokens;
     let mut reports = Vec::new();
     // 文頭の、`text` の中のバイト位置

@@ -116,3 +116,61 @@ pub const AI_RULES_CONFIG: &str = "[builtin]
 preset-ai-words-ja = true
 no-short-topic-comma = true
 ";
+
+/// `@textlint-rule/pattern` に、「照合」を指摘する `replace` の無い要素を1つ書いた設定
+pub const AI_WORDS_PATTERN: &str = "[[builtin.\"@textlint-rule/pattern\".patterns]]
+message = \"AIが多用する語\"
+pattern = \"照合\"
+";
+
+/// `prh` に1ルールの辞書を、`@textlint-rule/pattern` に `replace` のある要素と無い要素を1つずつ書いた設定
+pub const USER_REPLACEMENTS_CONFIG: &str = r#"[builtin.prh]
+ruleContents = ["""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+"""]
+
+[[builtin."@textlint-rule/pattern".patterns]]
+message = "TODOを残さない"
+pattern = "TODO"
+replace = "DONE"
+
+[[builtin."@textlint-rule/pattern".patterns]]
+message = "FIXMEを残さない"
+pattern = "FIXME"
+"#;
+
+/// 見出しと本文の3行が、`USER_REPLACEMENTS_CONFIG` の3つの置き換えのすべてに当たる文書
+pub const USER_REPLACEMENTS_INPUT: &str = "# クッキーとTODOの話
+
+クッキーとTODOとFIXMEを書く。
+
+クッキーとTODOとFIXMEを書く。
+
+クッキーとTODOとFIXMEを書く。
+";
+
+/// `USER_REPLACEMENTS_INPUT` の1行目と5行目を対象行にして直した文書。見出しの1行目は直さない
+pub const USER_REPLACEMENTS_FIXED: &str = "# クッキーとTODOの話
+
+クッキーとTODOとFIXMEを書く。
+
+CookieとDONEとFIXMEを書く。
+
+クッキーとTODOとFIXMEを書く。
+";
+
+/// `USER_REPLACEMENTS_INPUT` の1行目と5行目を対象行にしたhookが、`path` について返す指摘の行
+pub fn user_replacement_reports(path: &Path) -> Vec<String> {
+    let path = path.display();
+    vec![
+        format!(
+            "{path}:1:3: 「クッキー」を「Cookie」にする。見出しのアンカーが変わるので、見出しへのリンクも直す [prh]"
+        ),
+        format!(
+            "{path}:1:8: 「TODO」: TODOを残さない。見出しのアンカーが変わるので、見出しへのリンクも直す [@textlint-rule/pattern]"
+        ),
+        format!("{path}:5:13: 「FIXME」: FIXMEを残さない [@textlint-rule/pattern]"),
+    ]
+}

@@ -62,15 +62,16 @@ ja-no-abusage = false
 ja-no-redundant-expression = false
 
 TOML
-    echo '[[rules]]'
-    echo 'id = "ai-words"'
+    echo '[[builtin."@textlint-rule/pattern".patterns]]'
     echo 'message = "AIが多用する語"'
-    printf 'words = [%s]\n' "$(printf '"%s", ' "${words[@]}" | sed 's/, $//')"
+    printf "pattern = '/%s/'\n" "$(
+        IFS='|'
+        echo "${words[*]}"
+    )"
     echo
-    echo '[[rules]]'
-    echo 'id = "long-kanji"'
+    echo '[[builtin."@textlint-rule/pattern".patterns]]'
     echo 'message = "漢字が長く続く"'
-    echo "pattern = '\\p{sc=Han}{6,}'"
+    echo "pattern = '/\\p{sc=Han}{6,}/'"
 } >"$XDG_CONFIG_HOME/jafix/config.toml"
 
 # textlintでは、全角括弧をprh、日本語と英数字の間の空白をja-space-between-half-and-full-width、
@@ -148,7 +149,7 @@ echo "| 機能 | jafix | textlint |"
 echo "| --- | --: | --: |"
 echo "| 全角括弧 | $(grep -c '\[fullwidth-paren\]$' <<<"$jafix_out" || true) | $(grep -c '/prh\]$' <<<"$textlint_out" || true) |"
 echo "| 日本語と英数字の間の空白 | $(grep -c '\[space-between-ja-and-alnum\]$' <<<"$jafix_out" || true) | $(grep -c '/ja-space-between-half-and-full-width\]$' <<<"$textlint_out" || true) |"
-echo "| 日本語と括弧の間の空白と、2つの指摘ルール | $(grep -c -E '\[(space-between-ja-and-paren|ai-words|long-kanji)\]$' <<<"$jafix_out" || true) | $(grep -c '/@textlint-rule/pattern\]$' <<<"$textlint_out" || true) |"
+echo "| 日本語と括弧の間の空白と、2つの指摘ルール | $(grep -c -E '\[(space-between-ja-and-paren|@textlint-rule/pattern)\]$' <<<"$jafix_out" || true) | $(grep -c '/@textlint-rule/pattern\]$' <<<"$textlint_out" || true) |"
 echo
 
 for file in "${files[@]}"; do

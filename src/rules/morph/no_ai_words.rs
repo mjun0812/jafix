@@ -6,7 +6,7 @@ use crate::rules::{Report, RuleId};
 
 /// 組み込みの辞書 (`dictionaryMode` が `"override"` なら使わない) と利用者の辞書の並びを、本文の範囲のトークンの
 /// すべての位置から当てる。照合の状態は、本文の範囲をまたいで持ち越さない
-pub fn report(prose: &AnalyzedProse, rule: &NoAiWords) -> Vec<Report<'static>> {
+pub fn report(prose: &AnalyzedProse, rule: &NoAiWords) -> Vec<Report> {
     let tokens = prose.tokens;
     let builtin: &[_] = match rule.dictionary_mode {
         DictionaryMode::Append => &AI_WORDS,

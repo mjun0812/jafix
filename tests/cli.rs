@@ -1,6 +1,6 @@
 mod common;
 
-use common::{Sandbox, fixture, read, stdout};
+use common::{AI_WORDS_PATTERN, Sandbox, fixture, read, stdout};
 
 fn fix_one_file(content: &str) -> String {
     let sandbox = Sandbox::new();
@@ -151,97 +151,90 @@ fn check_exits_2_when_a_file_cannot_be_read_even_with_findings() {
     assert!(stdout(&output).starts_with("t.md:1:4: "));
 }
 
-/// `[[rules]]` に `ai-words` の指摘ルールを1つ書いた設定で、`content` の `t.md` に `jafix check t.md` を実行する
-fn check_with_rule(rule: &str, content: &str) -> std::process::Output {
+/// `@textlint-rule/pattern` に、`patterns` の各要素を `message = "AIが多用する語"` と `pattern` で書いた設定で、
+/// `content` の `t.md` に `jafix check t.md` を実行する
+fn check_with_patterns(patterns: &[&str], content: &str) -> std::process::Output {
     let sandbox = Sandbox::new();
     sandbox.write("t.md", content);
-    sandbox.write_xdg_config(&format!(
-        "[[rules]]\nid = \"ai-words\"\nmessage = \"AIが多用する語\"\n{rule}\n"
-    ));
+    let elements: String = patterns
+        .iter()
+        .map(|pattern| {
+            format!(
+                "[[builtin.\"@textlint-rule/pattern\".patterns]]\nmessage = \"AIが多用する語\"\npattern = '{pattern}'\n"
+            )
+        })
+        .collect();
+    sandbox.write_xdg_config(&elements);
     sandbox.run(&["check", "t.md"])
 }
 
 #[test]
-fn check_reports_words_rule_with_the_matched_word_and_message() {
-    let output = check_with_rule("words = [\"照合\", \"正本\"]", "本文を照合する。\n");
+fn check_reports_pattern_elements_with_the_matched_text_and_message() {
+    let output = check_with_patterns(&["照合", "正本"], "本文を照合する。\n");
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         stdout(&output),
-        "t.md:1:4: 「照合」: AIが多用する語 [ai-words]\n"
+        "t.md:1:4: 「照合」: AIが多用する語 [@textlint-rule/pattern]\n"
     );
 }
 
 #[test]
-fn check_reports_pattern_rule_with_the_matched_text_and_message() {
-    let sandbox = Sandbox::new();
-    sandbox.write("t.md", "すごい〜です。\n");
-    sandbox.write_xdg_config(
-        "[[rules]]\nid = \"wave\"\nmessage = \"波線を使わない\"\npattern = \"[〜～]\"\n",
-    );
-    let output = sandbox.run(&["check", "t.md"]);
+fn check_reports_a_regex_pattern_element_with_the_matched_text() {
+    let output = check_with_patterns(&["/[〜～]/"], "すごい〜です。\n");
     assert_eq!(output.status.code(), Some(1));
-    assert_eq!(stdout(&output), "t.md:1:4: 「〜」: 波線を使わない [wave]\n");
-}
-
-#[test]
-fn check_does_not_report_words_inside_inline_code() {
-    let output = check_with_rule("words = [\"照合\"]", "`照合` と照合。\n");
     assert_eq!(
         stdout(&output),
-        "t.md:1:7: 「照合」: AIが多用する語 [ai-words]\n"
+        "t.md:1:4: 「〜」: AIが多用する語 [@textlint-rule/pattern]\n"
     );
 }
 
 #[test]
-fn check_does_not_match_words_across_an_emphasis_boundary() {
+fn check_does_not_report_pattern_elements_inside_inline_code() {
+    let output = check_with_patterns(&["照合"], "`照合` と照合。\n");
+    assert_eq!(
+        stdout(&output),
+        "t.md:1:7: 「照合」: AIが多用する語 [@textlint-rule/pattern]\n"
+    );
+}
+
+#[test]
+fn check_does_not_match_pattern_elements_across_an_emphasis_boundary() {
     // `照合` も足した設定では、境目をまたいで当たると列1に `照合` が出る
-    for words in ["[\"照\", \"合\"]", "[\"照\", \"合\", \"照合\"]"] {
-        let output = check_with_rule(&format!("words = {words}"), "照**合**\n");
+    for patterns in [&["照", "合"][..], &["照", "合", "照合"]] {
+        let output = check_with_patterns(patterns, "照**合**\n");
         assert_eq!(
             stdout(&output),
-            "t.md:1:1: 「照」: AIが多用する語 [ai-words]\n\
-             t.md:1:4: 「合」: AIが多用する語 [ai-words]\n",
-            "{words}"
-        );
-    }
-}
-
-#[test]
-fn check_reports_the_longer_of_overlapping_words_once() {
-    for words in ["[\"検査\", \"検査官\"]", "[\"検査官\", \"検査\"]"] {
-        let output = check_with_rule(&format!("words = {words}"), "検査官が来る。\n");
-        assert_eq!(
-            stdout(&output),
-            "t.md:1:1: 「検査官」: AIが多用する語 [ai-words]\n",
-            "{words}"
+            "t.md:1:1: 「照」: AIが多用する語 [@textlint-rule/pattern]\n\
+             t.md:1:4: 「合」: AIが多用する語 [@textlint-rule/pattern]\n",
+            "{patterns:?}"
         );
     }
 }
 
 #[test]
 fn check_does_not_report_empty_matches() {
-    let output = check_with_rule("pattern = \"x*\"", "日本語。\n");
+    let output = check_with_patterns(&["/x*/"], "日本語。\n");
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stdout(&output), "");
 }
 
 #[test]
-fn check_reports_rules_inside_headings() {
-    let output = check_with_rule("words = [\"照合\"]", "# 照合の手順\n");
+fn check_reports_pattern_elements_without_replace_inside_headings() {
+    let output = check_with_patterns(&["照合"], "# 照合の手順\n");
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         stdout(&output),
-        "t.md:1:3: 「照合」: AIが多用する語 [ai-words]\n"
+        "t.md:1:3: 「照合」: AIが多用する語 [@textlint-rule/pattern]\n"
     );
 }
 
 #[test]
 fn check_prints_reports_and_findings_in_position_order() {
-    let output = check_with_rule("words = [\"照合\"]", "照合 Rustを使う。\n");
+    let output = check_with_patterns(&["照合"], "照合 Rustを使う。\n");
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         stdout(&output),
-        "t.md:1:1: 「照合」: AIが多用する語 [ai-words]\n\
+        "t.md:1:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]\n\
          t.md:1:3: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]\n"
     );
 }
@@ -271,12 +264,10 @@ fn fix_leaves_builtin_reports_unchanged_and_prints_nothing() {
 }
 
 #[test]
-fn fix_ignores_report_rules() {
+fn fix_ignores_pattern_elements_without_replace() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("t.md", "本文を照合する。\n");
-    sandbox.write_xdg_config(
-        "[[rules]]\nid = \"ai-words\"\nmessage = \"AIが多用する語\"\nwords = [\"照合\"]\n",
-    );
+    sandbox.write_xdg_config(AI_WORDS_PATTERN);
     let output = sandbox.run(&["fix", "t.md"]);
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stdout(&output), "");

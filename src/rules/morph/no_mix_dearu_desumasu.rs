@@ -72,7 +72,7 @@ impl Styles {
     }
 
     /// 種類ごとに、優先する文体と違う側の箇所に指摘を出す
-    pub(super) fn reports(&self, rule: &NoMixDearuDesumasu) -> Vec<Report<'static>> {
+    pub(super) fn reports(&self, rule: &NoMixDearuDesumasu) -> Vec<Report> {
         let mut reports = Vec::new();
         for (kind, counts, prefer) in [
             (Kind::Header, &self.header, rule.prefer_in_header),

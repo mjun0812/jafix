@@ -3,7 +3,7 @@ use crate::rules::{Report, RuleId};
 use super::Analyzed;
 
 /// 文を区切り文字でさらに区切り、区切りごとに逆接の「が」が2つ以上あれば、最初の「が」に指摘を出す
-pub(super) fn report(sentence: &Analyzed) -> Vec<Report<'static>> {
+pub(super) fn report(sentence: &Analyzed) -> Vec<Report> {
     sentence
         .tokens
         .split(|token| [".", "．", "。", "?", "!", "？", "！"].contains(&token.surface))

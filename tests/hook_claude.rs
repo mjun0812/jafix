@@ -2,7 +2,10 @@ mod common;
 
 use std::path::Path;
 
-use common::{AI_RULES_CONFIG, AI_RULES_INPUT, Sandbox, read, stdout};
+use common::{
+    AI_RULES_CONFIG, AI_RULES_INPUT, AI_WORDS_PATTERN, Sandbox, USER_REPLACEMENTS_CONFIG,
+    USER_REPLACEMENTS_FIXED, USER_REPLACEMENTS_INPUT, read, stdout, user_replacement_reports,
+};
 use serde_json::{Value, json};
 
 /// Claude Code (v2.1.319) が実際に渡すEditの入力の形
@@ -148,21 +151,18 @@ fn unreadable_json_exits_1() {
     assert!(!output.stderr.is_empty());
 }
 
-const AI_WORDS_RULE: &str =
-    "[[rules]]\nid = \"ai-words\"\nmessage = \"AIが多用する語\"\nwords = [\"照合\"]\n";
-
 fn stderr(output: &std::process::Output) -> &str {
     std::str::from_utf8(&output.stderr).unwrap()
 }
 
-/// ファイルの行のうち `changed` 行目だけを `+` にした `structuredPatch` を持つEditの入力
-fn edit_changing_line(path: &Path, changed: usize) -> String {
+/// ファイルの行のうち `changed` の行だけを `+` にした `structuredPatch` を持つEditの入力
+fn edit_changing_lines(path: &Path, changed: &[usize]) -> String {
     let content = read(path);
     let lines: Vec<String> = content
         .lines()
         .enumerate()
         .map(|(i, line)| {
-            let marker = if i + 1 == changed { '+' } else { ' ' };
+            let marker = if changed.contains(&(i + 1)) { '+' } else { ' ' };
             format!("{marker}{line}")
         })
         .collect();
@@ -172,7 +172,7 @@ fn edit_changing_line(path: &Path, changed: usize) -> String {
             "filePath": path,
             "originalFile": "",
             "structuredPatch": [
-                {"oldStart": 1, "oldLines": lines.len() - 1, "newStart": 1,
+                {"oldStart": 1, "oldLines": lines.len() - changed.len(), "newStart": 1,
                  "newLines": lines.len(), "lines": lines},
             ],
         }),
@@ -182,9 +182,9 @@ fn edit_changing_line(path: &Path, changed: usize) -> String {
 #[test]
 fn edit_reports_only_on_the_changed_line_to_stderr_and_exits_2() {
     let sandbox = Sandbox::new();
-    sandbox.write_xdg_config(AI_WORDS_RULE);
+    sandbox.write_xdg_config(AI_WORDS_PATTERN);
     let path = sandbox.write("t.md", "照合 Rust\n照合 Rust\n照合 Rust\n");
-    let output = sandbox.hook("claude", &edit_changing_line(&path, 2));
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[2]));
     assert_eq!(output.status.code(), Some(2));
     assert_eq!(stdout(&output), "");
     assert_eq!(read(&path), "照合 Rust\n照合Rust\n照合 Rust\n");
@@ -197,7 +197,7 @@ fn edit_reports_only_on_the_changed_line_to_stderr_and_exits_2() {
     assert_eq!(
         lines[1],
         format!(
-            "{}:2:1: 「照合」: AIが多用する語 [ai-words]",
+            "{}:2:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]",
             path.display()
         )
     );
@@ -235,9 +235,9 @@ fn write_of_a_new_heading_reports_the_space_and_leaves_the_file() {
 #[test]
 fn report_column_is_counted_on_the_fixed_line() {
     let sandbox = Sandbox::new();
-    sandbox.write_xdg_config(AI_WORDS_RULE);
+    sandbox.write_xdg_config(AI_WORDS_PATTERN);
     let path = sandbox.write("t.md", "語 A、照合\n");
-    let output = sandbox.hook("claude", &edit_changing_line(&path, 1));
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[1]));
     assert_eq!(output.status.code(), Some(2));
     assert_eq!(read(&path), "語A、照合\n");
     assert!(
@@ -250,9 +250,9 @@ fn report_column_is_counted_on_the_fixed_line() {
 #[test]
 fn report_outside_the_changed_lines_is_not_returned() {
     let sandbox = Sandbox::new();
-    sandbox.write_xdg_config(AI_WORDS_RULE);
+    sandbox.write_xdg_config(AI_WORDS_PATTERN);
     let path = sandbox.write("t.md", "照合する\n語 B\n照合する\n");
-    let output = sandbox.hook("claude", &edit_changing_line(&path, 2));
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[2]));
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stderr(&output), "");
     assert_eq!(read(&path), "照合する\n語B\n照合する\n");
@@ -262,7 +262,7 @@ fn report_outside_the_changed_lines_is_not_returned() {
 fn edit_fixes_halfwidth_kana_only_on_the_changed_line() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("t.md", "最初はﾊﾝｶｸです。\n\n次もﾊﾝｶｸです。\n");
-    let output = sandbox.hook("claude", &edit_changing_line(&path, 3));
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[3]));
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stderr(&output), "");
     assert_eq!(read(&path), "最初はﾊﾝｶｸです。\n\n次もハンカクです。\n");
@@ -283,7 +283,7 @@ fn write_long_sentence_file(sandbox: &Sandbox, third_line_prefix: &str) -> std::
 fn edit_reports_a_long_sentence_on_the_changed_line() {
     let sandbox = Sandbox::new();
     let path = write_long_sentence_file(&sandbox, "");
-    let output = sandbox.hook("claude", &edit_changing_line(&path, 3));
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[3]));
     assert_eq!(output.status.code(), Some(2));
     let lines: Vec<&str> = stderr(&output).lines().collect();
     assert_eq!(
@@ -303,7 +303,7 @@ fn edit_reports_a_long_sentence_on_the_changed_line() {
 fn edit_does_not_report_a_long_sentence_outside_the_changed_line() {
     let sandbox = Sandbox::new();
     let path = write_long_sentence_file(&sandbox, "");
-    let output = sandbox.hook("claude", &edit_changing_line(&path, 1));
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[1]));
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stderr(&output), "");
 }
@@ -313,7 +313,7 @@ fn edit_does_not_report_a_disabled_builtin_rule() {
     let sandbox = Sandbox::new();
     sandbox.write_xdg_config("[builtin]\nsentence-length = false\n");
     let path = write_long_sentence_file(&sandbox, "");
-    let output = sandbox.hook("claude", &edit_changing_line(&path, 3));
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[3]));
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stderr(&output), "");
 }
@@ -323,7 +323,7 @@ fn edit_of_a_report_excluded_file_fixes_but_does_not_report_builtin_rules() {
     let sandbox = Sandbox::new();
     sandbox.write_xdg_config("report-exclude = [\"**/t.md\"]\n");
     let path = write_long_sentence_file(&sandbox, "ﾊﾝｶｸと");
-    let output = sandbox.hook("claude", &edit_changing_line(&path, 3));
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[3]));
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stderr(&output), "");
     assert_eq!(
@@ -336,7 +336,7 @@ fn edit_of_a_report_excluded_file_fixes_but_does_not_report_builtin_rules() {
 fn edit_reports_a_doubled_particle_only_on_the_changed_line() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("t.md", "私は本は読む。\n\n彼は本は読む。\n");
-    let output = sandbox.hook("claude", &edit_changing_line(&path, 3));
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[3]));
     assert_eq!(output.status.code(), Some(2));
     let lines: Vec<&str> = stderr(&output).lines().collect();
     assert_eq!(
@@ -362,7 +362,7 @@ fn write_mixed_style_file(sandbox: &Sandbox) -> std::path::PathBuf {
 fn edit_reports_a_mixed_style_counted_over_the_whole_file_on_the_changed_line() {
     let sandbox = Sandbox::new();
     let path = write_mixed_style_file(&sandbox);
-    let output = sandbox.hook("claude", &edit_changing_line(&path, 5));
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[5]));
     assert_eq!(output.status.code(), Some(2));
     let lines: Vec<&str> = stderr(&output).lines().collect();
     assert_eq!(
@@ -382,7 +382,7 @@ fn edit_reports_a_mixed_style_counted_over_the_whole_file_on_the_changed_line() 
 fn edit_does_not_report_a_mixed_style_outside_the_changed_line() {
     let sandbox = Sandbox::new();
     let path = write_mixed_style_file(&sandbox);
-    let output = sandbox.hook("claude", &edit_changing_line(&path, 1));
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[1]));
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stderr(&output), "");
 }
@@ -392,7 +392,7 @@ fn reports_ai_writing_findings_on_target_lines() {
     let sandbox = Sandbox::new();
     sandbox.write_xdg_config(AI_RULES_CONFIG);
     let path = sandbox.write("t.md", AI_RULES_INPUT);
-    let output = sandbox.hook("claude", &edit_changing_line(&path, 3));
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[3]));
     assert_eq!(output.status.code(), Some(2));
     let lines: Vec<&str> = stderr(&output).lines().collect();
     assert_eq!(
@@ -403,4 +403,16 @@ fn reports_ai_writing_findings_on_target_lines() {
         )],
         "{lines:?}"
     );
+}
+
+#[test]
+fn fixes_user_replacements_on_target_lines() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(USER_REPLACEMENTS_CONFIG);
+    let path = sandbox.write("t.md", USER_REPLACEMENTS_INPUT);
+    let output = sandbox.hook("claude", &edit_changing_lines(&path, &[1, 5]));
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(read(&path), USER_REPLACEMENTS_FIXED);
+    let lines: Vec<&str> = stderr(&output).lines().collect();
+    assert_eq!(lines[1..], user_replacement_reports(&path), "{lines:?}");
 }

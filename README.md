@@ -93,11 +93,11 @@ AIらしい書き方を指摘する7ルールのオプションは、次のと�
 
 ## 指摘ルール
 
-指摘ルールは、ファイルを直さずに指摘だけを出すルールです。組み込みの指摘ルール、設定ファイルの `[[rules]]` で足すもの(「[設定ファイル](#設定ファイル)」)、見出しの中で直さない修正ルールの3種類があります。文脈で対象を外すのは組み込みのルールだけで、設定の `[[rules]]` は、引用・強調・見出しの中の本文にも当たります。見出しの中の指摘は、修正ルールのIDで出し、見出しへのリンクも直すことを文面で伝えます。
+指摘ルールは、ファイルを直さずに指摘だけを出すルールです。組み込みの指摘ルール(`replace` の無い `@textlint-rule/pattern` の要素を含む)と、見出しの中で直さない修正ルールの2種類があります。`@textlint-rule/pattern` は、`allowNodeTypes` に書いた型の中を除き、引用・強調・見出しの中の本文にも当たります。見出しの中の指摘は、修正ルールのIDで出し、見出しへのリンクも直すことを文面で伝えます。
 
-組み込みの指摘ルールと `[[rules]]` は、当てる単位が違います。
+組み込みの指摘ルールは、ルールごとに当てる単位が違います。
 
-- 本文の範囲ごとに当てるルール: `max-kanji-continuous-len`・`arabic-kanji-numbers`・`no-exclamation-question-mark`・`ja-unnatural-alphabet`・`no-double-negative-ja`・`no-dropping-the-ra`・`ja-no-weak-phrase`・`ja-no-successive-word`・`ja-no-abusage`・`no-ai-hype-expressions`・`no-ai-words`・`no-short-topic-comma` と、設定の `[[rules]]` です。形態素解析を使うルールは、本文の範囲を1つずつトークンへ分けます。本文の範囲は、インラインコード・強調・リンク・HTMLのタグで区切られるので、境目をまたいでは一致せず、`照**合**` は `照合` に当たりません。長さ0の一致は指摘にしません。組み込みのルールは、引用・強調・リンクの中、段落の直下でない範囲を、ルールごとにtextlintと同じ文脈で対象から外します。設定の `[[rules]]` は、対象から外しません
+- 本文の範囲ごとに当てるルール: `max-kanji-continuous-len`・`arabic-kanji-numbers`・`no-exclamation-question-mark`・`ja-unnatural-alphabet`・`no-double-negative-ja`・`no-dropping-the-ra`・`ja-no-weak-phrase`・`ja-no-successive-word`・`ja-no-abusage`・`no-ai-hype-expressions`・`no-ai-words`・`no-short-topic-comma`・`@textlint-rule/pattern` です。形態素解析を使うルールは、本文の範囲を1つずつトークンへ分けます。本文の範囲は、インラインコード・強調・リンク・HTMLのタグで区切られるので、境目をまたいでは一致せず、`照**合**` は `照合` に当たりません。長さ0の一致は指摘にしません。組み込みのルールは、引用・強調・リンクの中、段落の直下でない範囲を、ルールごとにtextlintと同じ文脈で対象から外します。`@textlint-rule/pattern` は、`allowNodeTypes` に書いた型の中だけを対象から外します
 - 段落と文の単位で当てるルール: `sentence-length`・`max-comma`・`ja-no-mixed-period`・`no-unmatched-pair`・`max-ten`・`no-doubled-joshi`・`no-doubled-conjunctive-particle-ga`・`no-doubled-conjunction`・`ja-no-redundant-expression` です。Markdownの解析結果のままの段落を見ます。リスト項目・引用・脚注の定義の中の段落も見ますが、`ja-no-mixed-period` はこの3つの中の段落を対象にせず、`sentence-length` は引用の中の段落と、子がリンク1つだけの段落を対象にしません。段落の文字列には、本文のほかにインラインコードの中身と画像のaltも入ります。文は、`。` `.` `?` `!` などで区切り、括弧と引用符が開いている間と、`Mr.` のような英語の略語の `.` では区切りません。形態素解析を使うルールは、引用の中の段落を対象にしません(`ja-no-redundant-expression` は `allowNodeTypes` で決まります)。また、インラインコードを中身と同じ文字数の `ー` に置き換えてから文をトークンに分けるので、コードの中身を判定に入れません
 - リスト項目・見出し・段落の元の文字列に当てるルール: `no-ai-list-formatting` はリスト項目ごとに、項目の先頭の太字の型と、項目の範囲にある段落(入れ子の項目の段落を含む)の最初の絵文字を見ます。`no-ai-emphasis-patterns` は段落と見出しごとに見ます。どちらも、インラインコードとHTMLのタグの中で始まるか終わる一致を捨てるので、コードの中の `**` や絵文字には当たりません。リスト項目の中のコードブロックも見ません
 - 段落の全体の文字列に当てるルール: `ai-tech-writing-guideline` です。リスト項目・引用・脚注の定義の中の段落も見ます。段落の文字列は、段落の単位のルールと同じ作り方で、インラインコードだけを中身と同じ文字数の半角空白に置き換えます。コードを挟んだ語はつながりません
@@ -207,7 +207,7 @@ print -r -- "$input" | jafix hook claude
 
 ## 設定ファイル
 
-設定ファイルは `$XDG_CONFIG_HOME/jafix/config.toml` です。`XDG_CONFIG_HOME` が未設定なら `~/.config/jafix/config.toml` を読みます。設定ファイルが無ければ、組み込みのルールを既定の設定にし(AIらしい書き方を指摘する7ルールは無効、ほかは有効)、何も除外せず、設定の指摘ルールも足しません。
+設定ファイルは `$XDG_CONFIG_HOME/jafix/config.toml` です。`XDG_CONFIG_HOME` が未設定なら `~/.config/jafix/config.toml` を読みます。設定ファイルが無ければ、組み込みのルールを既定の設定にし(AIらしい書き方を指摘する7ルールは無効、ほかは有効)、何も除外しません。
 
 ```toml
 exclude = ["~/.dotfiles/docs/bad-examples.md", "**/drafts/**"]
@@ -217,15 +217,13 @@ report-exclude = ["**/notes/**"]
 no-exclamation-question-mark = false
 sentence-length = { max = 120, countBy = "codepoints" }
 
-[[rules]]
-id = "ai-words"
+[[builtin."@textlint-rule/pattern".patterns]]
 message = "AIが多用する語"
-words = ["照合", "正本"]
+pattern = "/照合|正本/"
 
-[[rules]]
-id = "bang"
+[[builtin."@textlint-rule/pattern".patterns]]
 message = "感嘆符を使わない"
-pattern = "[!！]"
+pattern = "/[!！]/"
 ```
 
 ### 除外
@@ -262,11 +260,11 @@ ja-no-redundant-expression = { dictOptions = { dict5 = { disabled = true } } }
 
 `[builtin]` のキーには、ルールのIDのほかに、textlintのpresetの名前を書けます。値は `true` か `false` です。`@` と `/` を含む名前は、TOMLのキーとして引用符で囲みます。
 
-| presetの名前                     | 束ねるルール                                                                               |
-| -------------------------------- | ------------------------------------------------------------------------------------------ |
+| presetの名前                     | 束ねるルール                                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------------------------- |
 | `preset-ja-technical-writing`    | `sentence-length` から `ja-no-redundant-expression` までの23ルール(jafix独自の3つは含まない) |
-| `@textlint-ja/preset-ai-writing` | `no-ai-list-formatting` から `ai-tech-writing-guideline` までの5ルール                      |
-| `preset-ai-words-ja`             | `no-ai-words` と `no-short-topic-comma`                                                    |
+| `@textlint-ja/preset-ai-writing` | `no-ai-list-formatting` から `ai-tech-writing-guideline` までの5ルール                       |
+| `preset-ai-words-ja`             | `no-ai-words` と `no-short-topic-comma`                                                      |
 
 `true` は、presetのルールを、presetの既定の有効・無効とオプションで有効にします。`preset-ai-words-ja` の既定の設定は `no-short-topic-comma` を無効にするので、`preset-ai-words-ja = true` で有効になるのは `no-ai-words` だけです。`false` は、presetのルールをすべて無効にします。
 
@@ -284,24 +282,11 @@ presetの名前のキーと、そのpresetのルールのIDのキーを同じ表
 
 `sentence-length` の `skipPatterns`、`no-exclamation-question-mark`・`ja-unnatural-alphabet`・`ja-no-successive-word` の `allow`、`ja-no-redundant-expression` の `dictOptions` の `allows`、AIらしい書き方を指摘する6ルール(`no-short-topic-comma` 以外)の `allows` は、パターンの配列です。各要素は、`/source/flags` の形なら正規表現、それ以外は書いた文字列そのものに当たります。`/source/flags` とみなすのは、最後の `/` の後ろがフラグの文字(`g`・`u`・`i`・`m`・`y`・`s`)だけのときで、`/usr/bin` は文字列そのものです。正規表現はRustの [`regex` crate](https://docs.rs/regex/latest/regex/#syntax) の構文で読み、フラグは `i`・`m`・`s` を使えます。`g` と `u` は書いてよく、無視します。`y` を含む他のフラグは不正です。空の文字列も不正です。
 
-### `[[rules]]`
-
-`[[rules]]` の表は、指摘ルールを1つ定めます。キーは次のとおりで、`pattern` と `words` はちょうど一方を書きます。置き換えは書けず、設定の指摘ルールは直さずに指摘だけを出します。
-
-| キー      | 値                                                                                             |
-| --------- | ---------------------------------------------------------------------------------------------- |
-| `id`      | 指摘の行の `[<rule-id>]` に出す名前。他の `[[rules]]` や組み込みのルールのIDと同じにはできない |
-| `message` | 指摘の行の、当たった文字列の後に出す文面                                                       |
-| `pattern` | Rustの [`regex` crate](https://docs.rs/regex/latest/regex/#syntax) の構文の正規表現            |
-| `words`   | そのまま探す文字列の配列。同じ位置で重なる語は、長い語の1件だけを指摘にする                    |
-
-`pattern` の `regex` crateは、後読みと後方参照を使えません。漢字などの文字種は `\p{sc=Han}` のようにScriptで書きます。`\p{Han}` はScript_Extensionsで判定するので、`、` や `。` も含みます。
-
 ### 不正な設定
 
-次のときは、設定ファイルが不正です。理由を標準エラーに書いて終え、終了コードは `jafix check` と `jafix fix` が2、hookが1です。`[[rules]]` の表が不正なときは、理由にその表の `id` を含めます。`[builtin]` が不正なときは、理由にルールのIDかpresetの名前を含め、オプションの誤りでは、オプションの名前も含めます。
+次のときは、設定ファイルが不正です。理由を標準エラーに書いて終え、終了コードは `jafix check` と `jafix fix` が2、hookが1です。`[builtin]` が不正なときは、理由にルールのIDかpresetの名前を含め、オプションの誤りでは、オプションの名前も含めます。
 
-- TOMLとして読めないか、`exclude`・`report-exclude`・`builtin`・`rules` 以外のキーがある
+- TOMLとして読めないか、`exclude`・`report-exclude`・`builtin` 以外のキーがある。利用者のパターンは `rules` の表ではなく、`[builtin]` の `@textlint-rule/pattern` に書きます
 - `exclude` か `report-exclude` の値が、`/`・`~/`・`**/` のどれでも始まらないか、globとして読めない
 - `[builtin]` のキーが組み込みのルールのIDでもpresetの名前でもない
 - `[builtin]` のpresetの名前の値が、`true` か `false` でない
@@ -312,11 +297,6 @@ presetの名前のキーと、そのpresetのルールのIDのキーを同じ表
 - AIらしい書き方を指摘する7ルールのオプションの値が誤っている。`disable` で始まるオプションと `enableDocumentAnalysis` は真偽値、`allows` はパターンの配列、`no-ai-words` の `dictionaryPath` は空でない文字列で `dictionaryMode` は `"append"` か `"override"`、`no-short-topic-comma` の `maxLength` は1以上の整数。textlintの `severity` は、jafixが対応しないので、知らないオプションに当たります
 - `no-ai-words` の `dictionaryPath` のファイルが読めないか、JSONとして読めないか、利用者の辞書の形でない。`tokens` の要素に、上に挙げたトークンの項目の名前でも `_` で始まる名前でもないキー(kuromojiの `word_id`・`word_type`・`word_position` を含む)があるときも、これに当たります。理由には `dictionaryPath` とファイルのパスを含めます
 - `no-ai-words` の `dictionaryMode` が `"override"` なのに、`dictionaryPath` が無い
-- `[[rules]]` の表に未知のキーがある
-- `[[rules]]` の表に `id` か `message` が無い
-- `[[rules]]` の表に `pattern` と `words` の両方があるか、両方とも無い
-- `pattern` が正規表現として読めないか、`words` に空の文字列がある
-- `id` が他の `[[rules]]` か、33の組み込みのルールのIDのどれかと同じ
 
 ## textlintとの違い
 

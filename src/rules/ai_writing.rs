@@ -18,7 +18,7 @@ use super::builtin::Builtin;
 use super::morph::inside;
 
 /// 有効なルールの指摘を返す。順は問わない (`rules::report` が位置の順に並べる)
-pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report<'static>> {
+pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> {
     let mut reports = Vec::new();
     if let Some(rule) = &builtin.no_ai_list_formatting {
         reports.extend(no_ai_list_formatting::report(src, document, rule));

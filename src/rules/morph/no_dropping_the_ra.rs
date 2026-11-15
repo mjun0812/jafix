@@ -4,7 +4,7 @@ use crate::rules::{Report, RuleId};
 use super::AnalyzedProse;
 
 /// 「見れる」「来れる」と、一段動詞の未然形に続く「れる」に指摘を出す
-pub(super) fn report(prose: &AnalyzedProse) -> Vec<Report<'static>> {
+pub(super) fn report(prose: &AnalyzedProse) -> Vec<Report> {
     if prose.in_quote_emphasis_or_link() {
         return Vec::new();
     }

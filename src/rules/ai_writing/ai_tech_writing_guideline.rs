@@ -32,11 +32,7 @@ const CATEGORIES: [GuidelineCategory; 5] = [
 
 /// 段落の文字列にパターンを当てた指摘と、リストの直前の段落の指摘を返す。`enableDocumentAnalysis` が有効で
 /// 1件以上あれば、文書の先頭に件数の要約の指摘を足す
-pub fn report(
-    src: &str,
-    paragraphs: &[Paragraph],
-    rule: &AiTechWritingGuideline,
-) -> Vec<Report<'static>> {
+pub fn report(src: &str, paragraphs: &[Paragraph], rule: &AiTechWritingGuideline) -> Vec<Report> {
     let enabled = |category: GuidelineCategory| match category {
         GuidelineCategory::Redundancy => !rule.disable_redundancy_guidance,
         GuidelineCategory::Voice => !rule.disable_voice_guidance,

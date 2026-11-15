@@ -176,8 +176,12 @@ fn collect(node: &Node, src: &str, context: Context, ranges: &mut Vec<Prose>) {
                 emphasis: context.emphasis || matches!(node, Node::Emphasis(_)),
                 link: context.link || matches!(node, Node::Link(_)),
                 plain: matches!(node, Node::Paragraph(_)) && !blockquote,
-                // skeleton: not implemented (`paragraph`・`list_item`・`table`・`strong`・`delete`・`link_reference` を祖先から決める)
-                ..Context::default()
+                paragraph: context.paragraph || matches!(node, Node::Paragraph(_)),
+                list_item: context.list_item || matches!(node, Node::ListItem(_)),
+                table: context.table || matches!(node, Node::Table(_)),
+                strong: context.strong || matches!(node, Node::Strong(_)),
+                delete: context.delete || matches!(node, Node::Delete(_)),
+                link_reference: context.link_reference || matches!(node, Node::LinkReference(_)),
             };
             for child in node.children().into_iter().flatten() {
                 collect(child, src, children_context, ranges);
@@ -374,13 +378,17 @@ mod tests {
 
     #[test]
     fn marks_the_context_of_each_text_by_its_ancestors() {
+        let paragraph = Context {
+            paragraph: true,
+            ..Context::default()
+        };
         let plain = Context {
             plain: true,
-            ..Context::default()
+            ..paragraph
         };
         assert_eq!(
             contexts(
-                "段 *強 [リ](u)* **太** [参][r]\n\n- 項\n\n> 引\n\n| 表 |\n| - |\n\n# 見\n\n[r]: u\n"
+                "段 *強 [リ](u)* **太** [参][r] ~~消~~\n\n- 項\n\n> 引\n\n| 表 |\n| - |\n\n# 見\n\n[r]: u\n"
             ),
             vec![
                 ("段 ", plain),
@@ -388,7 +396,7 @@ mod tests {
                     "強 ",
                     Context {
                         emphasis: true,
-                        ..Context::default()
+                        ..paragraph
                     }
                 ),
                 (
@@ -396,22 +404,54 @@ mod tests {
                     Context {
                         emphasis: true,
                         link: true,
-                        ..Context::default()
+                        ..paragraph
                     }
                 ),
                 (" ", plain),
-                ("太", Context::default()),
+                (
+                    "太",
+                    Context {
+                        strong: true,
+                        ..paragraph
+                    }
+                ),
                 (" ", plain),
-                ("参", Context::default()),
-                ("項", plain),
+                (
+                    "参",
+                    Context {
+                        link_reference: true,
+                        ..paragraph
+                    }
+                ),
+                (" ", plain),
+                (
+                    "消",
+                    Context {
+                        delete: true,
+                        ..paragraph
+                    }
+                ),
+                (
+                    "項",
+                    Context {
+                        list_item: true,
+                        ..plain
+                    }
+                ),
                 (
                     "引",
                     Context {
                         blockquote: true,
+                        ..paragraph
+                    }
+                ),
+                (
+                    "表",
+                    Context {
+                        table: true,
                         ..Context::default()
                     }
                 ),
-                ("表", Context::default()),
                 (
                     "見",
                     Context {
@@ -432,6 +472,7 @@ mod tests {
                     "公式（",
                     Context {
                         plain: true,
+                        paragraph: true,
                         ..Context::default()
                     }
                 ),
@@ -439,6 +480,7 @@ mod tests {
                     "）を参照",
                     Context {
                         plain: true,
+                        paragraph: true,
                         ..Context::default()
                     }
                 ),

@@ -134,7 +134,7 @@ fn nfd_marks(text: &str) -> impl Iterator<Item = NfdMark> {
 
 /// 本文の範囲ごとに当てる指摘ルール (`max-kanji-continuous-len`、`arabic-kanji-numbers`、
 /// `no-exclamation-question-mark`、`ja-unnatural-alphabet`) の指摘と、`no-nfd` のうち合成できない組み合わせの指摘を返す
-pub fn report(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<Report<'static>> {
+pub fn report(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<Report> {
     let mut reports = Vec::new();
     for Prose { range, context } in texts {
         let text = &src[range.clone()];

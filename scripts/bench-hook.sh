@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# 既定で無効な組み込みのルールもすべて有効にし、30語の `words` と1つの `pattern` の指摘ルールを書いた設定で、
-# 約30KBのMarkdownへのEditの入力の `jafix hook claude` をhyperfineで計り、平均が0.05秒未満ならexit 0、以上ならexit 1で終える
+# 既定で無効な組み込みのルールもすべて有効にし、`prh` に1,300ルールの辞書を、`@textlint-rule/pattern` に30語と
+# 1つの正規表現の31要素を書いた設定で、約30KBのMarkdownへのEditの入力の `jafix hook claude` をhyperfineで計り、
+# 平均が0.05秒未満ならexit 0、以上ならexit 1で終える
 set -euo pipefail
 
 threshold=0.05
@@ -13,26 +14,36 @@ work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/home" "$work/xdg/jafix"
 export HOME=$work/home XDG_CONFIG_HOME=$work/xdg
-cat >"$XDG_CONFIG_HOME/jafix/config.toml" <<'TOML'
+# 辞書は、公開の辞書で最も大きい `WEB+DB_PRESS.yml` と同じ規模にする。文字列の `pattern` 1,200 (うち80に `specs`)、
+# `expected` だけ50、後読みと先読みと `$1` を使う正規表現50である。組み込みの修正ルールと逆の置き換えは入れない
+awk 'BEGIN {
+    print "rules:"
+    for (i = 1; i <= 1200; i++) {
+        printf "  - expected: 用語%d\n    pattern: ようご%d\n", i, i
+        if (i <= 80) printf "    specs:\n      - from: ようご%dを使う\n        to: 用語%dを使う\n", i, i
+    }
+    for (i = 1; i <= 50; i++) printf "  - expected: Term%d\n", i
+    for (i = 1; i <= 50; i++) printf "  - expected: サーバー%d$1\n    pattern: \x27/(?<=の)サーバ%d(?!ー)(を|が)/\x27\n", i, i
+}' >"$XDG_CONFIG_HOME/jafix/prh.yml"
+
+words=(
+    照合 正本 検査 経路 堅牢 包括的 網羅 活用 実現 最適化
+    担保 示唆 留意 顕著 多岐 包含 円滑 推進 促進 寄与
+    着実 迅速 柔軟 効率的 革新的 画期的 重要 不可欠 鍵となる 本質的
+)
+{
+    cat <<'TOML'
 [builtin]
 "@textlint-ja/preset-ai-writing" = true
 preset-ai-words-ja = true
 no-short-topic-comma = true
-
-[[rules]]
-id = "ai-words"
-message = "AIが多用する語"
-words = [
-    "照合", "正本", "検査", "経路", "堅牢", "包括的", "網羅", "活用", "実現", "最適化",
-    "担保", "示唆", "留意", "顕著", "多岐", "包含", "円滑", "推進", "促進", "寄与",
-    "着実", "迅速", "柔軟", "効率的", "革新的", "画期的", "重要", "不可欠", "鍵となる", "本質的",
-]
-
-[[rules]]
-id = "long-kanji"
-message = "漢字が長く続く"
-pattern = '\p{sc=Han}{6,}'
+prh = { rulePaths = ["prh.yml"] }
 TOML
+    for word in "${words[@]}"; do
+        printf '\n[[builtin."@textlint-rule/pattern".patterns]]\nmessage = "AIが多用する語"\npattern = "%s"\n' "$word"
+    done
+    printf '\n[[builtin."@textlint-rule/pattern".patterns]]\nmessage = "漢字が長く続く"\npattern = %s\n' "'/\\p{sc=Han}{6,}/'"
+} >"$XDG_CONFIG_HOME/jafix/config.toml"
 
 block='## 見出し Rust の使い方
 

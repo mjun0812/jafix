@@ -1,14 +1,15 @@
 use std::borrow::Cow;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use regex::{Regex, RegexBuilder};
 use serde::Deserialize;
 use toml::{Table, Value};
 
 use super::RuleId;
+use super::fix_rules_hitting;
 use super::morph::pattern::{Expect, Field, OwnedFields};
 use super::prh::Checks;
-use super::prh::dictionary::Dictionary;
+use super::prh::dictionary::{Dictionary, Source};
 
 /// 組み込みのルールの設定。有効・無効と、オプションを持つルールのオプションである。
 /// 既定では、`preset-ja-technical-writing` の23ルールと修正ルールの3つが有効で、オプションはtextlintの
@@ -1175,12 +1176,7 @@ impl NoAiWords {
         }
         match dictionary_path {
             Some(path) => {
-                let path = match path.strip_prefix("~/") {
-                    Some(rest) => std::env::home_dir()
-                        .ok_or("ホームディレクトリが分からないため `dictionaryPath` の `~/` を展開できない")?
-                        .join(rest),
-                    None => config_dir.join(path),
-                };
+                let path = resolve_path("dictionaryPath", path, config_dir)?;
                 rule.user_words = user_dictionary(&path).map_err(|reason| {
                     format!("`dictionaryPath` の {}: {reason}", path.display())
                 })?;
@@ -1193,6 +1189,18 @@ impl NoAiWords {
             None => {}
         }
         Ok(rule)
+    }
+}
+
+/// `path` が `~/` で始まればホームディレクトリに展開し、相対パスなら `config_dir` から解決する。`key` は理由に書くオプションの名前
+fn resolve_path(key: &str, path: &str, config_dir: &Path) -> Result<PathBuf, String> {
+    match path.strip_prefix("~/") {
+        Some(rest) => Ok(std::env::home_dir()
+            .ok_or_else(|| {
+                format!("ホームディレクトリが分からないため `{key}` の `~/` を展開できない")
+            })?
+            .join(rest)),
+        None => Ok(config_dir.join(path)),
     }
 }
 
@@ -1324,7 +1332,6 @@ impl NoShortTopicComma {
     }
 }
 
-#[allow(dead_code)] // skeleton: not implemented
 #[derive(Debug)]
 pub struct Prh {
     /// `rulePaths` の辞書、`ruleContents` の辞書の順に読んでまとめた辞書
@@ -1339,19 +1346,118 @@ impl Prh {
     /// `config_dir` は、`rulePaths` の相対パスと `ruleContents` の中の `imports` を解決するディレクトリである。
     /// `rulePaths` と `ruleContents` に辞書が1つも無ければ理由を返す
     fn from_options(options: &Table, config_dir: &Path) -> Result<Self, String> {
-        let _ = (options, config_dir);
-        todo!("skeleton: not implemented")
+        let mut checks = Checks::default();
+        let mut rule_paths = Vec::new();
+        let mut rule_contents = Vec::new();
+        for (key, value) in options {
+            match key.as_str() {
+                "rulePaths" => rule_paths = non_empty_strings(key, value)?,
+                "ruleContents" => {
+                    rule_contents = strings(key, value)?
+                        .into_iter()
+                        .map(str::to_owned)
+                        .collect();
+                }
+                "checkLink" => checks.link = boolean(key, value)?,
+                "checkBlockQuote" => checks.block_quote = boolean(key, value)?,
+                "checkEmphasis" => checks.emphasis = boolean(key, value)?,
+                "checkHeader" => checks.header = boolean(key, value)?,
+                "checkParagraph" => checks.paragraph = boolean(key, value)?,
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        if rule_paths.is_empty() && rule_contents.is_empty() {
+            return Err("`rulePaths` か `ruleContents` に辞書を1つ以上書く".to_owned());
+        }
+        let mut sources = Vec::new();
+        let mut source_names = Vec::new();
+        for path in &rule_paths {
+            let path = resolve_path("rulePaths", path, config_dir)?;
+            source_names.push(format!("rulePaths の `{}`", path.display()));
+            sources.push(Source::Path(path));
+        }
+        for (i, yaml) in rule_contents.into_iter().enumerate() {
+            source_names.push(format!("ruleContents の{}番目", i + 1));
+            sources.push(Source::Contents {
+                yaml,
+                base: config_dir.to_path_buf(),
+            });
+        }
+        let dictionary = Dictionary::load(&sources)
+            .map_err(|e| format!("{}: {}", source_names[e.source], e.reason))?;
+        Ok(Self {
+            dictionary,
+            source_names,
+            checks,
+        })
     }
 
     /// 辞書のルールの `expected` を `$` と1〜2桁の数字 (`$0` を除く) で区切った各部分に、
     /// 有効な組み込みの修正ルールが当たれば理由を返す
     fn reject_opposite_replacements(&self, builtin: &Builtin) -> Result<(), String> {
-        let _ = builtin;
-        todo!("skeleton: not implemented")
+        for rule in self.dictionary.rules() {
+            let hits = fixed_parts(&rule.expected, 2)
+                .flat_map(|part| fix_rules_hitting(part, builtin))
+                .collect::<Vec<_>>();
+            if let Some(reason) = opposite_reason(&hits) {
+                return Err(format!(
+                    "{}: `expected` の「{}」は {reason}、このルールを辞書から外す",
+                    self.source_names[rule.source], rule.expected
+                ));
+            }
+        }
+        Ok(())
     }
 }
 
-#[allow(dead_code)] // skeleton: not implemented
+/// `replacement` を、`$` と1〜`max_digits` 桁の数字 (`$0` を除く) の参照で区切った各部分
+fn fixed_parts(replacement: &str, max_digits: usize) -> impl Iterator<Item = &str> {
+    let mut parts = Vec::new();
+    let mut start = 0;
+    let mut i = 0;
+    let bytes = replacement.as_bytes();
+    while i < bytes.len() {
+        let digits = bytes[i + 1..]
+            .iter()
+            .take(max_digits)
+            .take_while(|b| b.is_ascii_digit())
+            .count();
+        if bytes[i] == b'$' && digits > 0 && bytes[i + 1] != b'0' {
+            parts.push(&replacement[start..i]);
+            i += 1 + digits;
+            start = i;
+        } else {
+            i += 1;
+        }
+    }
+    parts.push(&replacement[start..]);
+    parts.into_iter()
+}
+
+/// 置き換えの固定の部分に当たった組み込みの修正ルール `hits` から、置き換えが修正ルールと逆である理由を作る。
+/// 理由は「どちらかを無効にするか」までで、呼び出し側が置き換えの直し方を続ける
+fn opposite_reason(hits: &[RuleId]) -> Option<String> {
+    let mut names: Vec<&str> = Vec::new();
+    for hit in hits {
+        if !names.contains(&hit.name()) {
+            names.push(hit.name());
+        }
+    }
+    if names.is_empty() {
+        return None;
+    }
+    let quoted: Vec<String> = names.iter().map(|name| format!("`{name}`")).collect();
+    let disabled: Vec<String> = names
+        .iter()
+        .map(|name| format!("`{name} = false`"))
+        .collect();
+    Some(format!(
+        "{} が直す文字を含む。{} にするか",
+        quoted.join("・"),
+        disabled.join("・")
+    ))
+}
+
 #[derive(Debug)]
 pub struct TextlintRulePattern {
     /// `patterns` の要素。書いた順に並ぶ
@@ -1359,7 +1465,6 @@ pub struct TextlintRulePattern {
 }
 
 /// `@textlint-rule/pattern` の `patterns` の1つの要素
-#[allow(dead_code)] // skeleton: not implemented
 #[derive(Debug)]
 pub struct UserPattern {
     pub message: String,
@@ -1390,7 +1495,6 @@ pub enum PatternNodeType {
 }
 
 /// 本文の範囲の祖先にならない型 (`Document`・`Str`・`Code` など) と知らない名前は `None` である
-#[allow(dead_code)] // skeleton: not implemented
 fn pattern_node_type(name: &str) -> Option<PatternNodeType> {
     Some(match name {
         "Paragraph" => PatternNodeType::Paragraph,
@@ -1410,15 +1514,96 @@ fn pattern_node_type(name: &str) -> Option<PatternNodeType> {
 impl TextlintRulePattern {
     /// `patterns` が無いか空なら理由を返す
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut patterns = Vec::new();
+        for (key, value) in options {
+            match key.as_str() {
+                "patterns" => {
+                    patterns = value
+                        .as_array()
+                        .ok_or("`patterns` は表の配列で書く")?
+                        .iter()
+                        .enumerate()
+                        .map(|(i, value)| {
+                            user_pattern(value)
+                                .map_err(|reason| format!("`patterns` の{}番目: {reason}", i + 1))
+                        })
+                        .collect::<Result<_, _>>()?;
+                }
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        if patterns.is_empty() {
+            return Err("`patterns` に要素を1つ以上書く".to_owned());
+        }
+        Ok(Self { patterns })
     }
 
     /// `replace` を `$1`〜`$9` で区切った各部分に、有効な組み込みの修正ルールが当たれば理由を返す
     fn reject_opposite_replacements(&self, builtin: &Builtin) -> Result<(), String> {
-        let _ = builtin;
-        todo!("skeleton: not implemented")
+        for (i, pattern) in self.patterns.iter().enumerate() {
+            let Some(replace) = &pattern.replace else {
+                continue;
+            };
+            let hits = fixed_parts(replace, 1)
+                .flat_map(|part| fix_rules_hitting(part, builtin))
+                .collect::<Vec<_>>();
+            if let Some(reason) = opposite_reason(&hits) {
+                return Err(format!(
+                    "`patterns` の{}番目: `replace` の「{replace}」は {reason}、`replace` を変える",
+                    i + 1
+                ));
+            }
+        }
+        Ok(())
     }
+}
+
+fn user_pattern(value: &Value) -> Result<UserPattern, String> {
+    let table = value.as_table().ok_or("表で書く")?;
+    let mut message = None;
+    let mut pattern = None;
+    let mut replace = None;
+    let mut allows = Vec::new();
+    let mut allow_node_types = Vec::new();
+    for (key, value) in table {
+        match key.as_str() {
+            "message" => message = Some(non_empty_string(key, value)?.to_owned()),
+            "pattern" => {
+                pattern = Some(
+                    crate::js_regex::pattern(non_empty_string(key, value)?)
+                        .map_err(|reason| format!("`{key}`: {reason}"))?,
+                );
+            }
+            "replace" => replace = Some(string(key, value)?.to_owned()),
+            "allows" => {
+                allows = non_empty_strings(key, value)?
+                    .iter()
+                    .map(|allow| {
+                        crate::js_regex::pattern(allow)
+                            .map_err(|reason| format!("`{key}`: {reason}"))
+                    })
+                    .collect::<Result<_, _>>()?;
+            }
+            "allowNodeTypes" => {
+                allow_node_types = strings(key, value)?
+                    .into_iter()
+                    .map(|name| {
+                        pattern_node_type(name).ok_or_else(|| {
+                            format!("`{key}` の `{name}` は本文の範囲の祖先になる型ではない")
+                        })
+                    })
+                    .collect::<Result<_, _>>()?;
+            }
+            _ => return Err(unknown_option(key)),
+        }
+    }
+    Ok(UserPattern {
+        message: message.ok_or("`message` が無い")?,
+        pattern: pattern.ok_or("`pattern` が無い")?,
+        replace,
+        allows,
+        allow_node_types,
+    })
 }
 
 #[cfg(test)]

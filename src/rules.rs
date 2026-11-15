@@ -12,8 +12,8 @@ mod textlint_rule_pattern;
 
 use regex::Regex;
 
-use crate::apply::TargetLines;
-use crate::prose::{Document, Prose};
+use crate::apply::{LineIndex, TargetLines};
+use crate::prose::{Context, Document, Prose};
 
 use self::builtin::Builtin;
 
@@ -59,7 +59,7 @@ pub enum RuleId {
 }
 
 impl RuleId {
-    /// 組み込みのルールのすべて。設定の `[builtin]` のキーと、設定の指摘ルールの `id` と重ならないことを確かめるのに使う
+    /// 組み込みのルールのすべて。設定の `[builtin]` のキーをルールのIDとして読むのに使う
     pub const ALL: [RuleId; 35] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
@@ -182,59 +182,24 @@ pub struct Finding {
     pub message: Cow<'static, str>,
 }
 
-/// 設定の `[[rules]]` で足した指摘ルール
-#[derive(Debug)]
-pub struct CustomRule {
-    id: String,
-    message: String,
-    regex: Regex,
-}
-
-impl CustomRule {
-    /// `pattern` をRustの `regex` crateの正規表現として読む。読めなければ理由を返す
-    pub fn pattern(id: String, message: String, pattern: &str) -> Result<Self, String> {
-        let regex =
-            Regex::new(pattern).map_err(|e| format!("`pattern` を正規表現として読めない: {e}"))?;
-        Ok(Self { id, message, regex })
-    }
-
-    /// `words` の文字列をそのまま探す。同じ位置で重なる語は、長いほうに当てる。空の文字列があれば理由を返す
-    pub fn words(id: String, message: String, words: &[String]) -> Result<Self, String> {
-        if words.iter().any(String::is_empty) {
-            return Err("`words` に空の文字列がある".to_owned());
-        }
-        // 選択は左から順に試すので、長い語を先に置くと、同じ位置で重なる語は長いほうに当たる
-        let mut sorted: Vec<&str> = words.iter().map(String::as_str).collect();
-        sorted.sort_by_key(|word| std::cmp::Reverse(word.len()));
-        let alternation: Vec<String> = sorted.into_iter().map(regex::escape).collect();
-        let regex = Regex::new(&alternation.join("|"))
-            .map_err(|e| format!("`words` が長すぎて正規表現にできない: {e}"))?;
-        Ok(Self { id, message, regex })
-    }
-
-    pub fn id(&self) -> &str {
-        &self.id
-    }
-}
-
 /// 指摘ルールに当たった1箇所。直さずに指摘として出す。`range` は元のソース上のバイト範囲
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Report<'r> {
+pub struct Report {
     pub range: Range<usize>,
     /// `check` の出力の `[<rule-id>]` に使う名前
-    pub rule: &'r str,
-    pub message: Cow<'r, str>,
+    pub rule: &'static str,
+    pub message: Cow<'static, str>,
 }
 
-/// 指摘ルール (組み込みの指摘ルール、見出しの中で直さない修正ルール、直さない利用者の置き換え、設定の `custom`) に
-/// 当たる箇所を、位置の順に返す。`prh` と `@textlint-rule/pattern` は、`targets` と重なる本文の範囲だけに当てる
-pub fn report<'r>(
+/// 指摘ルール (組み込みの指摘ルール、見出しの中で直さない修正ルール、直さない利用者の置き換え、`replace` の無い
+/// `@textlint-rule/pattern` の要素) に当たる箇所を、位置の順に返す。`prh` と `@textlint-rule/pattern` は、
+/// `targets` と重なる本文の範囲だけに当てる
+pub fn report(
     src: &str,
     document: &Document,
     builtin: &Builtin,
-    custom: &'r [CustomRule],
     targets: &TargetLines,
-) -> Vec<Report<'r>> {
+) -> Vec<Report> {
     let mut reports = text::report(src, &document.texts, builtin);
     reports.extend(paragraph::report(src, &document.paragraphs, builtin));
     reports.extend(morph::report(src, document, builtin));
@@ -274,24 +239,11 @@ pub fn report<'r>(
                 )),
             }),
     );
-    for Prose { range, .. } in &document.texts {
-        let text = &src[range.clone()];
-        for rule in custom {
-            for m in rule.regex.find_iter(text).filter(|m| !m.is_empty()) {
-                reports.push(Report {
-                    range: range.start + m.start()..range.start + m.end(),
-                    rule: &rule.id,
-                    message: Cow::Owned(format!("「{}」: {}", m.as_str(), rule.message)),
-                });
-            }
-        }
-    }
     reports.sort_by_key(|report| report.range.start);
     reports
 }
 
 /// 利用者の置き換え (`prh` の箇所と、`replace` のある `@textlint-rule/pattern` の要素の箇所) の1箇所
-#[allow(dead_code)] // skeleton: not implemented
 pub struct UserReplacement {
     pub finding: Finding,
     /// 見出しの中の本文の範囲の箇所
@@ -335,8 +287,13 @@ fn user_replacements(
 
 /// 直さずに指摘にする利用者の置き換えなら、指摘の文面に続ける理由を返す。見出しの中の箇所は見出しの理由だけを返す
 fn unfixable(src: &str, replacement: &UserReplacement) -> Option<&'static str> {
-    let _ = (src, replacement);
-    todo!("skeleton: not implemented")
+    if replacement.heading {
+        return Some("見出しのアンカーが変わるので、見出しへのリンクも直す");
+    }
+    let finding = &replacement.finding;
+    // hookは、直した後の内容でも対象行の番号が変わらないことを前提にする
+    (src[finding.range.clone()].contains('\n') || finding.replacement.contains('\n'))
+        .then_some("改行を含むので直さない")
 }
 
 /// 箇所を開始の位置の順に、同じ位置なら長いものを先に並べ、残した最後の箇所の終わりより前に始まる箇所を捨てる。
@@ -359,10 +316,52 @@ fn drop_overlaps<T>(items: &mut Vec<T>, range: impl Fn(&T) -> &Range<usize>) {
 
 /// 利用者の置き換えの固定の部分 `text` を、段落の直下にある本文の範囲1つだけの文書とみなして、
 /// 有効な組み込みの修正ルールのうち当たるものを返す。当たれば、置き換えは組み込みの修正ルールと逆である
-#[allow(dead_code)] // skeleton: not implemented
 pub fn fix_rules_hitting(text: &str, builtin: &Builtin) -> Vec<RuleId> {
-    let _ = (text, builtin);
-    todo!("skeleton: not implemented")
+    let document = Document {
+        texts: vec![Prose {
+            range: 0..text.len(),
+            context: Context {
+                plain: true,
+                paragraph: true,
+                ..Context::default()
+            },
+        }],
+        paragraphs: Vec::new(),
+        headings: Vec::new(),
+        list_items: Vec::new(),
+    };
+    let mut rules: Vec<RuleId> = Vec::new();
+    for finding in find(text, &document, builtin) {
+        if !rules.contains(&finding.rule) {
+            rules.push(finding.rule);
+        }
+    }
+    rules
+}
+
+/// `texts` のうち、最初の行から最後の行までのどれかが `targets` の対象行であるもの
+fn target_texts<'a>(
+    src: &str,
+    texts: &'a [Prose],
+    targets: &'a TargetLines,
+) -> impl Iterator<Item = &'a Prose> {
+    let index = matches!(targets, TargetLines::Lines(_)).then(|| LineIndex::new(src));
+    texts.iter().filter(move |prose| {
+        index.as_ref().is_none_or(|index| {
+            let (first, _) = index.line_col(prose.range.start);
+            let (last, _) = index.line_col(prose.range.end);
+            targets.overlaps(first..=last)
+        })
+    })
+}
+
+/// 文面に埋め込む文字列。出力は1件1行なので、改行を `\n` の2文字にする
+fn one_line(text: &str) -> Cow<'_, str> {
+    if text.contains('\n') {
+        Cow::Owned(text.replace('\n', "\\n"))
+    } else {
+        Cow::Borrowed(text)
+    }
 }
 
 static SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new("[ \u{3000}]+").unwrap());
@@ -451,7 +450,6 @@ fn is_japanese(c: char) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::prose::Context;
 
     /// 見出しの外にある本文の範囲を1つだけ持つ文書
     fn body(range: Range<usize>) -> Document {

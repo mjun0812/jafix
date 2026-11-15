@@ -19,10 +19,11 @@ impl TargetLines {
     }
 
     /// 行の範囲 `lines` のどれかの行が対象行か
-    #[allow(dead_code)] // skeleton: not implemented
     pub fn overlaps(&self, lines: RangeInclusive<usize>) -> bool {
-        let _ = lines;
-        todo!("skeleton: not implemented")
+        match self {
+            TargetLines::All => true,
+            TargetLines::Lines(targets) => targets.range(lines).next().is_some(),
+        }
     }
 }
 

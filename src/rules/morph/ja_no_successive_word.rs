@@ -11,7 +11,7 @@ use super::AnalyzedProse;
 static ONOMATOPEE: LazyLock<Regex> = LazyLock::new(|| Regex::new("^[ァ-ロワヲンー]*$").unwrap());
 
 /// 表層が同じトークンが隣り合ったら、2つ目のトークンに指摘を出す
-pub(super) fn report(prose: &AnalyzedProse, rule: &JaNoSuccessiveWord) -> Vec<Report<'static>> {
+pub(super) fn report(prose: &AnalyzedProse, rule: &JaNoSuccessiveWord) -> Vec<Report> {
     prose
         .tokens
         .windows(2)

@@ -32,7 +32,7 @@ pub(super) fn targets(rule: &JaNoRedundantExpression, paragraph: &Paragraph) -> 
 }
 
 /// 辞書の項目の並びに一致した箇所のうち、`allows` に当たらず、`allowNodeTypes` の要素の中にないものに指摘を出す
-pub(super) fn report(sentence: &Analyzed, rule: &JaNoRedundantExpression) -> Vec<Report<'static>> {
+pub(super) fn report(sentence: &Analyzed, rule: &JaNoRedundantExpression) -> Vec<Report> {
     let tokens = &sentence.tokens;
     let mut reports = Vec::new();
     for ((entry, option), default_allows) in REDUNDANTS

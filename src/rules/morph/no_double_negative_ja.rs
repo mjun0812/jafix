@@ -5,7 +5,7 @@ use super::dict::DOUBLE_NEGATIVES;
 use super::pattern;
 
 /// 二重否定の並びに一致した箇所ごとに、一致の最後のトークンに指摘を出す。重なる一致も、それぞれ指摘する
-pub(super) fn report(prose: &AnalyzedProse) -> Vec<Report<'static>> {
+pub(super) fn report(prose: &AnalyzedProse) -> Vec<Report> {
     let tokens = prose.tokens;
     DOUBLE_NEGATIVES
         .iter()

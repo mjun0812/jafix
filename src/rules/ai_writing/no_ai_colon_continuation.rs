@@ -9,11 +9,7 @@ use crate::rules::{Report, RuleId};
 use super::allowed;
 
 /// 文書の直下の段落のうち、述語とコロンで終わり、次にコードブロック・リスト・引用・表が続くものの、そのコロンを指摘する
-pub fn report(
-    src: &str,
-    paragraphs: &[Paragraph],
-    rule: &NoAiColonContinuation,
-) -> Vec<Report<'static>> {
+pub fn report(src: &str, paragraphs: &[Paragraph], rule: &NoAiColonContinuation) -> Vec<Report> {
     let mut reports = Vec::new();
     for paragraph in paragraphs {
         let Some(next) = paragraph.next_block else {

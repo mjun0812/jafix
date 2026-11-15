@@ -8,7 +8,7 @@ use super::allowed;
 use super::table::{HYPE_WORDS, HypeCategory};
 
 /// 本文の範囲ごとに、誇張した表現の語の重ならない一致をすべて指摘する
-pub fn report(src: &str, texts: &[Prose], rule: &NoAiHypeExpressions) -> Vec<Report<'static>> {
+pub fn report(src: &str, texts: &[Prose], rule: &NoAiHypeExpressions) -> Vec<Report> {
     let words: Vec<&str> = HYPE_WORDS
         .iter()
         .filter(|(category, _)| match category {

@@ -2,7 +2,7 @@ mod common;
 
 use std::path::Path;
 
-use common::{AI_RULES_INPUT, Sandbox, read, stdout};
+use common::{AI_RULES_INPUT, AI_WORDS_PATTERN, Sandbox, read, stdout};
 use serde_json::json;
 
 #[test]
@@ -147,9 +147,9 @@ fn exclude_listing_a_symlink_matches_its_target() {
 fn check_reports_nothing_for_an_excluded_file() {
     let sandbox = Sandbox::new();
     sandbox.write("drafts/a.md", "照合する Rust\n");
-    sandbox.write_xdg_config(
-        "exclude = [\"**/drafts/**\"]\n\n[[rules]]\nid = \"ai-words\"\nmessage = \"AIが多用する語\"\nwords = [\"照合\"]\n",
-    );
+    sandbox.write_xdg_config(&format!(
+        "exclude = [\"**/drafts/**\"]\n\n{AI_WORDS_PATTERN}"
+    ));
     let output = sandbox.run(&["check", "drafts/a.md"]);
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stdout(&output), "");
@@ -194,82 +194,6 @@ fn fix_exits_2_on_unknown_key_without_changing_files() {
     assert_eq!(output.status.code(), Some(2));
     assert!(!output.stderr.is_empty());
     assert_eq!(read(&path), "日本語 Rust\n");
-}
-
-/// `rule` を `[[rules]]` の1つの表として書いた設定で `jafix check` を実行し、exit 2で標準エラーに `id` を含むことを確かめる
-fn assert_check_rejects_rule(rule: &str, id: &str) {
-    let sandbox = Sandbox::new();
-    sandbox.write("t.md", "日本語Rust\n");
-    sandbox.write_xdg_config(rule);
-    let output = sandbox.run(&["check", "t.md"]);
-    assert_eq!(output.status.code(), Some(2), "{rule}");
-    let stderr = String::from_utf8(output.stderr).unwrap();
-    assert!(stderr.contains(id), "{stderr}");
-}
-
-#[test]
-fn check_exits_2_on_a_rule_with_both_pattern_and_words() {
-    assert_check_rejects_rule(
-        "[[rules]]\nid = \"both-keys\"\nmessage = \"m\"\npattern = \"a\"\nwords = [\"b\"]\n",
-        "both-keys",
-    );
-}
-
-#[test]
-fn check_exits_2_on_a_rule_without_pattern_or_words() {
-    assert_check_rejects_rule(
-        "[[rules]]\nid = \"no-matcher\"\nmessage = \"m\"\n",
-        "no-matcher",
-    );
-}
-
-#[test]
-fn check_exits_2_on_a_rule_without_message() {
-    assert_check_rejects_rule(
-        "[[rules]]\nid = \"no-message\"\nwords = [\"a\"]\n",
-        "no-message",
-    );
-}
-
-#[test]
-fn check_exits_2_on_a_rule_with_an_invalid_regex() {
-    assert_check_rejects_rule(
-        "[[rules]]\nid = \"bad-regex\"\nmessage = \"m\"\npattern = \"(\"\n",
-        "bad-regex",
-    );
-}
-
-#[test]
-fn check_exits_2_on_a_rule_with_an_empty_word() {
-    assert_check_rejects_rule(
-        "[[rules]]\nid = \"empty-word\"\nmessage = \"m\"\nwords = [\"\"]\n",
-        "empty-word",
-    );
-}
-
-#[test]
-fn check_exits_2_on_duplicate_rule_ids() {
-    assert_check_rejects_rule(
-        "[[rules]]\nid = \"dup-id\"\nmessage = \"m\"\nwords = [\"a\"]\n\n\
-         [[rules]]\nid = \"dup-id\"\nmessage = \"m\"\nwords = [\"b\"]\n",
-        "dup-id",
-    );
-}
-
-#[test]
-fn check_exits_2_on_a_rule_named_after_a_builtin_rule() {
-    assert_check_rejects_rule(
-        "[[rules]]\nid = \"fullwidth-paren\"\nmessage = \"m\"\nwords = [\"a\"]\n",
-        "fullwidth-paren",
-    );
-}
-
-#[test]
-fn check_accepts_a_valid_rule() {
-    let sandbox = Sandbox::new();
-    sandbox.write("t.md", "日本語Rustです。\n");
-    sandbox.write_xdg_config("[[rules]]\nid = \"ok\"\nmessage = \"m\"\nwords = [\"照合\"]\n");
-    assert_eq!(sandbox.run(&["check", "t.md"]).status.code(), Some(0));
 }
 
 /// `path` の1行目を書き換えたClaude CodeのEditの入力
@@ -347,26 +271,26 @@ fn hook_exits_1_on_unknown_key_without_changing_files() {
 }
 
 #[test]
-fn hook_exits_1_on_an_unknown_key_in_a_rule_without_changing_files() {
+fn hook_exits_1_on_an_unknown_key_in_a_pattern_element_without_changing_files() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("t.md", "日本語 Rust\n");
-    sandbox.write_xdg_config(
-        "[[rules]]\nid = \"ai-words\"\nmessage = \"m\"\nwords = [\"a\"]\nreplace = \"b\"\n",
-    );
+    sandbox.write_xdg_config(&format!("{AI_WORDS_PATTERN}forceCode = true\n"));
     let output = sandbox.hook("claude", &claude_edit_input(&path, true));
     assert_eq!(output.status.code(), Some(1));
     let stderr = String::from_utf8(output.stderr).unwrap();
-    assert!(stderr.contains("replace"), "{stderr}");
+    assert!(stderr.contains("forceCode"), "{stderr}");
     assert_eq!(read(&path), "日本語 Rust\n");
 }
 
-const REPORT_EXCLUDE_NOTES_WITH_WORDS: &str = "report-exclude = [\"**/notes/**\"]\n\n[[rules]]\nid = \"ai-words\"\nmessage = \"AIが多用する語\"\nwords = [\"照合\"]\n";
+fn report_exclude_notes_with_ai_words() -> String {
+    format!("report-exclude = [\"**/notes/**\"]\n\n{AI_WORDS_PATTERN}")
+}
 
 #[test]
 fn check_reports_only_fix_rules_for_a_report_excluded_file() {
     let sandbox = Sandbox::new();
     sandbox.write("notes/a.md", "照合 Rust\n");
-    sandbox.write_xdg_config(REPORT_EXCLUDE_NOTES_WITH_WORDS);
+    sandbox.write_xdg_config(&report_exclude_notes_with_ai_words());
     let output = sandbox.run(&["check", "notes/a.md"]);
     assert_eq!(output.status.code(), Some(1));
     let lines: Vec<&str> = stdout(&output).lines().collect();
@@ -381,7 +305,7 @@ fn check_reports_only_fix_rules_for_a_report_excluded_file() {
 fn hook_fixes_a_report_excluded_file_without_reporting() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("notes/a.md", "照合 Rust\n");
-    sandbox.write_xdg_config(REPORT_EXCLUDE_NOTES_WITH_WORDS);
+    sandbox.write_xdg_config(&report_exclude_notes_with_ai_words());
     let output = sandbox.hook("claude", &claude_edit_input(&path, true));
     assert_eq!(output.status.code(), Some(0));
     assert!(output.stderr.is_empty());
@@ -566,14 +490,6 @@ fn check_exits_2_on_a_pattern_that_cannot_be_read() {
 }
 
 #[test]
-fn check_exits_2_on_a_rule_named_after_a_ported_builtin_rule() {
-    assert_check_rejects_rule(
-        "[[rules]]\nid = \"max-comma\"\nmessage = \"m\"\nwords = [\"a\"]\n",
-        "max-comma",
-    );
-}
-
-#[test]
 fn hook_exits_1_on_an_unknown_builtin_rule_without_changing_files() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("t.md", "日本語 Rust\n");
@@ -634,14 +550,6 @@ fn check_exits_2_on_an_invalid_option_of_a_morphological_builtin_rule() {
     ] {
         assert_check_rejects_builtin(builtin, &expected);
     }
-}
-
-#[test]
-fn check_exits_2_on_a_rule_named_after_a_morphological_builtin_rule() {
-    assert_check_rejects_rule(
-        "[[rules]]\nid = \"max-ten\"\nmessage = \"m\"\nwords = [\"a\"]\n",
-        "max-ten",
-    );
 }
 
 const MORPHOLOGICAL_RULES: [&str; 11] = [
@@ -1122,4 +1030,302 @@ fn no_ai_words_rejects_a_skippable_that_is_not_boolean() {
         stderr.contains("dictionaryPath") && stderr.contains("_skippable"),
         "{stderr}"
     );
+}
+
+#[test]
+fn replacement_rules_require_options() {
+    assert_check_rejects_builtin("prh = true", &["prh", "rulePaths"]);
+    assert_check_rejects_builtin(
+        "\"@textlint-rule/pattern\" = true",
+        &["@textlint-rule/pattern", "patterns"],
+    );
+}
+
+/// `rulePaths` に `path` だけを書いた `prh` の設定
+fn prh_rule_paths(path: &str) -> String {
+    format!("[builtin]\nprh = {{ rulePaths = [{path:?}] }}\n")
+}
+
+/// `content` の `t.md` に `jafix fix` を実行し、直した後の内容を返す
+fn fix_with_config(sandbox: &Sandbox, content: &str) -> String {
+    let path = sandbox.write("t.md", content);
+    let output = sandbox.run(&["fix", "t.md"]);
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    read(&path)
+}
+
+#[test]
+fn prh_reads_rule_paths_from_the_config_directory() {
+    let sandbox = Sandbox::new();
+    sandbox.write(
+        "xdg/jafix/dict/prh.yml",
+        "rules:\n  - expected: Cookie\n    pattern: クッキー\n",
+    );
+    sandbox.write_xdg_config(&prh_rule_paths("dict/prh.yml"));
+    assert_eq!(
+        fix_with_config(&sandbox, "クッキーを食べる。\n"),
+        "Cookieを食べる。\n"
+    );
+
+    sandbox.write(
+        "home/prh.yml",
+        "rules:\n  - expected: Biscuit\n    pattern: ビスケット\n",
+    );
+    sandbox.write_xdg_config(&prh_rule_paths("~/prh.yml"));
+    assert_eq!(
+        fix_with_config(&sandbox, "ビスケットを食べる。\n"),
+        "Biscuitを食べる。\n"
+    );
+}
+
+#[test]
+fn prh_resolves_imports_relative_to_the_dictionary() {
+    let sandbox = Sandbox::new();
+    sandbox.write(
+        "xdg/jafix/dict/a.yml",
+        "imports:
+  - path: sub/b.yml
+    ignoreRules:
+      - expected: B1
+      - pattern: /b2/gmu
+  - path: sub/c.yml
+    disableImports: true
+rules:
+  - expected: A1
+    pattern: a1
+",
+    );
+    sandbox.write(
+        "xdg/jafix/dict/sub/b.yml",
+        "rules:
+  - expected: B1
+    pattern: b1
+  - expected: B2
+    pattern: /b2/
+  - expected: B3
+    pattern: b3
+",
+    );
+    sandbox.write(
+        "xdg/jafix/dict/sub/c.yml",
+        "imports:\n  - d.yml\nrules:\n  - expected: C1\n    pattern: c1\n",
+    );
+    sandbox.write(
+        "xdg/jafix/dict/sub/d.yml",
+        "rules:\n  - expected: D1\n    pattern: d1\n",
+    );
+    sandbox.write_xdg_config(&prh_rule_paths("dict/a.yml"));
+    assert_eq!(
+        fix_with_config(&sandbox, "a1 b1 b2 b3 c1 d1\n"),
+        "A1 b1 b2 B3 C1 d1\n"
+    );
+}
+
+#[test]
+fn prh_keeps_the_first_rule_with_the_same_expected() {
+    let sandbox = Sandbox::new();
+    sandbox.write(
+        "xdg/jafix/prh.yml",
+        "rules:\n  - expected: Cookie\n    pattern: クッキー\n",
+    );
+    sandbox.write_xdg_config(
+        r#"[builtin.prh]
+rulePaths = ["prh.yml"]
+ruleContents = ["""
+rules:
+  - expected: Cookie
+    pattern: ビスケット
+  - expected: Pie
+    pattern: パイ
+"""]
+"#,
+    );
+    assert_eq!(
+        fix_with_config(&sandbox, "クッキーとビスケットとパイ\n"),
+        "CookieとビスケットとPie\n"
+    );
+}
+
+#[test]
+fn prh_rejects_invalid_dictionaries() {
+    for dictionary in [
+        None,
+        Some("rules: [\n"),
+        Some("rules:\n  - pattern: a\n"),
+        Some("rules:\n  - expected: A\n    pattern: /(/\n"),
+        Some("rules:\n  - expected: A\n    patterns: [/a/i, /b/]\n"),
+        Some("rules:\n  - expected: A\n    pattern: /(a)/\n    regexpMustEmpty: a\n"),
+        Some(
+            "rules:\n  - expected: A\n    pattern: a\n    specs:\n      - from: a\n        to: ''\n",
+        ),
+        Some("imports:\n  - prh.yml\nrules:\n  - expected: A\n    pattern: a\n"),
+    ] {
+        let sandbox = Sandbox::new();
+        sandbox.write("t.md", "a\n");
+        let path = sandbox.path("xdg/jafix/dict/prh.yml");
+        if let Some(dictionary) = dictionary {
+            sandbox.write("xdg/jafix/dict/prh.yml", dictionary);
+        }
+        sandbox.write_xdg_config(&prh_rule_paths("dict/prh.yml"));
+        let output = sandbox.run(&["check", "t.md"]);
+        assert_eq!(output.status.code(), Some(2), "{dictionary:?}");
+        let stderr = String::from_utf8(output.stderr).unwrap();
+        for needle in ["prh", "rulePaths", &path.display().to_string()] {
+            assert!(stderr.contains(needle), "{dictionary:?}: {stderr}");
+        }
+    }
+}
+
+#[test]
+fn prh_names_the_invalid_rule_contents() {
+    assert_check_rejects_builtin(
+        "prh = { ruleContents = [\"rules: []\", \"rules: [\"] }",
+        &["prh", "ruleContents", "2番目"],
+    );
+}
+
+#[test]
+fn prh_reports_failed_specs() {
+    assert_check_rejects_builtin(
+        r#"[builtin.prh]
+ruleContents = ["""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+    specs:
+      - from: クッキーを食べる
+        to: Biscuitを食べる
+"""]"#,
+        &[
+            "Cookie",
+            "クッキーを食べる",
+            "Biscuitを食べる",
+            "Cookieを食べる",
+        ],
+    );
+}
+
+#[test]
+fn prh_options_are_validated() {
+    for (option, name) in [
+        ("checkCodeComment = true", "checkCodeComment"),
+        ("debug = true", "debug"),
+        ("checkLinks = true", "checkLinks"),
+        ("checkHeader = \"yes\"", "checkHeader"),
+    ] {
+        assert_check_rejects_builtin(
+            &format!("prh = {{ ruleContents = [\"rules: []\"], {option} }}"),
+            &["prh", name],
+        );
+    }
+}
+
+#[test]
+fn textlint_rule_pattern_options_are_validated() {
+    for (element, name) in [
+        (
+            "message = \"m\", pattern = \"a\", forceCode = true",
+            "forceCode",
+        ),
+        (
+            "message = \"m\", pattern = \"a\", replaces = \"b\"",
+            "replaces",
+        ),
+        ("pattern = \"a\"", "message"),
+        ("message = \"m\", pattern = \"/(/\"", "pattern"),
+        ("message = \"m\", pattern = \"/a/y\"", "pattern"),
+        ("message = \"m\", pattern = \"\"", "pattern"),
+        (
+            "message = \"m\", pattern = \"a\", allowNodeTypes = [\"Str\"]",
+            "allowNodeTypes",
+        ),
+    ] {
+        assert_check_rejects_builtin(
+            &format!("\"@textlint-rule/pattern\" = {{ patterns = [{{ {element} }}] }}"),
+            &["@textlint-rule/pattern", name],
+        );
+    }
+    assert_check_rejects_builtin(
+        "\"@textlint-rule/pattern\" = { patterns = [] }",
+        &["@textlint-rule/pattern", "patterns"],
+    );
+}
+
+const FULLWIDTH_PAREN_DICTIONARY: &str = r#"[builtin.prh]
+ruleContents = ['''
+rules:
+  - expected: （$1）
+    pattern: /\((.+?)\)/
+''']
+"#;
+
+#[test]
+fn prh_rejects_a_replacement_opposite_to_a_fix_rule() {
+    assert_check_rejects_builtin(FULLWIDTH_PAREN_DICTIONARY, &["（$1）", "fullwidth-paren"]);
+
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(&format!(
+        "[builtin]\nfullwidth-paren = false\n{FULLWIDTH_PAREN_DICTIONARY}"
+    ));
+    assert_eq!(
+        fix_with_config(&sandbox, "いいね(笑)ね\n"),
+        "いいね（笑）ね\n"
+    );
+}
+
+#[test]
+fn textlint_rule_pattern_rejects_a_replacement_opposite_to_a_fix_rule() {
+    assert_check_rejects_builtin(
+        "\"@textlint-rule/pattern\" = { patterns = [{ message = \"m\", pattern = \"Rust言語\", replace = \"Rust 言語\" }] }",
+        &[
+            "@textlint-rule/pattern",
+            "Rust 言語",
+            "space-between-ja-and-alnum",
+        ],
+    );
+}
+
+#[test]
+fn prh_ignore_rules_skip_the_opposite_check() {
+    let sandbox = Sandbox::new();
+    sandbox.write(
+        "xdg/jafix/paren.yml",
+        "rules:
+  - expected: （$1）
+    pattern: /\\((.+?)\\)/
+  - expected: Cookie
+    pattern: クッキー
+",
+    );
+    sandbox.write("t.md", "クッキー(笑)\n");
+    sandbox.write_xdg_config("[builtin]\nprh = { ruleContents = [\"imports: [paren.yml]\"] }\n");
+    assert_eq!(sandbox.run(&["check", "t.md"]).status.code(), Some(2));
+
+    sandbox.write_xdg_config(
+        r#"[builtin.prh]
+ruleContents = ["""
+imports:
+  - path: paren.yml
+    ignoreRules:
+      - expected: （$1）
+"""]
+"#,
+    );
+    assert_eq!(fix_with_config(&sandbox, "クッキー(笑)\n"), "Cookie(笑)\n");
+}
+
+#[test]
+fn rules_table_is_rejected() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "照合する。\n");
+    sandbox.write_xdg_config("[[rules]]\nid = \"ai-words\"\nmessage = \"m\"\nwords = [\"照合\"]\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(stderr.contains("rules"), "{stderr}");
 }

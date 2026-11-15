@@ -11,7 +11,7 @@ use super::builtin::{Builtin, CountBy, JaNoMixedPeriod, MaxComma, SentenceLength
 use super::{Report, RuleId};
 
 /// 段落ごとに当てる指摘ルール (`sentence-length`、`max-comma`、`ja-no-mixed-period`、`no-unmatched-pair`) の指摘を返す
-pub fn report(src: &str, paragraphs: &[Paragraph], builtin: &Builtin) -> Vec<Report<'static>> {
+pub fn report(src: &str, paragraphs: &[Paragraph], builtin: &Builtin) -> Vec<Report> {
     let mut reports = Vec::new();
     for paragraph in paragraphs {
         if let Some(rule) = &builtin.ja_no_mixed_period {
@@ -43,7 +43,7 @@ pub fn report(src: &str, paragraphs: &[Paragraph], builtin: &Builtin) -> Vec<Rep
     reports
 }
 
-fn at(range: Range<usize>, rule: RuleId, message: String) -> Report<'static> {
+fn at(range: Range<usize>, rule: RuleId, message: String) -> Report {
     Report {
         range,
         rule: rule.name(),
@@ -51,7 +51,7 @@ fn at(range: Range<usize>, rule: RuleId, message: String) -> Report<'static> {
     }
 }
 
-fn sentence_length(sentence: &Sentence, rule: &SentenceLength) -> Option<Report<'static>> {
+fn sentence_length(sentence: &Sentence, rule: &SentenceLength) -> Option<Report> {
     let mut text: String = sentence
         .children
         .iter()
@@ -77,7 +77,7 @@ fn sentence_length(sentence: &Sentence, rule: &SentenceLength) -> Option<Report<
     })
 }
 
-fn max_comma(src: &str, sentence: &Sentence, rule: &MaxComma) -> Option<Report<'static>> {
+fn max_comma(src: &str, sentence: &Sentence, rule: &MaxComma) -> Option<Report> {
     let mut count = 0;
     let mut last = None;
     count_commas(src, &sentence.children, &mut count, &mut last);
@@ -127,7 +127,7 @@ const PAIRS: [(char, char); 13] = [
 
 /// 文の元のソースのうち、インラインコード・リンク・強調・太字の外で、文の終わりまで閉じない開きごとに指摘を返す。
 /// 位置は開きの文字の直後である
-fn unmatched_pairs(src: &str, sentence: &Sentence) -> Vec<Report<'static>> {
+fn unmatched_pairs(src: &str, sentence: &Sentence) -> Vec<Report> {
     let mut ignored = Vec::new();
     ignored_ranges(&sentence.children, &mut ignored);
     // 開いている組の、開きの文字の直後の位置
@@ -193,11 +193,7 @@ static EMOJI: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^\p{Extended_Pictographic}$").unwrap());
 
 /// 段落の最後の子が日本語を含む文字列のときだけ、その末尾が句点で終わるかを見る
-fn mixed_period(
-    src: &str,
-    paragraph: &Paragraph,
-    rule: &JaNoMixedPeriod,
-) -> Option<Report<'static>> {
+fn mixed_period(src: &str, paragraph: &Paragraph, rule: &JaNoMixedPeriod) -> Option<Report> {
     if paragraph.list_item_index.is_some() || paragraph.blockquote || paragraph.footnote {
         return None;
     }

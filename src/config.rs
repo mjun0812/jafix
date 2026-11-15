@@ -4,7 +4,6 @@ use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use serde::Deserialize;
 
 use crate::rules::builtin::Builtin;
-use crate::rules::{CustomRule, RuleId};
 
 /// `$XDG_CONFIG_HOME/jafix/config.toml` (未設定なら `~/.config/jafix/config.toml`) の内容
 #[derive(Debug, Default)]
@@ -13,8 +12,6 @@ pub struct Config {
     exclude: GlobSet,
     /// `exclude` と同じく実体の絶対パスと比べるglob。当たるファイルでは指摘ルールの指摘を出さない
     report_exclude: GlobSet,
-    /// `[[rules]]` で足した指摘ルール
-    rules: Vec<CustomRule>,
     /// `[builtin]` で決めた、組み込みのルールの有効・無効とオプション
     builtin: Builtin,
 }
@@ -26,21 +23,7 @@ struct RawConfig {
     exclude: Vec<String>,
     #[serde(default, rename = "report-exclude")]
     report_exclude: Vec<String>,
-    #[serde(default)]
-    rules: Vec<RawRule>,
     builtin: Option<toml::Table>,
-}
-
-/// `[[rules]]` の1つの表。不正の理由にその表の `id` を含めるため、serdeの必須のフィールドと
-/// `deny_unknown_fields` に任せず、どのキーも省略可として読んでから `custom_rule` で確かめる
-#[derive(Deserialize)]
-struct RawRule {
-    id: Option<String>,
-    message: Option<String>,
-    pattern: Option<String>,
-    words: Option<Vec<String>>,
-    #[serde(flatten)]
-    unknown: toml::Table,
 }
 
 /// 設定ファイルを読む。無ければ空の設定を返し、TOMLとして読めないか値が不正なら理由を返す
@@ -65,16 +48,6 @@ pub fn load() -> Result<Config, String> {
         .map_err(|e| format!("{}: {e}", path.display()))?;
     let report_exclude = glob_set("report-exclude", &raw.report_exclude, home.as_deref())
         .map_err(|e| format!("{}: {e}", path.display()))?;
-    let mut rules: Vec<CustomRule> = Vec::new();
-    for raw_rule in raw.rules {
-        let table = match &raw_rule.id {
-            Some(id) => format!("[[rules]] の `{id}`"),
-            None => "[[rules]]".to_owned(),
-        };
-        let rule = custom_rule(raw_rule, &rules)
-            .map_err(|reason| format!("{}: {table}: {reason}", path.display()))?;
-        rules.push(rule);
-    }
     let builtin = match &raw.builtin {
         Some(table) => Builtin::from_table(table, &dir)
             .map_err(|reason| format!("{}: [builtin]: {reason}", path.display()))?,
@@ -83,30 +56,8 @@ pub fn load() -> Result<Config, String> {
     Ok(Config {
         exclude,
         report_exclude,
-        rules,
         builtin,
     })
-}
-
-/// `[[rules]]` の1つの表を検証して指摘ルールにする。`defined` はそれより前の表から作った指摘ルール
-fn custom_rule(raw: RawRule, defined: &[CustomRule]) -> Result<CustomRule, String> {
-    if !raw.unknown.is_empty() {
-        let keys: Vec<String> = raw.unknown.keys().map(|key| format!("`{key}`")).collect();
-        return Err(format!("未知のキー {}", keys.join("、")));
-    }
-    let id = raw.id.ok_or("`id` が無い")?;
-    let message = raw.message.ok_or("`message` が無い")?;
-    if RuleId::ALL.iter().any(|rule| rule.name() == id) {
-        return Err("`id` が組み込みのルールと同じ".to_owned());
-    }
-    if defined.iter().any(|rule| rule.id() == id) {
-        return Err("`id` が他の `[[rules]]` と同じ".to_owned());
-    }
-    match (raw.pattern, raw.words) {
-        (Some(pattern), None) => CustomRule::pattern(id, message, &pattern),
-        (None, Some(words)) => CustomRule::words(id, message, &words),
-        _ => Err("`pattern` と `words` のどちらか一方だけを書く".to_owned()),
-    }
 }
 
 /// 設定の `key` の値をglobとして読み、1つの `GlobSet` にまとめる
@@ -167,10 +118,6 @@ impl Config {
     /// `path` の実体が `report-exclude` のglobのいずれかに当たればtrue。当たるファイルでは指摘ルールの指摘を出さない
     pub fn is_report_excluded(&self, path: &Path) -> bool {
         matches_canonical(&self.report_exclude, path)
-    }
-
-    pub fn rules(&self) -> &[CustomRule] {
-        &self.rules
     }
 
     pub fn builtin(&self) -> &Builtin {

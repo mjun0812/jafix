@@ -5,7 +5,7 @@ use super::dict::WEAK_PHRASES;
 use super::pattern;
 
 /// 弱い表現の並びに一致した箇所ごとに、一致の最初のトークンに指摘を出す
-pub(super) fn report(prose: &AnalyzedProse) -> Vec<Report<'static>> {
+pub(super) fn report(prose: &AnalyzedProse) -> Vec<Report> {
     let tokens = prose.tokens;
     WEAK_PHRASES
         .iter()

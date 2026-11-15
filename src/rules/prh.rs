@@ -2,11 +2,14 @@
 
 pub mod dictionary;
 
+use std::borrow::Cow;
+
 use crate::apply::TargetLines;
 use crate::prose::{Context, Document};
 
-use super::UserReplacement;
+use self::dictionary::Replacement;
 use super::builtin::Prh;
+use super::{Finding, RuleId, UserReplacement, one_line, target_texts};
 
 /// `check*` のオプション。本文の範囲のうち、辞書を当てるものを決める。既定はtextlint-rule-prhと同じである
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -37,10 +40,12 @@ impl Default for Checks {
 
 impl Checks {
     /// `context` の本文の範囲に辞書を当てるか
-    #[allow(dead_code)] // skeleton: not implemented
     pub fn covers(&self, context: &Context) -> bool {
-        let _ = context;
-        todo!("skeleton: not implemented")
+        !(context.link && !self.link
+            || context.blockquote && !self.block_quote
+            || context.emphasis && !self.emphasis
+            || context.heading && !self.header
+            || context.paragraph && !self.paragraph)
     }
 }
 
@@ -52,6 +57,40 @@ pub fn replacements(
     rule: &Prh,
     targets: &TargetLines,
 ) -> Vec<UserReplacement> {
-    let _ = (src, document, rule, targets);
-    todo!("skeleton: not implemented")
+    let mut replacements = Vec::new();
+    for prose in target_texts(src, &document.texts, targets) {
+        if !rule.checks.covers(&prose.context) {
+            continue;
+        }
+        let text = &src[prose.range.clone()];
+        for Replacement {
+            range,
+            text: replaced,
+            rule: index,
+        } in rule.dictionary.replacements(text)
+        {
+            let dictionary_rule = &rule.dictionary.rules()[index];
+            let mut message = format!(
+                "「{}」を「{}」にする",
+                one_line(&text[range.clone()]),
+                one_line(&replaced)
+            );
+            if let Some(note) = &dictionary_rule.note {
+                message.push_str(": ");
+                message.push_str(note);
+            }
+            let start = prose.range.start + range.start;
+            replacements.push(UserReplacement {
+                finding: Finding {
+                    range: start..prose.range.start + range.end,
+                    replacement: Cow::Owned(replaced),
+                    rule: RuleId::Prh,
+                    position: start,
+                    message: Cow::Owned(message),
+                },
+                heading: prose.context.heading,
+            });
+        }
+    }
+    replacements
 }

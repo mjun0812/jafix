@@ -21,7 +21,7 @@ static EMOJI: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 /// リスト項目ごとに、先頭の「**太字**: 説明」型と、項目に属する段落の絵文字を、それぞれ最初の1件だけ指摘する
-pub fn report(src: &str, document: &Document, rule: &NoAiListFormatting) -> Vec<Report<'static>> {
+pub fn report(src: &str, document: &Document, rule: &NoAiListFormatting) -> Vec<Report> {
     let mut reports = Vec::new();
     for item in &document.list_items {
         let text = &src[item.range.clone()];
@@ -70,7 +70,7 @@ fn paragraphs_in<'p>(paragraphs: &'p [Paragraph], item: &ListItem) -> &'p [Parag
 }
 
 /// リスト項目の元の文字列 `text` (ソースでの開始位置が `start`) の先頭の「**太字**: 説明」型の指摘
-fn bold(text: &str, start: usize, paragraphs: &[Paragraph]) -> Option<Report<'static>> {
+fn bold(text: &str, start: usize, paragraphs: &[Paragraph]) -> Option<Report> {
     let captures = BOLD.captures(text)?;
     let whole = captures.get(0)?;
     // textlintの末尾の先読み `(?=\s)`: ハイフン・ダッシュの直後が空白でなければ当たらない

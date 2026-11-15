@@ -227,3 +227,13 @@ fn no_ai_colon_continuation() {
 fn ai_tech_writing_guideline() {
     assert_cases("ai-tech-writing-guideline");
 }
+
+#[test]
+fn prh() {
+    assert_cases("prh");
+}
+
+#[test]
+fn textlint_rule_pattern() {
+    assert_cases("textlint-rule-pattern");
+}

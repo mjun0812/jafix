@@ -80,13 +80,7 @@ fn run_check(files: &[PathBuf]) -> ExitCode {
         let reports = if config.is_report_excluded(path) {
             Vec::new()
         } else {
-            rules::report(
-                &src,
-                &document,
-                config.builtin(),
-                config.rules(),
-                &TargetLines::All,
-            )
+            rules::report(&src, &document, config.builtin(), &TargetLines::All)
         };
         let mut lines: Vec<(usize, &str, &str)> = findings
             .iter()
@@ -191,13 +185,7 @@ fn run_hook(agent: Agent) -> ExitCode {
         // 修正ルールは改行を足し引きしないので、対象行は直した後の内容でも同じ行番号である
         let index = LineIndex::new(&fixed);
         let document = prose::parse(&fixed);
-        for report in rules::report(
-            &fixed,
-            &document,
-            config.builtin(),
-            config.rules(),
-            &target.lines,
-        ) {
+        for report in rules::report(&fixed, &document, config.builtin(), &target.lines) {
             let (line, column) = index.line_col(report.range.start);
             if !target.lines.contains(line) {
                 continue;

@@ -4,7 +4,7 @@ use crate::rules::{Report, RuleId};
 use super::Analyzed;
 
 /// 段落の文ごとの最初の接続詞を、接続詞を持つ直前の文の最初の接続詞と比べ、同じなら後ろの文の接続詞に指摘を出す
-pub(super) fn report(sentences: &[Analyzed]) -> Vec<Report<'static>> {
+pub(super) fn report(sentences: &[Analyzed]) -> Vec<Report> {
     let mut reports = Vec::new();
     let mut previous: Option<&str> = None;
     for sentence in sentences {

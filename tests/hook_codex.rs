@@ -2,7 +2,10 @@ mod common;
 
 use std::path::Path;
 
-use common::{AI_RULES_CONFIG, AI_RULES_INPUT, Sandbox, read, stdout};
+use common::{
+    AI_RULES_CONFIG, AI_RULES_INPUT, AI_WORDS_PATTERN, Sandbox, USER_REPLACEMENTS_CONFIG,
+    USER_REPLACEMENTS_FIXED, USER_REPLACEMENTS_INPUT, read, stdout, user_replacement_reports,
+};
 use serde_json::json;
 
 /// Codexが実際に渡すapply_patchの入力の形
@@ -189,13 +192,10 @@ fn a_file_whose_chunk_is_missing_is_left_while_the_other_is_fixed() {
     assert_eq!(read(&found), "語 A\n語B。\n");
 }
 
-const AI_WORDS_RULE: &str =
-    "[[rules]]\nid = \"ai-words\"\nmessage = \"AIが多用する語\"\nwords = [\"照合\"]\n";
-
 #[test]
 fn apply_patch_reports_the_plus_line_to_stderr_and_exits_2() {
     let sandbox = Sandbox::new();
-    sandbox.write_xdg_config(AI_WORDS_RULE);
+    sandbox.write_xdg_config(AI_WORDS_PATTERN);
     let path = sandbox.write("t.md", "語 A\n照合 B\n");
     let patch = update_patch("t.md", "@@\n 語 A\n-語 x\n+照合 B\n");
     let output = sandbox.hook("codex", &apply_patch_input(&sandbox.path(""), &patch));
@@ -204,7 +204,7 @@ fn apply_patch_reports_the_plus_line_to_stderr_and_exits_2() {
     assert_eq!(read(&path), "語 A\n照合B\n");
     let stderr = String::from_utf8(output.stderr).unwrap();
     let expected = format!(
-        "{}:2:1: 「照合」: AIが多用する語 [ai-words]",
+        "{}:2:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]",
         path.display()
     );
     assert!(stderr.lines().any(|line| line == expected), "{stderr}");
@@ -213,7 +213,7 @@ fn apply_patch_reports_the_plus_line_to_stderr_and_exits_2() {
 #[test]
 fn reports_and_unlocated_chunks_are_both_written_with_exit_2() {
     let sandbox = Sandbox::new();
-    sandbox.write_xdg_config(AI_WORDS_RULE);
+    sandbox.write_xdg_config(AI_WORDS_PATTERN);
     let missing = sandbox.write("a.md", "語 A\n語 B\n");
     let reported = sandbox.write("b.md", "語 A\n照合 B\n");
     let patch = "\
@@ -238,11 +238,11 @@ fn reports_and_unlocated_chunks_are_both_written_with_exit_2() {
     assert!(
         stderr
             .lines()
-            .any(|line| line.contains(&missing_path) && !line.ends_with("[ai-words]")),
+            .any(|line| line.contains(&missing_path) && !line.ends_with("[@textlint-rule/pattern]")),
         "{stderr}"
     );
     let report = format!(
-        "{}:2:1: 「照合」: AIが多用する語 [ai-words]",
+        "{}:2:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]",
         reported.display()
     );
     assert!(stderr.lines().any(|line| line == report), "{stderr}");
@@ -304,4 +304,26 @@ fn reports_ai_writing_findings_on_target_lines() {
         )],
         "{lines:?}"
     );
+}
+
+#[test]
+fn fixes_user_replacements_on_target_lines() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(USER_REPLACEMENTS_CONFIG);
+    let path = sandbox.write("t.md", USER_REPLACEMENTS_INPUT);
+    let chunk: String = USER_REPLACEMENTS_INPUT
+        .lines()
+        .enumerate()
+        .map(|(i, line)| match i + 1 {
+            1 | 5 => format!("-x\n+{line}\n"),
+            _ => format!(" {line}\n"),
+        })
+        .collect();
+    let patch = update_patch("t.md", &format!("@@\n{chunk}"));
+    let output = sandbox.hook("codex", &apply_patch_input(&sandbox.path(""), &patch));
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(read(&path), USER_REPLACEMENTS_FIXED);
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    let lines: Vec<&str> = stderr.lines().collect();
+    assert_eq!(lines[1..], user_replacement_reports(&path), "{lines:?}");
 }

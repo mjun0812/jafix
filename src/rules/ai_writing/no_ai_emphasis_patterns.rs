@@ -36,7 +36,7 @@ static HEADING_BOLDS: LazyLock<[Regex; 2]> = LazyLock::new(|| {
 });
 
 /// 段落の絵文字と太字・太字の情報プレフィックスと、見出しの中の太字を指摘する
-pub fn report(src: &str, document: &Document, rule: &NoAiEmphasisPatterns) -> Vec<Report<'static>> {
+pub fn report(src: &str, document: &Document, rule: &NoAiEmphasisPatterns) -> Vec<Report> {
     let mut reports = Vec::new();
     for paragraph in &document.paragraphs {
         // textlintはリスト項目の段落を、項目の元の文字列 (入れ子の項目を含む) で判定する
@@ -71,11 +71,7 @@ pub fn report(src: &str, document: &Document, rule: &NoAiEmphasisPatterns) -> Ve
     reports
 }
 
-fn paragraph_reports(
-    src: &str,
-    paragraph: &Paragraph,
-    rule: &NoAiEmphasisPatterns,
-) -> Vec<Report<'static>> {
+fn paragraph_reports(src: &str, paragraph: &Paragraph, rule: &NoAiEmphasisPatterns) -> Vec<Report> {
     let text = &src[paragraph.range.clone()];
     let start = paragraph.range.start;
     let list = if paragraph.list_item_index.is_some() {
@@ -92,7 +88,7 @@ fn paragraph_reports(
             .filter(|range| !overlaps_code_or_html(paragraph, range.clone()))
             .collect()
     };
-    let mut reports: Vec<Report<'static>> = emoji_bolds
+    let mut reports: Vec<Report> = emoji_bolds
         .iter()
         .map(|range| Report {
             range: range.clone(),
