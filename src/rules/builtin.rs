@@ -10,6 +10,7 @@ use url::{Origin, Url};
 use crate::js_regex;
 
 use super::RuleId;
+use super::english::terms::{TERMS, Term};
 use super::fix_rules_hitting;
 use super::jtf_style::JtfRule;
 use super::morph::pattern::{Expect, Field, OwnedFields};
@@ -21,8 +22,8 @@ use super::prh::dictionary::{Dictionary, Source, parse_yaml};
 /// `preset-ja-technical-writing` と同じである。`@textlint-ja/preset-ai-writing` と `preset-ai-words-ja` の
 /// 7ルール、利用者の置き換えの2ルール (`prh`・`@textlint-rule/pattern`)、`preset-ja-spacing` の11ルール、
 /// `no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals`、`preset-jtf-style` の37ルール、ひらがな系の5ルール、
-/// `@textlint-ja/no-insert-dropping-sa`・`@textlint-ja/no-synonyms`、`no-todo`・`date-weekday-mismatch`・`no-dead-link` は
-/// 無効である
+/// `@textlint-ja/no-insert-dropping-sa`・`@textlint-ja/no-synonyms`、`no-todo`・`date-weekday-mismatch`・`no-dead-link`、
+/// `terminology`・`spelling`・`common-misspellings`・`write-good` は無効である
 #[derive(Debug)]
 pub struct Builtin {
     pub fullwidth_paren: bool,
@@ -84,6 +85,10 @@ pub struct Builtin {
     pub no_todo: bool,
     pub date_weekday_mismatch: Option<DateWeekdayMismatch>,
     pub no_dead_link: Option<NoDeadLink>,
+    pub terminology: Option<Terminology>,
+    pub spelling: Option<Spelling>,
+    pub common_misspellings: Option<CommonMisspellings>,
+    pub write_good: Option<WriteGood>,
 }
 
 impl Default for Builtin {
@@ -148,6 +153,10 @@ impl Default for Builtin {
             no_todo: false,
             date_weekday_mismatch: None,
             no_dead_link: None,
+            terminology: None,
+            spelling: None,
+            common_misspellings: None,
+            write_good: None,
         }
     }
 }
@@ -227,6 +236,10 @@ impl Builtin {
         if let Some(rule) = &self.textlint_rule_pattern {
             rule.reject_opposite_replacements(self)
                 .map_err(|reason| format!("`{}`: {reason}", RuleId::TextlintRulePattern.name()))?;
+        }
+        if let Some(rule) = &self.terminology {
+            rule.reject_opposite_replacements(self)
+                .map_err(|reason| format!("`{}`: {reason}", RuleId::Terminology.name()))?;
         }
         Ok(())
     }
@@ -422,6 +435,19 @@ impl Builtin {
                 self.no_dead_link = options
                     .map(|options| NoDeadLink::from_options(options, config_dir))
                     .transpose()?;
+            }
+            RuleId::Terminology => {
+                self.terminology = options
+                    .map(|options| Terminology::from_options(options, config_dir))
+                    .transpose()?;
+            }
+            RuleId::Spelling => self.spelling = options.map(Spelling::from_options).transpose()?,
+            RuleId::CommonMisspellings => {
+                self.common_misspellings =
+                    options.map(CommonMisspellings::from_options).transpose()?;
+            }
+            RuleId::WriteGood => {
+                self.write_good = options.map(WriteGood::from_options).transpose()?;
             }
         }
         Ok(())
@@ -2444,6 +2470,447 @@ fn link_globs(key: &str, value: &Value) -> Result<GlobSet, String> {
     builder
         .build()
         .map_err(|e| format!("`{key}` をglobとして読めない: {e}"))
+}
+
+/// `terminology` のオプションを読んだ結果。利用者の `terms` の項目と組み込みの辞書の項目を `exclude` と `defaultTerms` を
+/// 当てて並べ、すべての正規表現を読んである
+#[derive(Debug)]
+pub struct Terminology {
+    /// 文字列の項目のすべてを `word_terms` の順に選択にまとめ、語の前後の条件で包んだ正規表現 (`i`・`m`・`u`)。
+    /// 文字列の項目が無ければ `None`
+    #[allow(dead_code)] // skeleton: not implemented
+    pub words: Option<Regex>,
+    /// 文字列の項目。利用者の `terms` の項目を書いた順に、その後に組み込みの辞書の項目が並ぶ。置き換え後の語は、
+    /// 一致を小文字にしたものと、小文字にして等しい最初の項目である
+    pub word_terms: Vec<WordTerm>,
+    /// 配列の項目。並びは `word_terms` と同じで、この順に1つずつ当てる
+    pub pair_terms: Vec<PairTerm>,
+    /// `skip`。本文の範囲がこの型のどれかの中にあれば当てない
+    #[allow(dead_code)] // skeleton: not implemented
+    pub skip: Vec<PatternNodeType>,
+}
+
+/// `terminology` の文字列の項目
+#[derive(Debug)]
+pub struct WordTerm {
+    /// 正しい表記
+    pub term: Cow<'static, str>,
+    /// 利用者の `terms` の項目か。真なら箇所は利用者の置き換え、偽なら指摘である
+    pub user: bool,
+}
+
+/// `terminology` の配列の項目
+#[derive(Debug)]
+pub struct PairTerm {
+    /// 本文の範囲に当てる正規表現 (`i`・`m`・`u`)。1つ目の要素が `(?<` で始まらず、`(?=`・`(?!` も含まなければ、
+    /// 語の前後の条件で包んである
+    #[allow(dead_code)] // skeleton: not implemented
+    pub pattern: Regex,
+    /// 置き換え後の語を求めるときに `xyz <一致> xyz` に1回だけ当てる、包まない1つ目の要素 (`i`・`u`)
+    #[allow(dead_code)] // skeleton: not implemented
+    pub source: Regex,
+    /// 置き換え後の文字列。JavaScriptの `replace` の記法 (`js_regex::substitute`) で展開する
+    pub replacement: Cow<'static, str>,
+    /// 利用者の `terms` の項目か
+    pub user: bool,
+}
+
+impl Terminology {
+    /// `config_dir` は、文字列の `terms` (ファイルのパス) を解決するディレクトリである。`terms` のファイルは、JSONか、
+    /// コメント (`strip-json-comments` の既定と同じく、文字列の外の `//` から行末までと `/* */`) を持つJSONである。
+    /// `terms` の要素の形の誤り、読めない正規表現 (包む形と包まない形の両方)、`skip` の知らない型の名前、ファイルが
+    /// 読めないことは、オプションの名前 (`terms` では何番目の要素かとファイルのパスも) を含む理由を返す
+    fn from_options(options: &Table, config_dir: &Path) -> Result<Self, String> {
+        let mut user_terms = Vec::new();
+        let mut skip = vec![PatternNodeType::BlockQuote];
+        let mut default_terms = true;
+        let mut exclude = Vec::new();
+        for (key, value) in options {
+            match key.as_str() {
+                "terms" => {
+                    user_terms = match value {
+                        Value::String(_) => {
+                            let path =
+                                resolve_path(key, non_empty_string(key, value)?, config_dir)?;
+                            terms_file(&path).map_err(|reason| {
+                                format!("`{key}` の {}: {reason}", path.display())
+                            })?
+                        }
+                        Value::Array(items) => items
+                            .iter()
+                            .enumerate()
+                            .map(|(i, item)| {
+                                raw_term(
+                                    item.as_str(),
+                                    item.as_array()
+                                        .map(|values| values.iter().map(Value::as_str).collect()),
+                                )
+                                .map_err(|reason| format!("`{key}` の{}番目: {reason}", i + 1))
+                            })
+                            .collect::<Result<_, _>>()?,
+                        _ => {
+                            return Err(format!(
+                                "`{key}` は項目の配列か、項目の配列を書いたファイルのパスで書く"
+                            ));
+                        }
+                    };
+                }
+                "skip" => {
+                    skip = strings(key, value)?
+                        .into_iter()
+                        .map(|name| {
+                            pattern_node_type(name).ok_or_else(|| {
+                                format!("`{key}` の `{name}` は本文の範囲の祖先になる型ではない")
+                            })
+                        })
+                        .collect::<Result<_, _>>()?;
+                }
+                "defaultTerms" => default_terms = boolean(key, value)?,
+                "exclude" => exclude = strings(key, value)?,
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        let default_terms = if default_terms { &TERMS[..] } else { &[] }
+            .iter()
+            .map(|term| match *term {
+                Term::Word(word) => RawTerm::Word(Cow::Borrowed(word)),
+                Term::Pair(pattern, replacement) => {
+                    RawTerm::Pair(Cow::Borrowed(pattern), Cow::Borrowed(replacement))
+                }
+            });
+        let mut words = Vec::new();
+        let mut word_terms = Vec::new();
+        let mut pair_terms = Vec::new();
+        let terms = user_terms
+            .into_iter()
+            .enumerate()
+            .map(|(i, term)| (Some(i), term))
+            .chain(default_terms.map(|term| (None, term)));
+        for (index, term) in terms {
+            let first = match &term {
+                RawTerm::Word(word) => word,
+                RawTerm::Pair(pattern, _) => pattern,
+            };
+            if exclude.contains(&first.as_ref()) {
+                continue;
+            }
+            let user = index.is_some();
+            // 組み込みの辞書の項目はどれも読めるので、理由に書くのは利用者の項目の番号だけである
+            let at = |reason: String| match index {
+                Some(i) => format!("`terms` の{}番目: {reason}", i + 1),
+                None => format!("組み込みの辞書の項目: {reason}"),
+            };
+            match term {
+                RawTerm::Word(word) => {
+                    if user {
+                        js_regex::compile(&wrap_term(&word), TERM_FLAGS).map_err(at)?;
+                        js_regex::compile(&word, REPLACEMENT_FLAGS).map_err(at)?;
+                    }
+                    words.push(word.clone());
+                    word_terms.push(WordTerm { term: word, user });
+                }
+                RawTerm::Pair(pattern, replacement) => {
+                    let wrapped = if pattern.starts_with("(?<")
+                        || pattern.contains("(?=")
+                        || pattern.contains("(?!")
+                    {
+                        pattern.to_string()
+                    } else {
+                        wrap_term(&pattern)
+                    };
+                    pair_terms.push(PairTerm {
+                        pattern: js_regex::compile(&wrapped, TERM_FLAGS).map_err(at)?,
+                        source: js_regex::compile(&pattern, REPLACEMENT_FLAGS).map_err(at)?,
+                        replacement,
+                        user,
+                    });
+                }
+            }
+        }
+        let words = if words.is_empty() {
+            None
+        } else {
+            Some(
+                js_regex::compile(&wrap_term(&format!("(?:{})", words.join("|"))), TERM_FLAGS)
+                    .map_err(|reason| {
+                        format!("`terms` の文字列の項目をまとめた正規表現を{reason}")
+                    })?,
+            )
+        };
+        Ok(Self {
+            words,
+            word_terms,
+            pair_terms,
+            skip,
+        })
+    }
+
+    /// 利用者の `terms` の項目の置き換えの固定の部分 (文字列の項目では項目の全体、配列の項目では置き換えの記法を
+    /// 除いた部分) に、有効な組み込みの修正ルールが当たれば理由を返す
+    fn reject_opposite_replacements(&self, builtin: &Builtin) -> Result<(), String> {
+        let words = self
+            .word_terms
+            .iter()
+            .filter(|term| term.user)
+            .map(|term| (term.term.as_ref(), vec![term.term.to_string()]));
+        let pairs = self.pair_terms.iter().filter(|term| term.user).map(|term| {
+            (
+                term.replacement.as_ref(),
+                js_regex::substitution_fixed_parts(&term.replacement),
+            )
+        });
+        for (replacement, parts) in words.chain(pairs) {
+            let hits = parts
+                .iter()
+                .flat_map(|part| fix_rules_hitting(part, builtin))
+                .collect::<Vec<_>>();
+            if let Some(reason) = opposite_reason(&hits) {
+                return Err(format!(
+                    "`terms` の置き換えの「{replacement}」は {reason}、`terms` から外す"
+                ));
+            }
+        }
+        Ok(())
+    }
+}
+
+/// `terminology` の項目の正規表現のフラグ。textlint-rule-terminologyと同じ `i`・`m` に、`u` を付ける
+const TERM_FLAGS: js_regex::Flags = js_regex::Flags {
+    ignore_case: true,
+    multiline: true,
+    dot_all: false,
+};
+
+/// 配列の項目の置き換え後の語を求めるときに、包まない1つ目の要素に付けるフラグ (`i` と `u`)
+const REPLACEMENT_FLAGS: js_regex::Flags = js_regex::Flags {
+    ignore_case: true,
+    multiline: false,
+    dot_all: false,
+};
+
+/// 読み込んだ `terminology` の1項目
+enum RawTerm {
+    /// 正しい表記
+    Word(Cow<'static, str>),
+    /// 正規表現の元の文字列と、置き換え後の文字列
+    Pair(Cow<'static, str>, Cow<'static, str>),
+}
+
+/// `terms` の要素を読む。`text` は要素が文字列ならその文字列、`array` は要素が配列ならその要素を文字列として読んだもの
+/// (文字列でない要素は `None`) である。TOMLとJSONの値を同じ形で読むために、値そのものではなくこの2つを受ける
+fn raw_term(text: Option<&str>, array: Option<Vec<Option<&str>>>) -> Result<RawTerm, String> {
+    if let Some(text) = text {
+        if text.is_empty() {
+            return Err("空でない文字列で書く".to_owned());
+        }
+        return Ok(RawTerm::Word(Cow::Owned(text.to_owned())));
+    }
+    match array.as_deref() {
+        Some([Some(pattern), Some(replacement)])
+            if !pattern.is_empty() && !replacement.is_empty() =>
+        {
+            Ok(RawTerm::Pair(
+                Cow::Owned((*pattern).to_owned()),
+                Cow::Owned((*replacement).to_owned()),
+            ))
+        }
+        _ => Err("空でない文字列か、空でない2つの文字列の配列で書く".to_owned()),
+    }
+}
+
+/// `terms` のファイルを読む。読めない、JSONCとして読めない、項目の配列でないことは理由を返す
+fn terms_file(path: &Path) -> Result<Vec<RawTerm>, String> {
+    let text = std::fs::read_to_string(path).map_err(|e| format!("読めない: {e}"))?;
+    let value: serde_json::Value = serde_json::from_str(&strip_json_comments(&text))
+        .map_err(|e| format!("JSONCとして読めない: {e}"))?;
+    value
+        .as_array()
+        .ok_or("項目の配列でない")?
+        .iter()
+        .enumerate()
+        .map(|(i, item)| {
+            raw_term(
+                item.as_str(),
+                item.as_array()
+                    .map(|values| values.iter().map(serde_json::Value::as_str).collect()),
+            )
+            .map_err(|reason| format!("{}番目: {reason}", i + 1))
+        })
+        .collect()
+}
+
+/// `strip-json-comments` の既定と同じく、文字列の外の `//` から行末までと `/* */` を除く。末尾のカンマは除かない。
+/// 閉じていない `/*` は、文書の末尾までを除く
+fn strip_json_comments(text: &str) -> String {
+    let _ = text;
+    todo!("skeleton: not implemented")
+}
+
+/// textlint-rule-terminologyの `getExactMatchRegExp` と同じく、項目を語の前後の条件で包む。直後の条件には、jafixが
+/// `’` を除くASCIIでない文字1つを足す
+fn wrap_term(source: &str) -> String {
+    const PUNCTUATION: &str = r#"[\.,;:!?'"’”)]"#;
+    format!(
+        r"(?<=^|[^-\w])(?<!\.)\b{source}\b(?= |{PUNCTUATION} |{PUNCTUATION}{PUNCTUATION}|{PUNCTUATION}$|$|[^\x00-\x7F’])"
+    )
+}
+
+/// `spelling` のオプション
+#[derive(Debug)]
+pub struct Spelling {
+    /// `skipPatterns`。一致の範囲のどれかと重なる (端が接するものを含む) 語は指摘しない
+    #[allow(dead_code)] // skeleton: not implemented
+    pub skip_patterns: Vec<Regex>,
+    /// `wordDefinitionRegexp`。重ならない空でない一致の1つずつを1語にする
+    #[allow(dead_code)] // skeleton: not implemented
+    pub word_definition: Regex,
+    /// `suggestCorrections`。真なら、辞書の候補を文面に含める
+    #[allow(dead_code)] // skeleton: not implemented
+    pub suggest_corrections: bool,
+}
+
+impl Spelling {
+    /// `language` は `"en"` だけを受ける。`wordDefinitionRegexp` は `/source/flags` の形だけを受け、既定は `/\b[\w']+\b/g` である
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let mut skip_patterns = Vec::new();
+        let mut word_definition = None;
+        let mut suggest_corrections = true;
+        for (key, value) in options {
+            match key.as_str() {
+                "language" => {
+                    if string(key, value)? != "en" {
+                        return Err(format!("`{key}` は \"en\" だけを書ける"));
+                    }
+                }
+                "skipPatterns" => skip_patterns = patterns(key, value)?,
+                "wordDefinitionRegexp" => {
+                    word_definition = Some(
+                        js_regex::slash_regex(string(key, value)?)
+                            .map_err(|reason| format!("`{key}`: {reason}"))?,
+                    );
+                }
+                "suggestCorrections" => suggest_corrections = boolean(key, value)?,
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        let word_definition = match word_definition {
+            Some(regex) => regex,
+            None => js_regex::compile(r"\b[\w']+\b", js_regex::Flags::default())
+                .expect("the default wordDefinitionRegexp compiles"),
+        };
+        Ok(Self {
+            skip_patterns,
+            word_definition,
+            suggest_corrections,
+        })
+    }
+}
+
+/// `common-misspellings` のオプション
+#[derive(Debug, Default)]
+pub struct CommonMisspellings {
+    /// `ignore` の語を小文字にしたもの。一致を小文字にしたものと等しければ指摘しない
+    #[allow(dead_code)] // skeleton: not implemented
+    pub ignore: Vec<String>,
+}
+
+impl CommonMisspellings {
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "ignore" => {
+                    rule.ignore = strings(key, value)?
+                        .into_iter()
+                        .map(str::to_lowercase)
+                        .collect();
+                }
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
+    }
+}
+
+/// `write-good` の検査。宣言の順は、`write-good` 1.0.8 が検査を当てる順である
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WriteGoodCheck {
+    Weasel,
+    Illusion,
+    So,
+    ThereIs,
+    Passive,
+    Adverb,
+    TooWordy,
+    Cliches,
+    Eprime,
+}
+
+impl WriteGoodCheck {
+    pub const ALL: [WriteGoodCheck; 9] = [
+        WriteGoodCheck::Weasel,
+        WriteGoodCheck::Illusion,
+        WriteGoodCheck::So,
+        WriteGoodCheck::ThereIs,
+        WriteGoodCheck::Passive,
+        WriteGoodCheck::Adverb,
+        WriteGoodCheck::TooWordy,
+        WriteGoodCheck::Cliches,
+        WriteGoodCheck::Eprime,
+    ];
+
+    /// オプションのキーと、文面に添える検査の名前
+    pub fn name(self) -> &'static str {
+        match self {
+            WriteGoodCheck::Weasel => "weasel",
+            WriteGoodCheck::Illusion => "illusion",
+            WriteGoodCheck::So => "so",
+            WriteGoodCheck::ThereIs => "thereIs",
+            WriteGoodCheck::Passive => "passive",
+            WriteGoodCheck::Adverb => "adverb",
+            WriteGoodCheck::TooWordy => "tooWordy",
+            WriteGoodCheck::Cliches => "cliches",
+            WriteGoodCheck::Eprime => "eprime",
+        }
+    }
+}
+
+/// `write-good` のオプション
+#[derive(Debug)]
+pub struct WriteGood {
+    /// 有効な検査。`WriteGoodCheck::ALL` の順に並ぶ
+    #[allow(dead_code)] // skeleton: not implemented
+    pub checks: Vec<WriteGoodCheck>,
+    /// `whitelist`。本文の範囲の中の出現と重なる提案は指摘しない
+    #[allow(dead_code)] // skeleton: not implemented
+    pub whitelist: Vec<String>,
+}
+
+impl WriteGood {
+    /// 検査の名前のキーは真偽値で、検査の有効・無効を変える。既定では `eprime` だけが無効である。
+    /// `checks` (検査の差し替え) は知らないオプションである
+    fn from_options(options: &Table) -> Result<Self, String> {
+        let mut enabled = WriteGoodCheck::ALL.map(|check| (check, check != WriteGoodCheck::Eprime));
+        let mut whitelist = Vec::new();
+        for (key, value) in options {
+            if key == "whitelist" {
+                whitelist = non_empty_strings(key, value)?;
+                continue;
+            }
+            let (_, on) = enabled
+                .iter_mut()
+                .find(|(check, _)| check.name() == key)
+                .ok_or_else(|| unknown_option(key))?;
+            *on = boolean(key, value)?;
+        }
+        Ok(Self {
+            checks: enabled
+                .into_iter()
+                .filter_map(|(check, on)| on.then_some(check))
+                .collect(),
+            whitelist,
+        })
+    }
 }
 
 /// `no-mixed-zenkaku-and-hankaku-alphabet` が揃える英字の幅

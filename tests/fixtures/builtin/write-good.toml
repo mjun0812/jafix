@@ -1,0 +1,662 @@
+# write-good の例。期待値は、textlint 15.8.0 と textlint-rule-write-good 2.0.0 (write-good 1.0.8) の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、Markdownの解析の違いが出る箇所で、期待値は設計の規則から決めた。
+# 指摘の範囲は提案の範囲 (当たった文字列の全体) で、位置はtextlintと同じである。範囲が同じ提案は1件にまとめ、文面を検査の順につなぐ。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を、builtin を持たない全caseに当てる
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+builtin = 'write-good = true'
+
+[[cases]]
+name = "w-weasel"
+text = "It is clearly wrong."
+findings = ["1:1", "1:7"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)", "「clearly」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "w-weasel-upper"
+text = "It is CLEARLY wrong."
+findings = ["1:1", "1:7"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)", "「CLEARLY」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "w-weasel-too-many"
+text = "We have too many items."
+findings = ["1:13"]
+messages = ["「many」は意味を弱める語である(adverb)"]
+
+[[cases]]
+name = "w-weasel-too-many-capital"
+text = "Too many items are here."
+findings = ["1:5"]
+messages = ["「many」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "w-weasel-many"
+text = "We have many items."
+findings = ["1:9"]
+messages = ["「many」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "w-weasel-too-few"
+text = "We have too few items."
+findings = []
+
+[[cases]]
+name = "w-weasel-phrase"
+text = "This is a number of items."
+findings = ["1:6", "1:9"]
+messages = ["「is a number」は曖昧な語である(weasel)", "「a number of」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "w-weasel-word-inside"
+text = "It is unclearly wrong."
+findings = ["1:1"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "w-weasel-and-adverb"
+text = "This is very good."
+findings = ["1:9"]
+messages = ["「very」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "w-weasel-text-start-too"
+note = "`few` が本文の範囲の先頭から4文字未満にあると、textlintは範囲の末尾の4文字を直前の4文字として比べ、末尾が `too ` なので外す。jafixは直前の文字だけを見るので外さない"
+text = "Few are too *odd*."
+findings = ["1:1"]
+messages = ["「Few」は曖昧な語である(weasel)"]
+
+[[cases]]
+name = "i-repeat"
+text = "We saw the the cat."
+findings = ["1:12"]
+messages = ["「the」は直前の語の繰り返しである(illusion)"]
+
+[[cases]]
+name = "i-repeat-case"
+text = "The the cat is here."
+findings = ["1:5"]
+messages = ["「the」は直前の語の繰り返しである(illusion)"]
+
+[[cases]]
+name = "i-repeat-newline"
+text = "We saw the\nthe cat."
+findings = ["2:1"]
+messages = ["「the」は直前の語の繰り返しである(illusion)"]
+
+[[cases]]
+name = "i-repeat-spaces"
+text = "We saw the   the cat."
+findings = ["1:14"]
+messages = ["「the」は直前の語の繰り返しである(illusion)"]
+
+[[cases]]
+name = "i-repeat-three"
+text = "We saw the the the cat."
+findings = ["1:12", "1:16"]
+messages = ["「the」は直前の語の繰り返しである(illusion)", "「the」は直前の語の繰り返しである(illusion)"]
+
+[[cases]]
+name = "i-punct-differs"
+text = "It is a. a cat."
+findings = ["1:1"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "i-repeat-punct"
+text = "Stop. Stop. Now."
+findings = ["1:7"]
+messages = ["「Stop.」は直前の語の繰り返しである(illusion)"]
+
+[[cases]]
+name = "i-digits"
+text = "It is 1 1 here."
+findings = ["1:1", "1:9"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)", "「1」は直前の語の繰り返しである(illusion)"]
+
+[[cases]]
+name = "i-fullwidth-space"
+text = "これは test\u3000test です"
+findings = ["1:10"]
+messages = ["「test」は直前の語の繰り返しである(illusion)"]
+
+[[cases]]
+name = "i-japanese-word"
+text = "日本語 日本語 です"
+findings = []
+
+[[cases]]
+name = "i-japanese-attached"
+text = "日本語のthe theを書く"
+findings = []
+
+[[cases]]
+name = "so-start"
+text = "So we did it."
+findings = ["1:1"]
+messages = ["「So」は意味を足さない文頭の語である(so)"]
+
+[[cases]]
+name = "so-lower"
+text = "so we did it."
+findings = ["1:1"]
+messages = ["「so」は意味を足さない文頭の語である(so)"]
+
+[[cases]]
+name = "so-comma"
+text = "So, we did it."
+findings = ["1:1"]
+messages = ["「So」は意味を足さない文頭の語である(so)"]
+
+[[cases]]
+name = "so-after-period"
+text = "It works. So we did it."
+findings = ["1:11"]
+messages = ["「So」は意味を足さない文頭の語である(so)"]
+
+[[cases]]
+name = "so-after-two-spaces"
+note = "文の先頭に空白が2つ以上あると、textlintは最後の1つの空白の長さだけを足した位置 (空白の上) を出す。jafixは空白をすべて飛ばした語の位置を出す"
+text = "It works.  So we did it."
+findings = ["1:12"]
+messages = ["「So」は意味を足さない文頭の語である(so)"]
+
+[[cases]]
+name = "so-after-semicolon"
+text = "It works; so we did it."
+findings = ["1:11"]
+messages = ["「so」は意味を足さない文頭の語である(so)"]
+
+[[cases]]
+name = "so-after-newline"
+text = "It works\nSo we did it."
+findings = ["2:1"]
+messages = ["「So」は意味を足さない文頭の語である(so)"]
+
+[[cases]]
+name = "so-alone"
+text = "So."
+findings = []
+
+[[cases]]
+name = "so-not-start"
+text = "We did so."
+findings = []
+
+[[cases]]
+name = "so-word-prefix"
+text = "Some did it."
+findings = []
+
+[[cases]]
+name = "so-last-sentence"
+note = "jafixは、文の終わりの記号の無い最後の文も見る。textlintは見ない"
+text = "It works. So we did it"
+findings = ["1:11"]
+messages = ["「So」は意味を足さない文頭の語である(so)"]
+
+[[cases]]
+name = "so-only-sentence"
+note = "jafixは、文の終わりの記号の無い最後の文も見る。textlintは見ない"
+text = "So we did it"
+findings = ["1:1"]
+messages = ["「So」は意味を足さない文頭の語である(so)"]
+
+[[cases]]
+name = "so-japanese"
+note = "jafixは、文の終わりの記号の無い最後の文も見る。textlintは見ない。`。` は文の終わりの記号ではないので、この文は終わりの記号の無い最後の文である"
+text = "So、我々はそうした。"
+findings = ["1:1"]
+messages = ["「So」は意味を足さない文頭の語である(so)"]
+
+[[cases]]
+name = "t-there-is"
+text = "There is a cat."
+findings = ["1:1"]
+messages = ["「There is」は冗長な文頭の句である(thereIs)"]
+
+[[cases]]
+name = "t-there-are"
+text = "There are cats."
+findings = ["1:1"]
+messages = ["「There are」は冗長な文頭の句である(thereIs)"]
+
+[[cases]]
+name = "t-there-contraction"
+text = "There's a cat."
+findings = []
+
+[[cases]]
+name = "t-is-there"
+text = "Is there a cat?"
+findings = []
+
+[[cases]]
+name = "t-after-period"
+text = "Look. There is a cat."
+findings = ["1:7"]
+messages = ["「There is」は冗長な文頭の句である(thereIs)"]
+
+[[cases]]
+name = "t-after-two-spaces"
+note = "文の先頭に空白が2つ以上あると、textlintは最後の1つの空白の長さだけを足した位置 (空白の上) を出す。jafixは空白をすべて飛ばした語の位置を出す"
+text = "Look.  There is a cat."
+findings = ["1:8"]
+messages = ["「There is」は冗長な文頭の句である(thereIs)"]
+
+[[cases]]
+name = "t-last-sentence"
+note = "jafixは、文の終わりの記号の無い最後の文も見る。textlintは見ない"
+text = "Look. There is a cat"
+findings = ["1:7"]
+messages = ["「There is」は冗長な文頭の句である(thereIs)"]
+
+[[cases]]
+name = "t-there-island"
+text = "There island is far."
+findings = []
+
+[[cases]]
+name = "p-ed"
+text = "The cake was baked."
+findings = ["1:10"]
+messages = ["「was baked」は受動態かもしれない句である(passive)"]
+
+[[cases]]
+name = "p-irregular"
+text = "The cake was eaten."
+findings = ["1:10"]
+messages = ["「was eaten」は受動態かもしれない句である(passive)"]
+
+[[cases]]
+name = "p-indeed"
+text = "It is indeed good."
+findings = ["1:1"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "p-spaces"
+text = "It is   used here."
+findings = ["1:1", "1:4"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)", "「is   used」は受動態かもしれない句である(passive)"]
+
+[[cases]]
+name = "p-no-space"
+text = "It isused here."
+findings = []
+
+[[cases]]
+name = "p-two"
+text = "It was baked and is eaten."
+findings = ["1:1", "1:4", "1:18"]
+messages = ["「It was」は冗長か不要な句である(tooWordy)", "「was baked」は受動態かもしれない句である(passive)", "「is eaten」は受動態かもしれない句である(passive)"]
+
+[[cases]]
+name = "a-ly"
+text = "He ran quickly."
+findings = ["1:8"]
+messages = ["「quickly」は意味を弱める語である(adverb)"]
+
+[[cases]]
+name = "a-weakens"
+text = "It just works, maybe."
+findings = ["1:4", "1:16"]
+messages = ["「just」は意味を弱める語である(adverb)", "「maybe」は意味を弱める語である(adverb)"]
+
+[[cases]]
+name = "a-stuff-things"
+text = "Do stuff and things."
+findings = ["1:4", "1:14"]
+messages = ["「stuff」は意味を弱める語である(adverb)", "「things」は意味を弱める語である(adverb)"]
+
+[[cases]]
+name = "a-not-in-list"
+text = "He ran fastly."
+findings = []
+
+[[cases]]
+name = "tw-word"
+text = "We utilize it."
+findings = ["1:4"]
+messages = ["「utilize」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "tw-phrase"
+text = "We need it in order to run."
+findings = ["1:12"]
+messages = ["「in order to」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "tw-phrase-newline"
+text = "We need it in order\nto run."
+findings = ["1:12"]
+messages = ["「in order\\nto」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "tw-after-hyphen"
+text = "It is non-additional."
+findings = ["1:1"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "tw-apostrophe"
+text = "As far as I'm concerned, it works."
+findings = ["1:1"]
+messages = ["「As far as I'm concerned」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "c-cliche"
+text = "Avoid like the plague."
+findings = ["1:1"]
+messages = ["「Avoid like the plague」は決まり文句である(cliches)"]
+
+[[cases]]
+name = "c-cliche-newline"
+text = "Avoid like\nthe plague."
+findings = ["1:1"]
+messages = ["「Avoid like\\nthe plague」は決まり文句である(cliches)"]
+
+[[cases]]
+name = "e-default-off"
+text = "It is good."
+findings = ["1:1"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "e-on"
+builtin = 'write-good = { eprime = true }'
+text = "It is good."
+findings = ["1:1", "1:4"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)", "「is」はbe動詞の形である(eprime)"]
+
+[[cases]]
+name = "e-on-contraction"
+builtin = 'write-good = { eprime = true }'
+text = "It's good and it’s fine."
+findings = ["1:1", "1:15"]
+messages = ["「It's」はbe動詞の形である(eprime)", "「it’s」はbe動詞の形である(eprime)"]
+
+[[cases]]
+name = "e-on-with-passive"
+builtin = 'write-good = { eprime = true }'
+text = "It is used."
+findings = ["1:1", "1:4", "1:4"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)", "「is used」は受動態かもしれない句である(passive)", "「is」はbe動詞の形である(eprime)"]
+
+[[cases]]
+name = "m-two-checks-same-range"
+text = "This is extremely good."
+findings = ["1:9"]
+messages = ["「extremely」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "m-different-ranges-same-start"
+text = "There are many cats."
+findings = ["1:1", "1:11"]
+messages = ["「There are」は冗長な文頭の句である(thereIs)", "「many」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "opt-weasel-false"
+builtin = 'write-good = { weasel = false }'
+text = "It is clearly wrong."
+findings = ["1:1", "1:7"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)", "「clearly」は意味を弱める語である(adverb)"]
+
+[[cases]]
+name = "opt-illusion-false"
+builtin = 'write-good = { illusion = false }'
+text = "We saw the the cat."
+findings = []
+
+[[cases]]
+name = "opt-so-false"
+builtin = 'write-good = { so = false }'
+text = "So we did it."
+findings = []
+
+[[cases]]
+name = "opt-there-is-false"
+builtin = 'write-good = { thereIs = false }'
+text = "There is a cat."
+findings = []
+
+[[cases]]
+name = "opt-passive-false"
+builtin = 'write-good = { passive = false }'
+text = "The cake was baked."
+findings = []
+
+[[cases]]
+name = "opt-adverb-false"
+builtin = 'write-good = { adverb = false }'
+text = "He ran quickly."
+findings = []
+
+[[cases]]
+name = "opt-too-wordy-false"
+builtin = 'write-good = { tooWordy = false }'
+text = "We utilize it."
+findings = []
+
+[[cases]]
+name = "opt-cliches-false"
+builtin = 'write-good = { cliches = false }'
+text = "Avoid like the plague."
+findings = []
+
+[[cases]]
+name = "opt-merged-one-false"
+builtin = 'write-good = { adverb = false }'
+text = "This is very good."
+findings = ["1:9"]
+messages = ["「very」は曖昧な語である(weasel)"]
+
+[[cases]]
+name = "opt-all-true"
+builtin = 'write-good = { weasel = true, illusion = true, so = true, thereIs = true, passive = true, adverb = true, tooWordy = true, cliches = true, eprime = false }'
+text = "It is clearly good."
+findings = ["1:1", "1:7"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)", "「clearly」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "opt-whitelist"
+builtin = 'write-good = { whitelist = ["very"] }'
+text = "This is very good."
+findings = []
+
+[[cases]]
+name = "opt-whitelist-case"
+builtin = 'write-good = { whitelist = ["Very"] }'
+text = "This is very good."
+findings = ["1:9"]
+messages = ["「very」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "opt-whitelist-start-of-suggestion"
+builtin = 'write-good = { whitelist = ["was"] }'
+text = "The cake was baked."
+findings = []
+
+[[cases]]
+name = "opt-whitelist-end-of-suggestion"
+builtin = 'write-good = { whitelist = ["baked"] }'
+text = "The cake was baked."
+findings = []
+
+[[cases]]
+name = "opt-whitelist-covers"
+builtin = 'write-good = { whitelist = ["cake was baked"] }'
+text = "The cake was baked here."
+findings = []
+
+[[cases]]
+name = "opt-whitelist-touch"
+builtin = 'write-good = { whitelist = ["-x"] }'
+text = "It is clearly-x."
+findings = ["1:1"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "opt-whitelist-text-start"
+note = "jafixは、本文の範囲の先頭にある whitelist の出現も外す。textlintは先頭の出現を見落とし、先頭に出現があると後ろの出現も見ない"
+builtin = 'write-good = { whitelist = ["Very"] }'
+text = "Very good and very nice."
+findings = ["1:15"]
+messages = ["「very」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "opt-whitelist-text-start-and-later"
+note = "jafixは、本文の範囲の先頭にある whitelist の出現も外す。textlintは先頭の出現を見落とし、先頭に出現があると後ろの出現も見ない"
+builtin = 'write-good = { whitelist = ["very"] }'
+text = "very good and very nice."
+findings = []
+
+[[cases]]
+name = "opt-whitelist-other-text"
+builtin = 'write-good = { whitelist = ["very"] }'
+text = "Very good.\n\nIt is very nice."
+findings = ["1:1", "3:1"]
+messages = ["「Very」は曖昧な語、意味を弱める語である(weasel・adverb)", "「It is」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "j-weasel"
+text = "これはvery良い"
+findings = ["1:4"]
+messages = ["「very」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "j-weasel-spaces"
+text = "これは very 良い"
+findings = ["1:5"]
+messages = ["「very」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "j-passive"
+text = "これはwas bakedです"
+findings = ["1:4"]
+messages = ["「was baked」は受動態かもしれない句である(passive)"]
+
+[[cases]]
+name = "j-touten"
+text = "clearly、quickly、utilize"
+findings = ["1:1", "1:9", "1:17"]
+messages = ["「clearly」は曖昧な語、意味を弱める語である(weasel・adverb)", "「quickly」は意味を弱める語である(adverb)", "「utilize」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "j-kagi"
+text = "「very」と書く"
+findings = ["1:2"]
+messages = ["「very」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "j-so-after-kuten"
+text = "そうだ。So we did。"
+findings = []
+
+[[cases]]
+name = "ctx-heading"
+text = "# It is clearly wrong"
+findings = []
+
+[[cases]]
+name = "ctx-blockquote"
+text = "> It is clearly wrong."
+findings = []
+
+[[cases]]
+name = "ctx-list"
+text = "- It is clearly wrong.\n  - He ran quickly."
+findings = ["1:3", "1:9", "2:12"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)", "「clearly」は曖昧な語、意味を弱める語である(weasel・adverb)", "「quickly」は意味を弱める語である(adverb)"]
+
+[[cases]]
+name = "ctx-list-paragraphs"
+text = "- First item.\n\n  It is clearly wrong."
+findings = ["3:3", "3:9"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)", "「clearly」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "ctx-table-cell"
+text = "| a | b |\n| --- | --- |\n| clearly | quickly |"
+findings = []
+
+[[cases]]
+name = "ctx-emphasis"
+text = "It is *clearly* wrong."
+findings = ["1:1"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "ctx-strong"
+text = "It is **clearly** wrong."
+findings = ["1:1"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "ctx-strikethrough"
+text = "It is ~~clearly~~ wrong."
+findings = ["1:1"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)"]
+
+[[cases]]
+name = "ctx-link-text"
+text = "See [clearly wrong](https://example.com) now."
+findings = []
+
+[[cases]]
+name = "ctx-link-reference-full"
+text = "See [clearly wrong][r] now.\n\n[r]: https://example.com"
+findings = []
+
+[[cases]]
+name = "ctx-link-reference-shortcut"
+text = "See [clearly] now.\n\n[clearly]: https://example.com"
+findings = []
+
+[[cases]]
+name = "ctx-inline-code"
+text = "Use `clearly` here."
+findings = []
+
+[[cases]]
+name = "ctx-split-by-code"
+text = "It is `x` clearly wrong."
+findings = ["1:1", "1:11"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)", "「clearly」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "ctx-code-block"
+text = "```\nIt is clearly wrong.\n```"
+findings = []
+
+[[cases]]
+name = "ctx-image-alt"
+text = "![clearly wrong](a.png)"
+findings = []
+
+[[cases]]
+name = "ctx-bare-url"
+text = "See https://example.com/clearly here."
+findings = []
+
+[[cases]]
+name = "ctx-html-block"
+text = "<div>clearly</div>"
+findings = []
+
+[[cases]]
+name = "ctx-footnote"
+text = "Text[^1].\n\n[^1]: It is clearly wrong."
+findings = ["3:7", "3:13"]
+messages = ["「It is」は冗長か不要な句である(tooWordy)", "「clearly」は曖昧な語、意味を弱める語である(weasel・adverb)"]
+
+[[cases]]
+name = "ctx-document-start-end"
+text = "Clearly wrong.\n\nIt is clearly"
+findings = ["1:1", "3:1", "3:7"]
+messages = ["「Clearly」は曖昧な語、意味を弱める語である(weasel・adverb)", "「It is」は冗長か不要な句である(tooWordy)", "「clearly」は曖昧な語、意味を弱める語である(weasel・adverb)"]

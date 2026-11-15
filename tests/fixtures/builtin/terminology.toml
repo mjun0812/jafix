@@ -1,0 +1,924 @@
+# terminology の例。期待値は、textlint 15.8.0 と textlint-rule-terminology 5.2.16 の実行結果から作った。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所か、Markdownの解析の違いが出る箇所で、期待値は設計の規則から決めた。
+# 利用者の `terms` の箇所は利用者の置き換え (修正ルール) で、組み込みの辞書の箇所は指摘である。
+# jafixは、包む正規表現の直後の条件に、アポストロフィ `’` を除くASCIIでない文字 (日本語の文字や全角の記号) 1つを足す。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を、builtin を持たない全caseに当てる
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+# fixed:    `jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+builtin = 'terminology = true'
+
+[[cases]]
+name = "d-string-basic"
+text = "We use github and json here."
+findings = ["1:8", "1:19"]
+messages = ["「github」を「GitHub」にする", "「json」を「JSON」にする"]
+
+[[cases]]
+name = "d-string-correct"
+text = "We use GitHub and JSON here."
+findings = []
+
+[[cases]]
+name = "d-string-case-insensitive"
+text = "Use Json, JSON, and jSoN."
+findings = ["1:5", "1:21"]
+messages = ["「Json」を「JSON」にする", "「jSoN」を「JSON」にする"]
+
+[[cases]]
+name = "d-string-upper"
+text = "Use GITHUB for hosting."
+findings = ["1:5"]
+messages = ["「GITHUB」を「GitHub」にする"]
+
+[[cases]]
+name = "d-string-with-slash"
+text = "Use i/o here."
+findings = ["1:5"]
+messages = ["「i/o」を「I/O」にする"]
+
+[[cases]]
+name = "d-string-digit"
+text = "Use sqlite3 here."
+findings = ["1:5"]
+messages = ["「sqlite3」を「SQLite3」にする"]
+
+[[cases]]
+name = "d-two-in-text"
+text = "github and gitlab and docker"
+findings = ["1:1", "1:12", "1:23"]
+messages = ["「github」を「GitHub」にする", "「gitlab」を「GitLab」にする", "「docker」を「Docker」にする"]
+
+[[cases]]
+name = "d-two-lines"
+text = "Use github\nand json here."
+findings = ["1:5", "2:5"]
+messages = ["「github」を「GitHub」にする", "「json」を「JSON」にする"]
+
+[[cases]]
+name = "d-array-basic"
+text = "We use javascript and node.js."
+findings = ["1:8", "1:23"]
+messages = ["「javascript」を「JavaScript」にする", "「node.js」を「Node.js」にする"]
+
+[[cases]]
+name = "d-array-space-variant"
+text = "We use Java Script here."
+findings = ["1:8"]
+messages = ["「Java Script」を「JavaScript」にする"]
+
+[[cases]]
+name = "d-array-group"
+text = "The front-ends and back-end code."
+findings = ["1:5", "1:20"]
+messages = ["「front-ends」を「frontends」にする", "「back-end」を「backend」にする"]
+
+[[cases]]
+name = "d-array-optional-group"
+text = "Fix the web-sites and web site."
+findings = ["1:9", "1:23"]
+messages = ["「web-sites」を「sites」にする", "「web site」を「site」にする"]
+
+[[cases]]
+name = "d-array-no-group-text"
+text = "Read the blank line now."
+findings = ["1:10"]
+messages = ["「blank line」を「empty line」にする"]
+
+[[cases]]
+name = "d-array-unused-group"
+text = "Read the blank lines now."
+findings = ["1:10"]
+messages = ["「blank lines」を「empty lines」にする"]
+
+[[cases]]
+name = "d-array-two-words"
+text = "Use a npm package."
+findings = ["1:5"]
+messages = ["「a npm」を「an npm」にする"]
+
+[[cases]]
+name = "d-array-escaped-paren"
+text = "Ask if (s)he knows."
+findings = []
+
+[[cases]]
+name = "d-array-word-boundary-in-item"
+text = "Use the indexes here."
+findings = ["1:9"]
+messages = ["「indexes」を「indices」にする"]
+
+[[cases]]
+name = "d-array-repo"
+text = "Clone the repo now."
+findings = ["1:11"]
+messages = ["「repo」を「repository」にする"]
+
+[[cases]]
+name = "d-array-repo-suffix"
+text = "Clone the repos now."
+findings = []
+
+[[cases]]
+name = "d-array-multi-line"
+text = "Use java\nscript here."
+findings = ["1:5"]
+messages = ["「java」を「Java」にする"]
+
+[[cases]]
+name = "d-array-quote-variant"
+text = "Read the api’s docs."
+findings = ["1:10"]
+messages = ["「api’s」を「APIs」にする"]
+
+[[cases]]
+name = "s-sentence-start-same"
+text = "It works. Webpack is good."
+findings = []
+
+[[cases]]
+name = "s-mid-sentence"
+text = "We use Webpack here."
+findings = ["1:8"]
+messages = ["「Webpack」を「webpack」にする"]
+
+[[cases]]
+name = "s-text-start"
+text = "README is here."
+findings = ["1:1"]
+messages = ["「README」を「Readme」にする"]
+
+[[cases]]
+name = "s-text-start-title-case"
+text = "Readme is here."
+findings = []
+
+[[cases]]
+name = "s-mid-readme"
+text = "Open the README file."
+findings = ["1:10"]
+messages = ["「README」を「readme」にする"]
+
+[[cases]]
+name = "s-after-paren"
+text = "(It works.) Webpack is good."
+findings = []
+
+[[cases]]
+name = "s-after-question"
+text = "Why? README is here."
+findings = ["1:6"]
+messages = ["「README」を「Readme」にする"]
+
+[[cases]]
+name = "s-after-exclamation"
+text = "Yes! README is here."
+findings = ["1:6"]
+messages = ["「README」を「Readme」にする"]
+
+[[cases]]
+name = "s-after-colon"
+text = "Note: README is here."
+findings = ["1:7"]
+messages = ["「README」を「readme」にする"]
+
+[[cases]]
+name = "s-lower-at-start"
+text = "github is a host."
+findings = ["1:1"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "b-hyphen-before"
+text = "Use my-github here."
+findings = []
+
+[[cases]]
+name = "b-dot-before"
+text = "Open the x.github file."
+findings = []
+
+[[cases]]
+name = "b-word-before"
+text = "Use mygithub here."
+findings = []
+
+[[cases]]
+name = "b-paren-before"
+text = "Use (github) here."
+findings = ["1:6"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "b-quote-before"
+text = "Say \"github\" now."
+findings = ["1:6"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "b-slash-before"
+text = "Use a/github here."
+findings = ["1:7"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "a-space-after"
+text = "github is here"
+findings = ["1:1"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "a-comma-space"
+text = "github, gitlab, and docker"
+findings = ["1:1", "1:9", "1:21"]
+messages = ["「github」を「GitHub」にする", "「gitlab」を「GitLab」にする", "「docker」を「Docker」にする"]
+
+[[cases]]
+name = "a-period-end"
+text = "Use github."
+findings = ["1:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "a-text-end"
+text = "Use github"
+findings = ["1:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "a-two-punct"
+text = "Use (github)."
+findings = ["1:6"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "a-punct-letter"
+text = "Open github.com today."
+findings = []
+
+[[cases]]
+name = "a-colon-letter"
+text = "Use github:x today."
+findings = []
+
+[[cases]]
+name = "a-slash-after"
+text = "Use github/x today."
+findings = []
+
+[[cases]]
+name = "a-hyphen-after"
+text = "Use github-x today."
+findings = []
+
+[[cases]]
+name = "a-underscore-after"
+text = "Use github_x today."
+findings = []
+
+[[cases]]
+name = "a-digit-after"
+text = "Use github2 today."
+findings = []
+
+[[cases]]
+name = "a-line-end"
+text = "Use github\nhere."
+findings = ["1:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "a-curly-quote"
+text = "Say “github” now."
+findings = ["1:6"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "a-latin-accent"
+note = "`\\b` はASCIIで判定するので、`b` と `é` の間は語の境界で、`é` はASCIIでない文字の直後の条件に当たる。textlintは当てない"
+text = "Use githubé today."
+findings = ["1:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "j-ja-after"
+note = "jafixは、語の直後がアポストロフィ `’` でないASCIIでない文字 (日本語の文字・全角の記号) でも当てる。textlintは当てない"
+text = "githubを使う"
+findings = ["1:1"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "j-ja-both-sides"
+note = "jafixは、語の直後がアポストロフィ `’` でないASCIIでない文字 (日本語の文字・全角の記号) でも当てる。textlintは当てない"
+text = "日本語のgithubを使う"
+findings = ["1:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "j-ja-before-end"
+text = "日本語のgithub"
+findings = ["1:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "j-ja-before-period"
+text = "日本語のgithub."
+findings = ["1:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "j-touten"
+note = "jafixは、語の直後がアポストロフィ `’` でないASCIIでない文字 (日本語の文字・全角の記号) でも当てる。textlintは当てない"
+text = "github、gitlab、docker"
+findings = ["1:1", "1:8", "1:15"]
+messages = ["「github」を「GitHub」にする", "「gitlab」を「GitLab」にする", "「docker」を「Docker」にする"]
+
+[[cases]]
+name = "j-kuten"
+note = "jafixは、語の直後がアポストロフィ `’` でないASCIIでない文字 (日本語の文字・全角の記号) でも当てる。textlintは当てない"
+text = "これはjson。"
+findings = ["1:4"]
+messages = ["「json」を「JSON」にする"]
+
+[[cases]]
+name = "j-kagi"
+note = "jafixは、語の直後がアポストロフィ `’` でないASCIIでない文字 (日本語の文字・全角の記号) でも当てる。textlintは当てない"
+text = "「github」を使う"
+findings = ["1:2"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "j-fullwidth-paren"
+note = "jafixは、語の直後がアポストロフィ `’` でないASCIIでない文字 (日本語の文字・全角の記号) でも当てる。textlintは当てない"
+text = "ホスト（github）を使う"
+findings = ["1:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "j-fullwidth-space"
+note = "jafixは、語の直後がアポストロフィ `’` でないASCIIでない文字 (日本語の文字・全角の記号) でも当てる。textlintは当てない"
+text = "github\u3000を使う"
+findings = ["1:1"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "j-spaces"
+text = "日本語の github を使う"
+findings = ["1:6"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "j-array-item"
+note = "jafixは、語の直後がアポストロフィ `’` でないASCIIでない文字 (日本語の文字・全角の記号) でも当てる。textlintは当てない"
+text = "javascriptで書く"
+findings = ["1:1"]
+messages = ["「javascript」を「JavaScript」にする"]
+
+[[cases]]
+name = "j-array-group"
+note = "jafixは、語の直後がアポストロフィ `’` でないASCIIでない文字 (日本語の文字・全角の記号) でも当てる。textlintは当てない"
+text = "front-endsを書く"
+findings = ["1:1"]
+messages = ["「front-ends」を「frontends」にする"]
+
+[[cases]]
+name = "j-ja-before-word-after"
+text = "日本語のgithubx"
+findings = []
+
+[[cases]]
+name = "j-lookbehind-item-no-space"
+text = "NPMを使う"
+findings = []
+
+[[cases]]
+name = "j-lookbehind-item-space"
+text = "これは NPMを使う"
+findings = ["1:5"]
+messages = ["「NPM」を「npm」にする"]
+
+[[cases]]
+name = "j-lookahead-item"
+text = "to-doを書く"
+findings = []
+
+[[cases]]
+name = "j-lookahead-item-space"
+text = "to-do を書く"
+findings = ["1:1"]
+messages = ["「to-do」を「todo」にする"]
+
+[[cases]]
+name = "j-curly-quote-two-items"
+text = "Read the id’s value."
+findings = ["1:10"]
+messages = ["「id’s」を「IDs」にする"]
+
+[[cases]]
+name = "j-apostrophe-letter"
+text = "Use github’s API."
+findings = []
+
+[[cases]]
+name = "j-apostrophe-ja"
+text = "github’を使う"
+findings = []
+
+[[cases]]
+name = "j-apostrophe-end"
+text = "Use github’"
+findings = ["1:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "j-apostrophe-space"
+text = "The github’ repo."
+findings = ["1:5", "1:13"]
+messages = ["「github」を「GitHub」にする", "「repo」を「repository」にする"]
+
+[[cases]]
+name = "j-curly-double-quote-ja"
+note = "jafixは、語の直後がアポストロフィ `’` でないASCIIでない文字 (日本語の文字・全角の記号) でも当てる。textlintは当てない。`”` はアポストロフィでないASCIIでない文字なので、直後の条件に当たる"
+text = "“github”を使う"
+findings = ["1:2"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "l-npm-mid"
+text = "We use NPM here."
+findings = ["1:8"]
+messages = ["「NPM」を「npm」にする"]
+
+[[cases]]
+name = "l-npm-start"
+text = "NPM is here."
+findings = []
+
+[[cases]]
+name = "l-internet-explorer"
+text = "Use the Internet Explorer and the Internet."
+findings = ["1:35"]
+messages = ["「Internet」を「internet」にする"]
+
+[[cases]]
+name = "l-todo-lookahead"
+text = "Write to-dos, then to-do."
+findings = ["1:7", "1:20"]
+messages = ["「to-dos」を「todos」にする", "「to-do」を「todo」にする"]
+
+[[cases]]
+name = "l-todo-end"
+text = "Write a to-do"
+findings = []
+
+[[cases]]
+name = "l-http-items"
+text = "Use http and https here."
+findings = []
+
+[[cases]]
+name = "o-same-start"
+text = "Use github actions here."
+findings = ["1:5", "1:5"]
+messages = ["「github」を「GitHub」にする", "「github actions」を「GitHub Actions」にする"]
+
+[[cases]]
+name = "o-overlap"
+text = "Use Mac OS X today."
+findings = ["1:5", "1:9"]
+messages = ["「Mac OS」を「macOS」にする", "「OS X」を「macOS」にする"]
+
+[[cases]]
+name = "o-string-and-array-same"
+text = "Use applescript here."
+findings = ["1:5"]
+messages = ["「applescript」を「AppleScript」にする"]
+
+[[cases]]
+name = "opt-exclude-string"
+builtin = 'terminology = { exclude = ["GitHub"] }'
+text = "Use github and json."
+findings = ["1:16"]
+messages = ["「json」を「JSON」にする"]
+
+[[cases]]
+name = "opt-exclude-array"
+builtin = 'terminology = { exclude = ["Java[ -]?Script"] }'
+text = "Use javascript and json."
+findings = ["1:20"]
+messages = ["「json」を「JSON」にする"]
+
+[[cases]]
+name = "opt-exclude-array-replacement"
+builtin = 'terminology = { exclude = ["JavaScript"] }'
+text = "Use javascript here."
+findings = ["1:5"]
+messages = ["「javascript」を「JavaScript」にする"]
+
+[[cases]]
+name = "opt-default-terms-false"
+builtin = 'terminology = { defaultTerms = false }'
+text = "Use github and json."
+findings = []
+
+[[cases]]
+name = "opt-skip-default-blockquote"
+text = "> Use github here."
+findings = []
+
+[[cases]]
+name = "opt-skip-empty"
+builtin = 'terminology = { skip = [] }'
+text = "> Use github here."
+findings = ["1:7"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "opt-skip-header"
+builtin = 'terminology = { skip = ["Header"] }'
+text = "# Use github\n\n> Use github"
+findings = ["3:7"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "opt-skip-paragraph"
+builtin = 'terminology = { skip = ["Paragraph"] }'
+text = "# Use github\n\nUse github"
+findings = ["1:7"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "opt-skip-list"
+builtin = 'terminology = { skip = ["List"] }'
+text = "- Use github\n\nUse github"
+findings = ["3:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "opt-skip-list-item"
+builtin = 'terminology = { skip = ["ListItem"] }'
+text = "- Use github\n\nUse github"
+findings = ["3:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "opt-skip-table"
+builtin = 'terminology = { skip = ["Table"] }'
+text = "| Use github |\n| --- |\n| github |\n\nUse github"
+findings = ["5:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "opt-skip-table-cell"
+builtin = 'terminology = { skip = ["TableCell"] }'
+text = "| Use github |\n| --- |\n| github |\n\nUse github"
+findings = ["5:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "opt-skip-emphasis"
+builtin = 'terminology = { skip = ["Emphasis"] }'
+text = "*Use github* and github"
+findings = ["1:18"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "opt-skip-strong"
+builtin = 'terminology = { skip = ["Strong"] }'
+text = "**Use github** and github"
+findings = ["1:20"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "opt-skip-delete"
+builtin = 'terminology = { skip = ["Delete"] }'
+text = "~~Use github~~ and github"
+findings = ["1:20"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "opt-skip-link"
+builtin = 'terminology = { skip = ["Link"] }'
+text = "[Use github](https://example.com) and github"
+findings = ["1:39"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "opt-skip-link-reference"
+builtin = 'terminology = { skip = ["LinkReference"] }'
+text = "[Use github][r] and github\n\n[r]: https://example.com"
+findings = ["1:21"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "u-string"
+builtin = 'terminology = { terms = ["jafix"] }'
+text = "Use JAFIX and Jafix here."
+findings = ["1:5", "1:15"]
+messages = ["「JAFIX」を「jafix」にする", "「Jafix」を「jafix」にする"]
+fixed = "Use jafix and jafix here."
+
+[[cases]]
+name = "u-string-correct"
+builtin = 'terminology = { terms = ["jafix"] }'
+text = "Use jafix here."
+findings = []
+fixed = "Use jafix here."
+
+[[cases]]
+name = "u-array"
+builtin = 'terminology = { terms = [["front[- ]end(\\w*)", "frontend$1"]], defaultTerms = false }'
+text = "The front end and front-ends."
+findings = ["1:5", "1:19"]
+messages = ["「front end」を「frontend」にする", "「front-ends」を「frontends」にする"]
+fixed = "The frontend and frontends."
+
+[[cases]]
+name = "u-array-dollar-amp"
+builtin = 'terminology = { terms = [["(c)olou?r", "$1-$&-$$"]], defaultTerms = false }'
+text = "Use colour here."
+findings = ["1:5"]
+messages = ["「colour」を「c-colour-$」にする"]
+fixed = "Use c-colour-$ here."
+
+[[cases]]
+name = "u-array-named-group"
+builtin = 'terminology = { terms = [["(?<x>c)olou?r", "$<x>olor"]], defaultTerms = false }'
+text = "Use colour here."
+findings = ["1:5"]
+messages = ["「colour」を「color」にする"]
+fixed = "Use color here."
+
+[[cases]]
+name = "u-array-before-after"
+builtin = '''
+terminology = { terms = [["colou?r", "[$`|$']"]], defaultTerms = false }
+'''
+text = "Use colour here."
+findings = ["1:5"]
+messages = ["「colour」を「[xyz | xyz]」にする"]
+fixed = "Use [xyz | xyz] here."
+
+[[cases]]
+name = "u-array-with-lookahead"
+builtin = 'terminology = { terms = [["foo(?=x)", "bar"]], defaultTerms = false }'
+text = "Use foox and foo."
+findings = []
+fixed = "Use foox and foo."
+
+[[cases]]
+name = "u-array-with-lookbehind"
+builtin = 'terminology = { terms = [["(?<=x)foo", "bar"]], defaultTerms = false }'
+text = "Use xfoo and foo."
+findings = []
+fixed = "Use xfoo and foo."
+
+[[cases]]
+name = "u-before-default"
+builtin = 'terminology = { terms = ["Github"] }'
+text = "Use github here."
+findings = ["1:5"]
+messages = ["「github」を「Github」にする"]
+fixed = "Use Github here."
+
+[[cases]]
+name = "u-with-default"
+note = "組み込みの辞書の箇所は指摘で、jafix fix は直さない。textlintは直す"
+builtin = 'terminology = { terms = ["Jafix"] }'
+text = "Use jafix with github."
+findings = ["1:5", "1:16"]
+messages = ["「jafix」を「Jafix」にする", "「github」を「GitHub」にする"]
+fixed = "Use Jafix with github."
+
+[[cases]]
+name = "u-ja"
+note = "jafixは、語の直後がアポストロフィ `’` でないASCIIでない文字 (日本語の文字・全角の記号) でも当てる。textlintは当てない"
+builtin = 'terminology = { terms = ["Jafix"] }'
+text = "jafixを使う"
+findings = ["1:1"]
+messages = ["「jafix」を「Jafix」にする"]
+fixed = "Jafixを使う"
+
+[[cases]]
+name = "u-ja-both-sides"
+note = "jafixは、語の直後がアポストロフィ `’` でないASCIIでない文字 (日本語の文字・全角の記号) でも当てる。textlintは当てない"
+builtin = 'terminology = { terms = ["Jafix"] }'
+text = "日本語のjafixを使う"
+findings = ["1:5"]
+messages = ["「jafix」を「Jafix」にする"]
+fixed = "日本語のJafixを使う"
+
+[[cases]]
+name = "u-sentence-start"
+builtin = 'terminology = { terms = ["jafix"] }'
+text = "It works. Jafix is here."
+findings = []
+fixed = "It works. Jafix is here."
+
+[[cases]]
+name = "u-text-start"
+builtin = 'terminology = { terms = ["jafix"] }'
+text = "JAFIX is here."
+findings = ["1:1"]
+messages = ["「JAFIX」を「Jafix」にする"]
+fixed = "Jafix is here."
+
+[[cases]]
+name = "u-heading"
+note = "見出しの中の利用者の置き換えは、直さずに指摘にする (prh と同じ)。textlintは直す"
+builtin = 'terminology = { terms = ["Jafix"] }'
+text = "# Use jafix\n\nUse jafix"
+findings = ["1:7", "3:5"]
+messages = ["「jafix」を「Jafix」にする。見出しのアンカーが変わるので、見出しへのリンクも直す", "「jafix」を「Jafix」にする"]
+fixed = "# Use jafix\n\nUse Jafix"
+
+[[cases]]
+name = "u-newline-in-match"
+note = "改行を含む利用者の置き換えは、直さずに指摘にする (prh と同じ)。textlintは直す"
+builtin = 'terminology = { terms = [["foo\\sbar", "foobar"]], defaultTerms = false }'
+text = "Use foo\nbar here."
+findings = ["1:5"]
+messages = ["「foo\\nbar」を「foobar」にする。改行を含むので直さない"]
+fixed = "Use foo\nbar here."
+
+[[cases]]
+name = "u-newline-in-replacement"
+note = "改行を含む利用者の置き換えは、直さずに指摘にする (prh と同じ)。textlintは直す"
+builtin = 'terminology = { terms = [["foo", "foo\nbar"]], defaultTerms = false }'
+text = "Use foo here."
+findings = ["1:5"]
+messages = ["「foo」を「foo\\nbar」にする。改行を含むので直さない"]
+fixed = "Use foo here."
+
+[[cases]]
+name = "u-overlap"
+note = "利用者の置き換えの重なりは、先に始まる箇所を残す。textlintは2件を出し、重ならないものから直す"
+builtin = 'terminology = { terms = [["foo bar", "foobar"], ["bar baz", "barbaz"]], defaultTerms = false }'
+text = "Use foo bar baz."
+findings = ["1:5"]
+messages = ["「foo bar」を「foobar」にする"]
+fixed = "Use foobar baz."
+
+[[cases]]
+name = "u-same-range"
+note = "同じ範囲の利用者の置き換えは、前の項目を残す。textlintは2件を出す"
+builtin = 'terminology = { terms = [["foo", "bar"], ["foo", "baz"]], defaultTerms = false }'
+text = "Use foo here."
+findings = ["1:5"]
+messages = ["「foo」を「bar」にする"]
+fixed = "Use bar here."
+
+[[cases]]
+name = "u-unresolvable"
+note = "文字列の項目の `.` が任意の文字に当たり、置き換え後の語を求められない一致は、指摘せずに続ける。textlintは例外で止まるので、かけない"
+builtin = 'terminology = { terms = ["Node.js"], defaultTerms = false }'
+text = "Use nodexjs and node.js."
+findings = ["1:17"]
+messages = ["「node.js」を「Node.js」にする"]
+fixed = "Use nodexjs and Node.js."
+
+[[cases]]
+name = "u-blockquote"
+builtin = 'terminology = { terms = ["Jafix"] }'
+text = "> Use jafix here."
+findings = []
+fixed = "> Use jafix here."
+
+[[cases]]
+name = "u-multi-line"
+builtin = 'terminology = { terms = ["Jafix"] }'
+text = "Use jafix\nand jafix."
+findings = ["1:5", "2:5"]
+messages = ["「jafix」を「Jafix」にする", "「jafix」を「Jafix」にする"]
+fixed = "Use Jafix\nand Jafix."
+
+[[cases]]
+name = "ctx-heading"
+text = "# Use github"
+findings = ["1:7"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "ctx-setext-heading"
+text = "Use github\n==="
+findings = ["1:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "ctx-list"
+text = "- Use github\n  - and json"
+findings = ["1:7", "2:9"]
+messages = ["「github」を「GitHub」にする", "「json」を「JSON」にする"]
+
+[[cases]]
+name = "ctx-ordered-list"
+text = "1. Use github"
+findings = ["1:8"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "ctx-table-cell"
+text = "| Tool | Host |\n| --- | --- |\n| git | github |"
+findings = ["3:3", "3:9"]
+messages = ["「git」を「Git」にする", "「github」を「GitHub」にする"]
+
+[[cases]]
+name = "ctx-emphasis"
+text = "Use *github* here."
+findings = ["1:6"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "ctx-strong"
+text = "Use **github** here."
+findings = ["1:7"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "ctx-strikethrough"
+text = "Use ~~github~~ here."
+findings = ["1:7"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "ctx-link-text"
+text = "Use [github](https://github.com) here."
+findings = ["1:6"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "ctx-link-reference-full"
+text = "Use [github][r] here.\n\n[r]: https://github.com"
+findings = ["1:6"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "ctx-link-reference-shortcut"
+note = "jafixは、定義を持つ省略形・collapsed形の参照リンクの文字列を本文の範囲にしない。textlintは見る"
+text = "Use [github] here.\n\n[github]: https://github.com"
+findings = []
+
+[[cases]]
+name = "ctx-link-reference-collapsed"
+note = "jafixは、定義を持つ省略形・collapsed形の参照リンクの文字列を本文の範囲にしない。textlintは見る"
+text = "Use [github][] here.\n\n[github]: https://github.com"
+findings = []
+
+[[cases]]
+name = "ctx-text-before-strong"
+text = "Use github**x** here."
+findings = ["1:5"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "ctx-inline-code"
+text = "Use `github` here."
+findings = []
+
+[[cases]]
+name = "ctx-code-block"
+text = "```\nUse github\n```"
+findings = []
+
+[[cases]]
+name = "ctx-image-alt"
+text = "![github](a.png)"
+findings = []
+
+[[cases]]
+name = "ctx-bare-url"
+text = "See https://github.com/x here."
+findings = []
+
+[[cases]]
+name = "ctx-autolink"
+text = "See <https://github.com> here."
+findings = []
+
+[[cases]]
+name = "ctx-html-block"
+text = "<div>github</div>"
+findings = []
+
+[[cases]]
+name = "ctx-front-matter"
+text = "---\ntitle: github\n---\n\nUse json"
+findings = ["5:5"]
+messages = ["「json」を「JSON」にする"]
+
+[[cases]]
+name = "ctx-footnote"
+text = "Text[^1].\n\n[^1]: Use github"
+findings = ["3:11"]
+messages = ["「github」を「GitHub」にする"]
+
+[[cases]]
+name = "ctx-document-start-end"
+text = "github\n\njson"
+findings = ["1:1", "3:1"]
+messages = ["「github」を「GitHub」にする", "「json」を「JSON」にする"]

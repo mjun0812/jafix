@@ -3,7 +3,7 @@
 
 use std::borrow::Cow;
 
-pub use regress::Regex;
+pub use regress::{Match, Regex};
 
 /// 正規表現に付けるフラグ。`u` は常に付ける
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -71,6 +71,29 @@ pub fn pattern(value: &str) -> Result<Regex, String> {
         },
     )
     .map_err(|reason| format!("`{value}` を{reason}"))
+}
+
+/// `/source/flags` の形の文字列だけを正規表現として読む (`spelling` の `wordDefinitionRegexp`)。`i`・`m`・`s` は書いたとおりに
+/// 付け、`g` は書いても書かなくても同じである。`/source/flags` の形でないもの、`y` のフラグ、読めない正規表現は理由を返す
+pub fn slash_regex(value: &str) -> Result<Regex, String> {
+    let _ = value;
+    todo!("skeleton: not implemented")
+}
+
+/// JavaScriptの `String.prototype.replace` の置き換えの記法 (ECMAScriptのGetSubstitution: `$1`〜`$99`・`$&`・`` $` ``・
+/// `$'`・`$$`・`$<name>`) を、`text` の中の一致 `m` で展開する。参照できない記法は書いたまま残す
+#[allow(dead_code)] // skeleton: not implemented
+pub fn substitute(replacement: &str, m: &Match, text: &str) -> String {
+    let _ = (replacement, m, text);
+    todo!("skeleton: not implemented")
+}
+
+/// `replacement` を、`substitute` が展開する記法で区切った固定の部分。`$$` は `$` として部分に含める。
+/// 利用者の置き換えの逆の置き換えの判定に渡す
+#[allow(dead_code)] // skeleton: not implemented
+pub fn substitution_fixed_parts(replacement: &str) -> Vec<String> {
+    let _ = replacement;
+    todo!("skeleton: not implemented")
 }
 
 /// 文字列そのものに当たる正規表現の元の文字列にする。`\ * + . ? { } ( ) | ^ $ [ ] /` の前に `\` を足す

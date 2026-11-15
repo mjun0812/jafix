@@ -1,0 +1,658 @@
+# spelling の例。期待値は、textlint 15.8.0 と textlint-rule-spelling 0.3.0 (nspell 2.1.5、dictionary-en 4.0.0) の実行結果から作った。
+# jafixの照合は spellbook 0.4.2 で、辞書は同じ dictionary-en 4.0.0 のen_USである。辞書に当てる語は、nspellと spellbook の判定が同じ語だけにした。
+# ファイルの先頭の builtin は候補を文面に出さない。候補を出すcaseの候補は spellbook のもので、nspellと並びが違うcaseには note を付けた。
+# note のあるcaseは、jafixがtextlintと意図して変えている箇所 (既定の除外、候補の並び、リンクと画像の title、本文でない箇所、位置の数え方) で、
+# 期待値は設計の規則から決めた。
+#
+# name:     caseの名前
+# note:     textlintと変える理由 (省略可)
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を、builtin を持たない全caseに当てる
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面 (省略可)
+
+builtin = 'spelling = { suggestCorrections = false }'
+
+[[cases]]
+name = "b-basic"
+text = "I saw a pacakge here."
+findings = ["1:9"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "b-correct"
+text = "I saw a package here."
+findings = []
+
+[[cases]]
+name = "b-two-in-text"
+text = "We recieve and seperate them."
+findings = ["1:4", "1:16"]
+messages = ["英語の辞書に無い語「recieve」を使っている", "英語の辞書に無い語「seperate」を使っている"]
+
+[[cases]]
+name = "b-two-lines"
+text = "We recieve\nand seperate them."
+findings = ["1:4", "2:5"]
+messages = ["英語の辞書に無い語「recieve」を使っている", "英語の辞書に無い語「seperate」を使っている"]
+
+[[cases]]
+name = "b-same-word-twice"
+text = "A pacakge and a pacakge."
+findings = ["1:3", "1:17"]
+messages = ["英語の辞書に無い語「pacakge」を使っている", "英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "b-sentence-start"
+text = "Recieve the file."
+findings = ["1:1"]
+messages = ["英語の辞書に無い語「Recieve」を使っている"]
+
+[[cases]]
+name = "b-proper-noun"
+text = "I live in London and use Linux."
+findings = []
+
+[[cases]]
+name = "b-proper-noun-lowercase"
+text = "I live in london."
+findings = ["1:11"]
+messages = ["英語の辞書に無い語「london」を使っている"]
+
+[[cases]]
+name = "b-proper-noun-not-in-dictionary"
+text = "Use Sudachi here."
+findings = ["1:5"]
+messages = ["英語の辞書に無い語「Sudachi」を使っている"]
+
+[[cases]]
+name = "b-lowercase-identifier"
+text = "Run jafix and npm here."
+findings = ["1:5", "1:15"]
+messages = ["英語の辞書に無い語「jafix」を使っている", "英語の辞書に無い語「npm」を使っている"]
+
+[[cases]]
+name = "b-inflections"
+text = "The children walked, stopped, tried, and reused the configurations happily."
+findings = []
+
+[[cases]]
+name = "b-prefix-suffix"
+text = "It was unhappiness and inability, not a misuse."
+findings = []
+
+[[cases]]
+name = "b-not-in-dictionary-derived"
+text = "It was misconfigured by the parsers."
+findings = ["1:8", "1:29"]
+messages = ["英語の辞書に無い語「misconfigured」を使っている", "英語の辞書に無い語「parsers」を使っている"]
+
+[[cases]]
+name = "b-british-spelling"
+text = "The colour of the centre."
+findings = ["1:5", "1:19"]
+messages = ["英語の辞書に無い語「colour」を使っている", "英語の辞書に無い語「centre」を使っている"]
+
+[[cases]]
+name = "b-apostrophe"
+text = "It doesn't work, but the cat's toy and the dogs' bed do."
+findings = []
+
+[[cases]]
+name = "b-apostrophe-misspelled"
+text = "It dosen't work."
+findings = ["1:4"]
+messages = ["英語の辞書に無い語「dosen't」を使っている"]
+
+[[cases]]
+name = "b-curly-apostrophe"
+text = "It doesn’t work."
+findings = ["1:4"]
+messages = ["英語の辞書に無い語「doesn」を使っている"]
+
+[[cases]]
+name = "b-single-quotes"
+text = "Write 'pacakge' here."
+findings = ["1:8"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "b-hyphen"
+text = "A well-known, up-to-date pacakge-manager."
+findings = ["1:26"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "b-letters-joined"
+text = "Use xteh and tehx here."
+findings = ["1:5", "1:14"]
+messages = ["英語の辞書に無い語「xteh」を使っている", "英語の辞書に無い語「tehx」を使っている"]
+
+[[cases]]
+name = "b-single-letters"
+text = "Use x and s here."
+findings = []
+
+[[cases]]
+name = "b-text-start-end"
+text = "pacakge\n\npacakge"
+findings = ["1:1", "3:1"]
+messages = ["英語の辞書に無い語「pacakge」を使っている", "英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "b-non-ascii-letter"
+text = "Use naïve and café here."
+findings = ["1:5", "1:8", "1:15"]
+messages = ["英語の辞書に無い語「na」を使っている", "英語の辞書に無い語「ve」を使っている", "英語の辞書に無い語「caf」を使っている"]
+
+[[cases]]
+name = "ex-digit"
+note = "jafixは、ASCIIの数字・`_`・2文字目以降の大文字を含む語を辞書に当てない (既定の除外)。textlintは指摘する"
+text = "Use teh2 and 123 here."
+findings = []
+
+[[cases]]
+name = "ex-underscore"
+note = "jafixは、ASCIIの数字・`_`・2文字目以降の大文字を含む語を辞書に当てない (既定の除外)。textlintは指摘する"
+text = "Use foo_bar and teh_x here."
+findings = []
+
+[[cases]]
+name = "ex-all-caps"
+note = "jafixは、ASCIIの数字・`_`・2文字目以降の大文字を含む語を辞書に当てない (既定の除外)。textlintは指摘する"
+text = "Read README and TEH here."
+findings = []
+
+[[cases]]
+name = "ex-camel-case"
+note = "jafixは、ASCIIの数字・`_`・2文字目以降の大文字を含む語を辞書に当てない (既定の除外)。textlintは指摘する"
+text = "Set ruleId and macOS here."
+findings = []
+
+[[cases]]
+name = "ex-pascal-case"
+note = "jafixは、ASCIIの数字・`_`・2文字目以降の大文字を含む語を辞書に当てない (既定の除外)。textlintは指摘する"
+text = "Use PostToolUse here."
+findings = []
+
+[[cases]]
+name = "ex-initial-capital-only"
+text = "Pacakge is here."
+findings = ["1:1"]
+messages = ["英語の辞書に無い語「Pacakge」を使っている"]
+
+[[cases]]
+name = "ex-custom-word-definition"
+note = "jafixは、ASCIIの数字・`_`・2文字目以降の大文字を含む語を辞書に当てない (既定の除外)。textlintは指摘する。`wordDefinitionRegexp` で取り出した語にも当てるので、`teh` は指摘し、`README` は指摘しない"
+builtin = 'spelling = { suggestCorrections = false, wordDefinitionRegexp = "/[A-Za-z]+/g" }'
+text = "Use teh2 and README here."
+findings = ["1:5"]
+messages = ["英語の辞書に無い語「teh」を使っている"]
+
+[[cases]]
+name = "opt-skip-string"
+builtin = 'spelling = { suggestCorrections = false, skipPatterns = ["jafix"] }'
+text = "Run jafix with a pacakge."
+findings = ["1:18"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "opt-skip-string-case-sensitive"
+builtin = 'spelling = { suggestCorrections = false, skipPatterns = ["jafix"] }'
+text = "Run Jafix and jafix."
+findings = ["1:5"]
+messages = ["英語の辞書に無い語「Jafix」を使っている"]
+
+[[cases]]
+name = "opt-skip-string-special-chars"
+builtin = 'spelling = { suggestCorrections = false, skipPatterns = ["jafix.rs"] }'
+text = "Run jafix.rs and teh."
+findings = ["1:18"]
+messages = ["英語の辞書に無い語「teh」を使っている"]
+
+[[cases]]
+name = "opt-skip-regexp"
+builtin = 'spelling = { suggestCorrections = false, skipPatterns = ["/\\bnp[a-z]\\b/"] }'
+text = "Run npm and npx and teh."
+findings = ["1:21"]
+messages = ["英語の辞書に無い語「teh」を使っている"]
+
+[[cases]]
+name = "opt-skip-regexp-flag-i"
+builtin = 'spelling = { suggestCorrections = false, skipPatterns = ["/jafix/i"] }'
+text = "Run Jafix and JAFIX and teh."
+findings = ["1:25"]
+messages = ["英語の辞書に無い語「teh」を使っている"]
+
+[[cases]]
+name = "opt-skip-multiple"
+builtin = 'spelling = { suggestCorrections = false, skipPatterns = ["jafix", "/lind\\w+/"] }'
+text = "Run jafix and lindera and teh."
+findings = ["1:27"]
+messages = ["英語の辞書に無い語「teh」を使っている"]
+
+[[cases]]
+name = "opt-skip-partial-overlap"
+builtin = 'spelling = { suggestCorrections = false, skipPatterns = ["eh"] }'
+text = "Use teh here."
+findings = []
+
+[[cases]]
+name = "opt-skip-touching"
+builtin = 'spelling = { suggestCorrections = false, skipPatterns = ["-"] }'
+text = "Use teh-x and teh here."
+findings = ["1:15"]
+messages = ["英語の辞書に無い語「teh」を使っている"]
+
+[[cases]]
+name = "opt-skip-not-touching"
+builtin = 'spelling = { suggestCorrections = false, skipPatterns = ["-"] }'
+text = "Use teh -x and teh here."
+findings = ["1:5", "1:16"]
+messages = ["英語の辞書に無い語「teh」を使っている", "英語の辞書に無い語「teh」を使っている"]
+
+[[cases]]
+name = "opt-skip-empty"
+builtin = 'spelling = { suggestCorrections = false, skipPatterns = [] }'
+text = "Use teh here."
+findings = ["1:5"]
+messages = ["英語の辞書に無い語「teh」を使っている"]
+
+[[cases]]
+name = "opt-skip-per-text"
+builtin = 'spelling = { suggestCorrections = false, skipPatterns = ["/jafix teh/"] }'
+text = "Use **jafix** teh and jafix."
+findings = ["1:7", "1:15", "1:23"]
+messages = ["英語の辞書に無い語「jafix」を使っている", "英語の辞書に無い語「teh」を使っている", "英語の辞書に無い語「jafix」を使っている"]
+
+[[cases]]
+name = "opt-word-hyphen"
+builtin = '''
+spelling = { suggestCorrections = false, wordDefinitionRegexp = "/\\b[\\w'-]+\\b/g" }
+'''
+text = "Use teh-cat and recieve-it here."
+findings = ["1:5", "1:17"]
+messages = ["英語の辞書に無い語「teh-cat」を使っている", "英語の辞書に無い語「recieve-it」を使っている"]
+
+[[cases]]
+name = "opt-word-letters"
+builtin = 'spelling = { suggestCorrections = false, wordDefinitionRegexp = "/[a-z]+/g" }'
+text = "The pacakge's name."
+findings = ["1:5"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "opt-word-flag-i"
+note = "jafixは `wordDefinitionRegexp` をフラグごと読む。textlintは `new RegExp(<正規表現>, \"g\")` で作り直すので、`g` 以外のフラグ (ここでは `i`) が落ち、`Pacakge` の `P` を語に含めない"
+builtin = 'spelling = { suggestCorrections = false, wordDefinitionRegexp = "/[a-z]+/gi" }'
+text = "Pacakge and pacakge."
+findings = ["1:1", "1:13"]
+messages = ["英語の辞書に無い語「Pacakge」を使っている", "英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "opt-word-without-g"
+builtin = 'spelling = { suggestCorrections = false, wordDefinitionRegexp = "/[a-z]+/" }'
+text = "Use pacakge and teh."
+findings = ["1:2", "1:5", "1:17"]
+messages = ["英語の辞書に無い語「se」を使っている", "英語の辞書に無い語「pacakge」を使っている", "英語の辞書に無い語「teh」を使っている"]
+
+[[cases]]
+name = "opt-word-default"
+builtin = '''
+spelling = { suggestCorrections = false, wordDefinitionRegexp = "/\\b[\\w']+\\b/g" }
+'''
+text = "Use teh here."
+findings = ["1:5"]
+messages = ["英語の辞書に無い語「teh」を使っている"]
+
+[[cases]]
+name = "opt-suggest-one"
+builtin = 'spelling = { suggestCorrections = true }'
+text = "I saw a pacakge here."
+findings = ["1:9"]
+messages = ["英語の辞書に無い語「pacakge」を使っている。候補: package"]
+
+[[cases]]
+name = "opt-suggest-two"
+builtin = 'spelling = { suggestCorrections = true }'
+text = "The eigth item."
+findings = ["1:5"]
+messages = ["英語の辞書に無い語「eigth」を使っている。候補: eight、eighth"]
+
+[[cases]]
+name = "opt-suggest-capitalized"
+builtin = 'spelling = { suggestCorrections = true }'
+text = "Pacakge is here."
+findings = ["1:1"]
+messages = ["英語の辞書に無い語「Pacakge」を使っている。候補: Package"]
+
+[[cases]]
+name = "opt-suggest-none"
+builtin = 'spelling = { suggestCorrections = true }'
+text = "Use qzxwvy here."
+findings = ["1:5"]
+messages = ["英語の辞書に無い語「qzxwvy」を使っている。候補は無い"]
+
+[[cases]]
+name = "opt-suggest-default"
+builtin = 'spelling = true'
+text = "Fix the hieght."
+findings = ["1:9"]
+messages = ["英語の辞書に無い語「hieght」を使っている。候補: height"]
+
+[[cases]]
+name = "opt-suggest-differs"
+note = "候補は spellbook のもので、nspellと並びか数が違う"
+builtin = 'spelling = { suggestCorrections = true }'
+text = "I saw teh cat."
+findings = ["1:7"]
+messages = ["英語の辞書に無い語「teh」を使っている。候補: the、eh、tech、tee、tea、ten、tel、ted、meh、t eh"]
+
+[[cases]]
+name = "opt-suggest-differs-two-words"
+note = "候補は spellbook のもので、nspellと並びか数が違う"
+builtin = 'spelling = { suggestCorrections = true }'
+text = "We recieve and definately agree."
+findings = ["1:4", "1:16"]
+messages = ["英語の辞書に無い語「recieve」を使っている。候補: receive、relieve、reverie", "英語の辞書に無い語「definately」を使っている。候補: definitely、effeminately、definitively、indefinably"]
+
+[[cases]]
+name = "opt-suggest-differs-split"
+note = "候補は spellbook のもので、nspellと並びか数が違う。spellbook は、語を2つに分けた候補 (`dot files`・`dot-files`) も出す"
+builtin = 'spelling = { suggestCorrections = true }'
+text = "Keep the dotfiles here."
+findings = ["1:10"]
+messages = ["英語の辞書に無い語「dotfiles」を使っている。候補: dot files、dot-files、domiciles"]
+
+[[cases]]
+name = "opt-suggest-differs-nspell-none"
+note = "候補は spellbook のもので、nspellと並びか数が違う。nspellは候補を出さない"
+builtin = 'spelling = { suggestCorrections = true }'
+text = "Use kuromoji here."
+findings = ["1:5"]
+messages = ["英語の辞書に無い語「kuromoji」を使っている。候補: Kurosawa"]
+
+[[cases]]
+name = "opt-language-en"
+builtin = 'spelling = { suggestCorrections = false, language = "en" }'
+text = "I saw a pacakge here."
+findings = ["1:9"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "j-ja-after"
+text = "pacakgeを使う"
+findings = ["1:1"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "j-ja-both-sides"
+text = "日本語のpacakgeを使う"
+findings = ["1:5"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "j-touten"
+text = "pacakge、recieve、seperate"
+findings = ["1:1", "1:9", "1:17"]
+messages = ["英語の辞書に無い語「pacakge」を使っている", "英語の辞書に無い語「recieve」を使っている", "英語の辞書に無い語「seperate」を使っている"]
+
+[[cases]]
+name = "j-kagi"
+text = "「pacakge」と書く"
+findings = ["1:2"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "j-fullwidth-paren"
+text = "誤り（pacakge）を直す"
+findings = ["1:4"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "j-spaces"
+text = "日本語の pacakge を使う"
+findings = ["1:6"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "j-identifier"
+note = "jafixは、ASCIIの数字・`_`・2文字目以降の大文字を含む語を辞書に当てない (既定の除外)。textlintは指摘する"
+text = "設定のjafixとREADMEを読む"
+findings = ["1:4"]
+messages = ["英語の辞書に無い語「jafix」を使っている"]
+
+[[cases]]
+name = "j-fullwidth-letters"
+text = "ｐａｃａｋｇｅを使う"
+findings = []
+
+[[cases]]
+name = "j-correct"
+text = "このpackageを使う"
+findings = []
+
+[[cases]]
+name = "ctx-heading"
+text = "# I saw a pacakge"
+findings = ["1:11"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-setext-heading"
+text = "I saw a pacakge\n==="
+findings = ["1:9"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-blockquote"
+text = "> I saw a pacakge."
+findings = ["1:11"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-blockquote-list"
+text = "> - I saw a pacakge."
+findings = ["1:13"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-list"
+text = "- I saw a pacakge.\n  - We recieve it."
+findings = ["1:11", "2:8"]
+messages = ["英語の辞書に無い語「pacakge」を使っている", "英語の辞書に無い語「recieve」を使っている"]
+
+[[cases]]
+name = "ctx-ordered-list"
+text = "1. I saw a pacakge."
+findings = ["1:12"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-table-cell"
+text = "| a | b |\n| --- | --- |\n| pacakge | recieve |"
+findings = ["3:3", "3:13"]
+messages = ["英語の辞書に無い語「pacakge」を使っている", "英語の辞書に無い語「recieve」を使っている"]
+
+[[cases]]
+name = "ctx-table-header"
+text = "| pacakge | b |\n| --- | --- |\n| a | b |"
+findings = ["1:3"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-emphasis"
+text = "I saw a *pacakge* here."
+findings = ["1:10"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-strong"
+text = "I saw a **pacakge** here."
+findings = ["1:11"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-strikethrough"
+text = "I saw a ~~pacakge~~ here."
+findings = ["1:11"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-link-text"
+text = "See [the pacakge docs](https://example.com) now."
+findings = ["1:10"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-link-url"
+text = "See [the docs](https://example.com/pacakge) now."
+findings = []
+
+[[cases]]
+name = "ctx-link-title"
+note = "jafixは、リンクと画像の title を見ない。textlintは見る"
+text = "See [the docs](https://example.com \"pacakge docs\") now."
+findings = []
+
+[[cases]]
+name = "ctx-link-reference-full"
+text = "See [the pacakge][r] now.\n\n[r]: https://example.com"
+findings = ["1:10"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-link-reference-shortcut"
+note = "jafixは、定義を持つ省略形・collapsed形の参照リンクの文字列を本文の範囲にしない。textlintは見る"
+text = "See [pacakge] now.\n\n[pacakge]: https://example.com"
+findings = []
+
+[[cases]]
+name = "ctx-link-reference-collapsed"
+note = "jafixは、定義を持つ省略形・collapsed形の参照リンクの文字列を本文の範囲にしない。textlintは見る"
+text = "See [pacakge][] now.\n\n[pacakge]: https://example.com"
+findings = []
+
+[[cases]]
+name = "ctx-inline-code"
+text = "Use `pacakge` here."
+findings = []
+
+[[cases]]
+name = "ctx-code-block"
+text = "```\npacakge\n```"
+findings = []
+
+[[cases]]
+name = "ctx-indented-code"
+text = "Text.\n\n    pacakge"
+findings = []
+
+[[cases]]
+name = "ctx-image-alt"
+text = "![a pacakge cat](a.png)"
+findings = ["1:5"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-image-alt-in-text"
+text = "See ![a pacakge](a.png) and recieve it."
+findings = ["1:9", "1:29"]
+messages = ["英語の辞書に無い語「pacakge」を使っている", "英語の辞書に無い語「recieve」を使っている"]
+
+[[cases]]
+name = "ctx-image-alt-in-heading"
+text = "# Title ![pacakge](a.png)"
+findings = ["1:11"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-image-alt-in-link"
+text = "[![pacakge](a.png)](https://example.com)"
+findings = ["1:4"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-image-alt-skip"
+builtin = 'spelling = { suggestCorrections = false, skipPatterns = ["jafix"] }'
+text = "![jafix pacakge](a.png)"
+findings = ["1:9"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-image-alt-suggest"
+builtin = 'spelling = { suggestCorrections = true }'
+text = "![a pacakge](a.png)"
+findings = ["1:5"]
+messages = ["英語の辞書に無い語「pacakge」を使っている。候補: package"]
+
+[[cases]]
+name = "ctx-image-title"
+note = "jafixは、リンクと画像の title を見ない。textlintは見る"
+text = "![cat](a.png \"pacakge\")"
+findings = []
+
+[[cases]]
+name = "ctx-image-url"
+text = "![cat](pacakge.png)"
+findings = []
+
+[[cases]]
+name = "ctx-image-reference"
+text = "![pacakge][r]\n\n[r]: a.png"
+findings = []
+
+[[cases]]
+name = "ctx-bare-url"
+note = "jafixは、裸のURLと `<...>` の自動リンクの文字列を本文の範囲にしない。textlintはLinkの中の文字列として見る"
+text = "See https://example.com/pacakge here."
+findings = []
+
+[[cases]]
+name = "ctx-autolink"
+note = "jafixは、裸のURLと `<...>` の自動リンクの文字列を本文の範囲にしない。textlintはLinkの中の文字列として見る"
+text = "See <https://example.com/pacakge> here."
+findings = []
+
+[[cases]]
+name = "ctx-html-block"
+text = "<div>pacakge</div>"
+findings = []
+
+[[cases]]
+name = "ctx-html-inline"
+text = "See <span>pacakge</span> here."
+findings = ["1:11"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-front-matter"
+text = "---\ntitle: pacakge\n---\n\nI saw a pacakge."
+findings = ["5:9"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-footnote"
+text = "Text[^1].\n\n[^1]: I saw a pacakge."
+findings = ["3:15"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-escape"
+note = "jafixの位置は元のソースの位置である。textlintは、エスケープを解いた文字列の中の位置を出すので、エスケープの後ろの語の位置が前にずれる"
+text = "Use \\* and pacakge here."
+findings = ["1:12"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-entity"
+note = "jafixの位置は元のソースの位置である。textlintは、エスケープを解いた文字列の中の位置を出すので、エスケープの後ろの語の位置が前にずれる"
+text = "Use &amp; and pacakge here."
+findings = ["1:15"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]
+
+[[cases]]
+name = "ctx-hard-break"
+text = "I saw a  \npacakge here."
+findings = ["2:1"]
+messages = ["英語の辞書に無い語「pacakge」を使っている"]

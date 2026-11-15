@@ -384,6 +384,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "foldhash"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
+
+[[package]]
 name = "form_urlencoded"
 version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -626,6 +632,7 @@ name = "jafix"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "foldhash",
  "globset",
  "lindera",
  "markdown",
@@ -634,6 +641,7 @@ dependencies = [
  "serde",
  "serde-saphyr",
  "serde_json",
+ "spellbook",
  "tempfile",
  "toml",
  "unicode-normalization",
@@ -1183,6 +1191,15 @@ name = "smallvec"
 version = "1.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "149309498a5f7334b12ddae0cad8aba81ce785fe91755068867e017cf98fee46"
+
+[[package]]
+name = "spellbook"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d204abcbdf8e88729306a8d0ca01a79d8a49969fe1f84696909d6dbc4321c1a"
+dependencies = [
+ "hashbrown",
+]
 
 [[package]]
 name = "stable_deref_trait"
