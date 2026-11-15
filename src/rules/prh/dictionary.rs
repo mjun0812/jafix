@@ -22,7 +22,8 @@ pub enum Source {
 /// 出どころの一覧から読んで1つにまとめた辞書
 #[derive(Debug)]
 pub struct Dictionary {
-    /// まとめた後のルール。同じ `expected` のルールは、先にあるものだけを持つ
+    /// まとめた後のルール。出どころ (`imports` の辞書を含む) をまたいで `expected` が同じルールは、先にある出どころの
+    /// ものだけを持つ。1つの出どころの中で `expected` が同じルールは、どれも持つ
     rules: Vec<Rule>,
 }
 
@@ -95,10 +96,15 @@ impl Dictionary {
     }
 }
 
-/// `incoming` のうち、`rules` に `expected` が同じルールが無いものを足す (prhの `merge`)
+/// `incoming` のうち、`rules` に `expected` が同じルールが無いものを足す (prhの `merge`)。`incoming` の中で
+/// `expected` が重なるルールは、どれも残す
 fn merge(rules: &mut Vec<Rule>, incoming: Vec<Rule>) {
+    let kept = rules.len();
     for rule in incoming {
-        if !rules.iter().any(|kept| kept.expected == rule.expected) {
+        if !rules[..kept]
+            .iter()
+            .any(|kept| kept.expected == rule.expected)
+        {
             rules.push(rule);
         }
     }

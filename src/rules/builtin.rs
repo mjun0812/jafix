@@ -179,10 +179,12 @@ impl Builtin {
             };
             if (pair.fix_rule_enabled)(self) {
                 return Err(format!(
-                    "`{}`: {demand}、`{}` は{}。どちらかを無効にする",
+                    "`{}`: {demand}、`{}` は{}。`{} = false` か `{} = false` にする",
                     pair.rule.name(),
                     pair.fix_rule.name(),
-                    pair.fixes
+                    pair.fixes,
+                    toml_key(pair.fix_rule.name()),
+                    toml_key(pair.rule.name())
                 ));
             }
         }
@@ -444,10 +446,15 @@ const OPPOSITE_RULES: [OppositeRules; 5] = [
 
 /// 逆の書き方の理由の最後の文に書く、ルールのIDの設定のキー。TOMLの裸のキー (英数字・`-`・`_` だけ) に書けない
 /// IDは引用符で囲む (`fullwidth-paren`、`"4.3.1.丸かっこ（）"`)
-#[allow(dead_code)] // skeleton: not implemented
 fn toml_key(name: &str) -> Cow<'_, str> {
-    let _ = name;
-    todo!("skeleton: not implemented")
+    if name
+        .bytes()
+        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_'))
+    {
+        Cow::Borrowed(name)
+    } else {
+        Cow::Owned(format!("\"{name}\""))
+    }
 }
 
 /// `ja-space-between-half-and-full-width` が有効で、`space` が英字か数字の隣に空白を求めるなら、その文面を返す
@@ -2020,8 +2027,17 @@ impl JtfStyle {
 
     /// `rule` を、`options` が無ければ無効にし、あればそのオプションで有効にする。`3.3` だけがオプションを持つ
     fn set(&mut self, rule: JtfRule, options: Option<&Table>) -> Result<(), String> {
-        let _ = (rule, options, JtfParentheses::from_options);
-        todo!("skeleton: not implemented")
+        self.enabled[rule as usize] = match rule {
+            JtfRule::R3_3 => {
+                self.parentheses = options
+                    .map(JtfParentheses::from_options)
+                    .transpose()?
+                    .unwrap_or_default();
+                options.is_some()
+            }
+            _ => enabled(options)?,
+        };
+        Ok(())
     }
 }
 
@@ -2029,7 +2045,6 @@ impl JtfStyle {
 #[derive(Debug)]
 pub struct JtfParentheses {
     /// `allowOutsideHalfParentheses`。真なら、半角の括弧の外側に接する半角空白を消さない
-    #[allow(dead_code)] // skeleton: not implemented
     pub allow_outside_half_parentheses: bool,
     /// `requireOutsideHalfParentheses`。真なら、日本語に接する半角の括弧の外側に半角空白を求める
     pub require_outside_half_parentheses: bool,
@@ -2048,8 +2063,26 @@ impl JtfParentheses {
     /// `allowOutsideHalfParentheses = false` と `requireOutsideHalfParentheses = true` の組は、同じ空白を消す修正と
     /// 求める指摘が往復するので、2つのオプションの名前を含む理由を返す
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "allowOutsideHalfParentheses" => {
+                    rule.allow_outside_half_parentheses = boolean(key, value)?;
+                }
+                "requireOutsideHalfParentheses" => {
+                    rule.require_outside_half_parentheses = boolean(key, value)?;
+                }
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        if !rule.allow_outside_half_parentheses && rule.require_outside_half_parentheses {
+            return Err(
+                "`allowOutsideHalfParentheses = false` は半角の括弧の外側の空白を削除し、\
+                 `requireOutsideHalfParentheses = true` は同じ空白を求める。どちらかを外す"
+                    .to_owned(),
+            );
+        }
+        Ok(rule)
     }
 }
 

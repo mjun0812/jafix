@@ -286,8 +286,8 @@ pub struct Report {
 }
 
 /// 指摘ルール (組み込みの指摘ルール、見出しの中で直さない修正ルール、直さない利用者の置き換え、`replace` の無い
-/// `@textlint-rule/pattern` の要素) に当たる箇所を、位置の順に返す。`prh` と `@textlint-rule/pattern` は、
-/// `targets` と重なる本文の範囲だけに当てる。`fixes` は、同じ `src` と `document` の `fix_findings` の結果である
+/// `@textlint-rule/pattern` の要素) に当たる箇所を、位置の順に返す。`prh` と `@textlint-rule/pattern` と
+/// `preset-jtf-style` の辞書の4ルールは、`targets` と重なる本文の範囲だけに当てる。`fixes` は、同じ `src` と `document` の `fix_findings` の結果である
 pub fn report(
     src: &str,
     document: &Document,
@@ -333,6 +333,7 @@ pub fn report(
         },
     ));
     reports.extend(spacing::report(src, document, builtin));
+    reports.extend(jtf_style::report(src, document, builtin, &texts));
     reports.sort_by_key(|report| report.range.start);
     reports
 }
@@ -428,15 +429,18 @@ pub fn fix_rules_hitting(text: &str, builtin: &Builtin) -> Vec<RuleId> {
     rules
 }
 
-/// 利用者の置き換えを当てる本文の範囲。最初の行から最後の行までのどれかが `targets` の対象行であるもの。
-/// 行の索引を1回で作るために、`prh` と `@textlint-rule/pattern` で共有する。どちらも無効なら空
+/// 利用者の置き換えと辞書の4ルールを当てる本文の範囲。最初の行から最後の行までのどれかが `targets` の対象行であるもの。
+/// 行の索引を1回で作るために、`prh` と `@textlint-rule/pattern` と辞書の4ルールで共有する。どれも無効なら空
 fn target_texts<'a>(
     src: &str,
     document: &'a Document,
     builtin: &Builtin,
     targets: &TargetLines,
 ) -> Vec<&'a Prose> {
-    if builtin.prh.is_none() && builtin.textlint_rule_pattern.is_none() {
+    if builtin.prh.is_none()
+        && builtin.textlint_rule_pattern.is_none()
+        && !jtf_style::uses_dictionaries(builtin)
+    {
         return Vec::new();
     }
     let index = matches!(targets, TargetLines::Lines(_)).then(|| LineIndex::new(src));
@@ -527,6 +531,7 @@ fn fix_rule_findings(src: &str, document: &Document, builtin: &Builtin) -> Vec<F
         );
     }
     findings.extend(spacing::find(src, document, builtin));
+    findings.extend(jtf_style::find(src, &document.texts, builtin));
     findings.sort_by_key(|fix| fix.finding.rule);
     findings
 }

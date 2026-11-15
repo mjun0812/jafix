@@ -9,6 +9,7 @@ mod pairs;
 mod style;
 mod texts;
 
+use std::collections::HashSet;
 use std::ops::RangeInclusive;
 
 use crate::prose::{Document, Prose};
@@ -146,37 +147,35 @@ impl JtfRule {
 /// 37ルールのうち修正ルールになる7ルール (`2.1.5` の半角カナの部分、`2.1.8`、`2.1.9`、`3.1.1`、`3.1.2`、
 /// `3.3` の空白を消す側、`4.2.4`) の箇所を返す。どれも `Context::plain` の本文の範囲だけに当てるので、
 /// 見出しの中の箇所は無い。重なりは解かない
-#[allow(dead_code)] // skeleton: not implemented
 pub fn find(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<FixRuleFinding> {
-    let _ = (src, texts, builtin, texts::find);
-    todo!("skeleton: not implemented")
+    texts::find(src, texts, &builtin.jtf_style)
 }
 
 /// 37ルールのうち指摘ルールになる側の指摘を返す。辞書の4ルールは、`target_texts` (対象行と重なる本文の範囲) だけに
 /// 当てる。ほかのルールは文書の全体で数え、対象行で絞るのは呼び出し側である。同じルールの、位置と文面が同じ指摘は1件にする
-#[allow(dead_code)] // skeleton: not implemented
 pub fn report(
     src: &str,
     document: &Document,
     builtin: &Builtin,
     target_texts: &[&Prose],
 ) -> Vec<Report> {
-    let _ = (
-        src,
-        document,
-        builtin,
-        target_texts,
-        texts::report,
-        style::report,
-        pairs::report,
-        dictionaries::report,
-    );
-    todo!("skeleton: not implemented")
+    let rules = &builtin.jtf_style;
+    let mut reports = texts::report(src, &document.texts, rules);
+    reports.extend(style::report(src, document, rules));
+    reports.extend(pairs::report(src, document, rules));
+    reports.extend(dictionaries::report(src, target_texts, rules));
+    let mut seen = HashSet::new();
+    reports.retain(|report| seen.insert((report.range.start, report.rule, report.message.clone())));
+    reports
+}
+
+/// 辞書の4ルールのどれかが有効か。無効なら、対象行と重なる本文の範囲を求めなくてよい
+pub fn uses_dictionaries(builtin: &Builtin) -> bool {
+    dictionaries::any_enabled(&builtin.jtf_style)
 }
 
 /// textlintの `japaneseRegExp`。`1.2.1`・`3.1.2`・`3.3`・`4.2.2`・`4.2.4`・`4.2.6`〜`4.2.9`・`4.3.1`・`4.3.2` が使う。
 /// `[\uD840-\uD87F][\uDC00-\uDFFF]` はU+20000からU+2FFFFの文字である。`ー` を含まない
-#[allow(dead_code)] // skeleton: not implemented
 const JAPANESE: &[RangeInclusive<char>] = &[
     '々'..='々',
     '〇'..='〇',
@@ -190,7 +189,6 @@ const JAPANESE: &[RangeInclusive<char>] = &[
 ];
 
 /// `JAPANESE` から `々` `〇` `〻` を除いたもの。`3.1.1`・`4.1.3`・`4.2.1` のルールのファイルに直接書かれた範囲である
-#[allow(dead_code)] // skeleton: not implemented
 const JAPANESE_WITHOUT_MARKS: &[RangeInclusive<char>] = &[
     '\u{3400}'..='\u{4DBF}',
     '\u{4E00}'..='\u{9FFF}',
@@ -215,12 +213,9 @@ const KANJI: &[RangeInclusive<char>] = &[
 const KATAKANA_WORD: &[RangeInclusive<char>] = &['ァ'..='ヶ', 'ー'..='ー'];
 
 /// `2.1.5` の半角カナ
-#[allow(dead_code)] // skeleton: not implemented
 const HANKAKU_KANA: RangeInclusive<char> = '\u{FF65}'..='\u{FF9F}';
 
 /// `c` が `ranges` のどれかに入るか
-#[allow(dead_code)] // skeleton: not implemented
 fn contains(ranges: &[RangeInclusive<char>], c: char) -> bool {
-    let _ = (ranges, c);
-    todo!("skeleton: not implemented")
+    ranges.iter().any(|range| range.contains(&c))
 }

@@ -8,10 +8,20 @@ use crate::prose::Document;
 
 use super::super::Report;
 use super::super::builtin::JtfStyle;
+use super::JtfRule;
 
 /// 4ルールの指摘
 pub fn report(src: &str, document: &Document, rules: &JtfStyle) -> Vec<Report> {
-    let _ = (src, document, rules, style_matches, minority);
+    let rules_here = [
+        JtfRule::R1_1_1,
+        JtfRule::R1_1_2,
+        JtfRule::R1_1_3,
+        JtfRule::R1_1_5,
+    ];
+    if !rules_here.into_iter().any(|rule| rules.enabled(rule)) {
+        return Vec::new();
+    }
+    let _ = (src, document, style_matches, minority);
     todo!("skeleton: not implemented")
 }
 

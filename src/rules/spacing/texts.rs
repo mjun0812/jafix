@@ -237,7 +237,7 @@ pub fn report(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<Report> {
 
 /// `text` の `start` (空白の並びの先頭) が行頭の字下げか。本文の範囲の中の直前の改行から `start` までが、
 /// 半角空白とタブだけなら字下げである。本文の範囲が改行を含まなければ字下げは無い
-fn is_indentation(text: &str, start: usize) -> bool {
+pub fn is_indentation(text: &str, start: usize) -> bool {
     text[..start].rfind('\n').is_some_and(|newline| {
         text[newline + 1..start]
             .bytes()

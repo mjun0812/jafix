@@ -8,6 +8,8 @@ mod texts;
 
 use crate::prose::Document;
 
+pub use self::texts::is_indentation;
+
 use super::builtin::Builtin;
 use super::{FixRuleFinding, Report};
 

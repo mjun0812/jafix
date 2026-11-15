@@ -1152,6 +1152,26 @@ rules:
 }
 
 #[test]
+fn prh_keeps_rules_with_the_same_expected_in_one_dictionary() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(
+        r#"[builtin.prh]
+ruleContents = ["""
+rules:
+  - expected: Cookie
+    pattern: クッキー
+  - expected: Cookie
+    pattern: ビスケット
+"""]
+"#,
+    );
+    assert_eq!(
+        fix_with_config(&sandbox, "クッキーとビスケット\n"),
+        "CookieとCookie\n"
+    );
+}
+
+#[test]
 fn prh_rejects_invalid_dictionaries() {
     for dictionary in [
         None,
@@ -1714,4 +1734,129 @@ fn prh_rejects_a_replacement_opposite_to_a_ported_fix_rule() {
             "ja-space-between-half-and-full-width",
         ],
     );
+}
+
+const JTF_PARENTHESES: &str = "3.3.かっこ類と隣接する文字の間のスペースの有無";
+
+#[test]
+fn preset_jtf_style_alone_conflicts_with_fullwidth_paren() {
+    assert_check_rejects_builtin(
+        "preset-jtf-style = true",
+        &[
+            "4.3.1.丸かっこ（）",
+            "fullwidth-paren",
+            "`fullwidth-paren = false` か `\"4.3.1.丸かっこ（）\" = false` にする",
+        ],
+    );
+    assert_check_rejects_builtin(
+        "ja-space-between-half-and-full-width = { space = \"always\" }",
+        &[
+            "`space-between-ja-and-alnum = false` か `ja-space-between-half-and-full-width = false` にする",
+        ],
+    );
+}
+
+#[test]
+fn jtf_style_rule_options_are_validated() {
+    for (builtin, expected) in [
+        (
+            "\"4.2.7.コロン(：)\" = { allowOutsideHalfParentheses = true }".to_owned(),
+            vec!["4.2.7.コロン(：)", "allowOutsideHalfParentheses"],
+        ),
+        (
+            format!("\"{JTF_PARENTHESES}\" = {{ allowOutside = true }}"),
+            vec![JTF_PARENTHESES, "allowOutside"],
+        ),
+        (
+            format!("\"{JTF_PARENTHESES}\" = {{ requireOutsideHalfParentheses = \"yes\" }}"),
+            vec![JTF_PARENTHESES, "requireOutsideHalfParentheses"],
+        ),
+        (
+            format!(
+                "\"{JTF_PARENTHESES}\" = {{ allowOutsideHalfParentheses = false, requireOutsideHalfParentheses = true }}\nspace-between-ja-and-paren = false"
+            ),
+            vec![
+                JTF_PARENTHESES,
+                "allowOutsideHalfParentheses",
+                "requireOutsideHalfParentheses",
+            ],
+        ),
+    ] {
+        assert_check_rejects_builtin(&builtin, &expected);
+    }
+}
+
+#[test]
+fn jtf_style_opposite_pairs_are_rejected() {
+    let parentheses = format!("\"{JTF_PARENTHESES}\" = {{ requireOutsideHalfParentheses = true }}");
+    let half_and_full_width = "ja-space-between-half-and-full-width = { space = \"always\" }";
+    let alphabet = "no-mixed-zenkaku-and-hankaku-alphabet = { prefer = \"全角\" }";
+    // 組の2つのルールの設定、組に関わらない共通の設定、理由に出る2つのルールのID
+    for (rule, fix_rule, common, ids) in [
+        (
+            parentheses.as_str(),
+            "space-between-ja-and-paren = true",
+            "",
+            [JTF_PARENTHESES, "space-between-ja-and-paren"],
+        ),
+        (
+            half_and_full_width,
+            "\"3.1.1.全角文字と半角文字の間\" = true",
+            "space-between-ja-and-alnum = false",
+            [
+                "ja-space-between-half-and-full-width",
+                "3.1.1.全角文字と半角文字の間",
+            ],
+        ),
+        (
+            alphabet,
+            "\"2.1.9.アルファベット\" = true",
+            "",
+            [
+                "no-mixed-zenkaku-and-hankaku-alphabet",
+                "2.1.9.アルファベット",
+            ],
+        ),
+    ] {
+        assert_check_rejects_builtin(&format!("{rule}\n{fix_rule}\n{common}"), &ids);
+        let off = |line: &str| format!("{} = false", line.split_once(" = ").unwrap().0);
+        for loadable in [
+            format!("{}\n{fix_rule}\n{common}", off(rule)),
+            format!("{rule}\n{}\n{common}", off(fix_rule)),
+        ] {
+            let sandbox = Sandbox::new();
+            sandbox.write("t.md", "日本語Rust\n");
+            sandbox.write_xdg_config(&format!("[builtin]\n{loadable}\n"));
+            let output = sandbox.run(&["check", "t.md"]);
+            assert_ne!(
+                output.status.code(),
+                Some(2),
+                "{loadable}: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+    }
+    assert_check_rejects_builtin(&parentheses, &["requireOutsideHalfParentheses"]);
+}
+
+#[test]
+fn jtf_style_fix_rules_repeat_with_other_fix_rules() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\n\"2.1.9.アルファベット\" = true\n");
+    assert_eq!(
+        fix_with_config(&sandbox, "日本語 ＡＢＣ です\n"),
+        "日本語ABCです\n"
+    );
+}
+
+#[test]
+fn prh_rejects_a_replacement_opposite_to_a_jtf_style_fix_rule() {
+    let fullwidth_digits = prh_rule("１２３", "いちにさん");
+    assert_check_rejects_builtin(
+        &format!("\"2.1.8.算用数字\" = true\n{fullwidth_digits}"),
+        &["１２３", "2.1.8.算用数字"],
+    );
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(&format!("[builtin]\n{fullwidth_digits}"));
+    assert_eq!(fix_with_config(&sandbox, "いちにさん\n"), "１２３\n");
 }

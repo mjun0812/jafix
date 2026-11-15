@@ -302,3 +302,53 @@ fn no_mixed_zenkaku_and_hankaku_alphabet() {
 fn no_kangxi_radicals() {
     assert_cases("no-kangxi-radicals");
 }
+
+#[test]
+fn jtf_style_2_1_5() {
+    assert_cases("jtf-style-2-1-5");
+}
+
+#[test]
+fn jtf_style_2_1_6() {
+    assert_cases("jtf-style-2-1-6");
+}
+
+#[test]
+fn jtf_style_2_1_8() {
+    assert_cases("jtf-style-2-1-8");
+}
+
+#[test]
+fn jtf_style_2_1_9() {
+    assert_cases("jtf-style-2-1-9");
+}
+
+#[test]
+fn jtf_style_2_2_1() {
+    assert_cases("jtf-style-2-2-1");
+}
+
+#[test]
+fn jtf_style_2_2_3() {
+    assert_cases("jtf-style-2-2-3");
+}
+
+#[test]
+fn jtf_style_3_1_1() {
+    assert_cases("jtf-style-3-1-1");
+}
+
+#[test]
+fn jtf_style_3_1_2() {
+    assert_cases("jtf-style-3-1-2");
+}
+
+#[test]
+fn jtf_style_3_3() {
+    assert_cases("jtf-style-3-3");
+}
+
+#[test]
+fn jtf_style_4_2_4() {
+    assert_cases("jtf-style-4-2-4");
+}
