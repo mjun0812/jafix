@@ -49,6 +49,13 @@ fullwidth-paren = false
 "2.1.5.カタカナ" = true
 "2.1.6.カタカナの長音" = true
 "2.2.1.ひらがなと漢字の使い分け" = true
+ja-hiragana-hojodoushi = true
+ja-hiragana-keishikimeishi = true
+ja-keishikimeishi = true
+ja-hiragana-fukushi = true
+ja-hiragana-daimeishi = true
+"@textlint-ja/no-insert-dropping-sa" = true
+"@textlint-ja/no-synonyms" = true
 prh = { rulePaths = ["prh.yml"] }
 TOML
     for word in "${words[@]}"; do

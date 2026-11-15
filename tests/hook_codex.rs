@@ -3,11 +3,13 @@ mod common;
 use std::path::Path;
 
 use common::{
-    AI_RULES_CONFIG, AI_RULES_INPUT, AI_WORDS_PATTERN, JTF_STYLE_RULES_CONFIG,
-    JTF_STYLE_RULES_HOOK_FIXED, JTF_STYLE_RULES_HOOK_INPUT, SPACING_RULES_CONFIG,
-    SPACING_RULES_FIXED, SPACING_RULES_INPUT, Sandbox, USER_REPLACEMENTS_CONFIG,
-    USER_REPLACEMENTS_FIXED, USER_REPLACEMENTS_INPUT, jtf_style_rule_lines, jtf_style_rule_reports,
-    read, spacing_rule_lines, spacing_rule_reports, stdout, user_replacement_reports,
+    AI_RULES_CONFIG, AI_RULES_INPUT, AI_WORDS_PATTERN, HIRAGANA_AND_SYNONYMS_HOOK_INPUT,
+    JTF_STYLE_RULES_CONFIG, JTF_STYLE_RULES_HOOK_FIXED, JTF_STYLE_RULES_HOOK_INPUT,
+    SPACING_RULES_CONFIG, SPACING_RULES_FIXED, SPACING_RULES_INPUT, Sandbox,
+    USER_REPLACEMENTS_CONFIG, USER_REPLACEMENTS_FIXED, USER_REPLACEMENTS_INPUT,
+    hiragana_and_synonyms_rule_lines, hiragana_and_synonyms_rule_reports,
+    hiragana_and_synonyms_rules_config, jtf_style_rule_lines, jtf_style_rule_reports, read,
+    spacing_rule_lines, spacing_rule_reports, stdout, user_replacement_reports,
 };
 use serde_json::json;
 
@@ -377,6 +379,31 @@ fn reports_jtf_style_findings_on_target_lines() {
     assert_eq!(
         jtf_style_rule_lines(&stderr),
         jtf_style_rule_reports(&path),
+        "{stderr}"
+    );
+}
+
+#[test]
+fn reports_hiragana_and_synonyms_findings_on_target_lines() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(&hiragana_and_synonyms_rules_config());
+    let path = sandbox.write("t.md", HIRAGANA_AND_SYNONYMS_HOOK_INPUT);
+    let chunk: String = HIRAGANA_AND_SYNONYMS_HOOK_INPUT
+        .lines()
+        .enumerate()
+        .map(|(i, line)| match i + 1 {
+            3 | 5 => format!("-x\n+{line}\n"),
+            _ => format!(" {line}\n"),
+        })
+        .collect();
+    let patch = update_patch("t.md", &format!("@@\n{chunk}"));
+    let output = sandbox.hook("codex", &apply_patch_input(&sandbox.path(""), &patch));
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(read(&path), HIRAGANA_AND_SYNONYMS_HOOK_INPUT);
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert_eq!(
+        hiragana_and_synonyms_rule_lines(&stderr),
+        hiragana_and_synonyms_rule_reports(&path),
         "{stderr}"
     );
 }

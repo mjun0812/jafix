@@ -308,3 +308,71 @@ pub fn jtf_style_rule_lines(stderr: &str) -> Vec<&str> {
         })
         .collect()
 }
+
+/// ひらがな系の5ルール、`@textlint-ja/no-insert-dropping-sa`、`@textlint-ja/no-synonyms`。どれも既定で無効である
+pub const HIRAGANA_AND_SYNONYMS_RULES: [&str; 7] = [
+    "ja-hiragana-hojodoushi",
+    "ja-hiragana-keishikimeishi",
+    "ja-keishikimeishi",
+    "ja-hiragana-fukushi",
+    "ja-hiragana-daimeishi",
+    "@textlint-ja/no-insert-dropping-sa",
+    "@textlint-ja/no-synonyms",
+];
+
+/// `HIRAGANA_AND_SYNONYMS_RULES` をすべて有効にする設定ファイル
+pub fn hiragana_and_synonyms_rules_config() -> String {
+    let enabled: String = HIRAGANA_AND_SYNONYMS_RULES
+        .iter()
+        .map(|rule| format!("\"{rule}\" = true\n"))
+        .collect();
+    format!("[builtin]\n{enabled}")
+}
+
+/// `HIRAGANA_AND_SYNONYMS_RULES` の7つが3行目と5行目に当たり、対象行の外の1行目と7行目にも当たる文書。3行目と5行目を
+/// 対象行にする。5行目の `サーバ` と、対象行の外の9行目の `サーバー` は、同じ同義語の集まりの別の表記である
+pub const HIRAGANA_AND_SYNONYMS_HOOK_INPUT: &str = "お願い致します。
+
+見た事がある。既に終わった。彼処に行く。
+
+このカレーは辛さそうだ。サーバを使う。お願い致します。
+
+見た事がある。
+
+サーバーを使う。
+";
+
+/// `HIRAGANA_AND_SYNONYMS_HOOK_INPUT` の3行目と5行目を対象行にしたhookが、`path` について返す7ルールの指摘の行。
+/// 1行目と7行目の指摘と、9行目の `サーバー` の指摘は、対象行の外なので出ない
+pub fn hiragana_and_synonyms_rule_reports(path: &Path) -> Vec<String> {
+    let path = path.display();
+    vec![
+        format!(
+            "{path}:3:3: 形式名詞「事」はひらがなの「こと」にする [ja-hiragana-keishikimeishi]"
+        ),
+        format!("{path}:3:3: 形式名詞「事」はひらがなの「こと」にする [ja-keishikimeishi]"),
+        format!("{path}:3:8: 副詞「既に」はひらがなの「すでに」にする [ja-hiragana-fukushi]"),
+        format!("{path}:3:15: 代名詞「彼処」はひらがなの「あそこ」にする [ja-hiragana-daimeishi]"),
+        format!(
+            "{path}:5:8: さ入れ言葉「辛さそう」は「辛そう」にする [@textlint-ja/no-insert-dropping-sa]"
+        ),
+        format!(
+            "{path}:5:13: 同義語の「サーバ」と「サーバー」が混ざっている [@textlint-ja/no-synonyms]"
+        ),
+        format!(
+            "{path}:5:23: 補助動詞「致し」はひらがなの「いたし」にする [ja-hiragana-hojodoushi]"
+        ),
+    ]
+}
+
+/// 標準エラーの行のうち、`HIRAGANA_AND_SYNONYMS_RULES` の7ルールの行
+pub fn hiragana_and_synonyms_rule_lines(stderr: &str) -> Vec<&str> {
+    stderr
+        .lines()
+        .filter(|line| {
+            HIRAGANA_AND_SYNONYMS_RULES
+                .iter()
+                .any(|id| line.ends_with(&format!(" [{id}]")))
+        })
+        .collect()
+}

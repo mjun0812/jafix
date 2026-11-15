@@ -1,14 +1,14 @@
 # jafix
 
-jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる範囲で直すCLIです。Markdownの本文にある全角括弧や半角カナなどを直し、日本語と英数字・括弧の間の空白を削除します。機械的に直せない書き方は、指摘ルールで指摘します。ルールは、全角括弧と空白を直す3つ、textlintの5つのpreset(`textlint-rule-preset-ja-technical-writing`・`@textlint-ja/textlint-rule-preset-ai-writing`・`textlint-rule-preset-ai-words-ja`・`textlint-rule-preset-ja-spacing`・`textlint-rule-preset-jtf-style`)と2つのルールから移したもの、利用者がprhの辞書やパターンに書いた置き換えです。
+jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる範囲で直すCLIです。Markdownの本文にある全角括弧や半角カナなどを直し、日本語と英数字・括弧の間の空白を削除します。機械的に直せない書き方は、指摘ルールで指摘します。ルールは、全角括弧と空白を直す3つ、textlintの5つのpreset(`textlint-rule-preset-ja-technical-writing`・`@textlint-ja/textlint-rule-preset-ai-writing`・`textlint-rule-preset-ai-words-ja`・`textlint-rule-preset-ja-spacing`・`textlint-rule-preset-jtf-style`)と9つの単独のルールから移したもの、利用者がprhの辞書やパターンに書いた置き換えです。
 
 ## 組み込みのルール
 
-組み込みのルールは85あります。`fullwidth-paren`・`space-between-ja-and-alnum`・`space-between-ja-and-paren` の3つはjafix独自の修正ルールで、`prh` と `@textlint-rule/pattern` の2つは、利用者が書いた辞書やパターンで置き換える・指摘するルールです。残りの80ルールはtextlintから移したもので、内訳は、`textlint-rule-preset-ja-technical-writing` の23ルール、`@textlint-ja/textlint-rule-preset-ai-writing` の5ルール(`no-ai-list-formatting` から `ai-tech-writing-guideline` まで)、`textlint-rule-preset-ai-words-ja` の2ルール(`no-ai-words` と `no-short-topic-comma`)、`textlint-rule-preset-ja-spacing` の11ルール(`ja-nakaguro-or-halfwidth-space-between-katakana` から `ja-space-around-strong` まで)、`textlint-rule-preset-jtf-style` の37ルール(`1.1.1.本文` から `4.3.8.一重引用符` まで)、単独のルールの `textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet` と `textlint-rule-no-kangxi-radicals` です。IDとオプションの名前はtextlintと同じです。ルールの有効・無効とオプションは、設定ファイルの `[builtin]` で変えます(「[設定ファイル](#builtin)」)。
+組み込みのルールは92あります。`fullwidth-paren`・`space-between-ja-and-alnum`・`space-between-ja-and-paren` の3つはjafix独自の修正ルールで、`prh` と `@textlint-rule/pattern` の2つは、利用者が書いた辞書やパターンで置き換える・指摘するルールです。残りの87ルールはtextlintから移したもので、内訳は、`textlint-rule-preset-ja-technical-writing` の23ルール、`@textlint-ja/textlint-rule-preset-ai-writing` の5ルール(`no-ai-list-formatting` から `ai-tech-writing-guideline` まで)、`textlint-rule-preset-ai-words-ja` の2ルール(`no-ai-words` と `no-short-topic-comma`)、`textlint-rule-preset-ja-spacing` の11ルール(`ja-nakaguro-or-halfwidth-space-between-katakana` から `ja-space-around-strong` まで)、`textlint-rule-preset-jtf-style` の37ルール(`1.1.1.本文` から `4.3.8.一重引用符` まで)、単独のルールの `textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet` と `textlint-rule-no-kangxi-radicals`、ひらがなで書く語・さ入れ言葉・同義語を見る7ルール(`ja-hiragana-hojodoushi` から `@textlint-ja/no-synonyms` まで)です。IDとオプションの名前はtextlintと同じです。ルールの有効・無効とオプションは、設定ファイルの `[builtin]` で変えます(「[設定ファイル](#builtin)」)。
 
-設定に何も書かなければ、jafix独自の3つと `textlint-rule-preset-ja-technical-writing` の23ルールが有効で、オプションの既定値はpresetと同じです。AIらしい書き方を指摘する7ルールは無効です。7ルールには同じ書き方を重ねて見るものがあり、すべてを有効にすると同じ箇所に複数の指摘が出るためです。7ルールは、`[builtin]` にルールのIDかpresetの名前を書いて有効にします(「[presetの名前](#presetの名前)」)。空白と字種を見る13ルール(`textlint-rule-preset-ja-spacing` の11ルールと、`no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals`)も、同じ理由で無効で、同じく `[builtin]` で有効にします。日本語と英数字の間の空白のように、jafix独自の修正ルールと同じ空白を見るものがあるためです。JTF日本語標準スタイルガイドの37ルールも、ほかのルールと同じ箇所を見るものが多いので無効で、同じく `[builtin]` で有効にします(「[JTFスタイルガイドの37ルール](#jtfスタイルガイドの37ルール)」)。`prh` と `@textlint-rule/pattern` も無効で、どのpresetにも入りません。辞書かパターンが無いと働かないので、`[builtin]` にオプションの表を書いたときだけ有効になります(「[利用者の置き換え](#利用者の置き換え)」)。
+設定に何も書かなければ、jafix独自の3つと `textlint-rule-preset-ja-technical-writing` の23ルールが有効で、オプションの既定値はpresetと同じです。AIらしい書き方を指摘する7ルールは無効です。7ルールには同じ書き方を重ねて見るものがあり、すべてを有効にすると同じ箇所に複数の指摘が出るためです。7ルールは、`[builtin]` にルールのIDかpresetの名前を書いて有効にします(「[presetの名前](#presetの名前)」)。空白と字種を見る13ルール(`textlint-rule-preset-ja-spacing` の11ルールと、`no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals`)も、同じ理由で無効で、同じく `[builtin]` で有効にします。日本語と英数字の間の空白のように、jafix独自の修正ルールと同じ空白を見るものがあるためです。JTF日本語標準スタイルガイドの37ルールも、ほかのルールと同じ箇所を見るものが多いので無効で、同じく `[builtin]` で有効にします(「[JTFスタイルガイドの37ルール](#jtfスタイルガイドの37ルール)」)。ひらがなで書く語・さ入れ言葉・同義語を見る7ルールも無効です。7つを束ねるpresetの名前は無いので、`[builtin]` にルールのIDのキーを書いて有効にします(「[ひらがな・さ入れ・同義語の7ルール](#ひらがなさ入れ同義語の7ルール)」)。`prh` と `@textlint-rule/pattern` も無効で、どのpresetにも入りません。辞書かパターンが無いと働かないので、`[builtin]` にオプションの表を書いたときだけ有効になります(「[利用者の置き換え](#利用者の置き換え)」)。
 
-`textlint-rule-preset-ja-technical-writing` の23ルールのうち、`max-ten` から `ja-no-redundant-expression` までの11ルールは、文を形態素解析で語(トークン)に分けて判定します。7ルールのうち、`no-ai-colon-continuation`・`no-ai-words`・`no-short-topic-comma` の3つも形態素解析を使います。形態素解析には [lindera](https://github.com/lindera/lindera) と、binaryに埋め込んだIPADICの辞書を使います。
+`textlint-rule-preset-ja-technical-writing` の23ルールのうち、`max-ten` から `ja-no-redundant-expression` までの11ルールは、文を形態素解析で語(トークン)に分けて判定します。7ルールのうち、`no-ai-colon-continuation`・`no-ai-words`・`no-short-topic-comma` の3つと、ひらがな・さ入れ・同義語の7ルールも形態素解析を使います。形態素解析には [lindera](https://github.com/lindera/lindera) と、binaryに埋め込んだIPADICの辞書を使います。
 
 | ルールのID                                        | 種類                   | 内容                                                                                                                 | オプション(既定値)                                                                                                                                                                                    |
 | ------------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -97,6 +97,13 @@ jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる�
 | `4.3.6.中かっこ{ }`                               | 指摘(既定で無効)       | 段落の中で `{` `}` が対になっていない                                                                                | なし                                                                                                                                                                                                  |
 | `4.3.7.山かっこ<>`                                | 指摘(既定で無効)       | 段落の中で `<` `>` が対になっていない                                                                                | なし                                                                                                                                                                                                  |
 | `4.3.8.一重引用符`                                | なし(既定で無効)       | 何も指摘しない。textlintのpresetのキーを書けるようにIDだけを持つ                                                     | なし                                                                                                                                                                                                  |
+| `ja-hiragana-hojodoushi`                          | 指摘(既定で無効)       | 補助動詞(`お願い致します` の `致し` など)を漢字で書く。語は品詞と読みで見分ける                                      | `rulePath`(なし)                                                                                                                                                                                      |
+| `ja-hiragana-keishikimeishi`                      | 指摘(既定で無効)       | 形式名詞(`見た事がある` の `事` など)を漢字で書く。語は品詞と前の語で見分ける                                        | なし                                                                                                                                                                                                  |
+| `ja-keishikimeishi`                               | 指摘(既定で無効)       | 形式名詞を漢字で書く。辞書と判定は形式名詞の別のルールと同じで、`ほう`・`うえ` の語をオプションで外せる              | `detection_hou_kata`・`detection_ue`(いずれもtrue)                                                                                                                                                    |
+| `ja-hiragana-fukushi`                             | 指摘(既定で無効)       | 副詞(`既に`・`却って` など)を漢字で書く。語は品詞と読みで見分ける                                                    | `rulePath`(なし)                                                                                                                                                                                      |
+| `ja-hiragana-daimeishi`                           | 指摘(既定で無効)       | 代名詞(`彼処`・`何処` など)を漢字で書く。語は品詞と読みで見分ける                                                    | なし                                                                                                                                                                                                  |
+| `@textlint-ja/no-insert-dropping-sa`              | 指摘(既定で無効)       | さ入れ言葉(`辛さそう`)かさ抜き言葉(`良そう`)を使う                                                                   | なし                                                                                                                                                                                                  |
+| `@textlint-ja/no-synonyms`                        | 指摘(既定で無効)       | 文書の中で、同義語の別の表記(`サーバ` と `サーバー` など)を使い分けずに混ぜる                                        | `allows`・`preferWords`(いずれも[])、`allowAlphabet`・`allowNumber`・`allowLexeme`(いずれもtrue)                                                                                                      |
 
 オプションの意味はtextlintのルールと同じです。`sentence-length` の `countBy` は、長さをUTF-16のコードユニットで数える `"codeunits"` か、文字で数える `"codepoints"` です。`sentence-length` の `skipPatterns`、`no-exclamation-question-mark` と `ja-unnatural-alphabet` の `allow` の要素は、「[パターン](#パターン)」の書き方で書きます。`max-kanji-continuous-len` の `allow` の要素は、漢字の連続の全体と一致する文字列で、`no-invalid-control-character` の `allow` の要素は、1文字の文字列です。
 
@@ -198,9 +205,77 @@ AIらしい書き方を指摘する7ルールのオプションは、次のと�
 
 `2.2.2.算用数字と漢数字の使い分け` は `arabic-kanji-numbers` と同じパターンで判定するので、両方を有効にすると、同じ箇所に2つの指摘が出ます。設定を書かなければ `arabic-kanji-numbers` だけが有効なので、重なるのは `preset-jtf-style = true` かルールのIDのキーで `2.2.2` を有効にしたときだけです。指摘する一致の数も違い、`arabic-kanji-numbers` はパターンごとに最初の一致だけを、`2.2.2` はすべての一致を指摘します。片方だけを使うには、`arabic-kanji-numbers = false` か `"2.2.2.算用数字と漢数字の使い分け" = false` を書きます。
 
-`2.2.1.ひらがなと漢字の使い分け` は、ひらがな系の3ルール(`ja-hiragana-hojodoushi`・`ja-hiragana-fukushi`・`ja-hiragana-daimeishi`)と同じ語を、同じ向きに直すよう求めることがあります。両方を有効にすると、同じ箇所に2つのIDの指摘が出ます。組は、`下さい`(`ja-hiragana-hojodoushi`)、`更に`・`暫く`・`折角`(`ja-hiragana-fukushi`)、`何処`(`ja-hiragana-daimeishi`)などです。どちらも指摘ルールなので、設定の不正にはしません。片方だけを使うには、`"2.2.1.ひらがなと漢字の使い分け" = false` か、ひらがな系のルールのIDのキーを `false` にします。逆の向きの組もあり、`2.2.1` は `いたす` を `致す` に、`ja-hiragana-hojodoushi` は補助動詞の `致す` を `いたす` にするよう求めます。この組には両方を満たす書き方の無い場合があるので、片方を `false` にしてください。
+`2.2.1.ひらがなと漢字の使い分け` とひらがな系の3ルールが同じ語を指摘する組は、「[ひらがな・さ入れ・同義語の7ルール](#ひらがなさ入れ同義語の7ルール)」にあります。
 
 利用者の置き換えの結果を、37ルールの指摘ルールが指摘する組は、設定の不正にしません。たとえば `サーバー` を `サーバ` にする `prh` の辞書と `2.1.6`、`replace` で `:` や `(` を作る `@textlint-rule/pattern` の要素と `4.2.7`・`4.3.1` の組です。この組では、hookが置き換えた箇所をagentが指摘に従って戻し、次の編集でまた置き換わる、という往復が起きえます。どちらかのルールのIDのキーを `false` にするか、その置き換えを辞書やパターンから外してください。組み込みの修正ルールが置き換えを戻す組は、設定の不正です(「[修正の順と直さない箇所](#修正の順と直さない箇所)」)。
+
+### ひらがな・さ入れ・同義語の7ルール
+
+7ルールは、textlintで単独に配られている次の7つのpackageから移したものです。IDは、textlintが指摘に付けるruleIdと同じで、packageの名前から `textlint-rule-` を除いた名前です。
+
+- `ja-hiragana-hojodoushi`: `textlint-rule-ja-hiragana-hojodoushi` 1.1.0
+- `ja-hiragana-keishikimeishi`: `textlint-rule-ja-hiragana-keishikimeishi` 1.1.0
+- `ja-keishikimeishi`: `textlint-rule-ja-keishikimeishi` 1.0.5
+- `ja-hiragana-fukushi`: `textlint-rule-ja-hiragana-fukushi` 1.3.0
+- `ja-hiragana-daimeishi`: `textlint-rule-ja-hiragana-daimeishi` 1.0.0
+- `@textlint-ja/no-insert-dropping-sa`: `@textlint-ja/textlint-rule-no-insert-dropping-sa` 2.0.1
+- `@textlint-ja/no-synonyms`: `@textlint-ja/textlint-rule-no-synonyms` 1.3.0
+
+7つはどれも指摘ルールです。textlintのルールは組み込みの辞書の語に置き換えて直せますが、jafixは直さずに指摘します。`@textlint-ja/no-synonyms` の `preferWords` への置き換えも同じです。指摘の文面には置き換え後の語が入るので、agentはその場で直せます。設定を書かなければ7つとも無効で、7つを束ねるpresetの名前もありません。`[builtin]` にルールのIDのキーを書いて有効にします。`@textlint-ja/` で始まる2つのIDは、TOMLのキーとして引用符で囲みます。
+
+```toml
+[builtin]
+ja-hiragana-hojodoushi = true
+ja-keishikimeishi = { detection_ue = false }
+"@textlint-ja/no-synonyms" = { preferWords = ["サーバー"] }
+```
+
+ひらがな系の5ルール(`ja-hiragana-hojodoushi`・`ja-hiragana-keishikimeishi`・`ja-keishikimeishi`・`ja-hiragana-fukushi`・`ja-hiragana-daimeishi`)は、漢字で書いた補助動詞・形式名詞・副詞・代名詞を、ひらがなで書くよう指摘します。語は、組み込みの辞書にあるトークンの並び(表層・品詞・活用形・読みなど)で見分けます。辞書の項目は、補助動詞が56、形式名詞が45、副詞が76、代名詞が15です。2つの形式名詞のルールは同じ45項目の辞書を使い、`ja-keishikimeishi` だけが `ほう` と `うえ` にする項目をオプションで外せます。文面は `補助動詞「致し」はひらがなの「いたし」にする` の形で、語の種類は `補助動詞`・`形式名詞`・`副詞`・`代名詞` のどれかです。`ja-hiragana-daimeishi` の辞書にある副詞の語も、textlintと同じく `代名詞` とします。
+
+`@textlint-ja/no-insert-dropping-sa` は、さ入れ言葉とさ抜き言葉を指摘します。さ入れ言葉は、形容詞の後の `さそう`(`辛さそう`)と、動詞と `た` の後の `さそう`(`見たさそう`)です。さ抜き言葉は、`良い`・`無い` の後に `さ` の無い `そう`(`良そう`)です。文面は `さ入れ言葉「辛さそう」は「辛そう」にする` と `さ抜き言葉「良そう」は「良さそう」にする` です。
+
+ひらがな系の5ルールとさ入れのルールは、本文の範囲のすべてに当てます。見出し・表のセル・引用・リンクの文字列・強調・太字の中も見ます。`@textlint-ja/no-synonyms` は、引用の中とリンクの文字列を除く本文の範囲を見ます。どれも、インラインコードの中身と本文でない箇所(裸のURL、自動リンク、定義を持つ省略形・collapsed形の参照リンクの文字列)を見ません。トークンの並びを当てる途中の状態は、本文の範囲をまたいで持ち越しません。
+
+オプションは、次のとおりです。
+
+- `ja-hiragana-hojodoushi` と `ja-hiragana-fukushi` の `rulePath` は、組み込みの辞書の代わりに使うYAMLの辞書のパスで、空でない文字列です。組み込みの辞書に足すのではなく、置き換えます。相対パスは設定ファイルのあるディレクトリから解決し、`~/` で始まればホームディレクトリに展開します
+- `ja-keishikimeishi` の `detection_hou_kata` を `false` にすると `ほう` にする項目を、`detection_ue` を `false` にすると `うえ` にする項目を当てません。2つは独立で、片方だけを書いても他方は変わりません
+- `@textlint-ja/no-synonyms` の `allows` と `preferWords` は文字列の配列で、要素はパターンではなく、見出しの全体と比べる文字列です。`allowAlphabet`・`allowNumber`・`allowLexeme` は真偽値です。意味は下の段落にあります
+- オプションを持たない3つ(`ja-hiragana-keishikimeishi`・`ja-hiragana-daimeishi`・`@textlint-ja/no-insert-dropping-sa`)の値は、`true`・`false`・空の表です
+
+`rulePath` の辞書は、textlintと同じ形のYAMLです。
+
+```yaml
+message: ひらがなで書く補助動詞
+dict:
+  - expected: いたし
+    tokens:
+      - surface_form: 致し
+        pos: 動詞
+        pos_detail_1: 非自立
+```
+
+`message` は空でない文字列で、指摘の文面の先頭に使います(`ひらがなで書く補助動詞: 「致し」を「いたし」にする`)。`dict` は空でない配列です。各項目は、置き換え後の語の `expected` (文字列)と、期待するトークンの並びの `tokens` (空でない配列)を持ちます。項目のほかのキー(`extensions` など)は読みません。`tokens` の要素は、`no-ai-words` の利用者の辞書と同じく読みます(「[組み込みのルール](#組み込みのルール)」)。
+
+`@textlint-ja/no-synonyms` は、同じ同義語の集まりの別の表記が、1つの文書の中で2つ以上使われたら指摘します。辞書は、`sudachi-synonyms-dictionary` 20.0.0の `sudachi-synonyms-dictionary.json` から、判定に使う項目だけを取り出してbinaryに埋め込んだものです。このJSONは、SudachiDictの同義語辞書から作られています。
+
+`@textlint-ja/no-synonyms` は、語をlinderaのトークンで区切ります。本文の範囲のトークンを先頭から見て、各トークンから、空白のトークンをまたがずに最大8個までつなげた並びを作ります。そのうち、辞書の見出しに一致する最も長いものを1語とし、その並びの次のトークンから続けます。一致が無ければ、次のトークンから続けます。そのため、`テンプレ` や `電子メール` のように複数のトークンに分かれる見出しにも当たります。一致はトークンの境目でだけ始まり、終わります。
+
+同義語辞書のグループは、`allowLexeme` が `true` なら語彙番号ごとの集まりに分け、`false` ならグループの全体を1つの集まりにします。語彙番号の無い項目は、グループごとに1つの集まりにします。1つの見出しは、複数の集まりに入ることがあります。文書の全体で見出しを数えてから、集まりごとに、文書の中で使われた見出しを決めます。次の見出しは、使われた見出しに数えません。
+
+- `allowAlphabet` が `true` なら、英字の表記(`server`)と英字の略語(`OS`)
+- `allowNumber` が `true` なら、ASCIIの数字を含む見出し(`1位`)と、漢数字1字の見出し(`三`)
+- `allows` の要素と同じ見出し
+
+集まりの見出しに `preferWords` の要素があり、`allows` の要素がどれも無ければ、使われた見出しのうち `preferWords` の語でないものを指摘します。`preferWords` の要素が集まりに2つ以上あれば、配列で先にあるものを使います。この指摘は、使われた見出しが1つでも出ます。そうでなければ、使われた見出しが2つ以上ある集まりを指摘します。
+
+指摘は、使われた見出しのそれぞれで、その見出しの文書の中の最後の出現の位置へ1件ずつ出します。文面は、`同義語の「サーバ」と「サーバー」が混ざっている` か、`「サーバ」は同義語の「サーバー」にする` です。前者の見出しの並びは、文書の中で最初に出た順です。hookは、文書の全体を数えてから、対象行にある指摘だけを返します。agentの書いた表記が文書の中でその1か所だけなら、既にある表記より前の行と後ろの行のどちらへ書いても、hookはその行の指摘を返します。
+
+2つの形式名詞のルールを両方とも有効にすると、同じ形式名詞に2つのIDの指摘が1件ずつ出ます。辞書が同じなので、片方を使えば足ります。片方だけを使うには、`ja-hiragana-keishikimeishi = false` か `ja-keishikimeishi = false` を書きます。
+
+`2.2.1.ひらがなと漢字の使い分け` は、ひらがな系の3ルール(`ja-hiragana-hojodoushi`・`ja-hiragana-fukushi`・`ja-hiragana-daimeishi`)と同じ語を、同じ向きに直すよう求めることがあります。両方を有効にすると、同じ箇所に2つのIDの指摘が出ます。組は、`下さい`(`ja-hiragana-hojodoushi`)、`更に`・`暫く`・`折角`(`ja-hiragana-fukushi`)、`何処`(`ja-hiragana-daimeishi`)などです。どちらも指摘ルールなので、設定の不正にはしません。片方だけを使うには、`"2.2.1.ひらがなと漢字の使い分け" = false` か、ひらがな系のルールのIDのキーを `false` にします。逆の向きの組もあり、`2.2.1` は `いたす` を `致す` に、`ja-hiragana-hojodoushi` は補助動詞の `致す` を `いたす` にするよう求めます。この組には両方を満たす書き方の無い場合があるので、片方を `false` にしてください。
+
+利用者の置き換えの結果を7ルールが指摘する組も、設定の不正にしません。たとえば、`いたします` を `致します` にする `prh` の辞書と `ja-hiragana-hojodoushi` の組です。この組では、hookが置き換えた箇所をagentが指摘に従って戻し、次の編集でまた置き換わる、という往復が起きえます。どちらかのルールのIDのキーを `false` にするか、その置き換えを辞書やパターンから外してください。
 
 ## 利用者の置き換え
 
@@ -307,7 +382,7 @@ patterns = [
 
 組み込みの指摘ルールは、ルールごとに当てる単位が違います。
 
-- 本文の範囲ごとに当てるルール: `max-kanji-continuous-len`・`arabic-kanji-numbers`・`no-exclamation-question-mark`・`ja-unnatural-alphabet`・`no-double-negative-ja`・`no-dropping-the-ra`・`ja-no-weak-phrase`・`ja-no-successive-word`・`ja-no-abusage`・`no-ai-hype-expressions`・`no-ai-words`・`no-short-topic-comma`・`ja-nakaguro-or-halfwidth-space-between-katakana`・`ja-space-after-exclamation`・`ja-space-after-question`・空白を求める側の `ja-space-between-half-and-full-width`・`@textlint-rule/pattern` です。形態素解析を使うルールは、本文の範囲を1つずつトークンへ分けます。本文の範囲は、インラインコード・強調・リンク・HTMLのタグで区切られるので、境目をまたいでは一致せず、`照**合**` は `照合` に当たりません。長さ0の一致は指摘にしません。組み込みのルールは、引用・強調・リンクの中、段落の直下でない範囲を、ルールごとにtextlintと同じ文脈で対象から外します。`@textlint-rule/pattern` は、`allowNodeTypes` に書いた型の中だけを対象から外します
+- 本文の範囲ごとに当てるルール: `max-kanji-continuous-len`・`arabic-kanji-numbers`・`no-exclamation-question-mark`・`ja-unnatural-alphabet`・`no-double-negative-ja`・`no-dropping-the-ra`・`ja-no-weak-phrase`・`ja-no-successive-word`・`ja-no-abusage`・`no-ai-hype-expressions`・`no-ai-words`・`no-short-topic-comma`・`ja-nakaguro-or-halfwidth-space-between-katakana`・`ja-space-after-exclamation`・`ja-space-after-question`・空白を求める側の `ja-space-between-half-and-full-width`・ひらがな系の5ルール・`@textlint-ja/no-insert-dropping-sa`・`@textlint-rule/pattern` です。形態素解析を使うルールは、本文の範囲を1つずつトークンへ分けます。本文の範囲は、インラインコード・強調・リンク・HTMLのタグで区切られるので、境目をまたいでは一致せず、`照**合**` は `照合` に当たりません。長さ0の一致は指摘にしません。組み込みのルールは、引用・強調・リンクの中、段落の直下でない範囲を、ルールごとにtextlintと同じ文脈で対象から外します。`@textlint-rule/pattern` は、`allowNodeTypes` に書いた型の中だけを対象から外します
 - インラインコード・リンク・太字・強調の前後に当てるルール: 4つの `ja-space-around-*` の `true` の側です。nodeの直前か直後の文字が日本語の文字で、間に空白が無ければ指摘します。nodeの前か後ろに文字が無い側(文書の先頭か末尾)は見ません
 - 段落と文の単位で当てるルール: `sentence-length`・`max-comma`・`ja-no-mixed-period`・`no-unmatched-pair`・`max-ten`・`no-doubled-joshi`・`no-doubled-conjunctive-particle-ga`・`no-doubled-conjunction`・`ja-no-redundant-expression` です。Markdownの解析結果のままの段落を見ます。リスト項目・引用・脚注の定義の中の段落も見ますが、`ja-no-mixed-period` はこの3つの中の段落を対象にせず、`sentence-length` は引用の中の段落と、子がリンク1つだけの段落を対象にしません。段落の文字列には、本文のほかにインラインコードの中身と画像のaltも入ります。文は、`。` `.` `?` `!` などで区切り、括弧と引用符が開いている間と、`Mr.` のような英語の略語の `.` では区切りません。形態素解析を使うルールは、引用の中の段落を対象にしません(`ja-no-redundant-expression` は `allowNodeTypes` で決まります)。また、インラインコードを中身と同じ文字数の `ー` に置き換えてから文をトークンに分けるので、コードの中身を判定に入れません
 - リスト項目・見出し・段落の元の文字列に当てるルール: `no-ai-list-formatting` はリスト項目ごとに、項目の先頭の太字の型と、項目の範囲にある段落(入れ子の項目の段落を含む)の最初の絵文字を見ます。`no-ai-emphasis-patterns` は段落と見出しごとに見ます。どちらも、インラインコードとHTMLのタグの中で始まるか終わる一致を捨てるので、コードの中の `**` や絵文字には当たりません。リスト項目の中のコードブロックも見ません
@@ -317,7 +392,7 @@ patterns = [
 - 見出しに当てるルール: `1.1.2.見出し` です。引用の外の見出しの末尾を見ます
 - リストごとに当てるルール: `1.1.3.箇条書き` です。リストの直下の項目を数えてから、指摘する項目を決めます。hookでは、リストの全体を数えたうえで、対象行にある指摘だけを返します
 - 段落ごとに記号の対を数えるルール: `4.3.3`〜`4.3.7` です。段落の中の本文の記号を数えてから、対にならない記号を決めます。段落と文の単位のルールと違い、インラインコードの中身と画像のaltを数えません
-- 文書の全体で当てるルール: `no-mix-dearu-desumasu`、`ai-tech-writing-guideline` の件数の要約、`1.1.1.本文`、`1.1.5.図表のキャプション` です。`no-mix-dearu-desumasu` は、引用の外の見出し・箇条書き(リスト項目の中の段落)・本文(それ以外の段落)のそれぞれで、「である」と「ですます」を文書の全体で数えてから、指摘する箇所を決めます。hookでは、全体を数えたうえで、対象行にある指摘だけを返します
+- 文書の全体で当てるルール: `no-mix-dearu-desumasu`、`ai-tech-writing-guideline` の件数の要約、`1.1.1.本文`、`1.1.5.図表のキャプション`、`@textlint-ja/no-synonyms` です。`@textlint-ja/no-synonyms` は、文書の全体で同義語の見出しを数えてから、指摘する箇所を決めます。`no-mix-dearu-desumasu` は、引用の外の見出し・箇条書き(リスト項目の中の段落)・本文(それ以外の段落)のそれぞれで、「である」と「ですます」を文書の全体で数えてから、指摘する箇所を決めます。hookでは、全体を数えたうえで、対象行にある指摘だけを返します
 
 ## 導入
 
@@ -422,7 +497,7 @@ print -r -- "$input" | jafix hook claude
 
 ## 設定ファイル
 
-設定ファイルは `$XDG_CONFIG_HOME/jafix/config.toml` です。`XDG_CONFIG_HOME` が未設定なら `~/.config/jafix/config.toml` を読みます。設定ファイルが無ければ、組み込みのルールを既定の設定にし(AIらしい書き方を指摘する7ルール、空白と字種の13ルール、JTFスタイルガイドの37ルール、`prh`・`@textlint-rule/pattern` は無効、ほかは有効)、何も除外しません。
+設定ファイルは `$XDG_CONFIG_HOME/jafix/config.toml` です。`XDG_CONFIG_HOME` が未設定なら `~/.config/jafix/config.toml` を読みます。設定ファイルが無ければ、組み込みのルールを既定の設定にし(AIらしい書き方を指摘する7ルール、空白と字種の13ルール、JTFスタイルガイドの37ルール、ひらがな・さ入れ・同義語の7ルール、`prh`・`@textlint-rule/pattern` は無効、ほかは有効)、何も除外しません。
 
 ```toml
 exclude = ["~/.dotfiles/docs/bad-examples.md", "**/drafts/**"]
@@ -453,7 +528,7 @@ pattern = "/[!！]/"
 
 ### `[builtin]`
 
-`[builtin]` の表は、組み込みのルールを1つずつか、presetの名前でまとめて設定します。ルールのIDのキー(「[組み込みのルール](#組み込みのルール)」の表)の値は、次のどれかです。書かなかったルールは既定の設定のままで、AIらしい書き方を指摘する7ルール、空白と字種の13ルール、JTFスタイルガイドの37ルール、`prh`・`@textlint-rule/pattern` は無効、ほかのルールは有効です。
+`[builtin]` の表は、組み込みのルールを1つずつか、presetの名前でまとめて設定します。ルールのIDのキー(「[組み込みのルール](#組み込みのルール)」の表)の値は、次のどれかです。書かなかったルールは既定の設定のままで、AIらしい書き方を指摘する7ルール、空白と字種の13ルール、JTFスタイルガイドの37ルール、ひらがな・さ入れ・同義語の7ルール、`prh`・`@textlint-rule/pattern` は無効、ほかのルールは有効です。
 
 | 値                            | 意味                                                           |
 | ----------------------------- | -------------------------------------------------------------- |
@@ -637,8 +712,22 @@ JTFスタイルガイドの37ルールも、判定の条件を `textlint-rule-pr
 - `1.1.5` は、altの元のソースに当て、元のソースでの位置を出します。textlintはエスケープを外したaltに当てるので、エスケープを含むaltで位置がずれます
 - `2.1.2` の列は、ほかのルールと同じく文字で数えます。textlintは文字の添字を位置にするので、サロゲートペアの漢字の後ろで位置がずれます
 
+ひらがな・さ入れ・同義語の7ルールも、判定の条件を7つのpackageから写し、textlintの不具合に近い挙動は写しません。上の点のうち、列の数え方と文面は7ルールにも当てはまります。ほかに次の点が違います。
+
+- トークンは、kuromojiではなくlinderaとIPADICで分けます。品詞や読みがkuromojiと変わる文では、指摘の有無が変わります
+- ひらがな系の5ルールとさ入れのルールは、辞書の並びを当てる途中の状態を、本文の範囲をまたいで持ち越しません。並びは、すべての位置から当てます。textlintは、前の本文の範囲のトークンから始まった一致を次の本文の範囲で完成させ、元の一致とは別の文字を置き換える指摘を出すことがあります
+- `ja-hiragana-fukushi` の辞書の `却って` の項目は、キーの書き誤り(`po"`)を `pos` に直して写します。textlintでは、この項目は一度も当たりません。`薄々` の重複した項目は1つにします
+- `ja-keishikimeishi` の `detection_hou_kata` と `detection_ue` は独立で、`false` にしたほうだけを止めます。textlintは、オプションの表にキーが1つでもあると、`true` と書かなかったほうも止めます
+- `rulePath` の空文字列と、利用者の辞書のトークンの知らない項目名を、設定の不正にします。textlintは、空文字列ではルールの実行に失敗し、知らない項目名ではその項目が当たらなくなります
+- `@textlint-ja/no-synonyms` は、語を `tiny-segmenter` ではなくlinderaのトークンの最長一致で区切ります。textlintが `極めて` を `極め` と `て` に割って出す指摘は出しません。textlintが1語にして当てない `カテゴリレベル` と `カテゴリーレベル` は、`カテゴリ` と `カテゴリー` の表記の揺れとして指摘します
+- `@textlint-ja/no-synonyms` の集まりの指摘は、使われた表記ごとに、その表記が文書の中で最後に出た位置へ1件ずつ出します。textlintは集まりごとに1件だけを出し、その位置は、最初に出たのが最も遅い表記の最後の出現です
+- 2つの形式名詞のルールを両方とも有効にすると、2つのIDの指摘を1件ずつ出します。textlintは、範囲と文面の同じ指摘を、ruleIdを問わず1件へまとめます。どちらのルールの指摘が残るかは、実行ごとに変わります
+- 本文でない箇所(裸のURL、自動リンク、定義を持つ省略形・collapsed形の参照リンクの文字列)を見ません。textlintでは、ひらがな系の5ルールとさ入れのルールがこれらの文字列にも当たります。`@textlint-ja/no-synonyms` もリンクの中だけを外すので、参照リンクの文字列の語まで数えます
+- `ja-hiragana-keishikimeishi`・`ja-keishikimeishi`・`@textlint-ja/no-insert-dropping-sa` は、絵文字や `𠮷` のようなサロゲートペアの文字の後でも、置き換える語の位置を指摘します。textlintの指摘の位置は、その文字の数だけ前へずれます
+- 7つとも、textlintと違って自動で直さず、指摘だけを出します。`@textlint-ja/no-synonyms` の `preferWords` の置き換えも指摘にします
+
 ## ライセンス
 
 [MIT License](LICENSE-MIT) と [Apache License 2.0](LICENSE-APACHE) のデュアルライセンスです。
 
-組み込みのルールのうち、textlintと同じIDのものは、textlintのルールとライブラリの挙動に合わせて書き直したもので、正規表現や語の表、辞書の一部をそれらのソースから写しています。`prh` と `@textlint-rule/pattern` は、`textlint-rule-prh`・`prh`・`@textlint-rule/textlint-rule-pattern`・`@textlint/regexp-string-matcher` の判定の条件を写しています。binaryには、MIT Licenseのlinderaと、mecab-ipadicの条件で配られるIPADICの辞書と、CC BY-SAの条件で配られるJTF日本語標準スタイルガイドの4つの辞書(`textlint-rule-preset-jtf-style` の `dict/*.yml`)も入っています。それぞれの名前・version・著作権表示と、MIT License・mecab-ipadic・CC BY-SAの条件は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にあります。GitHub Releasesのtarballには、binaryと一緒に `LICENSE-MIT`・`LICENSE-APACHE`・`THIRD_PARTY_NOTICES.md` を入れています。
+組み込みのルールのうち、textlintと同じIDのものは、textlintのルールとライブラリの挙動に合わせて書き直したもので、正規表現や語の表、辞書の一部をそれらのソースから写しています。`prh` と `@textlint-rule/pattern` は、`textlint-rule-prh`・`prh`・`@textlint-rule/textlint-rule-pattern`・`@textlint/regexp-string-matcher` の判定の条件を写しています。binaryには、MIT Licenseのlinderaと、mecab-ipadicの条件で配られるIPADICの辞書と、CC BY-SAの条件で配られるJTF日本語標準スタイルガイドの4つの辞書(`textlint-rule-preset-jtf-style` の `dict/*.yml`)も入っています。Apache License 2.0で配られる `sudachi-synonyms-dictionary` 20.0.0とSudachiDictの同義語辞書から、`@textlint-ja/no-synonyms` の判定に使う項目だけを取り出したデータも入っています。それぞれの名前・version・著作権表示と、MIT License・mecab-ipadic・CC BY-SA・Apache License 2.0の条件は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にあります。GitHub Releasesのtarballには、binaryと一緒に `LICENSE-MIT`・`LICENSE-APACHE`・`THIRD_PARTY_NOTICES.md` を入れています。

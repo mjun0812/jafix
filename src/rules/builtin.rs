@@ -10,7 +10,7 @@ use super::fix_rules_hitting;
 use super::jtf_style::JtfRule;
 use super::morph::pattern::{Expect, Field, OwnedFields};
 use super::prh::Checks;
-use super::prh::dictionary::{Dictionary, Source};
+use super::prh::dictionary::{Dictionary, Source, parse_yaml};
 
 /// 組み込みのルールの設定。有効・無効と、オプションを持つルールのオプションである。
 /// 既定では、`preset-ja-technical-writing` の23ルールと修正ルールの3つが有効で、オプションはtextlintの
@@ -2168,15 +2168,8 @@ pub struct HiraganaWord {
 /// 読めない、YAMLとして読めない、形の誤りは、理由を返す
 fn hiragana_dictionary(path: &Path) -> Result<HiraganaDictionary, String> {
     let text = std::fs::read_to_string(path).map_err(|e| format!("読めない: {e}"))?;
-    let options = serde_saphyr::options! {
-        // textlintのルールが使う `js-yaml` 4と同じく、`yes`・`no`・`on`・`off` を文字列にする
-        strict_booleans: true,
-        with_snippet: false,
-    };
-    let document: serde_json::Value = serde_saphyr::from_str_with_options(&text, options)
-        .map_err(|e| format!("YAMLとして読めない: {e}"))?;
     let raw: RawHiraganaDictionary =
-        serde_json::from_value(document).map_err(|e| format!("辞書の形でない: {e}"))?;
+        serde_json::from_value(parse_yaml(&text)?).map_err(|e| format!("辞書の形でない: {e}"))?;
     if raw.message.is_empty() {
         return Err("`message` は空でない文字列で書く".to_owned());
     }
@@ -2265,19 +2258,14 @@ impl JaKeishikimeishi {
 #[derive(Debug)]
 pub struct NoSynonyms {
     /// 見出しがこのどれかである項目は、使われた項目に数えない。これを見出しに持つ集まりは、`preferWords` の指摘をしない
-    #[allow(dead_code)] // skeleton: not implemented
     pub allows: Vec<String>,
     /// 集まりの見出しにあれば、その集まりの使われたほかの項目を、最初の要素の語にするよう指摘する
-    #[allow(dead_code)] // skeleton: not implemented
     pub prefer_words: Vec<String>,
     /// 英字の表記の項目を、使われた項目に数えない
-    #[allow(dead_code)] // skeleton: not implemented
     pub allow_alphabet: bool,
     /// 見出しにASCIIの数字を含む項目と、見出しが漢数字1字の項目を、使われた項目に数えない
-    #[allow(dead_code)] // skeleton: not implemented
     pub allow_number: bool,
     /// 真なら、同義語のグループを語彙番号ごとの集まりに分け、偽ならグループの全体を1つの集まりにする
-    #[allow(dead_code)] // skeleton: not implemented
     pub allow_lexeme: bool,
 }
 

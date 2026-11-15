@@ -2,7 +2,10 @@ mod common;
 
 use std::path::Path;
 
-use common::{AI_RULES_INPUT, AI_WORDS_PATTERN, Sandbox, read, stdout};
+use common::{
+    AI_RULES_INPUT, AI_WORDS_PATTERN, HIRAGANA_AND_SYNONYMS_RULES, Sandbox,
+    hiragana_and_synonyms_rules_config, read, stdout,
+};
 use serde_json::json;
 
 #[test]
@@ -2114,17 +2117,6 @@ fn prh_rejects_a_replacement_opposite_to_a_jtf_style_fix_rule() {
     assert_eq!(fix_with_config(&sandbox, "いちにさん\n"), "１２３\n");
 }
 
-/// ひらがな系の5ルール、`@textlint-ja/no-insert-dropping-sa`、`@textlint-ja/no-synonyms`
-const HIRAGANA_AND_SYNONYMS_RULES: [&str; 7] = [
-    "ja-hiragana-hojodoushi",
-    "ja-hiragana-keishikimeishi",
-    "ja-keishikimeishi",
-    "ja-hiragana-fukushi",
-    "ja-hiragana-daimeishi",
-    "@textlint-ja/no-insert-dropping-sa",
-    "@textlint-ja/no-synonyms",
-];
-
 /// `HIRAGANA_AND_SYNONYMS_RULES` のそれぞれに当たる行。最後の2行は、同じ同義語の集まりの別の表記である
 const HIRAGANA_AND_SYNONYMS_RULES_INPUT: &str = "お願い致します。
 
@@ -2151,16 +2143,26 @@ fn hiragana_and_synonyms_rules_are_off_by_default() {
         assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
     }
 
-    // 同じ文書に、ひらがな系の5ルールとさ入れのルールのそれぞれが当たることを、有効にして確かめる
-    let rules = &HIRAGANA_AND_SYNONYMS_RULES[..6];
-    let enabled: String = rules
-        .iter()
-        .map(|rule| format!("\"{rule}\" = true\n"))
-        .collect();
-    sandbox.write_xdg_config(&format!("[builtin]\n{enabled}"));
+    // 同じ文書に7つのそれぞれが当たることを、有効にして確かめる
+    sandbox.write_xdg_config(&hiragana_and_synonyms_rules_config());
     let output = sandbox.run(&["check", "t.md"]);
     let found = stdout(&output);
-    for rule in rules {
+    for rule in HIRAGANA_AND_SYNONYMS_RULES {
+        assert!(!findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+}
+
+#[test]
+fn hiragana_and_synonyms_rules_do_not_fix() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(&hiragana_and_synonyms_rules_config());
+    assert_eq!(
+        fix_with_config(&sandbox, HIRAGANA_AND_SYNONYMS_RULES_INPUT),
+        HIRAGANA_AND_SYNONYMS_RULES_INPUT
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in HIRAGANA_AND_SYNONYMS_RULES {
         assert!(!findings_of(found, rule).is_empty(), "{rule}: {found}");
     }
 }
@@ -2257,13 +2259,25 @@ fn hiragana_rule_path_rejects_invalid_dictionary() {
     let token = |key: &str| {
         format!("message: m\ndict:\n  - expected: いたし\n    tokens:\n      - {key}: 致し\n")
     };
-    // `rulePath` の値と、置く辞書 (無ければ置かない)
-    for (rule_path, dictionary) in [
-        ("", None),
-        ("hojo.yml", None),
-        ("hojo.yml", Some("message: [\n".to_owned())),
-        ("hojo.yml", Some(token("word_id"))),
-        ("hojo.yml", Some(token("part_of_speech"))),
+    // `rulePath` の値と、置く辞書 (無ければ置かない) と、理由
+    for (rule_path, dictionary, reason) in [
+        ("", None, "`rulePath` は空でない文字列で書く"),
+        ("hojo.yml", None, "読めない"),
+        (
+            "hojo.yml",
+            Some("message: [\n".to_owned()),
+            "YAMLとして読めない",
+        ),
+        (
+            "hojo.yml",
+            Some(token("word_id")),
+            "`word_id` はjafixのトークンの項目ではない",
+        ),
+        (
+            "hojo.yml",
+            Some(token("part_of_speech")),
+            "`part_of_speech` はjafixのトークンの項目ではない",
+        ),
     ] {
         let sandbox = Sandbox::new();
         sandbox.write("t.md", "お願い致します。\n");
@@ -2277,7 +2291,7 @@ fn hiragana_rule_path_rejects_invalid_dictionary() {
         assert_eq!(output.status.code(), Some(2), "{dictionary:?}");
         let stderr = String::from_utf8(output.stderr).unwrap();
         assert!(
-            stderr.contains("rulePath") && stderr.contains(rule_path),
+            stderr.contains("rulePath") && stderr.contains(rule_path) && stderr.contains(reason),
             "{dictionary:?}: {stderr}"
         );
     }

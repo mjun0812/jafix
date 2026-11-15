@@ -517,3 +517,8 @@ fn ja_hiragana_daimeishi() {
 fn no_insert_dropping_sa() {
     assert_cases("no-insert-dropping-sa");
 }
+
+#[test]
+fn no_synonyms() {
+    assert_cases("no-synonyms");
+}

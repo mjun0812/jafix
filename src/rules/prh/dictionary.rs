@@ -137,13 +137,7 @@ fn load_yaml(
     source: usize,
     loading: &mut Vec<PathBuf>,
 ) -> Result<Vec<Rule>, String> {
-    let options = serde_saphyr::options! {
-        // `js-yaml` 4と同じく、`yes`・`no`・`on`・`off` を文字列にする
-        strict_booleans: true,
-        with_snippet: false,
-    };
-    let document: Value = serde_saphyr::from_str_with_options(yaml, options)
-        .map_err(|e| format!("YAMLとして読めない: {e}"))?;
+    let document = parse_yaml(yaml)?;
     let table = match &document {
         Value::Null => return Ok(Vec::new()),
         Value::Object(table) => table,
@@ -176,6 +170,16 @@ fn load_yaml(
         merge(&mut rules, imported);
     }
     Ok(rules)
+}
+
+/// prhとtextlintのルールが使う `js-yaml` 4と同じく、`yes`・`no`・`on`・`off` を文字列にしてYAMLを読む
+pub fn parse_yaml(yaml: &str) -> Result<Value, String> {
+    let options = serde_saphyr::options! {
+        strict_booleans: true,
+        with_snippet: false,
+    };
+    serde_saphyr::from_str_with_options(yaml, options)
+        .map_err(|e| format!("YAMLとして読めない: {e}"))
 }
 
 /// `imports` の1つの要素
