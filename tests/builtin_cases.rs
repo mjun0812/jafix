@@ -200,3 +200,28 @@ fn no_ai_words() {
 fn no_short_topic_comma() {
     assert_cases("no-short-topic-comma");
 }
+
+#[test]
+fn no_ai_list_formatting() {
+    assert_cases("no-ai-list-formatting");
+}
+
+#[test]
+fn no_ai_hype_expressions() {
+    assert_cases("no-ai-hype-expressions");
+}
+
+#[test]
+fn no_ai_emphasis_patterns() {
+    assert_cases("no-ai-emphasis-patterns");
+}
+
+#[test]
+fn no_ai_colon_continuation() {
+    assert_cases("no-ai-colon-continuation");
+}
+
+#[test]
+fn ai_tech_writing_guideline() {
+    assert_cases("ai-tech-writing-guideline");
+}

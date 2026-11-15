@@ -1,8 +1,5 @@
 //! `@textlint-ja/preset-ai-writing` の5ルール
 
-// skeleton: not implemented (実装したら、この行と次の行を消す)
-#![allow(dead_code)]
-
 mod ai_tech_writing_guideline;
 mod no_ai_colon_continuation;
 mod no_ai_emphasis_patterns;
@@ -14,10 +11,11 @@ use std::ops::Range;
 
 use regex::Regex;
 
-use crate::prose::{Document, Paragraph};
+use crate::prose::{Document, InlineKind, Paragraph};
 
 use super::Report;
 use super::builtin::Builtin;
+use super::morph::inside;
 
 /// 有効なルールの指摘を返す。順は問わない (`rules::report` が位置の順に並べる)
 pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report<'static>> {
@@ -51,13 +49,16 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report<'
 /// `allows` のどれかが `text` のどこかに当たるか。当たれば、ルールはその要素 (本文の範囲・段落・見出し・リスト項目)
 /// からの指摘をすべて出さない
 fn allowed(allows: &[Regex], text: &str) -> bool {
-    let _ = (allows, text);
-    todo!("skeleton: not implemented")
+    allows.iter().any(|allow| allow.is_match(text))
 }
 
-/// 元のソースの範囲 `range` が、段落の子孫のインラインコードかHTMLのタグと重なるか。
-/// 元の文字列に正規表現を当てるルールは、重なる一致を捨てる
+/// 元のソースの空でない範囲 `range` の先頭か末尾の文字が、段落の子孫のインラインコードかHTMLのタグの中にあるか。
+/// 元の文字列に正規表現を当てるルールは、そういう一致を捨てる。先頭と末尾だけを見るので、
+/// `**`name`**` のように太字がコードを含む一致は残る
 fn overlaps_code_or_html(paragraph: &Paragraph, range: Range<usize>) -> bool {
-    let _ = (paragraph, range);
-    todo!("skeleton: not implemented")
+    let code_or_html = |kind: &InlineKind| matches!(kind, InlineKind::Code | InlineKind::Html);
+    // インラインの要素の範囲は文字の境界にあるので、末尾の文字の最後のバイトで末尾の文字を確かめられる
+    [range.start, range.end - 1]
+        .into_iter()
+        .any(|position| inside(&paragraph.children, position, code_or_html))
 }

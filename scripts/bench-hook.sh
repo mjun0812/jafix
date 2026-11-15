@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# 30語の `words` と1つの `pattern` の指摘ルールを書いた設定で、約30KBのMarkdownへのEditの入力の `jafix hook claude` を
-# hyperfineで計り、平均が0.05秒未満ならexit 0、以上ならexit 1で終える
+# 既定で無効な組み込みのルールもすべて有効にし、30語の `words` と1つの `pattern` の指摘ルールを書いた設定で、
+# 約30KBのMarkdownへのEditの入力の `jafix hook claude` をhyperfineで計り、平均が0.05秒未満ならexit 0、以上ならexit 1で終える
 set -euo pipefail
 
 threshold=0.05
@@ -14,6 +14,11 @@ trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/home" "$work/xdg/jafix"
 export HOME=$work/home XDG_CONFIG_HOME=$work/xdg
 cat >"$XDG_CONFIG_HOME/jafix/config.toml" <<'TOML'
+[builtin]
+"@textlint-ja/preset-ai-writing" = true
+preset-ai-words-ja = true
+no-short-topic-comma = true
+
 [[rules]]
 id = "ai-words"
 message = "AIが多用する語"

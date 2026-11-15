@@ -207,7 +207,12 @@ impl<'a> Analyzed<'a> {
     }
 }
 
-fn inside(children: &[Inline], position: usize, kind: impl Fn(&InlineKind) -> bool + Copy) -> bool {
+/// 元のソースの位置 `position` が、`children` とその子孫のうち `kind` に当たるインラインの要素の範囲の中にあるか
+pub(super) fn inside(
+    children: &[Inline],
+    position: usize,
+    kind: impl Fn(&InlineKind) -> bool + Copy,
+) -> bool {
     children.iter().any(|child| {
         (kind(&child.kind) && child.range.contains(&position))
             || inside(&child.children, position, kind)

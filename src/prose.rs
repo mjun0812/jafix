@@ -66,7 +66,6 @@ pub struct Paragraph {
 
 /// 文書の直下の段落の次に来るブロックのうち、ルールが見る種類
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[allow(dead_code)] // skeleton: not implemented
 pub enum BlockKind {
     /// コードブロック (フェンスとインデントの両方)
     CodeBlock,
@@ -124,12 +123,12 @@ pub fn parse(src: &str) -> Document {
     let mut texts = Vec::new();
     collect(&root, src, Context::default(), &mut texts);
     let mut blocks = Blocks::default();
-    collect_paragraphs(&root, src, false, false, false, &mut blocks);
+    collect_paragraphs(&root, src, Ancestors::default(), None, &mut blocks);
     Document {
         texts,
         paragraphs: blocks.paragraphs,
         headings: blocks.headings,
-        list_items: Vec::new(),
+        list_items: blocks.list_items,
     }
 }
 
@@ -179,41 +178,65 @@ fn collect(node: &Node, src: &str, context: Context, ranges: &mut Vec<Prose>) {
 struct Blocks {
     paragraphs: Vec<Paragraph>,
     headings: Vec<Paragraph>,
+    list_items: Vec<ListItem>,
 }
 
-/// `node` の中の段落と見出しを集める。3つのflagは、`node` の祖先に引用・リスト項目・脚注の定義があるかである
+/// `node` の祖先にある、段落の性質を決めるブロック
+#[derive(Clone, Copy, Default)]
+struct Ancestors {
+    blockquote: bool,
+    /// 最も内側のリスト項目の `Blocks::list_items` での番号
+    list_item: Option<usize>,
+    footnote: bool,
+}
+
+/// `node` の中の段落・見出し・リスト項目を集める。`next_block` は、`node` が文書の直下の段落のときの、次の兄弟の種類である
 fn collect_paragraphs(
     node: &Node,
     src: &str,
-    blockquote: bool,
-    list_item: bool,
-    footnote: bool,
+    ancestors: Ancestors,
+    next_block: Option<BlockKind>,
     blocks: &mut Blocks,
 ) {
     let target = match node {
         Node::Paragraph(_) => &mut blocks.paragraphs,
         Node::Heading(_) => &mut blocks.headings,
         _ => {
-            for child in node.children().into_iter().flatten() {
-                collect_paragraphs(
-                    child,
-                    src,
-                    blockquote || matches!(node, Node::Blockquote(_)),
-                    list_item || matches!(node, Node::ListItem(_)),
-                    footnote || matches!(node, Node::FootnoteDefinition(_)),
-                    blocks,
-                );
+            let mut children_ancestors = Ancestors {
+                blockquote: ancestors.blockquote || matches!(node, Node::Blockquote(_)),
+                footnote: ancestors.footnote || matches!(node, Node::FootnoteDefinition(_)),
+                ..ancestors
+            };
+            let children = node.children().map(Vec::as_slice).unwrap_or_default();
+            if matches!(node, Node::ListItem(_)) {
+                children_ancestors.list_item = Some(blocks.list_items.len());
+                // markdown-rsは、空行が続く項目の範囲に、続く改行 (引用の中では次の行の `>` まで) を含めるので、
+                // textlintと同じく最後の子のブロックの終わりで項目を終える
+                let range = node_range(node);
+                let end = children
+                    .last()
+                    .map_or(range.end, |last| node_range(last).end);
+                blocks.list_items.push(ListItem {
+                    range: range.start..end,
+                });
+            }
+            for (i, child) in children.iter().enumerate() {
+                let next_block = match (node, child) {
+                    (Node::Root(_), Node::Paragraph(_)) => children.get(i + 1).and_then(block_kind),
+                    _ => None,
+                };
+                collect_paragraphs(child, src, children_ancestors, next_block, blocks);
             }
             return;
         }
     };
     target.push(Paragraph {
         range: node_range(node),
-        blockquote,
-        list_item,
-        footnote,
-        list_item_index: None,
-        next_block: None,
+        blockquote: ancestors.blockquote,
+        list_item: ancestors.list_item.is_some(),
+        footnote: ancestors.footnote,
+        list_item_index: ancestors.list_item,
+        next_block,
         children: node
             .children()
             .into_iter()
@@ -221,6 +244,16 @@ fn collect_paragraphs(
             .filter_map(|child| inline(child, src, true))
             .collect(),
     });
+}
+
+fn block_kind(node: &Node) -> Option<BlockKind> {
+    match node {
+        Node::Code(_) => Some(BlockKind::CodeBlock),
+        Node::List(_) => Some(BlockKind::List),
+        Node::Blockquote(_) => Some(BlockKind::Blockquote),
+        Node::Table(_) => Some(BlockKind::Table),
+        _ => None,
+    }
 }
 
 /// 段落の中のnodeを `Inline` にする。`direct` は、`node` が段落の直下にあるか。
@@ -549,6 +582,68 @@ mod tests {
                 ),
                 ("設定\n===", false, vec!["設定".to_owned()]),
                 ("## 引", true, vec!["引".to_owned()]),
+            ]
+        );
+    }
+
+    #[test]
+    fn collects_list_items_in_order_with_the_innermost_item_of_each_paragraph() {
+        let src = "- 親\n  - 子\n\n  続き\n- 次\n\n段\n";
+        let document = parse(src);
+        let items: Vec<&str> = document
+            .list_items
+            .iter()
+            .map(|item| &src[item.range.clone()])
+            .collect();
+        assert_eq!(items, vec!["- 親\n  - 子\n\n  続き", "- 子", "- 次"]);
+        let paragraphs: Vec<(&str, Option<usize>)> = document
+            .paragraphs
+            .iter()
+            .map(|p| (&src[p.range.clone()], p.list_item_index))
+            .collect();
+        assert_eq!(
+            paragraphs,
+            vec![
+                ("親", Some(0)),
+                ("子", Some(1)),
+                ("続き", Some(0)),
+                ("次", Some(2)),
+                ("段", None)
+            ]
+        );
+    }
+
+    #[test]
+    fn ends_a_list_item_at_its_last_block_before_a_blank_line_inside_a_blockquote() {
+        let src = "> - a\n>\n> - b\n";
+        let items: Vec<&str> = parse(src)
+            .list_items
+            .iter()
+            .map(|item| &src[item.range.clone()])
+            .collect();
+        assert_eq!(items, vec!["- a", "- b"]);
+    }
+
+    #[test]
+    fn marks_the_next_block_only_for_paragraphs_directly_under_the_document() {
+        let src = "a\n\n```\nx\n```\n\nb\n- c\n\nd\n\n> e\n\nf\n\n| g |\n| - |\n\nh\n\n# i\n\n> j\n>\n> - k\n";
+        let next: Vec<(&str, Option<BlockKind>)> = parse(src)
+            .paragraphs
+            .iter()
+            .map(|p| (&src[p.range.clone()], p.next_block))
+            .collect();
+        assert_eq!(
+            next,
+            vec![
+                ("a", Some(BlockKind::CodeBlock)),
+                ("b", Some(BlockKind::List)),
+                ("c", None),
+                ("d", Some(BlockKind::Blockquote)),
+                ("e", None),
+                ("f", Some(BlockKind::Table)),
+                ("h", None),
+                ("j", None),
+                ("k", None),
             ]
         );
     }

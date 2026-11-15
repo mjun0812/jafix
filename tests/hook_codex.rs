@@ -2,7 +2,7 @@ mod common;
 
 use std::path::Path;
 
-use common::{Sandbox, read, stdout};
+use common::{AI_RULES_CONFIG, AI_RULES_INPUT, Sandbox, read, stdout};
 use serde_json::json;
 
 /// Codexが実際に渡すapply_patchの入力の形
@@ -276,4 +276,32 @@ fn apply_patch_reports_a_doubled_particle_only_on_the_added_line() {
         "{stderr}"
     );
     assert!(!stderr.contains(":1:4:"), "{stderr}");
+}
+
+#[test]
+fn reports_ai_writing_findings_on_target_lines() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(AI_RULES_CONFIG);
+    let path = sandbox.write("t.md", AI_RULES_INPUT);
+    let chunk: String = AI_RULES_INPUT
+        .lines()
+        .enumerate()
+        .map(|(i, line)| match i + 1 {
+            3 => format!("-これは普通です。\n+{line}\n"),
+            _ => format!(" {line}\n"),
+        })
+        .collect();
+    let patch = update_patch("t.md", &format!("@@\n{chunk}"));
+    let output = sandbox.hook("codex", &apply_patch_input(&sandbox.path(""), &patch));
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    let lines: Vec<&str> = stderr.lines().collect();
+    assert_eq!(
+        lines[1..],
+        [format!(
+            "{}:3:4: 誇張した表現「革命的な」を使っている [no-ai-hype-expressions]",
+            path.display()
+        )],
+        "{lines:?}"
+    );
 }

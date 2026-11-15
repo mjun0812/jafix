@@ -2,7 +2,7 @@ use crate::prose::{Inline, InlineKind, Paragraph};
 use crate::sentence::Sentence;
 
 /// 文か段落の文字列と、元のソースへの位置の対応。文字列は、文か段落の子の `Inline` から作る。
-/// 段落の直下の文字列は元のソースのまま、インラインコードは中身と同じ文字数の `ー`、画像はalt、
+/// 段落の直下の文字列は元のソースのまま、インラインコードは中身と同じ文字数の置き換えの文字 (文では `ー`)、画像はalt、
 /// リンクや強調は中の文字列で、HTMLのタグ・ハード改行・脚注への参照は入らない
 pub struct Projection {
     pub text: String,
@@ -18,7 +18,8 @@ impl Projection {
             text: String::new(),
             positions: Vec::new(),
         };
-        projection.push_inlines(src, &sentence.children);
+        // コードの中身を判定に入れず、後ろの `、` と1つの未知語にまとまらないように、`ー` にする
+        projection.push_inlines(src, &sentence.children, 'ー');
         projection
             .positions
             .push((projection.text.len(), sentence.range.end));
@@ -26,13 +27,19 @@ impl Projection {
     }
 
     /// 段落の全体を、文と同じ作り方で1つの文字列にする。インラインコードは、中身と同じ文字数の `code` にする
-    #[allow(dead_code)] // skeleton: not implemented
     pub fn paragraph(src: &str, paragraph: &Paragraph, code: char) -> Self {
-        let _ = (src, paragraph, code);
-        todo!("skeleton: not implemented")
+        let mut projection = Self {
+            text: String::new(),
+            positions: Vec::new(),
+        };
+        projection.push_inlines(src, &paragraph.children, code);
+        projection
+            .positions
+            .push((projection.text.len(), paragraph.range.end));
+        projection
     }
 
-    fn push_inlines(&mut self, src: &str, children: &[Inline]) {
+    fn push_inlines(&mut self, src: &str, children: &[Inline], code: char) {
         for child in children {
             match child.kind {
                 // 段落の直下の文字列は元のソースのままなので、位置は1対1で戻る。リンクや強調の中の文字列は
@@ -43,10 +50,9 @@ impl Projection {
                         self.push(c, src.floor_char_boundary(source));
                     }
                 }
-                // コードの中身を判定に入れず、後ろの `、` と1つの未知語にまとまらないように、同じ文字数の `ー` にする
                 InlineKind::Code => {
                     for _ in child.text.chars() {
-                        self.push('ー', child.range.start);
+                        self.push(code, child.range.start);
                     }
                 }
                 InlineKind::Image => {
@@ -58,7 +64,7 @@ impl Projection {
                 | InlineKind::LinkReference
                 | InlineKind::Emphasis
                 | InlineKind::Strong
-                | InlineKind::Delete => self.push_inlines(src, &child.children),
+                | InlineKind::Delete => self.push_inlines(src, &child.children, code),
                 InlineKind::Html | InlineKind::Break | InlineKind::FootnoteReference => {}
             }
         }

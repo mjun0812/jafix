@@ -2,7 +2,7 @@ mod common;
 
 use std::path::Path;
 
-use common::{Sandbox, read, stdout};
+use common::{AI_RULES_INPUT, Sandbox, read, stdout};
 use serde_json::json;
 
 #[test]
@@ -756,26 +756,139 @@ const AI_WRITING_RULES: [&str; 5] = [
     "ai-tech-writing-guideline",
 ];
 
-/// `@textlint-ja/preset-ai-writing` の5ルールと `preset-ai-words-ja` の2ルールのそれぞれに当たる文書。
-/// 段落を分けて、ルールどうしの指摘が重ならないようにしている
-const AI_RULES_INPUT: &str = "- **項目**: 説明
+/// `AI_RULES_INPUT` に当たる7ルール
+const AI_RULES: [&str; 7] = [
+    "no-ai-list-formatting",
+    "no-ai-hype-expressions",
+    "no-ai-emphasis-patterns",
+    "no-ai-colon-continuation",
+    "ai-tech-writing-guideline",
+    "no-ai-words",
+    "no-short-topic-comma",
+];
 
-これは革命的なです。
+#[test]
+fn new_rules_are_off_by_default() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", AI_RULES_INPUT);
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in AI_RULES {
+        assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
 
-✅ **項目**です。
+    // 同じ文書に7ルールのそれぞれが当たることを、すべて有効にして確かめる
+    let enabled: String = AI_RULES
+        .iter()
+        .map(|rule| format!("{rule} = true\n"))
+        .collect();
+    sandbox.write_xdg_config(&format!("[builtin]\n{enabled}"));
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in AI_RULES {
+        assert!(!findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+}
 
-次のコマンドを実行します:
+#[test]
+fn preset_ai_writing_enables_its_rules() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", AI_RULES_INPUT);
+    sandbox.write_xdg_config("[builtin]\n\"@textlint-ja/preset-ai-writing\" = true\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in AI_WRITING_RULES {
+        assert!(!findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+    for rule in ["no-ai-words", "no-short-topic-comma"] {
+        assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+}
 
-```sh
-npm test
-```
+#[test]
+fn rule_key_overrides_preset_key() {
+    for builtin in [
+        "\"@textlint-ja/preset-ai-writing\" = true\nno-ai-hype-expressions = false\n",
+        "no-ai-hype-expressions = false\n\"@textlint-ja/preset-ai-writing\" = true\n",
+    ] {
+        let sandbox = Sandbox::new();
+        sandbox.write("t.md", AI_RULES_INPUT);
+        sandbox.write_xdg_config(&format!("[builtin]\n{builtin}"));
+        let output = sandbox.run(&["check", "t.md"]);
+        let found = stdout(&output);
+        for rule in AI_WRITING_RULES {
+            assert_eq!(
+                findings_of(found, rule).is_empty(),
+                rule == "no-ai-hype-expressions",
+                "{builtin}: {rule}: {found}"
+            );
+        }
+    }
+}
 
-まず最初に確認します。
-
-通信経路を確認する。
-
-今日は、晴れです。
-";
+#[test]
+fn new_rule_options_are_validated() {
+    for (builtin, expected) in [
+        (
+            "no-ai-list-formatting = { disableBoldListItem = true }",
+            ["no-ai-list-formatting", "disableBoldListItem"],
+        ),
+        (
+            "no-ai-list-formatting = { disableEmojiListItems = \"yes\" }",
+            ["no-ai-list-formatting", "disableEmojiListItems"],
+        ),
+        (
+            "no-ai-hype-expressions = { disablePredictivePatterns = true }",
+            ["no-ai-hype-expressions", "disablePredictivePatterns"],
+        ),
+        (
+            "no-ai-hype-expressions = { allows = \"許可\" }",
+            ["no-ai-hype-expressions", "allows"],
+        ),
+        (
+            "no-ai-emphasis-patterns = { disableHeadingPatterns = true }",
+            ["no-ai-emphasis-patterns", "disableHeadingPatterns"],
+        ),
+        (
+            "no-ai-emphasis-patterns = { disableInfoPatterns = 1 }",
+            ["no-ai-emphasis-patterns", "disableInfoPatterns"],
+        ),
+        (
+            "no-ai-colon-continuation = { disableHeading = true }",
+            ["no-ai-colon-continuation", "disableHeading"],
+        ),
+        (
+            "no-ai-colon-continuation = { disableTable = \"true\" }",
+            ["no-ai-colon-continuation", "disableTable"],
+        ),
+        (
+            "ai-tech-writing-guideline = { severity = \"warning\" }",
+            ["ai-tech-writing-guideline", "severity"],
+        ),
+        (
+            "ai-tech-writing-guideline = { enableDocumentAnalysis = 1 }",
+            ["ai-tech-writing-guideline", "enableDocumentAnalysis"],
+        ),
+        (
+            "no-ai-words = { dictionary = \"dict.json\" }",
+            ["no-ai-words", "dictionary"],
+        ),
+        (
+            "no-ai-words = { dictionaryMode = \"replace\" }",
+            ["no-ai-words", "dictionaryMode"],
+        ),
+        (
+            "no-short-topic-comma = { max = 3 }",
+            ["no-short-topic-comma", "max"],
+        ),
+        (
+            "no-short-topic-comma = { maxLength = 0 }",
+            ["no-short-topic-comma", "maxLength"],
+        ),
+    ] {
+        assert_check_rejects_builtin(builtin, &expected);
+    }
+}
 
 #[test]
 fn preset_ai_words_ja_enables_only_no_ai_words() {
@@ -974,5 +1087,39 @@ fn no_ai_words_override_requires_dictionary_path() {
     assert_check_rejects_builtin(
         "no-ai-words = { dictionaryMode = \"override\" }",
         &["dictionaryMode"],
+    );
+}
+
+#[test]
+fn no_ai_words_expands_tilde_in_dictionary_path() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "再考する。\n");
+    let dictionary = json!({
+        "entries": [{ "message": "「再考」は言い換える", "tokens": [{ "basic_form": "再考" }] }]
+    });
+    sandbox.write("home/dict.json", &dictionary.to_string());
+    sandbox.write_xdg_config("[builtin]\nno-ai-words = { dictionaryPath = \"~/dict.json\" }\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(
+        findings_of(stdout(&output), "no-ai-words"),
+        ["t.md:1:1: 「再考」は言い換える [no-ai-words]"]
+    );
+}
+
+#[test]
+fn no_ai_words_rejects_a_skippable_that_is_not_boolean() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "再考する。\n");
+    let dictionary = json!({
+        "entries": [{ "message": "m", "tokens": [{ "basic_form": "再考", "_skippable": "yes" }] }]
+    });
+    sandbox.write("xdg/jafix/dict.json", &dictionary.to_string());
+    sandbox.write_xdg_config("[builtin]\nno-ai-words = { dictionaryPath = \"dict.json\" }\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(
+        stderr.contains("dictionaryPath") && stderr.contains("_skippable"),
+        "{stderr}"
     );
 }

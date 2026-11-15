@@ -965,7 +965,6 @@ impl DictOption {
 }
 
 #[derive(Debug, Default)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct NoAiListFormatting {
     /// リスト項目の元の文字列のどこかに当たれば、その項目を指摘しない
     pub allows: Vec<Regex>,
@@ -975,13 +974,20 @@ pub struct NoAiListFormatting {
 
 impl NoAiListFormatting {
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "allows" => rule.allows = patterns(key, value)?,
+                "disableBoldListItems" => rule.disable_bold_list_items = boolean(key, value)?,
+                "disableEmojiListItems" => rule.disable_emoji_list_items = boolean(key, value)?,
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
     }
 }
 
 #[derive(Debug, Default)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct NoAiHypeExpressions {
     /// 本文の範囲の元の文字列のどこかに当たれば、その範囲を指摘しない
     pub allows: Vec<Regex>,
@@ -993,13 +999,25 @@ pub struct NoAiHypeExpressions {
 
 impl NoAiHypeExpressions {
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "allows" => rule.allows = patterns(key, value)?,
+                "disableAbsolutenessPatterns" => {
+                    rule.disable_absoluteness_patterns = boolean(key, value)?;
+                }
+                "disableAbstractPatterns" => rule.disable_abstract_patterns = boolean(key, value)?,
+                "disabledPredictivePatterns" => {
+                    rule.disabled_predictive_patterns = boolean(key, value)?;
+                }
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
     }
 }
 
 #[derive(Debug, Default)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct NoAiEmphasisPatterns {
     /// 段落・見出しの元の文字列のどこかに当たれば、その段落・見出しを指摘しない
     pub allows: Vec<Regex>,
@@ -1010,13 +1028,25 @@ pub struct NoAiEmphasisPatterns {
 
 impl NoAiEmphasisPatterns {
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "allows" => rule.allows = patterns(key, value)?,
+                "disableEmojiEmphasisPatterns" => {
+                    rule.disable_emoji_emphasis_patterns = boolean(key, value)?;
+                }
+                "disableInfoPatterns" => rule.disable_info_patterns = boolean(key, value)?,
+                "disableHeadingEmphasisPatterns" => {
+                    rule.disable_heading_emphasis_patterns = boolean(key, value)?;
+                }
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
     }
 }
 
 #[derive(Debug, Default)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct NoAiColonContinuation {
     /// 段落の元の文字列のどこかに当たれば、その段落を指摘しない
     pub allows: Vec<Regex>,
@@ -1028,15 +1058,24 @@ pub struct NoAiColonContinuation {
 
 impl NoAiColonContinuation {
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "allows" => rule.allows = patterns(key, value)?,
+                "disableCodeBlock" => rule.disable_code_block = boolean(key, value)?,
+                "disableList" => rule.disable_list = boolean(key, value)?,
+                "disableQuote" => rule.disable_quote = boolean(key, value)?,
+                "disableTable" => rule.disable_table = boolean(key, value)?,
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
     }
 }
 
 /// `disable_*` は、カテゴリごとにパターンを止める。名前はtextlintのオプションと同じで、
 /// `disable_voice_guidance` は明確性、`disable_clarity_guidance` は具体性を止める
 #[derive(Debug, Default)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct AiTechWritingGuideline {
     /// 段落の文字列のどこかに当たれば、その段落を指摘しない
     pub allows: Vec<Regex>,
@@ -1051,8 +1090,26 @@ pub struct AiTechWritingGuideline {
 
 impl AiTechWritingGuideline {
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "allows" => rule.allows = patterns(key, value)?,
+                "disableRedundancyGuidance" => {
+                    rule.disable_redundancy_guidance = boolean(key, value)?;
+                }
+                "disableVoiceGuidance" => rule.disable_voice_guidance = boolean(key, value)?,
+                "disableClarityGuidance" => rule.disable_clarity_guidance = boolean(key, value)?,
+                "disableConsistencyGuidance" => {
+                    rule.disable_consistency_guidance = boolean(key, value)?;
+                }
+                "disableStructureGuidance" => {
+                    rule.disable_structure_guidance = boolean(key, value)?;
+                }
+                "enableDocumentAnalysis" => rule.enable_document_analysis = boolean(key, value)?,
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
     }
 }
 

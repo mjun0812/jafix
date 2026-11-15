@@ -88,3 +88,31 @@ pub fn fixture(name: &str) -> String {
             .join(name),
     )
 }
+
+/// `@textlint-ja/preset-ai-writing` の5ルールと `preset-ai-words-ja` の2ルールのそれぞれに当たる文書。
+/// 段落を分けて、ルールどうしの指摘が重ならないようにしている
+pub const AI_RULES_INPUT: &str = "- **項目**: 説明
+
+これは革命的なです。
+
+✅ **項目**です。
+
+次のコマンドを実行します:
+
+```sh
+npm test
+```
+
+まず最初に確認します。
+
+通信経路を確認する。
+
+今日は、晴れです。
+";
+
+/// `AI_RULES_INPUT` の7ルールをすべて有効にする設定。2つのpresetと、presetの既定で無効な `no-short-topic-comma` を有効にする
+pub const AI_RULES_CONFIG: &str = "[builtin]
+\"@textlint-ja/preset-ai-writing\" = true
+preset-ai-words-ja = true
+no-short-topic-comma = true
+";

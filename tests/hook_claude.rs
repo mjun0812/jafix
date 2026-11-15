@@ -2,7 +2,7 @@ mod common;
 
 use std::path::Path;
 
-use common::{Sandbox, read, stdout};
+use common::{AI_RULES_CONFIG, AI_RULES_INPUT, Sandbox, read, stdout};
 use serde_json::{Value, json};
 
 /// Claude Code (v2.1.319) が実際に渡すEditの入力の形
@@ -385,4 +385,22 @@ fn edit_does_not_report_a_mixed_style_outside_the_changed_line() {
     let output = sandbox.hook("claude", &edit_changing_line(&path, 1));
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stderr(&output), "");
+}
+
+#[test]
+fn reports_ai_writing_findings_on_target_lines() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(AI_RULES_CONFIG);
+    let path = sandbox.write("t.md", AI_RULES_INPUT);
+    let output = sandbox.hook("claude", &edit_changing_line(&path, 3));
+    assert_eq!(output.status.code(), Some(2));
+    let lines: Vec<&str> = stderr(&output).lines().collect();
+    assert_eq!(
+        lines[1..],
+        [format!(
+            "{}:3:4: 誇張した表現「革命的な」を使っている [no-ai-hype-expressions]",
+            path.display()
+        )],
+        "{lines:?}"
+    );
 }
