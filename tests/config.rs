@@ -1329,3 +1329,389 @@ fn rules_table_is_rejected() {
     let stderr = String::from_utf8(output.stderr).unwrap();
     assert!(stderr.contains("rules"), "{stderr}");
 }
+
+/// `preset-ja-spacing` の11ルール。presetの既定で無効な `ja-space-around-emphasis` と `ja-space-around-strong` を含む
+const JA_SPACING_RULES: [&str; 11] = [
+    "ja-nakaguro-or-halfwidth-space-between-katakana",
+    "ja-no-space-around-parentheses",
+    "ja-no-space-around-slash",
+    "ja-no-space-between-full-width",
+    "ja-space-between-half-and-full-width",
+    "ja-space-after-exclamation",
+    "ja-space-after-question",
+    "ja-space-around-code",
+    "ja-space-around-emphasis",
+    "ja-space-around-link",
+    "ja-space-around-strong",
+];
+
+/// 空白と字種の13ルール
+const SPACING_RULES: [&str; 13] = [
+    "ja-nakaguro-or-halfwidth-space-between-katakana",
+    "ja-no-space-around-parentheses",
+    "ja-no-space-around-slash",
+    "ja-no-space-between-full-width",
+    "ja-space-between-half-and-full-width",
+    "ja-space-after-exclamation",
+    "ja-space-after-question",
+    "ja-space-around-code",
+    "ja-space-around-emphasis",
+    "ja-space-around-link",
+    "ja-space-around-strong",
+    "no-mixed-zenkaku-and-hankaku-alphabet",
+    "no-kangxi-radicals",
+];
+
+/// `SPACING_RULES` のそれぞれに当たる段落を、同じ順に並べた文書。`i` 番目の段落は `2 * i + 1` 行目にある
+const SPACING_RULES_INPUT: &str = "サーバー\u{3000}クライアント
+
+日本語 「引用」 です
+
+a / b
+
+日本語 日本語
+
+日本語 Rust
+
+驚き！ これ
+
+本当？ これ
+
+日本語 `c` 日本語
+
+日本語 *x* 日本語
+
+日本語 [x](https://example.com) 日本語
+
+日本語 **x** 日本語
+
+ＡＢＣです
+
+⼈です
+";
+
+/// `SPACING_RULES` の `rule` に当たる段落の行
+fn spacing_rule_line(rule: &str) -> usize {
+    2 * SPACING_RULES.iter().position(|r| *r == rule).unwrap() + 1
+}
+
+/// `stdout` のうち、`rule` の指摘と箇所の行の行番号
+fn finding_lines(stdout: &str, rule: &str) -> Vec<usize> {
+    findings_of(stdout, rule)
+        .iter()
+        .map(|line| line.split(':').nth(1).unwrap().parse().unwrap())
+        .collect()
+}
+
+#[test]
+fn spacing_rules_are_off_by_default() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", SPACING_RULES_INPUT);
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in SPACING_RULES {
+        assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+
+    // 同じ文書の各段落に、その段落のルールが当たることを、すべて有効にして確かめる。
+    // `日本語 Rust` の空白は `space-between-ja-and-alnum` の箇所になるので、それを無効にする
+    let enabled: String = SPACING_RULES
+        .iter()
+        .map(|rule| format!("{rule} = true\n"))
+        .collect();
+    sandbox.write_xdg_config(&format!(
+        "[builtin]\nspace-between-ja-and-alnum = false\n{enabled}"
+    ));
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in SPACING_RULES {
+        assert!(
+            finding_lines(found, rule).contains(&spacing_rule_line(rule)),
+            "{rule}: {found}"
+        );
+    }
+}
+
+#[test]
+fn preset_ja_spacing_enables_its_rules() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", SPACING_RULES_INPUT);
+    sandbox.write_xdg_config("[builtin]\npreset-ja-spacing = true\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in SPACING_RULES {
+        let enabled_by_preset = JA_SPACING_RULES.contains(&rule)
+            && ![
+                "ja-space-around-emphasis",
+                "ja-space-around-strong",
+                "ja-space-between-half-and-full-width",
+            ]
+            .contains(&rule);
+        assert_eq!(
+            finding_lines(found, rule).contains(&spacing_rule_line(rule)),
+            enabled_by_preset,
+            "{rule}: {found}"
+        );
+    }
+    assert!(
+        finding_lines(found, "space-between-ja-and-alnum")
+            .contains(&spacing_rule_line("ja-space-between-half-and-full-width")),
+        "{found}"
+    );
+
+    sandbox.write_xdg_config(
+        "[builtin]\npreset-ja-spacing = true\nspace-between-ja-and-alnum = false\n",
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    assert_eq!(
+        finding_lines(found, "ja-space-between-half-and-full-width"),
+        [spacing_rule_line("ja-space-between-half-and-full-width")],
+        "{found}"
+    );
+}
+
+#[test]
+fn rule_key_overrides_preset_ja_spacing() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", SPACING_RULES_INPUT);
+    sandbox
+        .write_xdg_config("[builtin]\npreset-ja-spacing = true\nja-space-around-strong = true\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    assert!(
+        finding_lines(found, "ja-space-around-strong")
+            .contains(&spacing_rule_line("ja-space-around-strong")),
+        "{found}"
+    );
+    assert!(
+        findings_of(found, "ja-space-around-emphasis").is_empty(),
+        "{found}"
+    );
+
+    sandbox.write_xdg_config(
+        "[builtin]\npreset-ja-spacing = false\nja-no-space-around-slash = true\n",
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in JA_SPACING_RULES {
+        assert_eq!(
+            findings_of(found, rule).is_empty(),
+            rule != "ja-no-space-around-slash",
+            "{rule}: {found}"
+        );
+    }
+}
+
+#[test]
+fn spacing_rule_options_are_validated() {
+    for (builtin, expected) in [
+        (
+            "ja-space-between-half-and-full-width = { spaces = \"never\" }",
+            ["ja-space-between-half-and-full-width", "spaces"],
+        ),
+        (
+            "ja-space-between-half-and-full-width = { exceptPunctuation = true }",
+            ["ja-space-between-half-and-full-width", "exceptPunctuation"],
+        ),
+        (
+            "ja-space-between-half-and-full-width = { space = true }",
+            ["ja-space-between-half-and-full-width", "space"],
+        ),
+        (
+            "ja-space-between-half-and-full-width = { space = \"sometimes\" }",
+            ["ja-space-between-half-and-full-width", "space"],
+        ),
+        (
+            "ja-space-between-half-and-full-width = { space = [\"letters\"] }",
+            ["ja-space-between-half-and-full-width", "space"],
+        ),
+        (
+            "ja-space-between-half-and-full-width = { lintStyledNode = \"yes\" }",
+            ["ja-space-between-half-and-full-width", "lintStyledNode"],
+        ),
+        (
+            "ja-space-between-half-and-full-width = { allows = \"Rust\" }",
+            ["ja-space-between-half-and-full-width", "allows"],
+        ),
+        (
+            "ja-space-between-half-and-full-width = { allows = [\"/(/\"] }",
+            ["ja-space-between-half-and-full-width", "allows"],
+        ),
+        (
+            "ja-space-around-code = { beforeSpace = true }",
+            ["ja-space-around-code", "beforeSpace"],
+        ),
+        (
+            "ja-space-around-link = { before = 1 }",
+            ["ja-space-around-link", "before"],
+        ),
+        (
+            "ja-space-around-strong = { after = \"true\" }",
+            ["ja-space-around-strong", "after"],
+        ),
+        (
+            "ja-space-around-emphasis = { before = [true] }",
+            ["ja-space-around-emphasis", "before"],
+        ),
+        (
+            "no-mixed-zenkaku-and-hankaku-alphabet = { prefer = \"zenkaku\" }",
+            ["no-mixed-zenkaku-and-hankaku-alphabet", "prefer"],
+        ),
+        (
+            "no-mixed-zenkaku-and-hankaku-alphabet = { prefer = 1 }",
+            ["no-mixed-zenkaku-and-hankaku-alphabet", "prefer"],
+        ),
+        (
+            "no-mixed-zenkaku-and-hankaku-alphabet = { preferred = \"全角\" }",
+            ["no-mixed-zenkaku-and-hankaku-alphabet", "preferred"],
+        ),
+    ] {
+        assert_check_rejects_builtin(builtin, &expected);
+    }
+}
+
+#[test]
+fn half_and_full_width_space_is_opposite_to_space_between_ja_and_alnum() {
+    for space in ["\"always\"", "[\"numbers\"]"] {
+        assert_check_rejects_builtin(
+            &format!("ja-space-between-half-and-full-width = {{ space = {space} }}"),
+            &[
+                "ja-space-between-half-and-full-width",
+                "space",
+                "space-between-ja-and-alnum",
+            ],
+        );
+    }
+
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "日本語Rust\n");
+    sandbox.write_xdg_config(
+        "[builtin]\nja-space-between-half-and-full-width = { space = \"always\" }\nspace-between-ja-and-alnum = false\n",
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        findings_of(stdout(&output), "ja-space-between-half-and-full-width"),
+        [
+            "t.md:1:3: 全角文字と半角文字の間に半角空白を入れる [ja-space-between-half-and-full-width]"
+        ]
+    );
+
+    sandbox.write_xdg_config(
+        "[builtin]\nja-space-between-half-and-full-width = { space = [\"punctuation\"] }\n",
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_ne!(
+        output.status.code(),
+        Some(2),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn space_around_true_is_not_opposite_to_fix_rules() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "日本語`code`日本語\n");
+    let enabled: String = [
+        "ja-space-around-code",
+        "ja-space-around-link",
+        "ja-space-around-strong",
+        "ja-space-around-emphasis",
+    ]
+    .iter()
+    .map(|rule| format!("{rule} = {{ before = true, after = true }}\n"))
+    .collect();
+    sandbox.write_xdg_config(&format!("[builtin]\n{enabled}"));
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        findings_of(stdout(&output), "ja-space-around-code").len(),
+        2,
+        "{}",
+        stdout(&output)
+    );
+}
+
+#[test]
+fn overlapping_fix_rules_fix_once() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "日本語 Rust と語 （補足） です\n");
+    sandbox.write_xdg_config("[builtin]\npreset-ja-spacing = true\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    assert_eq!(
+        findings_of(found, "space-between-ja-and-alnum"),
+        [
+            "t.md:1:4: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]",
+            "t.md:1:9: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]",
+        ]
+    );
+    assert_eq!(
+        findings_of(found, "space-between-ja-and-paren"),
+        [
+            "t.md:1:12: 日本語と括弧の間の空白を削除する [space-between-ja-and-paren]",
+            "t.md:1:17: 日本語と括弧の間の空白を削除する [space-between-ja-and-paren]",
+        ]
+    );
+    for rule in [
+        "ja-space-between-half-and-full-width",
+        "ja-no-space-around-parentheses",
+    ] {
+        assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+    assert_eq!(
+        fix_with_config(&sandbox, "日本語 Rust と語 （補足） です\n"),
+        "日本語Rustと語(補足)です\n"
+    );
+}
+
+#[test]
+fn fix_rules_repeat_until_the_content_is_stable() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nno-mixed-zenkaku-and-hankaku-alphabet = true\n");
+    assert_eq!(
+        fix_with_config(&sandbox, "日本語 Ｒｕｓｔ です\n"),
+        "日本語Rustです\n"
+    );
+
+    let sandbox = Sandbox::new();
+    assert_eq!(
+        fix_with_config(&sandbox, "日本語 \u{200b}Rust\n"),
+        "日本語Rust\n"
+    );
+}
+
+/// `expected` が `expected` で、`pattern` が `pattern` のルールを1つ持つ `prh` の辞書
+fn prh_rule(expected: &str, pattern: &str) -> String {
+    format!(
+        "[builtin.prh]\nruleContents = ['''\nrules:\n  - expected: {expected}\n    pattern: {pattern}\n''']\n"
+    )
+}
+
+#[test]
+fn prh_rejects_a_replacement_opposite_to_a_ported_fix_rule() {
+    let fullwidth_alphabets = prh_rule("ＡＢＣ", "エービーシー");
+    assert_check_rejects_builtin(
+        &format!("no-mixed-zenkaku-and-hankaku-alphabet = true\n{fullwidth_alphabets}"),
+        &["ＡＢＣ", "no-mixed-zenkaku-and-hankaku-alphabet"],
+    );
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(&format!("[builtin]\n{fullwidth_alphabets}"));
+    assert_eq!(
+        fix_with_config(&sandbox, "エービーシーを使う。\n"),
+        "ＡＢＣを使う。\n"
+    );
+
+    assert_check_rejects_builtin(
+        &format!(
+            "preset-ja-spacing = true\n{}",
+            prh_rule("日本語 Rust", "日本語Rust")
+        ),
+        &[
+            "space-between-ja-and-alnum",
+            "ja-space-between-half-and-full-width",
+        ],
+    );
+}

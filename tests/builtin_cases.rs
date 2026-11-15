@@ -237,3 +237,68 @@ fn prh() {
 fn textlint_rule_pattern() {
     assert_cases("textlint-rule-pattern");
 }
+
+#[test]
+fn ja_nakaguro_or_halfwidth_space_between_katakana() {
+    assert_cases("ja-nakaguro-or-halfwidth-space-between-katakana");
+}
+
+#[test]
+fn ja_no_space_around_parentheses() {
+    assert_cases("ja-no-space-around-parentheses");
+}
+
+#[test]
+fn ja_no_space_around_slash() {
+    assert_cases("ja-no-space-around-slash");
+}
+
+#[test]
+fn ja_no_space_between_full_width() {
+    assert_cases("ja-no-space-between-full-width");
+}
+
+#[test]
+fn ja_space_between_half_and_full_width() {
+    assert_cases("ja-space-between-half-and-full-width");
+}
+
+#[test]
+fn ja_space_after_exclamation() {
+    assert_cases("ja-space-after-exclamation");
+}
+
+#[test]
+fn ja_space_after_question() {
+    assert_cases("ja-space-after-question");
+}
+
+#[test]
+fn ja_space_around_code() {
+    assert_cases("ja-space-around-code");
+}
+
+#[test]
+fn ja_space_around_link() {
+    assert_cases("ja-space-around-link");
+}
+
+#[test]
+fn ja_space_around_strong() {
+    assert_cases("ja-space-around-strong");
+}
+
+#[test]
+fn ja_space_around_emphasis() {
+    assert_cases("ja-space-around-emphasis");
+}
+
+#[test]
+fn no_mixed_zenkaku_and_hankaku_alphabet() {
+    assert_cases("no-mixed-zenkaku-and-hankaku-alphabet");
+}
+
+#[test]
+fn no_kangxi_radicals() {
+    assert_cases("no-kangxi-radicals");
+}

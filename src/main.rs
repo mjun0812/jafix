@@ -219,20 +219,30 @@ fn run_hook(agent: Agent) -> ExitCode {
     ExitCode::from(2)
 }
 
-/// 対象行に、利用者の置き換えを当て、その結果に組み込みの修正ルールを当てた内容を返す。変更が無ければ書き戻さない
+/// 対象行に、利用者の置き換えを1回当て、その結果に組み込みの修正ルールを内容が変わらなくなるまで繰り返し当てた
+/// 内容を返す。変更が無ければ書き戻さない
 fn fix_file(path: &Path, lines: &TargetLines, builtin: &Builtin) -> std::io::Result<String> {
     let src = fs::read_to_string(path)?;
     let document = prose::parse(&src);
     let replacements = rules::replacements(&src, &document, builtin, lines);
-    let replaced = apply::apply(&src, &replacements, lines);
-    // 利用者の置き換えも改行を足し引きしないので、対象行は置き換えた後の内容でも同じ行番号である
-    let document = if replaced == src {
+    let mut fixed = apply::apply(&src, &replacements, lines);
+    // 利用者の置き換えと組み込みの修正ルールは改行を足し引きしないので、対象行は直した後の内容でも同じ行番号である
+    let mut document = if fixed == src {
         document
     } else {
-        prose::parse(&replaced)
+        prose::parse(&fixed)
     };
-    let findings = rules::find(&replaced, &document, builtin);
-    let fixed = apply::apply(&replaced, &findings, lines);
+    // ある修正ルールの結果に別の修正ルールが当たることがある (全角英字を半角にした後の `日本語 Rust` の空白)。
+    // 組み込みの修正ルールは文字を消すか字種を一方向に変え、逆向きの組は設定の不正になるので、繰り返しは止まる
+    loop {
+        let findings = rules::find(&fixed, &document, builtin);
+        let next = apply::apply(&fixed, &findings, lines);
+        if next == fixed {
+            break;
+        }
+        document = prose::parse(&next);
+        fixed = next;
+    }
     if fixed != src {
         fs::write(path, &fixed)?;
     }

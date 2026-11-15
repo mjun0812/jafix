@@ -46,6 +46,5 @@ pub const KATAKANA: RangeInclusive<char> = 'ァ'..='ヶ';
 
 /// `c` が `ranges` のどれかに入るか
 pub fn contains(ranges: &[RangeInclusive<char>], c: char) -> bool {
-    let _ = (ranges, c);
-    todo!("skeleton: not implemented")
+    ranges.iter().any(|range| range.contains(&c))
 }

@@ -161,15 +161,29 @@ impl Builtin {
                 .set(id, options, config_dir)
                 .map_err(|reason| format!("`{key}`: {reason}"))?;
         }
+        // 利用者の辞書を直しても組み込みのルールどうしの不正は残るので、先に出す
+        builtin.reject_opposite_rules()?;
         builtin.reject_opposite_replacements()?;
         Ok(builtin)
     }
 
     /// `OPPOSITE_RULES` の組のうち、両方のルールが有効なものがあれば、最初の組の理由を返す。
     /// すべてのキーを当てた後の有効・無効とオプションで判定する
-    #[allow(dead_code)] // skeleton: not implemented
     fn reject_opposite_rules(&self) -> Result<(), String> {
-        todo!("skeleton: not implemented")
+        for pair in &OPPOSITE_RULES {
+            let Some(demand) = (pair.demand)(self) else {
+                continue;
+            };
+            if (pair.fix_rule_enabled)(self) {
+                return Err(format!(
+                    "`{}`: {demand}、`{}` は{}。どちらかを無効にする",
+                    pair.rule.name(),
+                    pair.fix_rule.name(),
+                    pair.fixes
+                ));
+            }
+        }
+        Ok(())
     }
 
     /// 利用者の置き換えの固定の部分に、有効な組み込みの修正ルールが直す箇所があれば理由を返す。
@@ -355,7 +369,6 @@ impl Builtin {
 
 /// 組み込みのルールどうしで、修正ルールと逆の書き方を求める組。両方が有効なら、hookが直した箇所を
 /// もう一方のルールが指摘し、agentが元に戻す往復になるので、設定の不正にする
-#[allow(dead_code)] // skeleton: not implemented
 struct OppositeRules {
     /// 設定によって、`fix_rule` と逆の書き方を求めるルール
     rule: RuleId,
@@ -368,8 +381,7 @@ struct OppositeRules {
     fixes: &'static str,
 }
 
-/// 組み込みのルールどうしの逆の書き方の組。4本目以降のルールの組はここに足す
-#[allow(dead_code)] // skeleton: not implemented
+/// 組み込みのルールどうしの逆の書き方の組
 const OPPOSITE_RULES: [OppositeRules; 1] = [OppositeRules {
     rule: RuleId::JaSpaceBetweenHalfAndFullWidth,
     demand: half_and_full_width_demands_space,
@@ -380,8 +392,13 @@ const OPPOSITE_RULES: [OppositeRules; 1] = [OppositeRules {
 
 /// `ja-space-between-half-and-full-width` が有効で、`space` が英字か数字の隣に空白を求めるなら、その文面を返す
 fn half_and_full_width_demands_space(builtin: &Builtin) -> Option<String> {
-    let _ = builtin;
-    todo!("skeleton: not implemented")
+    let space = &builtin.ja_space_between_half_and_full_width.as_ref()?.space;
+    space.demands_space().then(|| {
+        format!(
+            "`space` の {} は日本語と英数字の間に空白を求め",
+            space.written
+        )
+    })
 }
 
 /// `[builtin]` に名前で書けるpreset。名前はtextlintの設定に書く名前と同じである
@@ -1725,8 +1742,7 @@ fn user_pattern(value: &Value) -> Result<UserPattern, String> {
     })
 }
 
-#[derive(Debug)]
-#[allow(dead_code)] // skeleton: not implemented
+#[derive(Debug, Default)]
 pub struct JaSpaceBetweenHalfAndFullWidth {
     pub space: Space,
     /// 段落の直下でない文字列 (見出し・表のセル・引用・リンクの文字列・太字・強調の中) も見る
@@ -1739,15 +1755,22 @@ impl JaSpaceBetweenHalfAndFullWidth {
     /// `space` は `"never"`・`"always"`・`"alphabets"` と `"numbers"` と `"punctuation"` の配列のどれか。
     /// `exceptPunctuation` は受け付けず、知らないオプションとして理由を返す
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "space" => rule.space = Space::from_value(key, value)?,
+                "lintStyledNode" => rule.lint_styled_node = boolean(key, value)?,
+                "allows" => rule.allows = patterns(key, value)?,
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
     }
 }
 
 /// `ja-space-between-half-and-full-width` の `space`。`alphabets` か `numbers` が真なら空白を求め、
 /// どちらも偽なら空白を消す
 #[derive(Debug)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct Space {
     pub alphabets: bool,
     pub numbers: bool,
@@ -1757,10 +1780,72 @@ pub struct Space {
     pub written: String,
 }
 
+impl Default for Space {
+    fn default() -> Self {
+        Self {
+            alphabets: false,
+            numbers: false,
+            punctuation: false,
+            written: "\"never\"".to_owned(),
+        }
+    }
+}
+
+impl Space {
+    fn from_value(key: &str, value: &Value) -> Result<Self, String> {
+        let invalid = || {
+            format!(
+                "`{key}` は \"never\"・\"always\"・\"alphabets\" と \"numbers\" と \"punctuation\" の配列のどれかで書く"
+            )
+        };
+        if let Some(name) = value.as_str() {
+            let demands = match name {
+                "never" => false,
+                "always" => true,
+                _ => return Err(invalid()),
+            };
+            return Ok(Self {
+                alphabets: demands,
+                numbers: demands,
+                punctuation: false,
+                written: format!("\"{name}\""),
+            });
+        }
+        let names = value
+            .as_array()
+            .and_then(|values| values.iter().map(Value::as_str).collect::<Option<Vec<_>>>())
+            .ok_or_else(invalid)?;
+        let mut space = Self {
+            written: format!(
+                "[{}]",
+                names
+                    .iter()
+                    .map(|name| format!("\"{name}\""))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            ..Self::default()
+        };
+        for name in names {
+            match name {
+                "alphabets" => space.alphabets = true,
+                "numbers" => space.numbers = true,
+                "punctuation" => space.punctuation = true,
+                _ => return Err(invalid()),
+            }
+        }
+        Ok(space)
+    }
+
+    /// 英字か数字の隣に空白を求める
+    pub fn demands_space(&self) -> bool {
+        self.alphabets || self.numbers
+    }
+}
+
 /// `ja-space-around-code`・`ja-space-around-link`・`ja-space-around-strong`・`ja-space-around-emphasis` の
 /// オプション。`false` の側は空白を消す修正、`true` の側は空白を求める指摘になる
 #[derive(Debug, Default)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct JaSpaceAround {
     pub before: bool,
     pub after: bool,
@@ -1768,13 +1853,19 @@ pub struct JaSpaceAround {
 
 impl JaSpaceAround {
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self::default();
+        for (key, value) in options {
+            match key.as_str() {
+                "before" => rule.before = boolean(key, value)?,
+                "after" => rule.after = boolean(key, value)?,
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
     }
 }
 
 #[derive(Debug)]
-#[allow(dead_code)] // skeleton: not implemented
 pub struct NoMixedZenkakuAndHankakuAlphabet {
     pub prefer: AlphabetWidth,
 }
@@ -1782,14 +1873,27 @@ pub struct NoMixedZenkakuAndHankakuAlphabet {
 impl NoMixedZenkakuAndHankakuAlphabet {
     /// `prefer` は `"全角"` か `"半角"` だけを受け付ける
     fn from_options(options: &Table) -> Result<Self, String> {
-        let _ = options;
-        todo!("skeleton: not implemented")
+        let mut rule = Self {
+            prefer: AlphabetWidth::Half,
+        };
+        for (key, value) in options {
+            match key.as_str() {
+                "prefer" => {
+                    rule.prefer = match string(key, value)? {
+                        "全角" => AlphabetWidth::Full,
+                        "半角" => AlphabetWidth::Half,
+                        _ => return Err(format!("`{key}` は \"全角\" か \"半角\" で書く")),
+                    };
+                }
+                _ => return Err(unknown_option(key)),
+            }
+        }
+        Ok(rule)
     }
 }
 
 /// `no-mixed-zenkaku-and-hankaku-alphabet` が揃える英字の幅
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[allow(dead_code)] // skeleton: not implemented
 pub enum AlphabetWidth {
     /// `"全角"`
     Full,

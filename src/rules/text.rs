@@ -9,11 +9,12 @@ use unicode_normalization::UnicodeNormalization;
 
 use crate::prose::Prose;
 
-use super::builtin::Builtin;
+use super::builtin::{AlphabetWidth, Builtin};
 use super::{Finding, Report, RuleId};
 
 /// 本文の範囲ごとに当てる修正ルール (`no-nfd`、`no-hankaku-kana`、`no-zero-width-spaces`、
-/// `no-invalid-control-character`、`no-mixed-zenkaku-and-hankaku-alphabet`、`no-kangxi-radicals`) の箇所を返す。見出しの中の箇所も返し、指摘にするかは呼び出し側が決める。
+/// `no-invalid-control-character`、`no-mixed-zenkaku-and-hankaku-alphabet`、`no-kangxi-radicals`) の箇所を返す。
+/// 見出しの中の箇所も返し、指摘にするかは呼び出し側が決める。
 /// `no-nfd` は、前の文字と合成して1文字になる組み合わせだけを返す
 pub fn find<'a>(
     src: &str,
@@ -94,12 +95,45 @@ pub fn find<'a>(
         if let Some(rule) = &builtin.no_mixed_zenkaku_and_hankaku_alphabet
             && !(context.blockquote || context.emphasis || context.link)
         {
-            let _ = rule;
-            todo!("skeleton: not implemented")
+            // 全角英字は、同じ文字の半角英字にU+FEE0を足した位置にある
+            let (alphabets, width, other, convert): (&Regex, _, _, fn(u32) -> u32) = match rule
+                .prefer
+            {
+                AlphabetWidth::Half => (&FULLWIDTH_ALPHABETS, "全角", "半角", |c| c - 0xFEE0),
+                AlphabetWidth::Full => (&HALFWIDTH_ALPHABETS, "半角", "全角", |c| c + 0xFEE0),
+            };
+            for run in alphabets.find_iter(text) {
+                let replacement = run
+                    .as_str()
+                    .chars()
+                    .map(|c| char::from_u32(convert(u32::from(c))))
+                    .collect::<Option<String>>()
+                    .expect("英字の幅を変えた文字は必ずある");
+                findings.push(at(
+                    run.start(),
+                    run.end(),
+                    replacement,
+                    RuleId::NoMixedZenkakuAndHankakuAlphabet,
+                    format!("{width}のアルファベット「{}」を{other}にする", run.as_str()).into(),
+                ));
+            }
         }
         if builtin.no_kangxi_radicals {
-            let _ = (kangxi::FIRST, kangxi::KANJI);
-            todo!("skeleton: not implemented")
+            for (i, c) in text.char_indices() {
+                let Some(&kanji) = (u32::from(c))
+                    .checked_sub(u32::from(kangxi::FIRST))
+                    .and_then(|offset| kangxi::KANJI.get(offset as usize))
+                else {
+                    continue;
+                };
+                findings.push(at(
+                    i,
+                    i + c.len_utf8(),
+                    kanji.to_string(),
+                    RuleId::NoKangxiRadicals,
+                    format!("康熙部首「{c}」を漢字「{kanji}」にする").into(),
+                ));
+            }
         }
     }
     findings
@@ -109,6 +143,11 @@ pub fn find<'a>(
 fn is_invalid_control_character(c: char) -> bool {
     matches!(c, '\u{0}'..='\u{8}' | '\u{B}' | '\u{C}' | '\u{E}'..='\u{1F}' | '\u{7F}'..='\u{9F}' | '\u{202A}'..='\u{202E}')
 }
+
+static FULLWIDTH_ALPHABETS: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new("[Ａ-Ｚａ-ｚ]+").unwrap());
+
+static HALFWIDTH_ALPHABETS: LazyLock<Regex> = LazyLock::new(|| Regex::new("[A-Za-z]+").unwrap());
 
 static HANKAKU_KANA: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"[\x{FF61}-\x{FF9F}]+").unwrap());

@@ -227,7 +227,6 @@ pub struct Finding {
 }
 
 /// 組み込みの修正ルールに当たった1箇所。重なりを解く前の一覧の要素である
-#[allow(dead_code)] // skeleton: not implemented
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FixRuleFinding {
     pub finding: Finding,
@@ -280,11 +279,11 @@ pub fn report(
                 })
             }),
     );
-    let headings = document.texts.iter().filter(|prose| prose.context.heading);
     reports.extend(
-        anchor_changing_findings(src, headings, builtin)
+        fix_rule_findings_without_overlaps(src, document, builtin)
             .into_iter()
-            .map(|finding| Report {
+            .filter(|fix| fix.heading)
+            .map(|FixRuleFinding { finding, .. }| Report {
                 range: finding.position..finding.range.end,
                 rule: finding.rule.name(),
                 message: Cow::Owned(format!(
@@ -293,6 +292,7 @@ pub fn report(
                 )),
             }),
     );
+    reports.extend(spacing::report(src, document, builtin));
     reports.sort_by_key(|report| report.range.start);
     reports
 }
@@ -363,7 +363,8 @@ fn drop_overlaps<T>(items: &mut Vec<T>, range: impl Fn(&T) -> &Range<usize>) {
 }
 
 /// 利用者の置き換えの固定の部分 `text` を、段落の直下にある本文の範囲1つだけの文書とみなして、
-/// 有効な組み込みの修正ルールのうち当たるものを返す。当たれば、置き換えは組み込みの修正ルールと逆である
+/// 有効な組み込みの修正ルールのうち当たるものを `RuleId` の順に返す。当たれば、置き換えは組み込みの修正ルールと
+/// 逆である。同じ箇所に当たるルールをすべて返すので、重なりは解かない
 pub fn fix_rules_hitting(text: &str, builtin: &Builtin) -> Vec<RuleId> {
     let document = Document {
         texts: vec![Prose {
@@ -379,12 +380,11 @@ pub fn fix_rules_hitting(text: &str, builtin: &Builtin) -> Vec<RuleId> {
         list_items: Vec::new(),
         inline_nodes: Vec::new(),
     };
-    let mut rules: Vec<RuleId> = Vec::new();
-    for finding in find(text, &document, builtin) {
-        if !rules.contains(&finding.rule) {
-            rules.push(finding.rule);
-        }
-    }
+    let mut rules: Vec<RuleId> = fix_rule_findings(text, &document, builtin)
+        .into_iter()
+        .map(|fix| fix.finding.rule)
+        .collect();
+    rules.dedup();
     rules
 }
 
@@ -428,56 +428,69 @@ static SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new("[ \u{3000}]+").unw
 static JAPANESE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}ー]$").unwrap());
 
-/// 有効な修正ルールに当たる箇所を、位置の順に返す。見出しの中で直さない箇所は含めない
+/// 有効な修正ルールに当たる箇所を、重なりを解いて位置の順に返す。見出しの中で直さない箇所は含めない
 pub fn find(src: &str, document: &Document, builtin: &Builtin) -> Vec<Finding> {
-    let mut findings = Vec::new();
-    if builtin.fullwidth_paren {
-        for Prose { range, .. } in &document.texts {
-            for (i, paren) in src[range.clone()].match_indices(['（', '）']) {
-                let start = range.start + i;
-                findings.push(Finding {
-                    range: start..start + paren.len(),
-                    replacement: Cow::Borrowed(if paren == "（" { "(" } else { ")" }),
-                    rule: RuleId::FullwidthParen,
-                    position: start,
-                    message: Cow::Borrowed("全角括弧を半角にする"),
-                });
-            }
-        }
-    }
-    let body = document.texts.iter().filter(|prose| !prose.context.heading);
-    findings.extend(anchor_changing_findings(src, body, builtin));
-    findings.sort_by_key(|finding| finding.range.start);
+    fix_rule_findings_without_overlaps(src, document, builtin)
+        .into_iter()
+        .filter(|fix| !fix.heading)
+        .map(|fix| fix.finding)
+        .collect()
+}
+
+/// `fix_rule_findings` の重なりを解いて、位置の順に返す。範囲が同じ箇所は、`RuleId` で前にあるルールの箇所が残る
+fn fix_rule_findings_without_overlaps(
+    src: &str,
+    document: &Document,
+    builtin: &Builtin,
+) -> Vec<FixRuleFinding> {
+    let mut findings = fix_rule_findings(src, document, builtin);
+    drop_overlaps(&mut findings, |fix| &fix.finding.range);
     findings
 }
 
-/// 有効な組み込みの修正ルールの箇所を、見出しの中のものも含めて、重なりを解かずに `RuleId` の順に安定に並べて返す
-#[allow(dead_code)] // skeleton: not implemented
+/// 有効な組み込みの修正ルールの箇所を、見出しの中のものも含めて、重なりを解かずに `RuleId` の順に安定に並べて返す。
+/// 見出しの文字を変えるとアンカーが変わり、見出しへのリンクが切れるので、`fullwidth-paren` 以外の見出しの中の
+/// 箇所は直さずに `report` で指摘にする。全角括弧は、置き換えてもアンカーが変わらないので、見出しの中でも直す
 fn fix_rule_findings(src: &str, document: &Document, builtin: &Builtin) -> Vec<FixRuleFinding> {
-    let _ = (src, document, builtin);
-    todo!("skeleton: not implemented")
-}
-
-/// `fullwidth-paren` 以外の修正ルールの、`texts` の中の箇所。見出しの文字を変えるとアンカーが変わり、
-/// 見出しへのリンクが切れるので、見出しの中の箇所は直さずに `report` で指摘にする。
-/// 全角括弧は、置き換えてもアンカーが変わらないので、見出しの中でも直す
-fn anchor_changing_findings<'a>(
-    src: &str,
-    texts: impl Iterator<Item = &'a Prose> + Clone,
-    builtin: &Builtin,
-) -> Vec<Finding> {
-    let mut findings = text::find(src, texts.clone(), builtin);
-    for Prose { range, .. } in texts {
+    let mut findings = Vec::new();
+    for prose in &document.texts {
+        let Prose { range, context } = prose;
+        let heading = context.heading;
+        if builtin.fullwidth_paren {
+            for (i, paren) in src[range.clone()].match_indices(['（', '）']) {
+                let start = range.start + i;
+                findings.push(FixRuleFinding {
+                    finding: Finding {
+                        range: start..start + paren.len(),
+                        replacement: Cow::Borrowed(if paren == "（" { "(" } else { ")" }),
+                        rule: RuleId::FullwidthParen,
+                        position: start,
+                        message: Cow::Borrowed("全角括弧を半角にする"),
+                    },
+                    heading: false,
+                });
+            }
+        }
         findings.extend(
-            space_findings(&src[range.clone()], builtin).map(|(spaces, rule)| Finding {
-                range: range.start + spaces.start..range.start + spaces.end,
-                replacement: Cow::Borrowed(""),
-                rule: rule.id(),
-                position: range.start + spaces.start,
-                message: Cow::Borrowed(rule.message()),
+            text::find(src, [prose], builtin)
+                .into_iter()
+                .map(|finding| FixRuleFinding { finding, heading }),
+        );
+        findings.extend(
+            space_findings(&src[range.clone()], builtin).map(|(spaces, rule)| FixRuleFinding {
+                finding: Finding {
+                    range: range.start + spaces.start..range.start + spaces.end,
+                    replacement: Cow::Borrowed(""),
+                    rule: rule.id(),
+                    position: range.start + spaces.start,
+                    message: Cow::Borrowed(rule.message()),
+                },
+                heading,
             }),
         );
     }
+    findings.extend(spacing::find(src, document, builtin));
+    findings.sort_by_key(|fix| fix.finding.rule);
     findings
 }
 

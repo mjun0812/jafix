@@ -31,7 +31,6 @@ pub struct InlineNode {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[allow(dead_code)] // skeleton: not implemented
 pub enum InlineNodeKind {
     Code,
     /// インラインのリンク (`[x](u)`) と自動リンク (`<…>`)。裸のURLと参照形式のリンクは含めない
@@ -157,21 +156,40 @@ pub fn parse(src: &str) -> Document {
     collect(&root, src, Context::default(), &mut texts);
     let mut blocks = Blocks::default();
     collect_paragraphs(&root, src, Ancestors::default(), None, &mut blocks);
+    let mut inline_nodes = Vec::new();
+    collect_inline_nodes(&root, src, false, &mut inline_nodes);
     Document {
         texts,
         paragraphs: blocks.paragraphs,
         headings: blocks.headings,
         list_items: blocks.list_items,
-        // skeleton: not implemented (`collect_inline_nodes` で集める)
-        inline_nodes: Vec::new(),
+        inline_nodes,
     }
 }
 
 /// `node` の中のインラインコード・リンク・太字・強調を `nodes` に集める。`heading` は、`node` が見出しの中にあるか
-#[allow(dead_code)] // skeleton: not implemented
 fn collect_inline_nodes(node: &Node, src: &str, heading: bool, nodes: &mut Vec<InlineNode>) {
-    let _ = (node, src, heading, nodes);
-    todo!("skeleton: not implemented")
+    let kind = match node {
+        Node::InlineCode(_) => Some(InlineNodeKind::Code),
+        // 裸のURLもLinkになるが、`[` か `<` で始まらない
+        Node::Link(_) if matches!(src.as_bytes()[node_range(node).start], b'[' | b'<') => {
+            Some(InlineNodeKind::Link)
+        }
+        Node::Strong(_) => Some(InlineNodeKind::Strong),
+        Node::Emphasis(_) => Some(InlineNodeKind::Emphasis),
+        _ => None,
+    };
+    if let Some(kind) = kind {
+        nodes.push(InlineNode {
+            kind,
+            range: node_range(node),
+            heading,
+        });
+    }
+    let heading = heading || matches!(node, Node::Heading(_));
+    for child in node.children().into_iter().flatten() {
+        collect_inline_nodes(child, src, heading, nodes);
+    }
 }
 
 fn node_range(node: &Node) -> Range<usize> {
@@ -736,6 +754,27 @@ mod tests {
                 ("h", None),
                 ("j", None),
                 ("k", None),
+            ]
+        );
+    }
+
+    #[test]
+    fn collects_inline_nodes_anywhere_except_bare_urls_and_reference_links() {
+        let src = "# 見 `a`\n\n[**b** *c*](u) <https://e.com> https://e.com [d][r]\n\n| `e` |\n| - |\n\n[r]: u\n";
+        let nodes: Vec<(&str, InlineNodeKind, bool)> = parse(src)
+            .inline_nodes
+            .into_iter()
+            .map(|node| (&src[node.range], node.kind, node.heading))
+            .collect();
+        assert_eq!(
+            nodes,
+            vec![
+                ("`a`", InlineNodeKind::Code, true),
+                ("[**b** *c*](u)", InlineNodeKind::Link, false),
+                ("**b**", InlineNodeKind::Strong, false),
+                ("*c*", InlineNodeKind::Emphasis, false),
+                ("<https://e.com>", InlineNodeKind::Link, false),
+                ("`e`", InlineNodeKind::Code, false),
             ]
         );
     }
