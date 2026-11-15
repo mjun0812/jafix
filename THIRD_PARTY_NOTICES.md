@@ -40,6 +40,10 @@ jafixの組み込みのルールのうち、textlintと同じIDのものは、�
 | morpheme-match                                            | 2.0.4   | Copyright (c) 2016 azu           |
 | @textlint-ja/textlint-rule-preset-ai-writing              | 1.7.0   | Copyright (c) 2025 azu           |
 | textlint-rule-preset-ai-words-ja                          | 1.2.1   | Copyright (c) 2026 p1ass         |
+| textlint-rule-prh                                         | 6.1.1   | Copyright (c) 2015 azu           |
+| prh                                                       | 6.1.0   | Copyright (c) 2026 vvakame       |
+| @textlint-rule/textlint-rule-pattern                      | 2.0.2   | Copyright (c) 2022 azu           |
+| @textlint/regexp-string-matcher                           | 2.0.2   | Copyright (c) 2018 azu           |
 
 ## MIT License
 

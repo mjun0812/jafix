@@ -1,12 +1,12 @@
 # jafix
 
-jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる範囲で直すCLIです。Markdownの本文にある全角括弧や半角カナなどを直し、日本語と英数字・括弧の間の空白を削除します。機械的に直せない書き方は、指摘ルールで指摘します。ルールは、全角括弧と空白を直す3つ、textlintの3つのpreset(`textlint-rule-preset-ja-technical-writing`・`@textlint-ja/textlint-rule-preset-ai-writing`・`textlint-rule-preset-ai-words-ja`)から移したもの、設定ファイルに書いたものです。
+jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる範囲で直すCLIです。Markdownの本文にある全角括弧や半角カナなどを直し、日本語と英数字・括弧の間の空白を削除します。機械的に直せない書き方は、指摘ルールで指摘します。ルールは、全角括弧と空白を直す3つ、textlintの3つのpreset(`textlint-rule-preset-ja-technical-writing`・`@textlint-ja/textlint-rule-preset-ai-writing`・`textlint-rule-preset-ai-words-ja`)から移したもの、利用者がprhの辞書やパターンに書いた置き換えです。
 
 ## 組み込みのルール
 
-組み込みのルールは33あります。`fullwidth-paren`・`space-between-ja-and-alnum`・`space-between-ja-and-paren` の3つはjafix独自の修正ルールで、残りの30ルールはtextlintのpresetから移したものです。内訳は、`textlint-rule-preset-ja-technical-writing` の23ルール、`@textlint-ja/textlint-rule-preset-ai-writing` の5ルール(`no-ai-list-formatting` から `ai-tech-writing-guideline` まで)、`textlint-rule-preset-ai-words-ja` の2ルール(`no-ai-words` と `no-short-topic-comma`)で、IDとオプションの名前はtextlintと同じです。ルールの有効・無効とオプションは、設定ファイルの `[builtin]` で変えます(「[設定ファイル](#builtin)」)。
+組み込みのルールは35あります。`fullwidth-paren`・`space-between-ja-and-alnum`・`space-between-ja-and-paren` の3つはjafix独自の修正ルールで、`prh` と `@textlint-rule/pattern` の2つは、利用者が書いた辞書やパターンで置き換える・指摘するルールです。残りの30ルールはtextlintのpresetから移したもので、内訳は、`textlint-rule-preset-ja-technical-writing` の23ルール、`@textlint-ja/textlint-rule-preset-ai-writing` の5ルール(`no-ai-list-formatting` から `ai-tech-writing-guideline` まで)、`textlint-rule-preset-ai-words-ja` の2ルール(`no-ai-words` と `no-short-topic-comma`)で、IDとオプションの名前はtextlintと同じです。ルールの有効・無効とオプションは、設定ファイルの `[builtin]` で変えます(「[設定ファイル](#builtin)」)。
 
-設定に何も書かなければ、jafix独自の3つと `textlint-rule-preset-ja-technical-writing` の23ルールが有効で、オプションの既定値はpresetと同じです。AIらしい書き方を指摘する残りの7ルールは無効です。7ルールには同じ書き方を重ねて見るものがあり、すべてを有効にすると同じ箇所に複数の指摘が出るためです。7ルールは、`[builtin]` にルールのIDかpresetの名前を書いて有効にします(「[presetの名前](#presetの名前)」)。
+設定に何も書かなければ、jafix独自の3つと `textlint-rule-preset-ja-technical-writing` の23ルールが有効で、オプションの既定値はpresetと同じです。AIらしい書き方を指摘する残りの7ルールは無効です。7ルールには同じ書き方を重ねて見るものがあり、すべてを有効にすると同じ箇所に複数の指摘が出るためです。7ルールは、`[builtin]` にルールのIDかpresetの名前を書いて有効にします(「[presetの名前](#presetの名前)」)。`prh` と `@textlint-rule/pattern` も無効で、どのpresetにも入りません。辞書かパターンが無いと働かないので、`[builtin]` にオプションの表を書いたときだけ有効になります(「[利用者の置き換え](#利用者の置き換え)」)。
 
 `textlint-rule-preset-ja-technical-writing` の23ルールのうち、`max-ten` から `ja-no-redundant-expression` までの11ルールは、文を形態素解析で語(トークン)に分けて判定します。7ルールのうち、`no-ai-colon-continuation`・`no-ai-words`・`no-short-topic-comma` の3つも形態素解析を使います。形態素解析には [lindera](https://github.com/lindera/lindera) と、binaryに埋め込んだIPADICの辞書を使います。
 
@@ -45,6 +45,8 @@ jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる�
 | `ai-tech-writing-guideline`          | 指摘(既定で無効) | 冗長な表現・受け身・具体性の無い語・表記の揺れ・箇条書きにできる列挙を使う                   | `allows`([])、`disableRedundancyGuidance`・`disableVoiceGuidance`・`disableClarityGuidance`・`disableConsistencyGuidance`・`disableStructureGuidance`(いずれもfalse)、`enableDocumentAnalysis`(false) |
 | `no-ai-words`                        | 指摘(既定で無効) | AIが多用する語を使う。語は品詞と原形で見分ける                                               | `allows`([])、`dictionaryPath`(なし)、`dictionaryMode`("append")                                                                                                                                      |
 | `no-short-topic-comma`               | 指摘(既定で無効) | 短い主題を示す「は」の直後に読点を打つ                                                       | `maxLength`(5)                                                                                                                                                                                        |
+| `prh`                                | 修正と指摘(既定で無効) | 利用者のprhの辞書に書いた置き換えで本文を直す | `rulePaths`・`ruleContents`(いずれもなし。合わせて1つ以上)、`checkLink`・`checkBlockQuote`・`checkEmphasis`(いずれもfalse)、`checkHeader`・`checkParagraph`(いずれもtrue) |
+| `@textlint-rule/pattern`             | 修正と指摘(既定で無効) | 利用者のパターンの一致を、`replace` があれば直し、無ければ指摘する | `patterns`(なし。要素は `message`・`pattern`・`replace`・`allows`・`allowNodeTypes`) |
 
 オプションの意味はtextlintのルールと同じです。`sentence-length` の `countBy` は、長さをUTF-16のコードユニットで数える `"codeunits"` か、文字で数える `"codepoints"` です。`sentence-length` の `skipPatterns`、`no-exclamation-question-mark` と `ja-unnatural-alphabet` の `allow` の要素は、「[パターン](#パターン)」の書き方で書きます。`max-kanji-continuous-len` の `allow` の要素は、漢字の連続の全体と一致する文字列で、`no-invalid-control-character` の `allow` の要素は、1文字の文字列です。
 
@@ -77,6 +79,87 @@ AIらしい書き方を指摘する7ルールのオプションは、次のと�
 
 `entries` の各項目は、指摘の文面の `message` (空でない文字列)と、期待するトークンの並びの `tokens` (空でない配列)を持ちます。項目のほかのキーは読みません。`tokens` の要素は、トークンの項目の名前をキーにした表で、値は文字列か文字列の配列(どれかに一致)です。キーには `surface_form`・`pos`・`pos_detail_1`・`pos_detail_2`・`pos_detail_3`・`conjugated_type`・`conjugated_form`・`basic_form`・`reading`・`pronunciation` を書けます。`_` で始まるキーは一致を調べるときに使わず、`_skippable` (真偽値)が `true` のトークンは、一致しなければ飛ばして次のトークンを当てます。
 
+## 利用者の置き換え
+
+`prh` と `@textlint-rule/pattern` は、利用者が書いた辞書やパターンで本文を直し、指摘するルールです。辞書とパターンはtextlintで使っているものをそのまま書けるので、textlintから移るときに書き直す必要がありません。prhのルールの箇所と、`replace` を持つ `@textlint-rule/pattern` の要素の箇所は修正ルールで、`jafix fix` とhookが直し、`jafix check` が箇所として出します。この置き換えを、以下では利用者の置き換えと呼びます。`replace` を持たない要素の箇所は、利用者の置き換えではなく、指摘ルールの指摘です。
+
+### `prh`
+
+`prh` のオプションは、辞書の出どころの `rulePaths`・`ruleContents` と、見る範囲を決める `check` で始まる5つです。`rulePaths` は空でない文字列の配列で、`ruleContents` は文字列の配列です。2つを合わせて辞書が1つ以上要るので、`prh = true` は不正です。`rulePaths` の相対パスは設定ファイルのあるディレクトリから解決し、`~/` で始まればホームディレクトリに展開します。`checkLink`・`checkBlockQuote`・`checkEmphasis` の初期値はfalseで、リンク・引用・強調(`*x*`)の中を見ません。`true` にするとその中も見ます。ただし `checkLink` が見るのはリンクの文字列で、本文でない裸のURLと自動リンクの文字列は見ません。`checkHeader` と `checkParagraph` の初期値はtrueで、`false` にすると見出しと段落の中を見ません。textlint-rule-prhの `checkCodeComment` と `debug` は、jafixがコードを見ないので使えません。
+
+```toml
+[builtin.prh]
+rulePaths = ["dict/prh.yml", "~/dict/shared.yml"]
+ruleContents = ["rules:\n  - expected: JavaScript\n"]
+checkBlockQuote = true
+```
+
+辞書は、prh 6.1.0のYAMLです。次の例のように、`expected` に置き換え後の文字列を、`pattern` に置き換え前の正規表現を書きます。
+
+```yaml
+imports:
+  - path: ./common.yml
+    ignoreRules:
+      - expected: サーバ
+rules:
+  - expected: サーバー
+    pattern: /サーバ(?!ー)/
+    prh: 長音符を付ける
+    specs:
+      - from: サーバの設定
+        to: サーバーの設定
+  - expected: JavaScript
+```
+
+`rules` の要素は、文字列(その文字列を `expected` にしたルール)か、次のキーを持つ表です。`expected` だけのルールは、英数字の大文字・小文字と全角・半角を区別せずに当て、英数字以外の正規表現の記号は文字そのものに当てます。
+
+- `expected`: 置き換え後の文字列(必須)。`$1` から `$99` で、`pattern` の捕捉グループを参照します
+- `pattern`: 置き換え前の正規表現か文字列そのもの。文字列の配列も書けます
+- `patterns`: `pattern` と同じ。`pattern` が無いときだけ使います
+- `regexpMustEmpty`: `$1` の形の文字列。その番号のグループが空でない一致は、直しません
+- `options`: `wordBoundary`(真偽値)だけを読みます。`true` なら、正規表現の全体を `\b` で挟みます
+- `specs`: `from` と `to` の組の配列。読み込みのときに、そのルールだけを `from` に当てた結果が `to` と等しいかを確かめます
+- `prh`: 指摘の文面に添える補足
+
+`version`・`meta`・`targets` と、知らないキーは使いません。
+
+辞書は、`rulePaths` を書いた順に、次に `ruleContents` を書いた順に読み、1つにまとめます。各辞書は自分のルールを先に持ち、`imports` の辞書を書いた順に取り込みます。まとめるときは、先にあるルールと `expected` が同じルールを捨てるので、`rulePaths` の辞書のルールが `ruleContents` の同じ `expected` のルールに勝ちます。`imports` の相対パスは、取り込む側の辞書のファイルのあるディレクトリから、`ruleContents` の中では設定ファイルのあるディレクトリから解決します。要素の `disableImports` が `true` なら、取り込む辞書の `imports` を読みません。`ignoreRules` は、取り込む辞書から、`expected` が等しいルールか、`pattern` の文字列が等しいルールを除きます。
+
+一致した文字列と置き換え後の文字列が同じ箇所と、長さ0の一致は直しません。指摘と箇所の文面は、`「<一致した文字列>」を「<置き換え後>」にする` で、辞書に `prh` の補足があれば `: <補足>` を続けます。
+
+### `@textlint-rule/pattern`
+
+`@textlint-rule/pattern` のオプションは、空でない表の配列の `patterns` だけです。各要素は、`message`(空でない文字列、必須)、`pattern`(空でない文字列、必須)、`replace`(文字列)、`allows`(パターンの配列)、`allowNodeTypes`(型の名前の配列)を持ちます。`replace` を書くと、その要素の箇所を修正にします。`replace = ""` は、一致した文字列を消します。`replace` の `$1` から `$9` は捕捉グループで、参加しなかったグループと無い番号は、書いたまま残します。`allows` は、一致した文字列に当たれば、その一致を指摘しません。`allowNodeTypes` は、`Paragraph`・`Header`・`BlockQuote`・`List`・`ListItem`・`Table`・`TableRow`・`TableCell`・`Emphasis`・`Strong`・`Delete`・`Link`・`LinkReference` のどれかで、その型の中にある箇所を、この要素だけ対象から外します。
+
+```toml
+[builtin."@textlint-rule/pattern"]
+patterns = [
+  { message = "日付はYYYY-MM-DDで書く", pattern = '/(\d{4})/(\d{2})/(\d{2})/', replace = "$1-$2-$3", allows = ["/1000/01/01/"], allowNodeTypes = ["BlockQuote"] },
+  { message = "TODOを残さない", pattern = "/TODO:/i" },
+]
+```
+
+指摘の文面は、`「<一致した文字列>」: <message>` です。`@textlint-rule/pattern` は、`allowNodeTypes` に書いた型の中を除き、本文のすべてを見ます。
+
+### 正規表現
+
+`prh` の `pattern`・`patterns` と、`@textlint-rule/pattern` の `pattern`・`allows` は、JavaScriptの正規表現(`u` フラグ付き)の構文と意味で読みます。後読み・先読み・後方参照・名前付きグループ・`\p{Script=…}` を使え、`\b`・`\d`・`\w` はASCIIで判定します。組み込みのルールのオプションのパターン(「[パターン](#パターン)」)は、これまでどおりRustの `regex` crateで読みます。
+
+`/source/flags` の形の見分け方は、textlintのそれぞれのルールと同じです。`prh` は `^/(.*)/([gimsuy]*)$` に当たれば正規表現にし、当たらなければ書いた文字列そのものに当てます。`g`・`m`・`u` は常に付き、`i` と `s` は書いたときだけ付き、`y` は無視します。`@textlint-rule/pattern` は `^/(.+)/([guimysd]*)$` に当たれば正規表現にし、`g`・`u` は常に付き、`i`・`m`・`s` は書いたときだけ付き、`d` は無視します。`y` は不正です。
+
+### 修正の順と直さない箇所
+
+`jafix fix` とhookは、利用者の置き換えを組み込みの修正ルールより先に当てます。置き換えた内容を解析し直してから、組み込みの修正ルールを当てるので、置き換えが生んだ全角括弧や日本語と英数字の間の空白は、同じ実行で直ります。
+
+利用者の置き換えの箇所が重なるときは、先に始まる箇所を残します。同じ位置で始まるなら長い箇所を、範囲も同じなら `prh` の箇所を、それも同じなら `patterns` の前にある要素の箇所を残します。残した箇所と重なる箇所は直しません。`jafix check` は、重なりを解いた後の箇所だけを出します。
+
+次の箇所は、直さずに、そのルールのIDで指摘にします。
+
+- 見出しの中の箇所。見出しのアンカーが変わり、見出しへのリンクが切れるためです。文面の後に「見出しのアンカーが変わるので、見出しへのリンクも直す」を続けます。アンカーが変わらない置き換えを見分けることはしません
+- 一致した文字列か置き換え後の文字列が、改行を含む箇所。hookは、直した後の行の番号が変わらないことを前提にするためです。文面の後に「改行を含むので直さない」を続けます
+
+置き換えの固定の部分(`prh` の `expected` と `replace` から `$1` などを除いた部分)を有効な組み込みの修正ルールが直すときは、設定ファイルが不正です。たとえば `expected: （$1）` は、`fullwidth-paren` が `（` を `(` に戻すので、置き換えを当てても次の段で戻されます。理由に置き換えと組み込みの修正ルールのIDを書くので、どちらかを無効にするか、置き換えを辞書から外してください。`imports` の `ignoreRules` で外したルールと、無効にした組み込みのルールは、この判定に入りません。
+
 ## 修正ルール
 
 修正ルールは、Markdownの本文にだけ適用します。`jafix fix` とhookが直し、`jafix check` は直す箇所を指摘として出します。
@@ -93,7 +176,7 @@ AIらしい書き方を指摘する7ルールのオプションは、次のと�
 
 ## 指摘ルール
 
-指摘ルールは、ファイルを直さずに指摘だけを出すルールです。組み込みの指摘ルール(`replace` の無い `@textlint-rule/pattern` の要素を含む)と、見出しの中で直さない修正ルールの2種類があります。`@textlint-rule/pattern` は、`allowNodeTypes` に書いた型の中を除き、引用・強調・見出しの中の本文にも当たります。見出しの中の指摘は、修正ルールのIDで出し、見出しへのリンクも直すことを文面で伝えます。
+指摘ルールは、ファイルを直さずに指摘だけを出すルールです。組み込みの指摘ルール(`replace` の無い `@textlint-rule/pattern` の要素を含む)と、直さない修正ルールの箇所の2種類があります。直さない箇所は、見出しの中の修正ルールの箇所と、見出しの中や改行を含む利用者の置き換えの箇所です(「[修正の順と直さない箇所](#修正の順と直さない箇所)」)。`@textlint-rule/pattern` は、`allowNodeTypes` に書いた型の中を除き、引用・強調・見出しの中の本文にも当たります。見出しの中の指摘は、修正ルールのIDで出し、見出しへのリンクも直すことを文面で伝えます。
 
 組み込みの指摘ルールは、ルールごとに当てる単位が違います。
 
@@ -122,11 +205,11 @@ binaryには形態素解析のIPADICの辞書が入るので、大きさは約50
 
 ## 使い方
 
-`jafix check` は、ファイルを書き換えずに、修正ルールに当たる箇所と指摘ルールの指摘を、ファイルの中の位置の順に1件1行で出力します。列は1始まりで、文字の数で数えます。設定の指摘ルールの行は、当たった文字列を `「」` で囲み、設定の `message` を続けます。組み込みのルールの行は、1行の文面だけを書きます。
+`jafix check` は、ファイルを書き換えずに、修正ルールに当たる箇所と指摘ルールの指摘を、ファイルの中の位置の順に1件1行で出力します。列は1始まりで、文字の数で数えます。`@textlint-rule/pattern` の行は、当たった文字列を `「」` で囲み、要素の `message` を続けます。他のルールの行は、1行の文面だけを書きます。
 
 ```console
 $ jafix check t.md
-t.md:1:1: 「照合」: AIが多用する語 [ai-words]
+t.md:1:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]
 t.md:1:3: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]
 t.md:2:1: 1文が100文字を超えている (101文字) [sentence-length]
 ```
@@ -183,7 +266,7 @@ Codexでは、`hooks.json` の `PostToolUse` に、matcherを `apply_patch` だ�
 
 ```text
 jafix: 今回変えた行に指摘がある。編集は適用済み。指摘を直すか、誤検知なら直さずに進めてよい
-/path/to/t.md:2:1: 「照合」: AIが多用する語 [ai-words]
+/path/to/t.md:2:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]
 ```
 
 指摘は今回変えた行の分しか出ないので、同じ行を編集し直さない限り、同じ指摘は繰り返し出ません。hookの終了コードは次のとおりです。終了コード1はagentの作業を止めず(Claude CodeとCodexのどちらも同じ)、利用者に失敗として見えます。
@@ -207,7 +290,7 @@ print -r -- "$input" | jafix hook claude
 
 ## 設定ファイル
 
-設定ファイルは `$XDG_CONFIG_HOME/jafix/config.toml` です。`XDG_CONFIG_HOME` が未設定なら `~/.config/jafix/config.toml` を読みます。設定ファイルが無ければ、組み込みのルールを既定の設定にし(AIらしい書き方を指摘する7ルールは無効、ほかは有効)、何も除外しません。
+設定ファイルは `$XDG_CONFIG_HOME/jafix/config.toml` です。`XDG_CONFIG_HOME` が未設定なら `~/.config/jafix/config.toml` を読みます。設定ファイルが無ければ、組み込みのルールを既定の設定にし(AIらしい書き方を指摘する7ルールと、`prh`・`@textlint-rule/pattern` は無効、ほかは有効)、何も除外しません。
 
 ```toml
 exclude = ["~/.dotfiles/docs/bad-examples.md", "**/drafts/**"]
@@ -238,7 +321,7 @@ pattern = "/[!！]/"
 
 ### `[builtin]`
 
-`[builtin]` の表は、組み込みのルールを1つずつか、presetの名前でまとめて設定します。ルールのIDのキー(「[組み込みのルール](#組み込みのルール)」の表)の値は、次のどれかです。書かなかったルールは既定の設定のままで、AIらしい書き方を指摘する7ルールは無効、ほかのルールは有効です。
+`[builtin]` の表は、組み込みのルールを1つずつか、presetの名前でまとめて設定します。ルールのIDのキー(「[組み込みのルール](#組み込みのルール)」の表)の値は、次のどれかです。書かなかったルールは既定の設定のままで、AIらしい書き方を指摘する7ルールと、`prh`・`@textlint-rule/pattern` は無効、ほかのルールは有効です。
 
 | 値                            | 意味                                                           |
 | ----------------------------- | -------------------------------------------------------------- |
@@ -286,7 +369,7 @@ presetの名前のキーと、そのpresetのルールのIDのキーを同じ表
 
 次のときは、設定ファイルが不正です。理由を標準エラーに書いて終え、終了コードは `jafix check` と `jafix fix` が2、hookが1です。`[builtin]` が不正なときは、理由にルールのIDかpresetの名前を含め、オプションの誤りでは、オプションの名前も含めます。
 
-- TOMLとして読めないか、`exclude`・`report-exclude`・`builtin` 以外のキーがある。利用者のパターンは `rules` の表ではなく、`[builtin]` の `@textlint-rule/pattern` に書きます
+- TOMLとして読めないか、`exclude`・`report-exclude`・`builtin` 以外のキーがある。`rules` の表は、知らないキーなので不正です。利用者のパターンは `[builtin]` の `@textlint-rule/pattern` に書きます
 - `exclude` か `report-exclude` の値が、`/`・`~/`・`**/` のどれでも始まらないか、globとして読めない
 - `[builtin]` のキーが組み込みのルールのIDでもpresetの名前でもない
 - `[builtin]` のpresetの名前の値が、`true` か `false` でない
@@ -297,6 +380,15 @@ presetの名前のキーと、そのpresetのルールのIDのキーを同じ表
 - AIらしい書き方を指摘する7ルールのオプションの値が誤っている。`disable` で始まるオプションと `enableDocumentAnalysis` は真偽値、`allows` はパターンの配列、`no-ai-words` の `dictionaryPath` は空でない文字列で `dictionaryMode` は `"append"` か `"override"`、`no-short-topic-comma` の `maxLength` は1以上の整数。textlintの `severity` は、jafixが対応しないので、知らないオプションに当たります
 - `no-ai-words` の `dictionaryPath` のファイルが読めないか、JSONとして読めないか、利用者の辞書の形でない。`tokens` の要素に、上に挙げたトークンの項目の名前でも `_` で始まる名前でもないキー(kuromojiの `word_id`・`word_type`・`word_position` を含む)があるときも、これに当たります。理由には `dictionaryPath` とファイルのパスを含めます
 - `no-ai-words` の `dictionaryMode` が `"override"` なのに、`dictionaryPath` が無い
+- `prh` のオプションが誤っている。`rulePaths` と `ruleContents` に辞書が1つも無い(`prh = true` を含む)、`check` で始まるオプションが真偽値でない、`checkCodeComment`・`debug`・知らないオプションがある。理由には `prh` とオプションの名前を含めます
+- `prh` の `rulePaths` か `ruleContents` の辞書が誤っている。理由には `prh`、`rulePaths` か `ruleContents`、辞書のファイルのパス(`ruleContents` では何番目の要素か)を含めます。次のどれかに当たります
+  - 辞書のファイルが読めないか、YAMLとして読めない。辞書の値の型が誤っている(`expected` が文字列でない、`rules` が配列でないなど)
+  - ルールに `expected` が無いか、`pattern`・`patterns` の値か要素が空の文字列
+  - `pattern`・`patterns` が正規表現として読めないか、配列の要素の `i` と `s` のフラグが食い違う。`regexpMustEmpty` が `$1` の形でない
+  - `specs` の要素の `from` と `to` のどちらかが空、またはルールを `from` に当てた結果が `to` と違う。理由には、そのルールの `expected`、`from`、`to`、当てた結果を含めます
+  - `imports` が循環する
+- `@textlint-rule/pattern` のオプションが誤っている。`patterns` が無いか空(`"@textlint-rule/pattern" = true` を含む)、要素に `message` か `pattern` が無い、要素の知らないキー(`forceCode` を含む)がある、`allowNodeTypes` の型の名前が上に挙げたもの以外、`pattern` と `allows` が正規表現として読めない、`y` フラグがある。理由にはルールのID、オプションの名前、何番目の要素かを含めます
+- 逆の置き換え。利用者の置き換えの固定の部分を、有効な組み込みの修正ルールが直す場合です。理由にはルールのID、その置き換え(`expected` か `replace`)、組み込みの修正ルールのIDを含めます
 
 ## textlintとの違い
 
@@ -311,7 +403,7 @@ presetの名前のキーと、そのpresetのルールのIDのキーを同じ表
 - `ja-no-mixed-period` と `arabic-kanji-numbers` は、textlintと違って自動で直さず、指摘だけを出します
 - `exclusionPatterns`・`forceAppendPeriod`・`checkFootnote`・`checkCode`・`checkImage` のオプションは使えません
 - `max-comma` と `max-kanji-continuous-len` の `max` に0は書けません。textlintは0をルール自身の既定値(4と5)に読み替えるので、同じ設定でも結果が変わります
-- パターンは、JavaScriptの正規表現ではなく、Rustの `regex` crateの構文で読みます。後読みと後方参照を使えず、フラグは `i`・`m`・`s` です
+- 組み込みのルールのオプションのパターンは、JavaScriptの正規表現ではなく、Rustの `regex` crateの構文で読みます。後読みと後方参照を使えず、フラグは `i`・`m`・`s` です。`prh` と `@textlint-rule/pattern` のパターンはJavaScriptの構文で読みます
 - 指摘の文面は、textlintの文面ではなく、jafixの1行の日本語です
 
 形態素解析を使う11ルールは、判定の条件(どのトークンの並びを指摘するか、例外、辞書)をtextlintから写していますが、textlintと同じ箇所を指摘するとは限りません。上の点のうち、列の数え方、パターン、文面は11ルールにも当てはまります。ほかに次の点が違います。
@@ -338,8 +430,26 @@ AIらしい書き方を指摘する7ルールも、判定の条件(何を指摘�
 - `ai-tech-writing-guideline` の `enableDocumentAnalysis` の既定値は `false` です。件数の要約の文面は、件数とカテゴリ別の内訳だけの1行です。textlintの `severity` のオプションは使えません
 - `no-ai-emphasis-patterns` は、見出しの中の太字を自動で直さず、指摘だけを出します
 
+`prh` と `@textlint-rule/pattern` も、判定の条件(辞書の形式、一致の条件、`replace` の展開)を `textlint-rule-prh` 6.1.1・`prh` 6.1.0・`@textlint-rule/textlint-rule-pattern` 2.0.2・`@textlint/regexp-string-matcher` 2.0.2から写し、textlintの不具合に近い挙動は写しません。上の点のうち、列の数え方と文面は2つのルールにも当てはまります。ほかに次の点が違います。
+
+- `prh` の `/source/flags` で、`s` と `u` のフラグを読みます。prh 6.1.0は `g`・`i`・`m`・`y` だけを読み、`/a/s` を文字列そのものとして扱います
+- `prh` の `expected` だけのルールは、英数字以外の正規表現の記号をエスケープします。textlintでは `expected: C++` の辞書が読み込みで失敗します。そのため、記号を含む `expected` だけのルールは、`ignoreRules` の `pattern` にprhの `--rules-yaml` の出力を写しても外れません。`ignoreRules` の `expected` で外します
+- `prh` の `options.wordBoundary` は、正規表現の全体を `\b` で挟みます。prhは括弧で囲まずにつなぐので、`/a|b/` の `\b` が片方ずつにしか掛かりません
+- `prh` の箇所の重なりは、残した箇所と比べて解きます。prhは1つ前の箇所(捨てたものを含む)と比べるので、重なったまま残る箇所があります。`$1` を展開した結果が一致した文字列と同じ箇所は、他のルールの重なる箇所を捨てさせません
+- `prh` の `prh:disable` のプラグマを扱いません。`version` の食い違いは不正にしません。`imports` の絶対パスはそのまま使い、`ruleContents` の中の `imports` は設定ファイルのあるディレクトリから解決します。`imports` の循環は設定の不正にします
+- `prh` の `checkCodeComment` と `debug`、`@textlint-rule/pattern` の `forceCode` は使えません
+- `@textlint-rule/pattern` の `allowNodeTypes` は、当たった要素の、そのnodeの中の箇所だけを除きます。textlintは、そのnodeの以降の箇所と以降の要素も調べません
+- `@textlint-rule/pattern` の `replace = ""` は、一致した文字列を消す修正にします。textlintは指摘だけを出します
+- `@textlint-rule/pattern` の `patterns` が空なら、設定の不正にします。textlintは文書の先頭に指摘を1件出します。`y` フラグも、先頭から続く一致だけになるので不正にします
+- 利用者の置き換えの重なりは、元の内容に対して1回だけ解きます。textlintの `--fix` は、修正を持つルールを1つずつ当てます。ルールを1つ当てるごとに、直した文書を解析し直します。そのため、`@textlint-rule/pattern` の要素どうしが重なると、textlintは後ろで終わる箇所を、jafixは先に始まる箇所を残します。`prh` と `@textlint-rule/pattern` が重なると、textlintは片方で直した後の文書にもう片方を当てます。`jafix check` は、重なりを解いた後の箇所だけを出します。textlintの `@textlint-rule/pattern` は、重なる `replace` 付きの一致もすべて指摘します
+- 裸のURL・自動リンク・定義を持つ省略形とcollapsed形の参照リンクの文字列を、`prh` と `@textlint-rule/pattern` は見ません。`prh` は `checkLink = true` のときも見ません。textlintでは、これらも `Str` なので、`@textlint-rule/pattern` は常に調べます。textlint-rule-prhは、参照リンクの文字列を常に、URLの文字列を `checkLink = true` のときに調べます
+- 長さ0の一致は箇所にしません
+- 見出しの中の箇所と、改行を含む箇所は、直さず指摘だけを出します
+- 組み込みの修正ルールと逆の置き換えは、設定の不正にします
+- 位置は元のソースでの位置で、列は文字で数えます
+
 ## ライセンス
 
 [MIT License](LICENSE-MIT) と [Apache License 2.0](LICENSE-APACHE) のデュアルライセンスです。
 
-組み込みのルールのうち、textlintと同じIDのものは、textlintのルールとライブラリの挙動に合わせて書き直したもので、正規表現や語の表、辞書の一部をそれらのソースから写しています。binaryには、MIT Licenseのlinderaと、mecab-ipadicの条件で配られるIPADICの辞書も入っています。それぞれの名前・version・著作権表示と、MIT Licenseとmecab-ipadicの条件の文面は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にあります。GitHub Releasesのtarballには、binaryと一緒に `LICENSE-MIT`・`LICENSE-APACHE`・`THIRD_PARTY_NOTICES.md` を入れています。
+組み込みのルールのうち、textlintと同じIDのものは、textlintのルールとライブラリの挙動に合わせて書き直したもので、正規表現や語の表、辞書の一部をそれらのソースから写しています。`prh` と `@textlint-rule/pattern` は、`textlint-rule-prh`・`prh`・`@textlint-rule/textlint-rule-pattern`・`@textlint/regexp-string-matcher` の判定の条件を写しています。binaryには、MIT Licenseのlinderaと、mecab-ipadicの条件で配られるIPADICの辞書も入っています。それぞれの名前・version・著作権表示と、MIT Licenseとmecab-ipadicの条件の文面は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にあります。GitHub Releasesのtarballには、binaryと一緒に `LICENSE-MIT`・`LICENSE-APACHE`・`THIRD_PARTY_NOTICES.md` を入れています。
