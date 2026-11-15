@@ -2294,13 +2294,10 @@ impl NoSynonyms {
 #[derive(Debug, Default)]
 pub struct DateWeekdayMismatch {
     /// `lang`。あれば、その言語の曜日だけを確かめ、無ければ日本語と英語の両方の曜日を確かめる
-    #[allow(dead_code)] // skeleton: not implemented
     pub lang: Option<WeekdayLang>,
     /// `useCurrentYearIfMissing`。真なら、年の無い日付を `current_year` の年として確かめる
-    #[allow(dead_code)] // skeleton: not implemented
     pub use_current_year_if_missing: bool,
     /// `currentYear`。`今年`・`本年` と、年の無い日付に使う年である。無ければ実行した時点のシステムの年を使う
-    #[allow(dead_code)] // skeleton: not implemented
     pub current_year: Option<usize>,
 }
 
@@ -2337,38 +2334,27 @@ pub enum WeekdayLang {
 /// `no-dead-link` のオプション。時間は秒である
 #[derive(Debug)]
 pub struct NoDeadLink {
-    /// `checkRelative`。偽なら、相対のリンクと `/` で始まる絶対パスを確かめない
-    #[allow(dead_code)] // skeleton: not implemented
+    /// `checkRelative`。偽なら、相対のリンクを確かめない。`/` で始まる絶対パスは、偽でも確かめる
     pub check_relative: bool,
     /// `baseURI`。パスで書いたものは、末尾の `/` の有無によらずディレクトリの `file://` のURLにする
-    #[allow(dead_code)] // skeleton: not implemented
     pub base_uri: Option<Url>,
     /// `ignore`。解決する前の宛先の文字列に当たれば確かめない
-    #[allow(dead_code)] // skeleton: not implemented
     pub ignore: GlobSet,
     /// `ignoreRedirects`。真なら、リダイレクトの結果を指摘しない
-    #[allow(dead_code)] // skeleton: not implemented
     pub ignore_redirects: bool,
     /// `preferGET`。このoriginのURLは、最初から `GET` で確かめる
-    #[allow(dead_code)] // skeleton: not implemented
     pub prefer_get: Vec<Origin>,
     /// `retry`。2xxでない応答と接続の誤りを、この回数まで再試行する
-    #[allow(dead_code)] // skeleton: not implemented
     pub retry: usize,
     /// `concurrency`。1つのファイルの宛先を、最大この数だけ同時に確かめる
-    #[allow(dead_code)] // skeleton: not implemented
     pub concurrency: usize,
     /// `userAgent`
-    #[allow(dead_code)] // skeleton: not implemented
     pub user_agent: String,
     /// `maxRetryTime`。`Retry-After` の無い再試行の待ちの上限
-    #[allow(dead_code)] // skeleton: not implemented
     pub max_retry_time: usize,
     /// `maxRetryAfterTime`。`Retry-After` の待ちの上限
-    #[allow(dead_code)] // skeleton: not implemented
     pub max_retry_after_time: usize,
     /// `httpOnly`。真なら、すべての宛先を `base_uri` を基準にしたURLとして解決する
-    #[allow(dead_code)] // skeleton: not implemented
     pub http_only: bool,
 }
 

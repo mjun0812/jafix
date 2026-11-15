@@ -7,6 +7,7 @@ mod kangxi;
 use regex::Regex;
 use unicode_normalization::UnicodeNormalization;
 
+use crate::js_regex;
 use crate::prose::Prose;
 
 use super::builtin::{AlphabetWidth, Builtin};
@@ -298,7 +299,7 @@ pub fn report(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<Report> {
 
 /// `allow` のどれかの一致の先頭から直後の位置まで (直後の位置を含む) に、`text` の位置 `i` があればtrue。
 /// textlintは直後の1文字まで許すので、指摘の有無を合わせる
-fn is_allowed(allow: &[regress::Regex], text: &str, i: usize) -> bool {
+fn is_allowed(allow: &[js_regex::Regex], text: &str, i: usize) -> bool {
     allow.iter().any(|regex| {
         regex
             .find_iter(text)

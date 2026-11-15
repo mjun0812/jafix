@@ -67,7 +67,6 @@ impl Filters {
 /// 文書から外す範囲の一覧
 #[derive(Debug, Default)]
 pub struct Ignored {
-    #[allow(dead_code)] // skeleton: not implemented
     ranges: Vec<IgnoredRange>,
 }
 
@@ -75,9 +74,7 @@ pub struct Ignored {
 #[derive(Debug)]
 struct IgnoredRange {
     /// 元のソース上のバイト範囲
-    #[allow(dead_code)] // skeleton: not implemented
     range: Range<usize>,
-    #[allow(dead_code)] // skeleton: not implemented
     rules: IgnoredRules,
 }
 
@@ -101,9 +98,14 @@ impl Ignored {
 
     /// `range` が外す範囲のどれかに完全に含まれ (始まりと終わりがどちらも外す範囲の中か端にあり)、名前が `rule` の
     /// ルールがその範囲の対象なら真
-    #[allow(dead_code)] // skeleton: not implemented
     pub fn covers(&self, range: &Range<usize>, rule: &str) -> bool {
-        let _ = (range, rule);
-        todo!("skeleton: not implemented")
+        self.ranges.iter().any(|ignored| {
+            ignored.range.start <= range.start
+                && range.end <= ignored.range.end
+                && match &ignored.rules {
+                    IgnoredRules::All => true,
+                    IgnoredRules::Only(rules) => rules.iter().any(|id| id.name() == rule),
+                }
+        })
     }
 }

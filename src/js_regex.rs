@@ -3,7 +3,7 @@
 
 use std::borrow::Cow;
 
-use regress::Regex;
+pub use regress::Regex;
 
 /// 正規表現に付けるフラグ。`u` は常に付ける
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

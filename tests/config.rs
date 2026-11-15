@@ -2409,3 +2409,145 @@ fn hiragana_rules_and_2_2_1_report_both() {
         assert!(findings[0].starts_with("t.md:1:5: "), "{rule}: {found}");
     }
 }
+
+/// 言語によらない3つの指摘ルール。どれも既定で無効である
+const GENERAL_RULES: [&str; 3] = ["no-todo", "date-weekday-mismatch", "no-dead-link"];
+
+/// 1行目・3行目・5行目が `GENERAL_RULES` の3つのそれぞれに当たり、`<!-- textlint-disable -->` の後の9行目が修正ルールと
+/// 指摘ルールに当たる文書
+const GENERAL_RULES_INPUT: &str = "TODO: 手順を書く。
+
+2024年4月23日(月)に会う。
+
+[設定](missing.md)を見る。
+
+<!-- textlint-disable -->
+
+日本語 Rust の（補足）を読む！
+";
+
+#[test]
+fn general_rules_and_filters_are_off_by_default() {
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", GENERAL_RULES_INPUT);
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in GENERAL_RULES {
+        assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+    // `[filters]` を書かなければ `comments` は無効なので、コメントの後の箇所と指摘も出る
+    let after_comment: Vec<&str> = found
+        .lines()
+        .filter(|line| line.starts_with("t.md:9:"))
+        .collect();
+    assert_eq!(
+        after_comment,
+        [
+            "t.md:9:4: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]",
+            "t.md:9:9: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]",
+            "t.md:9:11: 全角括弧を半角にする [fullwidth-paren]",
+            "t.md:9:14: 全角括弧を半角にする [fullwidth-paren]",
+            "t.md:9:18: 「！」を使わない [no-exclamation-question-mark]",
+        ],
+        "{found}"
+    );
+
+    // 同じ文書に3つのそれぞれが当たることを、有効にして確かめる
+    let enabled: String = GENERAL_RULES
+        .iter()
+        .map(|rule| format!("{rule} = true\n"))
+        .collect();
+    sandbox.write_xdg_config(&format!("[builtin]\n{enabled}"));
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for (rule, line) in GENERAL_RULES.iter().zip([1, 3, 5]) {
+        let findings = findings_of(found, rule);
+        assert_eq!(findings.len(), 1, "{rule}: {found}");
+        assert!(
+            findings[0].starts_with(&format!("t.md:{line}:")),
+            "{rule}: {found}"
+        );
+    }
+}
+
+#[test]
+fn general_rule_options_are_validated() {
+    for (builtin, expected) in [
+        ("no-todo = { allow = [] }", ["no-todo", "allow"]),
+        (
+            "date-weekday-mismatch = { locale = \"ja\" }",
+            ["date-weekday-mismatch", "locale"],
+        ),
+        (
+            "date-weekday-mismatch = { lang = \"es\" }",
+            ["date-weekday-mismatch", "lang"],
+        ),
+        (
+            "date-weekday-mismatch = { useCurrentYearIfMissing = \"true\" }",
+            ["date-weekday-mismatch", "useCurrentYearIfMissing"],
+        ),
+        (
+            "date-weekday-mismatch = { currentYear = 0 }",
+            ["date-weekday-mismatch", "currentYear"],
+        ),
+        (
+            "no-dead-link = { dotInIgnore = true }",
+            ["no-dead-link", "dotInIgnore"],
+        ),
+        (
+            "no-dead-link = { interval = 1 }",
+            ["no-dead-link", "interval"],
+        ),
+        (
+            "no-dead-link = { intervalCap = 1 }",
+            ["no-dead-link", "intervalCap"],
+        ),
+        (
+            "no-dead-link = { linkMaxAge = 1 }",
+            ["no-dead-link", "linkMaxAge"],
+        ),
+        (
+            "no-dead-link = { checkRelative = 1 }",
+            ["no-dead-link", "checkRelative"],
+        ),
+        (
+            "no-dead-link = { baseURI = \"\" }",
+            ["no-dead-link", "baseURI"],
+        ),
+        (
+            "no-dead-link = { ignore = [1] }",
+            ["no-dead-link", "ignore"],
+        ),
+        (
+            "no-dead-link = { ignore = [\"[\"] }",
+            ["no-dead-link", "ignore"],
+        ),
+        (
+            "no-dead-link = { preferGET = [\"example.com\"] }",
+            ["no-dead-link", "preferGET"],
+        ),
+        ("no-dead-link = { retry = -1 }", ["no-dead-link", "retry"]),
+        (
+            "no-dead-link = { concurrency = 0 }",
+            ["no-dead-link", "concurrency"],
+        ),
+        (
+            "no-dead-link = { userAgent = \"\" }",
+            ["no-dead-link", "userAgent"],
+        ),
+        (
+            "no-dead-link = { maxRetryTime = 1.5 }",
+            ["no-dead-link", "maxRetryTime"],
+        ),
+        (
+            "no-dead-link = { maxRetryAfterTime = \"10\" }",
+            ["no-dead-link", "maxRetryAfterTime"],
+        ),
+        (
+            "no-dead-link = { httpOnly = \"false\" }",
+            ["no-dead-link", "httpOnly"],
+        ),
+    ] {
+        assert_check_rejects_builtin(builtin, &expected);
+    }
+}

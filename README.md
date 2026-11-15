@@ -1,12 +1,12 @@
 # jafix
 
-jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる範囲で直すCLIです。Markdownの本文にある全角括弧や半角カナなどを直し、日本語と英数字・括弧の間の空白を削除します。機械的に直せない書き方は、指摘ルールで指摘します。ルールは、全角括弧と空白を直す3つ、textlintの5つのpreset(`textlint-rule-preset-ja-technical-writing`・`@textlint-ja/textlint-rule-preset-ai-writing`・`textlint-rule-preset-ai-words-ja`・`textlint-rule-preset-ja-spacing`・`textlint-rule-preset-jtf-style`)と9つの単独のルールから移したもの、利用者がprhの辞書やパターンに書いた置き換えです。
+jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる範囲で直すCLIです。Markdownの本文にある全角括弧や半角カナなどを直し、日本語と英数字・括弧の間の空白を削除します。機械的に直せない書き方は、指摘ルールで指摘します。ルールは、全角括弧と空白を直す3つ、textlintの5つのpreset(`textlint-rule-preset-ja-technical-writing`・`@textlint-ja/textlint-rule-preset-ai-writing`・`textlint-rule-preset-ai-words-ja`・`textlint-rule-preset-ja-spacing`・`textlint-rule-preset-jtf-style`)と12の単独のルールから移したもの、利用者がprhの辞書やパターンに書いた置き換えです。
 
 ## 組み込みのルール
 
-組み込みのルールは92あります。`fullwidth-paren`・`space-between-ja-and-alnum`・`space-between-ja-and-paren` の3つはjafix独自の修正ルールで、`prh` と `@textlint-rule/pattern` の2つは、利用者が書いた辞書やパターンで置き換える・指摘するルールです。残りの87ルールはtextlintから移したもので、内訳は、`textlint-rule-preset-ja-technical-writing` の23ルール、`@textlint-ja/textlint-rule-preset-ai-writing` の5ルール(`no-ai-list-formatting` から `ai-tech-writing-guideline` まで)、`textlint-rule-preset-ai-words-ja` の2ルール(`no-ai-words` と `no-short-topic-comma`)、`textlint-rule-preset-ja-spacing` の11ルール(`ja-nakaguro-or-halfwidth-space-between-katakana` から `ja-space-around-strong` まで)、`textlint-rule-preset-jtf-style` の37ルール(`1.1.1.本文` から `4.3.8.一重引用符` まで)、単独のルールの `textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet` と `textlint-rule-no-kangxi-radicals`、ひらがなで書く語・さ入れ言葉・同義語を見る7ルール(`ja-hiragana-hojodoushi` から `@textlint-ja/no-synonyms` まで)です。IDとオプションの名前はtextlintと同じです。ルールの有効・無効とオプションは、設定ファイルの `[builtin]` で変えます(「[設定ファイル](#builtin)」)。
+組み込みのルールは95あります。`fullwidth-paren`・`space-between-ja-and-alnum`・`space-between-ja-and-paren` の3つはjafix独自の修正ルールで、`prh` と `@textlint-rule/pattern` の2つは、利用者が書いた辞書やパターンで置き換える・指摘するルールです。残りの90ルールはtextlintから移したもので、内訳は、`textlint-rule-preset-ja-technical-writing` の23ルール、`@textlint-ja/textlint-rule-preset-ai-writing` の5ルール(`no-ai-list-formatting` から `ai-tech-writing-guideline` まで)、`textlint-rule-preset-ai-words-ja` の2ルール(`no-ai-words` と `no-short-topic-comma`)、`textlint-rule-preset-ja-spacing` の11ルール(`ja-nakaguro-or-halfwidth-space-between-katakana` から `ja-space-around-strong` まで)、`textlint-rule-preset-jtf-style` の37ルール(`1.1.1.本文` から `4.3.8.一重引用符` まで)、単独のルールの `textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet` と `textlint-rule-no-kangxi-radicals`、ひらがなで書く語・さ入れ言葉・同義語を見る7ルール(`ja-hiragana-hojodoushi` から `@textlint-ja/no-synonyms` まで)、言語によらない3ルール(`no-todo`・`date-weekday-mismatch`・`no-dead-link`)です。IDとオプションの名前はtextlintと同じです。ルールの有効・無効とオプションは、設定ファイルの `[builtin]` で変えます(「[設定ファイル](#builtin)」)。
 
-設定に何も書かなければ、jafix独自の3つと `textlint-rule-preset-ja-technical-writing` の23ルールが有効で、オプションの既定値はpresetと同じです。AIらしい書き方を指摘する7ルールは無効です。7ルールには同じ書き方を重ねて見るものがあり、すべてを有効にすると同じ箇所に複数の指摘が出るためです。7ルールは、`[builtin]` にルールのIDかpresetの名前を書いて有効にします(「[presetの名前](#presetの名前)」)。空白と字種を見る13ルール(`textlint-rule-preset-ja-spacing` の11ルールと、`no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals`)も、同じ理由で無効で、同じく `[builtin]` で有効にします。日本語と英数字の間の空白のように、jafix独自の修正ルールと同じ空白を見るものがあるためです。JTF日本語標準スタイルガイドの37ルールも、ほかのルールと同じ箇所を見るものが多いので無効で、同じく `[builtin]` で有効にします(「[JTFスタイルガイドの37ルール](#jtfスタイルガイドの37ルール)」)。ひらがなで書く語・さ入れ言葉・同義語を見る7ルールも無効です。7つを束ねるpresetの名前は無いので、`[builtin]` にルールのIDのキーを書いて有効にします(「[ひらがな・さ入れ・同義語の7ルール](#ひらがなさ入れ同義語の7ルール)」)。`prh` と `@textlint-rule/pattern` も無効で、どのpresetにも入りません。辞書かパターンが無いと働かないので、`[builtin]` にオプションの表を書いたときだけ有効になります(「[利用者の置き換え](#利用者の置き換え)」)。
+設定に何も書かなければ、jafix独自の3つと `textlint-rule-preset-ja-technical-writing` の23ルールが有効で、オプションの既定値はpresetと同じです。AIらしい書き方を指摘する7ルールは無効です。7ルールには同じ書き方を重ねて見るものがあり、すべてを有効にすると同じ箇所に複数の指摘が出るためです。7ルールは、`[builtin]` にルールのIDかpresetの名前を書いて有効にします(「[presetの名前](#presetの名前)」)。空白と字種を見る13ルール(`textlint-rule-preset-ja-spacing` の11ルールと、`no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals`)も、同じ理由で無効で、同じく `[builtin]` で有効にします。日本語と英数字の間の空白のように、jafix独自の修正ルールと同じ空白を見るものがあるためです。JTF日本語標準スタイルガイドの37ルールも、ほかのルールと同じ箇所を見るものが多いので無効で、同じく `[builtin]` で有効にします(「[JTFスタイルガイドの37ルール](#jtfスタイルガイドの37ルール)」)。ひらがなで書く語・さ入れ言葉・同義語を見る7ルールも無効です。7つを束ねるpresetの名前は無いので、`[builtin]` にルールのIDのキーを書いて有効にします(「[ひらがな・さ入れ・同義語の7ルール](#ひらがなさ入れ同義語の7ルール)」)。TODO・曜日・リンク先を見る3ルールも無効で、presetの名前も無いので、ルールのIDのキーで有効にします。説明は「[言語によらない3ルール](#言語によらない3ルール)」の節です。`prh` と `@textlint-rule/pattern` も無効で、どのpresetにも入りません。辞書かパターンが無いと働かないので、`[builtin]` にオプションの表を書いたときだけ有効になります(「[利用者の置き換え](#利用者の置き換え)」)。
 
 `textlint-rule-preset-ja-technical-writing` の23ルールのうち、`max-ten` から `ja-no-redundant-expression` までの11ルールは、文を形態素解析で語(トークン)に分けて判定します。7ルールのうち、`no-ai-colon-continuation`・`no-ai-words`・`no-short-topic-comma` の3つと、ひらがな・さ入れ・同義語の7ルールも形態素解析を使います。形態素解析には [lindera](https://github.com/lindera/lindera) と、binaryに埋め込んだIPADICの辞書を使います。
 
@@ -104,6 +104,9 @@ jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる�
 | `ja-hiragana-daimeishi`                           | 指摘(既定で無効)       | 代名詞(`彼処`・`何処` など)を漢字で書く。語は品詞と読みで見分ける                                                    | なし                                                                                                                                                                                                  |
 | `@textlint-ja/no-insert-dropping-sa`              | 指摘(既定で無効)       | さ入れ言葉(`辛さそう`)かさ抜き言葉(`良そう`)を使う                                                                   | なし                                                                                                                                                                                                  |
 | `@textlint-ja/no-synonyms`                        | 指摘(既定で無効)       | 文書の中で、同義語の別の表記(`サーバ` と `サーバー` など)を使い分けずに混ぜる                                        | `allows`・`preferWords`(いずれも[])、`allowAlphabet`・`allowNumber`・`allowLexeme`(いずれもtrue)                                                                                                      |
+| `no-todo`                                         | 指摘(既定で無効)       | `TODO:` か、リスト項目の未完了のタスクの記号 `[ ]` が残っている                                                      | なし                                                                                                                                                                                                  |
+| `date-weekday-mismatch`                           | 指摘(既定で無効)       | 日付(`2024年4月23日`・`2024-04-23`・`April 23, 2024` など)の直後の括弧の中の曜日が、日付と食い違う                   | `lang`(なし)、`useCurrentYearIfMissing`(false)、`currentYear`(実行した時点の年)                                                                                                                       |
+| `no-dead-link`                                    | 指摘(既定で無効)       | リンク先のファイルが無いか、URLが届かないかリダイレクトする。外部のURLは `jafix check` だけが確かめる                | `checkRelative`(true)、`ignore`・`preferGET`(いずれも[])、`retry`(3)、`concurrency`(8)、`maxRetryTime`・`maxRetryAfterTime`(いずれも10)など                                                           |
 
 オプションの意味はtextlintのルールと同じです。`sentence-length` の `countBy` は、長さをUTF-16のコードユニットで数える `"codeunits"` か、文字で数える `"codepoints"` です。`sentence-length` の `skipPatterns`、`no-exclamation-question-mark` と `ja-unnatural-alphabet` の `allow` の要素は、「[パターン](#パターン)」の書き方で書きます。`max-kanji-continuous-len` の `allow` の要素は、漢字の連続の全体と一致する文字列で、`no-invalid-control-character` の `allow` の要素は、1文字の文字列です。
 
@@ -277,6 +280,60 @@ dict:
 
 利用者の置き換えの結果を7ルールが指摘する組も、設定の不正にしません。たとえば、`いたします` を `致します` にする `prh` の辞書と `ja-hiragana-hojodoushi` の組です。この組では、hookが置き換えた箇所をagentが指摘に従って戻し、次の編集でまた置き換わる、という往復が起きえます。どちらかのルールのIDのキーを `false` にするか、その置き換えを辞書やパターンから外してください。
 
+### 言語によらない3ルール
+
+3ルールは、textlintで単独に配られている次の3つのpackageから移したものです。IDは、packageの名前から `textlint-rule-` を除いた名前です。
+
+- `no-todo`: `textlint-rule-no-todo` 2.0.1
+- `date-weekday-mismatch`: `textlint-rule-date-weekday-mismatch` 1.1.1。日付の書式は、このpackageが使う `chrono-node` 1.4.9から写しています
+- `no-dead-link`: `textlint-rule-no-dead-link` 6.2.3
+
+3つはどれも指摘ルールで、`jafix fix` とhookは書き換えません。textlintの `date-weekday-mismatch` は曜日を、`no-dead-link` はリダイレクト先のURLを置き換えて直せます。jafixは直さずに、置き換え後の曜日かURLを文面に入れて指摘します。設定を書かなければ3つとも無効で、3つを束ねるpresetの名前もありません。`[builtin]` にルールのIDのキーを書いて有効にします。
+
+```toml
+[builtin]
+no-todo = true
+date-weekday-mismatch = { useCurrentYearIfMissing = true }
+no-dead-link = { ignore = ["https://example.com/**"], retry = 1 }
+```
+
+`no-todo` は、`TODO:` と未完了のタスクを指摘します。`TODO:` は大文字と小文字を区別せず、語の途中(`mastodo:`)にも当たり、本文の範囲の中のすべての一致を指摘します。全角の `ＴＯＤＯ：` とコロンの無い `TODO` には当たりません。見るのは、リンクの文字列と引用の中を除く本文の範囲で、見出し・表のセル・強調・太字の中も見ます。タスクは、リスト項目ごとに、項目の先頭のタスクの記号と項目の直下の段落の文字列から `[ ]` を探し、最初の1つを指摘します。`[ ]` は、角括弧の間が1文字以上の空白で、後ろに空白が続くものです。引用の中の項目も見ます。`[x]` と `[]` には当たらず、入れ子の項目の `[ ]` はその項目でだけ数えます。文面は `TODOが残っている: 「<TODO: から本文の範囲の末尾まで>」` と `未完了のタスクが残っている` です。
+
+`date-weekday-mismatch` は、日付の直後の括弧の中身を曜日として読み、日付から求めた曜日と食い違えば指摘します。括弧は `(` か `（` で開き、`)` か `）` で閉じるもので、日付との間に空白があってもかまいません。日付と括弧は、同じ本文の範囲の中になければならないので、`**2024年4月23日**(月)` は確かめません。見るのは本文の範囲のすべてで、リンクの文字列・引用・見出し・表のセルの中も見ます。読む日付の書式は次のとおりです。
+
+- 日本語: `2024年4月23日`・`2024年 4月 23日`・`令和6年4月23日`・`令和元年5月1日`・`今年4月23日`・`本年4月23日`・`4月23日`。元号は `令和`・`平成`・`昭和` で、全角の数字も読みます
+- 年が先の数字: `2024-04-23`・`2024/04/23`・`2024.04.23`・`2024/Apr/23`と、時刻の続く `2024-04-23T10:00`・`2024-04-23T10:00:00+09:00`
+- 月が先の数字: `04/23/2024`・`4.23.2024`・`4/23/24`・`4/23`。月が12を超え、日が12以下なら入れ替えます(`23/04/2024`)。2桁の年は、50より大きければ1900年代、それ以外は2000年代とします。年の無い形は、`/` で区切ったときだけ読みます
+- 英語の月名: `April 23, 2024`・`Apr. 23rd 2024`・`23 April 2024`・`23rd of April, 2024`・`twenty-third of April, 2024`・`April 23`。月名の大文字と小文字は区別しません。前に英語の曜日の語を置いた `Tuesday, April 23, 2024` も読みます
+
+曜日は、括弧の中の前後の空白を除いた文字列が、日本語の `日`〜`土` と `日曜日`〜`土曜日`、英語の `Su`〜`Sa`・`Sun`〜`Sat`・`Sunday`〜`Saturday` のどれかと全体が一致したときだけ確かめます。大文字と小文字は区別するので、`mon` は確かめず、`月曜`・`祝` も確かめません。曜日の言語は括弧の中身で決めるので、`2024-04-23(火)` と `2024年4月23日(Tue)` のどちらも確かめます。文面は `「2024-04-23 (」の曜日は「Tue」で、「Mon」ではない` の形で、位置は括弧の中の曜日の先頭です。
+
+オプションは、次のとおりです。
+
+- `lang` は `"ja"` か `"en"` で、書くとその言語の曜日だけを確かめます。書かなければ両方を確かめます
+- `useCurrentYearIfMissing` を `true` にすると、年の無い日付(`4月23日`・`4/23`・`April 23`)を `currentYear` の年として確かめます。`false` のときは確かめません
+- `currentYear` は1以上の整数で、`今年`・`本年` の日付と、年を補う日付に使う年です。書かなければ、実行した時点のシステムの年(UTC)です
+
+`同年` と元号の無い `元年` の日付は、年が決まらないので確かめません。存在しない日付(`2016年2月30日`)、範囲(`4月23日〜24日`・`April 23 - 25, 2024`)、`BE`・`AD`・`BC` の付く年の日付も確かめません。
+
+`no-dead-link` は、リンクの宛先のファイルかURLがあるかを確かめます。宛先は、インラインのリンク(`[x](u)`)と自動リンク(`<…>`)、裸のURL、参照リンクの定義(`[id]: u`)の宛先です。見出し・表のセル・リスト項目・脚注の中も見ます。引用の中、画像、インラインコード・コードブロック・HTMLの中のURLは確かめません。宛先が `http:`・`https:`・`file:` 以外の方式(`mailto:` など)なら確かめず、メールアドレスの自動リンクも確かめません。裸のURLは、本文の範囲と同じく、対にならない `）` の手前で終えます。`公式（https://example.com）を参照。` の宛先は `https://example.com` です。
+
+相対のリンク(`exists.md`・`./x`・`#anchor`)は、`baseURI` があればそれを、無ければMarkdownのファイルの場所を基準に解決します。解決したパスから `?` と `#` から後ろを除き、そのファイルかディレクトリがあるかを確かめます。ページの中のアンカーがあるかは確かめません。`/` で始まる絶対パスは、ローカルのファイルとして確かめます。文面は `リンク先のファイルが無い: <宛先>` です。
+
+`no-dead-link` は、hookでは外部のURLに接続しません。`http:`・`https:` のURLに接続して確かめるのは `jafix check` だけで、hookと `jafix fix` はローカルのファイルだけを確かめます。hookは編集のたびに速く終わる必要があり、外部のサーバーへの接続はそれを満たせないためです。`jafix check` は `HEAD` で要求し、2xxでなければ `GET` で `retry` の回数まで、間を空けて再試行します。`preferGET` のoriginのURLは、最初から `GET` で要求します。1回の要求は10秒で打ち切ります。リダイレクトを辿った先が2xxなら、リダイレクト先のURLを文面に入れて指摘します。同じ `jafix check` の中の同じURLは1回だけ確かめ、1つのファイルの宛先を最大 `concurrency` 個ずつ同時に確かめます。文面は `リンク先に届かない: <URL> (404 Not Found)` と、`リンク先が <最後のURL> へリダイレクトする (301 Moved Permanently)。宛先を <最後のURL> にする` です。TLSの証明書は、binaryに入れた `webpki-roots` の一覧で検証します。
+
+オプションは、次のとおりです。
+
+- `checkRelative` を `false` にすると、相対のリンクを確かめません。`/` で始まる絶対パスは確かめます
+- `baseURI` は、相対のリンクを解決する基準で、空でない文字列です。`http://`・`https://`・`file://` で始まればURL、それ以外はパスです。パスは設定ファイルのあるディレクトリから解決し、`~/` で始まればホームディレクトリに展開します。末尾の `/` の有無によらず、ディレクトリとして扱います
+- `ignore` は、確かめない宛先のglobの配列です。解決する前の宛先の文字列に当てます。`exclude` と同じく、`*` と `?` は `/` をまたがず、`**` はまたぎます
+- `ignoreRedirects` を `true` にすると、リダイレクトする宛先を指摘しません
+- `preferGET` は、最初から `GET` で要求するoriginのURLの配列です(`["https://example.com"]`)
+- `retry` は再試行の回数の上限で、0以上の整数です。`concurrency` は同時に確かめる数で、1以上の整数です
+- `userAgent` は要求の `User-Agent` で、空でない文字列です。書かなければ `jafix-no-dead-link/<jafixのversion>` です
+- `maxRetryTime` と `maxRetryAfterTime` は、再試行の前に待つ時間の上限の秒数で、0以上の整数です。応答に `Retry-After` があればその秒数を `maxRetryAfterTime` まで待ちます。無ければ、`回数 ** 2 * 100` ミリ秒を `maxRetryTime` まで待ちます。上限を超えれば、待たずに再試行します
+- `httpOnly` を `true` にすると、すべての宛先を `baseURI` を基準にURLとして解決します。`baseURI` が無ければ、相対のリンクと `/` で始まる絶対パスを確かめません
+
 ## 利用者の置き換え
 
 `prh` と `@textlint-rule/pattern` は、利用者が書いた辞書やパターンで本文を直し、指摘するルールです。辞書とパターンはtextlintで使っているものをそのまま書けるので、textlintから移るときに書き直す必要がありません。prhのルールの箇所と、`replace` を持つ `@textlint-rule/pattern` の要素の箇所は修正ルールで、`jafix fix` とhookが直し、`jafix check` が箇所として出します。この置き換えを、以下では利用者の置き換えと呼びます。`replace` を持たない要素の箇所は、利用者の置き換えではなく、指摘ルールの指摘です。
@@ -382,10 +439,12 @@ patterns = [
 
 組み込みの指摘ルールは、ルールごとに当てる単位が違います。
 
-- 本文の範囲ごとに当てるルール: `max-kanji-continuous-len`・`arabic-kanji-numbers`・`no-exclamation-question-mark`・`ja-unnatural-alphabet`・`no-double-negative-ja`・`no-dropping-the-ra`・`ja-no-weak-phrase`・`ja-no-successive-word`・`ja-no-abusage`・`no-ai-hype-expressions`・`no-ai-words`・`no-short-topic-comma`・`ja-nakaguro-or-halfwidth-space-between-katakana`・`ja-space-after-exclamation`・`ja-space-after-question`・空白を求める側の `ja-space-between-half-and-full-width`・ひらがな系の5ルール・`@textlint-ja/no-insert-dropping-sa`・`@textlint-rule/pattern` です。形態素解析を使うルールは、本文の範囲を1つずつトークンへ分けます。本文の範囲は、インラインコード・強調・リンク・HTMLのタグで区切られるので、境目をまたいでは一致せず、`照**合**` は `照合` に当たりません。長さ0の一致は指摘にしません。組み込みのルールは、引用・強調・リンクの中、段落の直下でない範囲を、ルールごとにtextlintと同じ文脈で対象から外します。`@textlint-rule/pattern` は、`allowNodeTypes` に書いた型の中だけを対象から外します
+- 本文の範囲ごとに当てるルール: `max-kanji-continuous-len`・`arabic-kanji-numbers`・`no-exclamation-question-mark`・`ja-unnatural-alphabet`・`no-double-negative-ja`・`no-dropping-the-ra`・`ja-no-weak-phrase`・`ja-no-successive-word`・`ja-no-abusage`・`no-ai-hype-expressions`・`no-ai-words`・`no-short-topic-comma`・`ja-nakaguro-or-halfwidth-space-between-katakana`・`ja-space-after-exclamation`・`ja-space-after-question`・空白を求める側の `ja-space-between-half-and-full-width`・ひらがな系の5ルール・`@textlint-ja/no-insert-dropping-sa`・`no-todo` の `TODO:`・`date-weekday-mismatch`・`@textlint-rule/pattern` です。形態素解析を使うルールは、本文の範囲を1つずつトークンへ分けます。本文の範囲は、インラインコード・強調・リンク・HTMLのタグで区切られるので、境目をまたいでは一致せず、`照**合**` は `照合` に当たりません。長さ0の一致は指摘にしません。組み込みのルールは、引用・強調・リンクの中、段落の直下でない範囲を、ルールごとにtextlintと同じ文脈で対象から外します。`@textlint-rule/pattern` は、`allowNodeTypes` に書いた型の中だけを対象から外します
 - インラインコード・リンク・太字・強調の前後に当てるルール: 4つの `ja-space-around-*` の `true` の側です。nodeの直前か直後の文字が日本語の文字で、間に空白が無ければ指摘します。nodeの前か後ろに文字が無い側(文書の先頭か末尾)は見ません
 - 段落と文の単位で当てるルール: `sentence-length`・`max-comma`・`ja-no-mixed-period`・`no-unmatched-pair`・`max-ten`・`no-doubled-joshi`・`no-doubled-conjunctive-particle-ga`・`no-doubled-conjunction`・`ja-no-redundant-expression` です。Markdownの解析結果のままの段落を見ます。リスト項目・引用・脚注の定義の中の段落も見ますが、`ja-no-mixed-period` はこの3つの中の段落を対象にせず、`sentence-length` は引用の中の段落と、子がリンク1つだけの段落を対象にしません。段落の文字列には、本文のほかにインラインコードの中身と画像のaltも入ります。文は、`。` `.` `?` `!` などで区切り、括弧と引用符が開いている間と、`Mr.` のような英語の略語の `.` では区切りません。形態素解析を使うルールは、引用の中の段落を対象にしません(`ja-no-redundant-expression` は `allowNodeTypes` で決まります)。また、インラインコードを中身と同じ文字数の `ー` に置き換えてから文をトークンに分けるので、コードの中身を判定に入れません
 - リスト項目・見出し・段落の元の文字列に当てるルール: `no-ai-list-formatting` はリスト項目ごとに、項目の先頭の太字の型と、項目の範囲にある段落(入れ子の項目の段落を含む)の最初の絵文字を見ます。`no-ai-emphasis-patterns` は段落と見出しごとに見ます。どちらも、インラインコードとHTMLのタグの中で始まるか終わる一致を捨てるので、コードの中の `**` や絵文字には当たりません。リスト項目の中のコードブロックも見ません
+- リスト項目の直下の段落に当てるルール: `no-todo` のタスクです。項目の先頭のタスクの記号と、項目の直下の段落の文字列を見ます。インラインコード・リンク・強調の中と、入れ子の項目は見ません
+- リンクの宛先に当てるルール: `no-dead-link` です。インラインのリンク・自動リンク・裸のURL・参照リンクの定義の宛先を、見出し・表のセル・リスト項目・脚注の中を含めて見ます
 - 段落の全体の文字列に当てるルール: `ai-tech-writing-guideline` です。リスト項目・引用・脚注の定義の中の段落も見ます。段落の文字列は、段落の単位のルールと同じ作り方で、インラインコードだけを中身と同じ文字数の半角空白に置き換えます。コードを挟んだ語はつながりません
 - 文書の直下の段落と、その次のブロックに当てるルール: `no-ai-colon-continuation` と、`ai-tech-writing-guideline` の構造化の一部です。リスト項目・引用・脚注の定義の中の段落は見ません。`no-ai-colon-continuation` は、次のブロックがコードブロック・リスト・引用・表の段落を、`ai-tech-writing-guideline` は、次のブロックがリストの段落を見ます
 - JTFスタイルガイドの37ルールの指摘ルール: 段落の直下の文字列、見出し、リスト、段落、文書の全体のどれかに当てます。辞書の4ルールは、`prh` と同じく対象行と重なる本文の範囲だけに当てます。ルールごとの単位は「[JTFスタイルガイドの37ルール](#jtfスタイルガイドの37ルール)」にあります
@@ -528,7 +587,7 @@ pattern = "/[!！]/"
 
 ### `[builtin]`
 
-`[builtin]` の表は、組み込みのルールを1つずつか、presetの名前でまとめて設定します。ルールのIDのキー(「[組み込みのルール](#組み込みのルール)」の表)の値は、次のどれかです。書かなかったルールは既定の設定のままで、AIらしい書き方を指摘する7ルール、空白と字種の13ルール、JTFスタイルガイドの37ルール、ひらがな・さ入れ・同義語の7ルール、`prh`・`@textlint-rule/pattern` は無効、ほかのルールは有効です。
+`[builtin]` の表は、組み込みのルールを1つずつか、presetの名前でまとめて設定します。ルールのIDのキー(「[組み込みのルール](#組み込みのルール)」の表)の値は、次のどれかです。書かなかったルールは既定の設定のままで、AIらしい書き方を指摘する7ルール、空白と字種の13ルール、JTFスタイルガイドの37ルール、ひらがな・さ入れ・同義語の7ルール、言語によらない3ルール、`prh`・`@textlint-rule/pattern` は無効、ほかのルールは有効です。
 
 | 値                            | 意味                                                           |
 | ----------------------------- | -------------------------------------------------------------- |
@@ -583,9 +642,9 @@ fullwidth-paren = false
 
 #### パターン
 
-`sentence-length` の `skipPatterns`、`no-exclamation-question-mark`・`ja-unnatural-alphabet`・`ja-no-successive-word` の `allow`、`ja-no-redundant-expression` の `dictOptions` の `allows`、AIらしい書き方を指摘する6ルール(`no-short-topic-comma` 以外)の `allows` は、パターンの配列です。各要素は、`/source/flags` の形なら正規表現、それ以外は書いた文字列そのものに当たります。正規表現は、`@textlint-rule/pattern` と同じくJavaScriptの正規表現(`u` フラグ付き)で読みます。`/source/flags` とみなすのは、`^/(.+)/([guimysd]*)$` に当たるときだけで、`/usr/bin` は文字列そのものです。`//` は、すべてに当たる空の正規表現ではなく、文字列そのものの `//` です。フラグは `i`・`m`・`s` を使えます。`g`・`u`・`d` は書いてよく、無視します。`y` は不正です。
+`sentence-length` の `skipPatterns`、`no-exclamation-question-mark`・`ja-unnatural-alphabet`・`ja-no-successive-word` の `allow`、`ja-no-redundant-expression` の `dictOptions` の `allows`、AIらしい書き方を指摘する6ルール(`no-short-topic-comma` 以外)と `ja-space-between-half-and-full-width` の `allows` は、パターンの配列です。各要素は、`/source/flags` の形なら正規表現、それ以外は書いた文字列そのものに当たります。正規表現は、`@textlint-rule/pattern` と同じくJavaScriptの正規表現(`u` フラグ付き)で読みます。`/source/flags` とみなすのは、`^/(.+)/([guimysd]*)$` に当たるときだけで、`/usr/bin` は文字列そのものです。`//` は、すべてに当たる空の正規表現ではなく、文字列そのものの `//` です。フラグは `i`・`m`・`s` を使えます。`g`・`u`・`d` は書いてよく、無視します。`y` は不正です。
 
-JavaScriptの正規表現なので、後読み・先読み・後方参照を使え、`\p{sc=Han}` や `\p{Script=Han}` のようにscriptの名前を `sc=` か `Script=` 付きで書けます。`\d`・`\w`・`\b` はASCIIで判定するので、`/\d!/` は `1!` に当たり、`１!` に当たりません。Rustの `regex` だけが読む書き方(`\p{Han}`・`(?i)`・`[[:alpha:]]`・`\z`)と、`u` 付きのJavaScriptが断る書き方(`\-` のような意味の無い退避、閉じていない `{`)は、設定の不正です。空の文字列も不正です。
+JavaScriptの正規表現なので、後読み・先読み・後方参照を使え、`\p{sc=Han}` や `\p{Script=Han}` のようにscriptの名前を `sc=` か `Script=` 付きで書けます。`\d`・`\w`・`\b` はASCIIで判定するので、`/\d!/` は `1!` に当たり、`１!` に当たりません。行の区切りと空白の扱いもJavaScriptのとおりで、`.` は `\r`・U+2028・U+2029に当たらず、`m` 付きの `^`・`$` はこの3つも行の区切りとし、`\s` はU+FEFFを含みます。Rustの `regex` だけが読む書き方(`\p{Han}`・`(?i)`・`[[:alpha:]]`・`\z`)と、`u` 付きのJavaScriptが断る書き方(`\-` のような意味の無い退避、閉じていない `{`)は、設定の不正です。空の文字列も不正です。
 
 ### 不正な設定
 
@@ -606,6 +665,7 @@ JavaScriptの正規表現なので、後読み・先読み・後方参照を使�
 - `no-ai-words` の `dictionaryMode` が `"override"` なのに、`dictionaryPath` が無い
 - ひらがな系の5ルール・`@textlint-ja/no-insert-dropping-sa`・`@textlint-ja/no-synonyms` のオプションの値が誤っている。`ja-hiragana-hojodoushi` と `ja-hiragana-fukushi` の `rulePath` は空でない文字列、`ja-keishikimeishi` の `detection_hou_kata`・`detection_ue` と、`@textlint-ja/no-synonyms` の `allowAlphabet`・`allowNumber`・`allowLexeme` は真偽値、`allows`・`preferWords` は文字列の配列です。`ja-hiragana-keishikimeishi`・`ja-hiragana-daimeishi`・`@textlint-ja/no-insert-dropping-sa` はオプションを持たないので、表にキーがあれば知らないオプションです
 - `ja-hiragana-hojodoushi` か `ja-hiragana-fukushi` の `rulePath` のファイルが読めないか、YAMLとして読めないか、辞書の形でない。辞書は、空でない文字列の `message` と空でない配列の `dict` を持つ表で、`dict` の各項目は文字列の `expected` と空でない配列の `tokens` を持ちます。`tokens` の要素は `no-ai-words` の利用者の辞書と同じく読むので、トークンの項目の名前でも `_` で始まる名前でもないキー(`word_id`・`word_type`・`word_position` を含む)があれば、これに当たります。理由には `rulePath` とファイルのパスを含めます
+- 言語によらない3ルールのオプションの値が誤っている。`date-weekday-mismatch` の `lang` は `"ja"` か `"en"`、`useCurrentYearIfMissing` は真偽値、`currentYear` は1以上の整数です。`no-dead-link` の `checkRelative`・`ignoreRedirects`・`httpOnly` は真偽値、`baseURI` と `userAgent` は空でない文字列、`ignore` はglobとして読める文字列の配列、`preferGET` はoriginを持つURLの配列です。`retry`・`maxRetryTime`・`maxRetryAfterTime` は0以上の整数、`concurrency` は1以上の整数です。textlintの `dotInIgnore`・`interval`・`intervalCap`・`linkMaxAge` は、jafixが対応しないので、知らないオプションに当たります。`no-todo` はオプションを持たないので、表にキーがあれば知らないオプションです
 - `prh` のオプションが誤っている。`rulePaths` と `ruleContents` に辞書が1つも無い(`prh = true` を含む)、`check` で始まるオプションが真偽値でない、`checkCodeComment`・`debug`・知らないオプションがある。理由には `prh` とオプションの名前を含めます
 - `prh` の `rulePaths` か `ruleContents` の辞書が誤っている。理由には `prh`、`rulePaths` か `ruleContents`、辞書のファイルのパス(`ruleContents` では何番目の要素か)を含めます。次のどれかに当たります
   - 辞書のファイルが読めないか、YAMLとして読めない。辞書の値の型が誤っている(`expected` が文字列でない、`rules` が配列でないなど)
@@ -727,8 +787,28 @@ JTFスタイルガイドの37ルールも、判定の条件を `textlint-rule-pr
 - `ja-hiragana-keishikimeishi`・`ja-keishikimeishi`・`@textlint-ja/no-insert-dropping-sa` は、絵文字や `𠮷` のようなサロゲートペアの文字の後でも、置き換える語の位置を指摘します。textlintの指摘の位置は、その文字の数だけ前へずれます
 - 7つとも、textlintと違って自動で直さず、指摘だけを出します。`@textlint-ja/no-synonyms` の `preferWords` の置き換えも指摘にします
 
+言語によらない3ルールも、判定の条件を `textlint-rule-no-todo` 2.0.1・`textlint-rule-date-weekday-mismatch` 1.1.1(`chrono-node` 1.4.9と `moment` 2.31.0)・`textlint-rule-no-dead-link` 6.2.3から写し、textlintの不具合に近い挙動は写しません。上の点のうち、列の数え方と文面は3ルールにも当てはまります。ほかに次の点が違います。
+
+- `no-todo` は、本文の範囲ごとの最初の1件だけでなく、すべての `todo:` を指摘します
+- `no-todo` のタスクは、項目の原文の全体ではなく、項目の直下の段落とタスクの記号だけを見ます。入れ子の子の `[ ]` を親の項目でも指摘せず、インラインコード・コードブロック・HTMLの中の `[ ]` には当てません
+- `no-todo` は、本文でない箇所(裸のURL、定義を持つ省略形・collapsed形の参照リンクの文字列)を見ません
+- `date-weekday-mismatch` は、曜日の言語を、日付を読んだparserの言語ではなく括弧の中身で決めます。textlintは、`lang` を書かなければ `2024-04-23(月)` を、`lang: "ja"` を書けば `2024年4月23日(Mon)` を確かめません
+- `date-weekday-mismatch` は、日本語と英語以外の6言語(ドイツ語・オランダ語・ポルトガル語・スペイン語・フランス語・中国語)の日付と曜日を確かめません
+- `date-weekday-mismatch` は、`同年` を現在の年とみなさず、元号の無い `元年` を西暦1年とみなしません。`今年`・`本年` には `currentYear` の年を使います。textlintは、`currentYear` によらずシステムの年を使います
+- `date-weekday-mismatch` は、年を補うとき、日付の文字列に年を足して解析し直さず、読んだ月と日に年を直に当てます。textlintは `April 23 (Mon)` の年が決まらず、確かめません。元号の無い `元年` の後の月と日(`元年5月1日`)は、年の無い日付として補いません
+- `date-weekday-mismatch` は、範囲の日付(`4月23日〜24日`・`April 23 - 25, 2024`)と、`BE`・`AD`・`BC` の付く年の日付を確かめません。textlintは、範囲の最初の日と、`AD` の付く年の日付を確かめます
+- `date-weekday-mismatch` の位置は、括弧の中の前後の空白を除いた曜日の先頭です。textlintは、括弧の中に前の空白があると、その空白に出します
+- `no-dead-link` は、裸のURLを対にならない `）` の手前で終えます。GFMの裸のURLは空白まで続くので、textlintは `https://example.com）を参照。` へ接続します
+- `no-dead-link` の相対のリンクの位置は、元のソースのリンク先の文字列です。textlintは、解決した後の `file:///...` の長さで範囲を計り、宛先の文字列をリンクの原文から探します。そのため、textlintの位置はずれることがあります
+- `no-dead-link` は、1回の要求を10秒で打ち切ります。textlintは上限を持ちません。`User-Agent` の既定値は `jafix-no-dead-link/<jafixのversion>` です
+- `no-dead-link` は、引用の中の参照リンクの定義の宛先も確かめません。textlintは、引用の中でも定義の宛先だけは確かめます
+- `no-dead-link` は、パスで書いた `baseURI` を、末尾の `/` の有無によらずディレクトリとして扱います。textlintは、末尾に `/` が無いと1つ上のディレクトリで解決します
+- `no-dead-link` は、`httpOnly` が `true` で `baseURI` が無いとき、相対のリンクと絶対パスを確かめません。textlintは、実行したディレクトリから見たファイルとして確かめます
+- `no-dead-link` の `dotInIgnore`・`interval`・`intervalCap`・`linkMaxAge` は使えません。`ignore` のglobは `exclude` のglobと同じ読み方で、`*` と `?` は `/` をまたがず、`.` で始まる要素にも `*` が当たります
+- 3つとも、textlintと違って自動で直さず、指摘だけを出します。曜日とリダイレクト先のURLは文面に入れます
+
 ## ライセンス
 
 [MIT License](LICENSE-MIT) と [Apache License 2.0](LICENSE-APACHE) のデュアルライセンスです。
 
-組み込みのルールのうち、textlintと同じIDのものは、textlintのルールとライブラリの挙動に合わせて書き直したもので、正規表現や語の表、辞書の一部をそれらのソースから写しています。`prh` と `@textlint-rule/pattern` は、`textlint-rule-prh`・`prh`・`@textlint-rule/textlint-rule-pattern`・`@textlint/regexp-string-matcher` の判定の条件を写しています。binaryには、MIT Licenseのlinderaと、mecab-ipadicの条件で配られるIPADICの辞書と、CC BY-SAの条件で配られるJTF日本語標準スタイルガイドの4つの辞書(`textlint-rule-preset-jtf-style` の `dict/*.yml`)も入っています。Apache License 2.0で配られる `sudachi-synonyms-dictionary` 20.0.0とSudachiDictの同義語辞書から、`@textlint-ja/no-synonyms` の判定に使う項目だけを取り出したデータも入っています。それぞれの名前・version・著作権表示と、MIT License・mecab-ipadic・CC BY-SA・Apache License 2.0の条件は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にあります。GitHub Releasesのtarballには、binaryと一緒に `LICENSE-MIT`・`LICENSE-APACHE`・`THIRD_PARTY_NOTICES.md` を入れています。
+組み込みのルールのうち、textlintと同じIDのものは、textlintのルールとライブラリの挙動に合わせて書き直したもので、正規表現や語の表、辞書の一部をそれらのソースから写しています。`prh` と `@textlint-rule/pattern` は、`textlint-rule-prh`・`prh`・`@textlint-rule/textlint-rule-pattern`・`@textlint/regexp-string-matcher` の判定の条件を写しています。binaryには、MIT Licenseのlinderaと、mecab-ipadicの条件で配られるIPADICの辞書と、CC BY-SAの条件で配られるJTF日本語標準スタイルガイドの4つの辞書(`textlint-rule-preset-jtf-style` の `dict/*.yml`)も入っています。Apache License 2.0で配られる `sudachi-synonyms-dictionary` 20.0.0とSudachiDictの同義語辞書から、`@textlint-ja/no-synonyms` の判定に使う項目だけを取り出したデータも入っています。`no-dead-link` が外部のURLに接続するときのTLSの証明書の検証のために、CDLA-Permissive-2.0で配られる `webpki-roots` 1.0.12の証明書の一覧も入っています。それぞれの名前・version・著作権表示と、MIT License・mecab-ipadic・CC BY-SA・Apache License 2.0・CDLA-Permissive-2.0の条件は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にあります。GitHub Releasesのtarballには、binaryと一緒に `LICENSE-MIT`・`LICENSE-APACHE`・`THIRD_PARTY_NOTICES.md` を入れています。

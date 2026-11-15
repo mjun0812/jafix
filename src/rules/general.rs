@@ -17,11 +17,9 @@ pub use self::no_dead_link::UrlChecker;
 /// `no-dead-link` が宛先を確かめる文脈
 pub struct Links<'a> {
     /// 検査するMarkdownのファイル。相対の宛先は、`baseURI` が無ければこのファイルを基準に解決する
-    #[allow(dead_code)] // skeleton: not implemented
     pub file: &'a Path,
     /// 外部のURLを確かめるなら、その結果をプロセスの中で共有する確認器。hookでは `None` で、`http:`・`https:` に
     /// 解決した宛先を確かめない
-    #[allow(dead_code)] // skeleton: not implemented
     pub urls: Option<&'a UrlChecker>,
 }
 
@@ -41,7 +39,7 @@ pub fn report(
         reports.extend(date_weekday_mismatch::report(src, &document.texts, rule));
     }
     if let Some(rule) = &builtin.no_dead_link {
-        reports.extend(no_dead_link::report(src, document, rule, links, ignored));
+        reports.extend(no_dead_link::report(document, rule, links, ignored));
     }
     reports
 }

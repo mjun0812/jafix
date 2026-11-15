@@ -581,3 +581,18 @@ fn no_insert_dropping_sa() {
 fn no_synonyms() {
     assert_cases("no-synonyms");
 }
+
+#[test]
+fn no_todo() {
+    assert_cases("no-todo");
+}
+
+#[test]
+fn date_weekday_mismatch() {
+    assert_cases("date-weekday-mismatch");
+}
+
+#[test]
+fn no_dead_link() {
+    assert_cases("no-dead-link");
+}

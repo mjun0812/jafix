@@ -198,15 +198,17 @@ pub fn parse(src: &str) -> Document {
     collect_paragraphs(&root, src, Ancestors::default(), None, &mut blocks);
     let mut inline_nodes = Vec::new();
     collect_inline_nodes(&root, src, false, &mut inline_nodes);
+    let mut links = Vec::new();
+    collect_links(&root, src, false, &mut links);
     Document {
         texts,
         paragraphs: blocks.paragraphs,
         headings: blocks.headings,
         list_items: blocks.list_items,
         inline_nodes,
-        // skeleton: not implemented (`collect_comments` と `collect_links` で集める)
+        // skeleton: not implemented (`collect_comments` で集める)
         comments: Vec::new(),
-        links: Vec::new(),
+        links,
     }
 }
 
@@ -218,10 +220,92 @@ fn collect_comments(node: &Node, src: &str, comments: &mut Vec<HtmlComment>) {
 }
 
 /// `node` の中のリンクの宛先を出現順に集める。`blockquote` は、`node` が引用の中にあるか
-#[allow(dead_code)] // skeleton: not implemented
 fn collect_links(node: &Node, src: &str, blockquote: bool, links: &mut Vec<LinkDestination>) {
-    let _ = (node, src, blockquote, links);
-    todo!("skeleton: not implemented")
+    let range = node_range(node);
+    let destination = match node {
+        Node::Link(link) => match src.as_bytes()[range.start] {
+            b'[' => Some((
+                link.url.clone(),
+                destination_after(
+                    src,
+                    alt_end(&src[..range.end], range.start + 1) + "](".len(),
+                ),
+            )),
+            b'<' => Some((link.url.clone(), range.start + 1..range.end - 1)),
+            _ => {
+                // markdown-rsは裸のURLを空白まで取り込むので、本文の範囲と同じく対にならない `）` の手前で終える
+                let end = after_unmatched_closing_paren(&src[range.clone()], range.start)
+                    .map_or(range.end, |after| after.start);
+                let source = &src[range.start..end];
+                let url = if !link.url.starts_with("http://") && !link.url.starts_with("https://") {
+                    link.url.clone()
+                } else if source.starts_with("www.") {
+                    format!("http://{source}")
+                } else {
+                    source.to_owned()
+                };
+                Some((url, range.start..end))
+            }
+        },
+        Node::Definition(definition) => Some((
+            definition.url.clone(),
+            destination_after(src, definition_label_end(src, range.start) + "]:".len()),
+        )),
+        _ => None,
+    };
+    if let Some((url, range)) = destination {
+        links.push(LinkDestination {
+            url,
+            range,
+            blockquote,
+        });
+    }
+    let blockquote = blockquote || matches!(node, Node::Blockquote(_));
+    for child in node.children().into_iter().flatten() {
+        collect_links(child, src, blockquote, links);
+    }
+}
+
+/// `start` の `[` で始まる参照リンクの定義の、ラベルを閉じる `]` の位置。CommonMarkのリンクのラベルは退避していない
+/// 角括弧を含まず、コードスパンより優先するので、バッククォートは数えずに最初の `]` で終える
+fn definition_label_end(src: &str, start: usize) -> usize {
+    let bytes = src.as_bytes();
+    let mut i = start + 1;
+    while bytes[i] != b']' {
+        i += if bytes[i] == b'\\' { 2 } else { 1 };
+    }
+    i
+}
+
+/// `start` (`](` か `]:` の直後) から空白を飛ばした先の、リンクの宛先の元のソース上の範囲。`<` で囲めばその内側で、
+/// そうでなければ空白か、対にならない `)` の手前までである
+fn destination_after(src: &str, start: usize) -> Range<usize> {
+    let bytes = src.as_bytes();
+    let mut i = start;
+    while i < bytes.len() && bytes[i].is_ascii_whitespace() {
+        i += 1;
+    }
+    if bytes.get(i) == Some(&b'<') {
+        let start = i + 1;
+        let mut i = start;
+        while i < bytes.len() && bytes[i] != b'>' {
+            i += if bytes[i] == b'\\' { 2 } else { 1 };
+        }
+        return start..i.min(bytes.len());
+    }
+    let start = i;
+    let mut depth = 0;
+    while i < bytes.len() && !bytes[i].is_ascii_whitespace() && !bytes[i].is_ascii_control() {
+        match bytes[i] {
+            b'\\' => i += 1,
+            b'(' => depth += 1,
+            b')' if depth == 0 => break,
+            b')' => depth -= 1,
+            _ => {}
+        }
+        i += 1;
+    }
+    start..i.min(bytes.len())
 }
 
 /// `node` の中のインラインコード・リンク・太字・強調・画像を `nodes` に集める。`heading` は、`node` が見出しの中にあるか
