@@ -7,20 +7,20 @@ use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-use crate::js_regex::{self, Regex};
 use crate::prose::Prose;
 use crate::rules::builtin::CommonMisspellings;
 use crate::rules::{Report, RuleId};
 
+use super::word_list::{self, WordList};
 use super::{character_references, in_character_reference};
 
 /// 先頭の `#` の行が出典とライセンスで、後は1行1項目の `<小文字の誤綴り>\t<正しい語>,<正しい語>…` である
 static LIST: &str = include_str!("data/common-misspellings.txt");
 
-/// 一覧を読んだもの。4,310件の選択の正規表現は読むのに時間がかかるので、ルールが有効で本文の範囲があるときに1回だけ読む
+/// 一覧を読んだもの。ルールが有効で本文の範囲があるときに1回だけ読む
 struct Misspellings {
-    /// 一覧の誤綴りのすべての選択を語の境界で包んだ正規表現 (`i`・`u`)。長い誤綴りを先に並べ、同じ位置では最も長い一致を取る
-    regex: Regex,
+    /// 一覧の誤綴りのすべての選択。長い誤綴りを先に並べ、同じ位置では最も長い一致を取る
+    words: WordList,
     /// 小文字の誤綴りから、カンマで区切った正しい語
     corrects: HashMap<&'static str, &'static str>,
 }
@@ -41,17 +41,8 @@ static MISSPELLINGS: LazyLock<Misspellings> = LazyLock::new(|| {
     // 選択は前から試すので、長い順に並べると、同じ位置で語の境界で終わる最も長い一致になる。大文字と小文字を区別しない
     // 照合でも、一致の文字の数は誤綴りの文字の数と同じである
     misspellings.sort_by_key(|misspelling| Reverse(misspelling.chars().count()));
-    let alternatives: Vec<String> = misspellings.iter().map(|m| js_regex::escape(m)).collect();
-    let regex = js_regex::compile(
-        &format!(r"\b(?:{})\b", alternatives.join("|")),
-        js_regex::Flags {
-            ignore_case: true,
-            ..js_regex::Flags::default()
-        },
-    )
-    .expect("the misspelling list compiles");
     Misspellings {
-        regex,
+        words: WordList::new(misspellings.into_iter().map(word_list::literal), false),
         corrects: entries.into_iter().collect(),
     }
 });
@@ -64,11 +55,11 @@ pub fn report(src: &str, texts: &[Prose], rule: &CommonMisspellings) -> Vec<Repo
     for prose in texts.iter().filter(|prose| !prose.context.blockquote) {
         let text = &src[prose.range.clone()];
         let references = character_references(text);
-        for m in MISSPELLINGS.regex.find_iter(text) {
-            if in_character_reference(&references, &m.range()) {
+        for range in MISSPELLINGS.words.find_iter(text) {
+            if in_character_reference(&references, &range) {
                 continue;
             }
-            let matched = &text[m.range()];
+            let matched = &text[range.clone()];
             let lower = matched.to_lowercase();
             // `i` と `u` の照合は `ſ` (U+017F) を `s` に当てるので、小文字にしても一覧に無い一致がありうる
             let Some(corrects) = MISSPELLINGS.corrects.get(lower.as_str()) else {
@@ -82,7 +73,7 @@ pub fn report(src: &str, texts: &[Prose], rule: &CommonMisspellings) -> Vec<Repo
                 .map(|correct| format!("「{}」", copy_case(matched, correct)))
                 .collect();
             reports.push(Report {
-                range: prose.range.start + m.start()..prose.range.start + m.end(),
+                range: prose.range.start + range.start..prose.range.start + range.end,
                 rule: RuleId::CommonMisspellings.name(),
                 message: Cow::Owned(format!(
                     "よくある綴りの誤り「{matched}」を使っている。正しくは{}",

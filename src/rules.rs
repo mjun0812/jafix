@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::ops::Range;
 use std::sync::LazyLock;
+use std::thread;
 
 mod ai_writing;
 pub mod builtin;
@@ -347,47 +348,57 @@ pub fn report(
     ignored: &Ignored,
     links: &Links,
 ) -> Vec<Report> {
-    let mut reports = text::report(src, &document.texts, builtin);
-    reports.extend(paragraph::report(src, &document.paragraphs, builtin));
-    reports.extend(morph::report(src, document, builtin));
-    reports.extend(ai_writing::report(src, document, builtin));
     let (texts, alts) = target_texts(src, document, builtin, targets);
-    if let Some(rule) = &builtin.textlint_rule_pattern {
-        reports.extend(textlint_rule_pattern::report(src, &texts, rule));
-    }
-    reports.extend(
-        user_replacements(src, &texts, builtin, ignored)
-            .into_iter()
-            .filter_map(|replacement| {
-                let reason = unfixable(src, &replacement)?;
-                let Finding {
-                    range,
-                    rule,
-                    position,
-                    message,
-                    ..
-                } = replacement.finding;
-                Some(Report {
-                    range: position..range.end,
-                    rule: rule.name(),
-                    message: Cow::Owned(format!("{message}。{reason}")),
-                })
-            }),
-    );
-    reports.extend(fixes.iter().filter(|fix| fix.heading).map(
-        |FixRuleFinding { finding, .. }| Report {
-            range: finding.position..finding.range.end,
-            rule: finding.rule.name(),
-            message: Cow::Owned(format!(
-                "{}。見出しのアンカーが変わるので、見出しへのリンクも直す",
-                finding.message
-            )),
-        },
-    ));
-    reports.extend(spacing::report(src, document, builtin));
-    reports.extend(jtf_style::report(src, document, builtin, &texts));
-    reports.extend(general::report(src, document, builtin, links, ignored));
-    reports.extend(english::report(src, document, builtin, &texts, &alts));
+    // 英語の4ルールは、`spelling` の辞書の読み込みと候補の計算に時間がかかるので、どれかが有効なときだけ1つのthreadで、
+    // ほかのルールと並行に当てる (threadを立てる箇所は `english::report` に書いた)。指摘は、ほかのルールの指摘の後に足すので、
+    // 並びは並行にしない場合と同じである
+    let mut reports = thread::scope(|scope| {
+        let english = english::enabled(builtin)
+            .then(|| scope.spawn(|| english::report(src, document, builtin, &texts, &alts)));
+        let mut reports = text::report(src, &document.texts, builtin);
+        reports.extend(paragraph::report(src, &document.paragraphs, builtin));
+        reports.extend(morph::report(src, document, builtin));
+        reports.extend(ai_writing::report(src, document, builtin));
+        if let Some(rule) = &builtin.textlint_rule_pattern {
+            reports.extend(textlint_rule_pattern::report(src, &texts, rule));
+        }
+        reports.extend(
+            user_replacements(src, &texts, builtin, ignored)
+                .into_iter()
+                .filter_map(|replacement| {
+                    let reason = unfixable(src, &replacement)?;
+                    let Finding {
+                        range,
+                        rule,
+                        position,
+                        message,
+                        ..
+                    } = replacement.finding;
+                    Some(Report {
+                        range: position..range.end,
+                        rule: rule.name(),
+                        message: Cow::Owned(format!("{message}。{reason}")),
+                    })
+                }),
+        );
+        reports.extend(fixes.iter().filter(|fix| fix.heading).map(
+            |FixRuleFinding { finding, .. }| Report {
+                range: finding.position..finding.range.end,
+                rule: finding.rule.name(),
+                message: Cow::Owned(format!(
+                    "{}。見出しのアンカーが変わるので、見出しへのリンクも直す",
+                    finding.message
+                )),
+            },
+        ));
+        reports.extend(spacing::report(src, document, builtin));
+        reports.extend(jtf_style::report(src, document, builtin, &texts));
+        reports.extend(general::report(src, document, builtin, links, ignored));
+        if let Some(english) = english {
+            reports.extend(english.join().unwrap());
+        }
+        reports
+    });
     reports.retain(|report| !ignored.covers(&report.range, report.rule));
     reports.sort_by_key(|report| report.range.start);
     reports

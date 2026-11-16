@@ -12,6 +12,7 @@ use crate::prose::Prose;
 use crate::rules::builtin::{WriteGood, WriteGoodCheck};
 use crate::rules::{Report, RuleId, one_line};
 
+use super::word_list::{self, Token, WordList};
 use super::{character_references, in_character_reference};
 
 /// `Context::plain` の本文の範囲に有効な検査を当て、`whitelist` の文字列のすべての出現と重なる提案を外し、範囲が同じ提案を
@@ -110,10 +111,10 @@ fn suggest(check: WriteGoodCheck, text: &str) -> Vec<Range<usize>> {
             })
             .map(|m| m.range())
             .collect(),
-        WriteGoodCheck::Adverb => ranges(&ADVERB, text),
-        WriteGoodCheck::TooWordy => ranges(&TOO_WORDY, text),
-        WriteGoodCheck::Cliches => ranges(&CLICHES, text),
-        WriteGoodCheck::Eprime => ranges(&E_PRIME, text),
+        WriteGoodCheck::Adverb => ADVERB.find_iter(text),
+        WriteGoodCheck::TooWordy => TOO_WORDY.find_iter(text),
+        WriteGoodCheck::Cliches => CLICHES.find_iter(text),
+        WriteGoodCheck::Eprime => E_PRIME.find_iter(text).map(|m| m.range()).collect(),
     }
 }
 
@@ -125,10 +126,6 @@ fn preceded_by_too(before: &str) -> bool {
         .nth(3)
         .map_or(0, |(index, _)| index);
     &before[start..] == "too "
-}
-
-fn ranges(regex: &Regex, text: &str) -> Vec<Range<usize>> {
-    regex.find_iter(text).map(|m| m.range()).collect()
 }
 
 /// 文ごとに、文の先頭に `regex` を当て、2つ目のグループ (文頭の空白を飛ばした語) の範囲を返す。文は、`[^\n.;!?]+` と
@@ -159,15 +156,6 @@ fn compile(source: &str) -> Regex {
     .expect("the write-good patterns compile")
 }
 
-/// `too-wordy` と `no-cliches` と同じく、句の中の空白を `[\b\s‌]*` にした選択 (文字クラスの中の `\b` はバックスペース)
-fn phrases(phrases: &[&str]) -> String {
-    phrases
-        .iter()
-        .map(|phrase| phrase.replace(' ', r"[\b\s‌]*"))
-        .collect::<Vec<_>>()
-        .join("|")
-}
-
 static WEASEL: LazyLock<Regex> =
     LazyLock::new(|| compile(&format!(r"\b({})\b", words::WEASELS.join("|"))));
 
@@ -186,19 +174,42 @@ static PASSIVE: LazyLock<Regex> = LazyLock::new(|| {
     ))
 });
 
-static ADVERB: LazyLock<Regex> = LazyLock::new(|| {
-    compile(&format!(
-        r"\b(({})(y)|({}))\b",
-        words::ADVERBS.join("|"),
-        words::WEAKENS.join("|")
-    ))
+/// adverb-whereの `\b((<adverbs>)(y)|(<weakens>))\b`
+static ADVERB: LazyLock<WordList> = LazyLock::new(|| {
+    let adverbs = words::ADVERBS.iter().map(|adverb| {
+        let mut tokens = word_list::literal(adverb);
+        tokens.push(Token::Char('y'));
+        tokens
+    });
+    WordList::new(
+        adverbs.chain(
+            words::WEAKENS
+                .iter()
+                .map(|weaken| word_list::literal(weaken)),
+        ),
+        false,
+    )
 });
 
-static TOO_WORDY: LazyLock<Regex> =
-    LazyLock::new(|| compile(&format!(r"\b(?<!-)({})\b", phrases(&words::TOO_WORDY))));
+/// too-wordyの `\b(?<!-)(<句>)\b`。句の中の空白は `[\b\s‌]*` である (文字クラスの中の `\b` はバックスペース)
+static TOO_WORDY: LazyLock<WordList> = LazyLock::new(|| {
+    WordList::new(
+        words::TOO_WORDY
+            .iter()
+            .map(|phrase| word_list::phrase(phrase)),
+        true,
+    )
+});
 
-static CLICHES: LazyLock<Regex> =
-    LazyLock::new(|| compile(&format!(r"\b({})\b", phrases(&words::CLICHES))));
+/// no-clichesの `\b(<句>)\b`。句の中の空白は `TOO_WORDY` と同じである
+static CLICHES: LazyLock<WordList> = LazyLock::new(|| {
+    WordList::new(
+        words::CLICHES
+            .iter()
+            .map(|phrase| word_list::phrase(phrase)),
+        false,
+    )
+});
 
 /// `‘` と `’` も `'` として当てる
 static E_PRIME: LazyLock<Regex> = LazyLock::new(|| {

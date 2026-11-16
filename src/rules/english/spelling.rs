@@ -4,8 +4,10 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::num::NonZero;
 use std::ops::Range;
-use std::sync::{LazyLock, Mutex};
+use std::sync::{LazyLock, Mutex, MutexGuard};
+use std::thread;
 
 use foldhash::fast::FixedState;
 use spellbook::Dictionary;
@@ -30,14 +32,14 @@ static DICTIONARY: LazyLock<Dictionary<FixedState>> = LazyLock::new(|| {
         .expect("the embedded en_US dictionary parses")
 });
 
-/// 語から、`、` でつないだ候補 (無ければ空)。`suggest` は1語に数十msかかるので、同じプロセスの中で同じ語には1回だけ求める
+/// 語から、`、` でつないだ候補 (無ければ空)。同じプロセスの中で同じ語には1回だけ求める
 static SUGGESTIONS: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(Mutex::default);
 
 /// `texts` と `alts` の元のソースに `wordDefinitionRegexp` を当てて語を取り出し、既定の除外 (ASCIIの数字か `_` を含む語、
 /// 2文字目以降に `A`〜`Z` を含む語)、`skipPatterns` の一致と重なる語、文字参照の名前を除き、辞書に無い語を指摘する。範囲は語の全体である。
 /// `suggestCorrections` が真なら、指摘にする語にだけ候補を求め、同じプロセスの中で同じ語の候補を再利用する
 pub fn report(src: &str, texts: &[&Prose], alts: &[Range<usize>], rule: &Spelling) -> Vec<Report> {
-    let mut reports = Vec::new();
+    let mut misspelled = Vec::new();
     for range in texts.iter().map(|prose| &prose.range).chain(alts) {
         let text = &src[range.clone()];
         let skipped: Vec<Range<usize>> = rule
@@ -58,25 +60,33 @@ pub fn report(src: &str, texts: &[&Prose], alts: &[Range<usize>], rule: &Spellin
             {
                 continue;
             }
-            let found = one_line(word);
-            let message = if rule.suggest_corrections {
-                match suggestions(word).as_str() {
-                    "" => format!("英語の辞書に無い語「{found}」を使っている。候補は無い"),
-                    candidates => {
-                        format!("英語の辞書に無い語「{found}」を使っている。候補: {candidates}")
-                    }
-                }
-            } else {
-                format!("英語の辞書に無い語「{found}」を使っている")
-            };
-            reports.push(Report {
-                range: range.start + m.start()..range.start + m.end(),
-                rule: RuleId::Spelling.name(),
-                message: Cow::Owned(message),
-            });
+            misspelled.push((range.start + m.start()..range.start + m.end(), word));
         }
     }
-    reports
+    let suggestions = rule
+        .suggest_corrections
+        .then(|| suggestions(misspelled.iter().map(|&(_, word)| word)));
+    misspelled
+        .into_iter()
+        .map(|(range, word)| {
+            let found = one_line(word);
+            let message = match suggestions
+                .as_ref()
+                .map(|suggestions| suggestions[word].as_str())
+            {
+                None => format!("英語の辞書に無い語「{found}」を使っている"),
+                Some("") => format!("英語の辞書に無い語「{found}」を使っている。候補は無い"),
+                Some(candidates) => {
+                    format!("英語の辞書に無い語「{found}」を使っている。候補: {candidates}")
+                }
+            };
+            Report {
+                range,
+                rule: RuleId::Spelling.name(),
+                message: Cow::Owned(message),
+            }
+        })
+        .collect()
 }
 
 /// 綴りの誤りではなく、識別子・略語・固有名詞として書かれた語 (ASCIIの数字か `_` を含む語、2文字目以降に `A`〜`Z` を
@@ -86,14 +96,40 @@ fn is_identifier(word: &str) -> bool {
         || word.chars().skip(1).any(|c| c.is_ascii_uppercase())
 }
 
-fn suggestions(word: &str) -> String {
+/// `words` のすべての語の候補を入れた `SUGGESTIONS` を返す。`suggest` は1語に数ms〜十数msかかるので、まだ求めていない語は
+/// 語ごとに複数のthreadで並列に求める
+fn suggestions<'w>(
+    words: impl Iterator<Item = &'w str>,
+) -> MutexGuard<'static, HashMap<String, String>> {
     let mut cache = SUGGESTIONS.lock().unwrap();
-    if let Some(candidates) = cache.get(word) {
-        return candidates.clone();
-    }
-    let mut candidates = Vec::new();
-    DICTIONARY.suggest(word, &mut candidates);
-    let joined = candidates.join("、");
-    cache.insert(word.to_owned(), joined.clone());
-    joined
+    let mut missing: Vec<&str> = words.filter(|word| !cache.contains_key(*word)).collect();
+    missing.sort_unstable();
+    missing.dedup();
+    let threads = thread::available_parallelism()
+        .map_or(1, NonZero::get)
+        .min(missing.len());
+    let queue = Mutex::new(missing.into_iter());
+    thread::scope(|scope| {
+        let workers: Vec<_> = (0..threads)
+            .map(|_| {
+                scope.spawn(|| {
+                    let mut found = Vec::new();
+                    let mut candidates = Vec::new();
+                    loop {
+                        // `while let` の条件に書くと、取り出した語の候補を求める間もlockを持ち続ける
+                        let next = queue.lock().unwrap().next();
+                        let Some(word) = next else {
+                            return found;
+                        };
+                        DICTIONARY.suggest(word, &mut candidates);
+                        found.push((word.to_owned(), candidates.join("、")));
+                    }
+                })
+            })
+            .collect();
+        for worker in workers {
+            cache.extend(worker.join().unwrap());
+        }
+    });
+    cache
 }

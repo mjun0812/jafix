@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use regress::Regex;
@@ -2473,7 +2474,7 @@ fn link_globs(key: &str, value: &Value) -> Result<GlobSet, String> {
 }
 
 /// `terminology` のオプションを読んだ結果。利用者の `terms` の項目と組み込みの辞書の項目を `exclude` と `defaultTerms` を
-/// 当てて並べ、すべての正規表現を読んである
+/// 当てて並べてある。組み込みの辞書の配列の項目の正規表現は、最初に当てるときに読む
 #[derive(Debug)]
 pub struct Terminology {
     /// 文字列の項目のすべてを `word_terms` の順に選択にまとめ、語の前後の条件で包んだ正規表現 (`i`・`m`・`u`)。
@@ -2500,15 +2501,38 @@ pub struct WordTerm {
 /// `terminology` の配列の項目
 #[derive(Debug)]
 pub struct PairTerm {
-    /// 本文の範囲に当てる正規表現 (`i`・`m`・`u`)。1つ目の要素が `(?<` で始まらず、`(?=`・`(?!` も含まなければ、
-    /// 語の前後の条件で包んである
-    pub pattern: Regex,
-    /// 置き換え後の語を求めるときに `xyz <一致> xyz` に1回だけ当てる、包まない1つ目の要素 (`i`・`u`)
-    pub source: Regex,
+    /// 1つ目の要素 (正規表現の元の文字列)
+    first: Cow<'static, str>,
+    /// `pattern` の正規表現。利用者の項目は読み込みのときに読み、組み込みの辞書の項目は最初に当てるときに読む。
+    /// 数百の組み込みの項目をhookの1回ごとに読むと数msかかり、本文に当たりえない項目を読む必要は無いからである
+    pattern: OnceLock<Regex>,
+    /// `source` の正規表現。読む時期は `pattern` と同じである
+    source: OnceLock<Regex>,
+    /// 一致が必ずこの文字列で始まる、1つ目の要素の先頭のASCIIの英数字と空白の並びを小文字にしたもの。
+    /// 求められなければ `None`
+    pub prefix: Option<String>,
     /// 置き換え後の文字列。JavaScriptの `replace` の記法 (`js_regex::substitute`) で展開する
     pub replacement: Cow<'static, str>,
     /// 利用者の `terms` の項目か
     pub user: bool,
+}
+
+impl PairTerm {
+    /// 本文の範囲に当てる正規表現 (`i`・`m`・`u`)。1つ目の要素が `(?<` で始まらず、`(?=`・`(?!` も含まなければ、
+    /// 語の前後の条件で包んである
+    pub fn pattern(&self) -> &Regex {
+        self.pattern.get_or_init(|| {
+            js_regex::compile(&pair_pattern(&self.first), TERM_FLAGS)
+                .expect("the built-in terms compile")
+        })
+    }
+
+    /// 置き換え後の語を求めるときに `xyz <一致> xyz` に1回だけ当てる、包まない1つ目の要素 (`i`・`u`)
+    pub fn source(&self) -> &Regex {
+        self.source.get_or_init(|| {
+            js_regex::compile(&self.first, REPLACEMENT_FLAGS).expect("the built-in terms compile")
+        })
+    }
 }
 
 impl Terminology {
@@ -2606,17 +2630,24 @@ impl Terminology {
                     word_terms.push(WordTerm { term: word, user });
                 }
                 RawTerm::Pair(pattern, replacement) => {
-                    let wrapped = if pattern.starts_with("(?<")
-                        || pattern.contains("(?=")
-                        || pattern.contains("(?!")
-                    {
-                        pattern.to_string()
+                    let (compiled, source) = if user {
+                        (
+                            OnceLock::from(
+                                js_regex::compile(&pair_pattern(&pattern), TERM_FLAGS)
+                                    .map_err(at)?,
+                            ),
+                            OnceLock::from(
+                                js_regex::compile(&pattern, REPLACEMENT_FLAGS).map_err(at)?,
+                            ),
+                        )
                     } else {
-                        wrap_term(&pattern)
+                        (OnceLock::new(), OnceLock::new())
                     };
                     pair_terms.push(PairTerm {
-                        pattern: js_regex::compile(&wrapped, TERM_FLAGS).map_err(at)?,
-                        source: js_regex::compile(&pattern, REPLACEMENT_FLAGS).map_err(at)?,
+                        prefix: required_prefix(&pattern),
+                        first: pattern,
+                        pattern: compiled,
+                        source,
                         replacement,
                         user,
                     });
@@ -2781,6 +2812,60 @@ fn strip_json_comments(text: &str) -> String {
         }
     }
     out
+}
+
+/// 配列の項目の1つ目の要素 `pattern` から、本文の範囲に当てる正規表現の元の文字列を作る。`(?<` で始まるか、`(?=`・`(?!` を
+/// 含めば、そのまま使い、ほかは語の前後の条件で包む
+fn pair_pattern(pattern: &str) -> Cow<'_, str> {
+    if pattern.starts_with("(?<") || pattern.contains("(?=") || pattern.contains("(?!") {
+        Cow::Borrowed(pattern)
+    } else {
+        Cow::Owned(wrap_term(pattern))
+    }
+}
+
+/// 正規表現の元の文字列 `pattern` の一致が必ず始まる文字列を、`i` の照合で比べられるよう小文字にして返す。先頭から続く
+/// ASCIIの英数字と空白のうち、量指定子 (`?`・`*`・`{`) の付かないものである。括弧の外に `|` があれば、選択のどれで
+/// 始まるか決まらないので `None` にする
+fn required_prefix(pattern: &str) -> Option<String> {
+    let mut depth = 0usize;
+    let mut chars = pattern.chars();
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' => {
+                chars.next();
+            }
+            '[' => {
+                // 文字クラスの中の `(`・`)`・`|` は記号ではない
+                while let Some(c) = chars.next() {
+                    match c {
+                        '\\' => {
+                            chars.next();
+                        }
+                        ']' => break,
+                        _ => {}
+                    }
+                }
+            }
+            '(' => depth += 1,
+            ')' => depth -= 1,
+            '|' if depth == 0 => return None,
+            _ => {}
+        }
+    }
+    let mut prefix = String::new();
+    let mut chars = pattern.chars().peekable();
+    while let Some(c) = chars.next_if(|&c| c.is_ascii_alphanumeric() || c == ' ') {
+        match chars.peek() {
+            Some('?' | '*' | '{') => break,
+            Some('+') => {
+                prefix.push(c.to_ascii_lowercase());
+                break;
+            }
+            _ => prefix.push(c.to_ascii_lowercase()),
+        }
+    }
+    (!prefix.is_empty()).then_some(prefix)
 }
 
 /// textlint-rule-terminologyの `getExactMatchRegExp` と同じく、項目を語の前後の条件で包む。直後の条件には、jafixが
@@ -2955,7 +3040,46 @@ pub enum AlphabetWidth {
 
 #[cfg(test)]
 mod tests {
-    use super::strip_json_comments;
+    use std::path::Path;
+
+    use toml::Table;
+
+    use super::{Terminology, required_prefix, strip_json_comments};
+
+    #[test]
+    fn every_built_in_term_compiles() {
+        // 組み込みの辞書の配列の項目は最初に当てるときに読むので、読めない項目があれば照合の途中で落ちる
+        let terminology = Terminology::from_options(&Table::new(), Path::new(".")).unwrap();
+        assert!(!terminology.pair_terms.is_empty());
+        for term in &terminology.pair_terms {
+            term.pattern();
+            term.source();
+        }
+    }
+
+    #[test]
+    fn required_prefix_keeps_only_characters_every_match_starts_with() {
+        assert_eq!(
+            required_prefix("Apple[ -]?Script").as_deref(),
+            Some("apple")
+        );
+        assert_eq!(required_prefix("a npm").as_deref(), Some("a npm"));
+        assert_eq!(required_prefix("JSDocs?").as_deref(), Some("jsdoc"));
+        assert_eq!(required_prefix("ab*c").as_deref(), Some("a"));
+        assert_eq!(required_prefix("ab{0,2}").as_deref(), Some("a"));
+        assert_eq!(required_prefix("ab+c").as_deref(), Some("ab"));
+        assert_eq!(required_prefix("ab(c|d)").as_deref(), Some("ab"));
+        assert_eq!(required_prefix(r"a[(|]b\|c").as_deref(), Some("a"));
+    }
+
+    #[test]
+    fn required_prefix_gives_up_when_matches_may_start_differently() {
+        assert_eq!(required_prefix("foo|bar"), None);
+        assert_eq!(required_prefix("(a)|b"), None);
+        assert_eq!(required_prefix("a?b"), None);
+        assert_eq!(required_prefix(r"\(s\)he"), None);
+        assert_eq!(required_prefix("(?<=x )npm"), None);
+    }
 
     #[test]
     fn strip_json_comments_blanks_comments_outside_strings() {

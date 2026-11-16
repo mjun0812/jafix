@@ -11,6 +11,7 @@ use crate::rules::builtin::{PairTerm, Terminology};
 use crate::rules::textlint_rule_pattern::contains;
 use crate::rules::{Finding, Report, RuleId, UserReplacement, one_line};
 
+use super::word_list;
 use super::{character_references, in_character_reference};
 
 /// 項目が当たり、置き換え後の語が一致と違う1箇所
@@ -54,15 +55,25 @@ fn matches(src: &str, texts: &[&Prose], rule: &Terminology) -> Vec<TermMatch> {
                     .find(|term| term.term.to_lowercase() == lower)?;
                 Some((m.range(), term.term.to_string(), term.user))
             });
-        let pairs = rule.pair_terms.iter().flat_map(|term| {
-            term.pattern.find_iter(text).map(move |m| {
-                (
-                    m.range(),
-                    pair_replacement(term, &text[m.range()]),
-                    term.user,
-                )
+        // 一致の先頭の文字列が本文の範囲に無い項目は、正規表現を読まずに飛ばす
+        let folded: String = text.chars().map(word_list::fold).collect();
+        let pairs = rule
+            .pair_terms
+            .iter()
+            .filter(|term| {
+                term.prefix
+                    .as_ref()
+                    .is_none_or(|prefix| folded.contains(prefix.as_str()))
             })
-        });
+            .flat_map(|term| {
+                term.pattern().find_iter(text).map(move |m| {
+                    (
+                        m.range(),
+                        pair_replacement(term, &text[m.range()]),
+                        term.user,
+                    )
+                })
+            });
         for (range, replacement, user) in words.chain(pairs) {
             // 文字参照の名前を書き換えると、参照が別の文字列になる
             if in_character_reference(&references, &range) {
@@ -102,7 +113,7 @@ fn matches(src: &str, texts: &[&Prose], rule: &Terminology) -> Vec<TermMatch> {
 /// 前後の `xyz ` を除く。先読みと後読みが一致の外を見るので、一致だけでなく前後に語を足した文字列に当てる
 fn pair_replacement(term: &PairTerm, matched: &str) -> String {
     let text = format!("xyz {matched} xyz");
-    let replaced = match term.source.find(&text) {
+    let replaced = match term.source().find(&text) {
         Some(m) => format!(
             "{}{}{}",
             &text[..m.start()],
