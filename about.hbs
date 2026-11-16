@@ -1,0 +1,39 @@
+jafixのbinaryにリンクされるRustのcrateのライセンス
+
+scripts/package.shが、梱包のときにcargo-aboutでCargo.lockから作った一覧です。
+前半はcrateとそのライセンスの一覧、後半はライセンスごとの文面と、その文面を使うcrateです。
+ライセンスの選べるcrateは、選んだライセンスの文面を載せています。
+crateのpackageにライセンスのファイルが無いものは、そのライセンスの標準の文面を載せ、その旨を書いています。
+その著作権表示は、crateのrepositoryのライセンスのファイルにあります。
+crateではない埋め込みのデータや、textlintのルールから写した部分の表示は、THIRD_PARTY_NOTICES.mdにあります。
+
+================================================================================
+crateの一覧
+================================================================================
+
+{{#each crates}}
+{{{package.name}}} {{{package.version}}}: {{{license}}}
+{{/each}}
+
+{{#each licenses}}
+================================================================================
+{{{name}}} ({{{id}}})
+================================================================================
+
+使うcrate:
+{{#each used_by}}
+- {{{crate.name}}} {{{crate.version}}}{{#if crate.repository}} ({{{crate.repository}}}){{/if}}
+{{/each}}
+{{#unless source_path}}
+
+これらのcrateのpackageにはライセンスのファイルが無いので、{{{id}}}の標準の文面を載せています。
+{{#each used_by}}
+{{#if (eq crate.name "lindera")}}
+linderaの著作権表示は、THIRD_PARTY_NOTICES.mdに書いています。
+{{/if}}
+{{/each}}
+{{/unless}}
+
+{{{text}}}
+
+{{/each}}

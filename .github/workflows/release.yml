@@ -30,6 +30,10 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y musl-tools
       - run: rustup target add "$TARGET"
+      # scripts/package.sh がcrateのライセンスの一覧を作るのに使う。
+      # 0.9系は、cli のfeatureを付けないとコマンドが入らない
+      - name: Install cargo-about
+        run: cargo install --locked cargo-about@0.9.3 --features cli
       - run: scripts/package.sh "$TARGET"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

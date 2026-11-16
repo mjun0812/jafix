@@ -1,6 +1,8 @@
 # Third-party notices
 
-jafixのbinaryは、形態素解析のライブラリのlinderaと、linderaが埋め込むIPADICの辞書を含みます。linderaはMIT Licenseで、辞書の元のmecab-ipadicは「mecab-ipadic」の節の条件で公開されています。
+この文書は、jafixのbinaryに含まれる他者の著作物のうち、Rustのcrateのライセンスの一覧では示しきれないものの出典と条件を書いたものです。binaryに埋め込んだ辞書やデータ、textlintのルールから写した部分、crateの一覧に載らない著作権表示とソースの入手先を扱います。binaryにリンクされるすべてのRustのcrateの名前・version・ライセンスと、ライセンスの文面は、GitHub Releasesのtarballの `CRATE_LICENSES.txt` にあります。`CRATE_LICENSES.txt` は、`scripts/package.sh` が梱包のときに、cargo-aboutで `Cargo.lock` と梱包するtargetの依存から作ります。
+
+jafixのbinaryは、形態素解析のライブラリのlinderaと、linderaが埋め込むIPADICの辞書を含みます。linderaはMIT Licenseで、辞書の元のmecab-ipadicは「mecab-ipadic」の節の条件で公開されています。linderaのcrateのpackageはライセンスのファイルを含まないので、`CRATE_LICENSES.txt` にはMIT Licenseの標準の文面だけが載ります。linderaの著作権表示は、次の表に書いています。
 
 | 名前         | version        | 著作権表示                                                                                      |
 | ------------ | -------------- | ----------------------------------------------------------------------------------------------- |
@@ -97,71 +99,7 @@ jafixのbinaryは、webpki-rootsの証明書の一覧を含みます。`no-dead-
 | ------------ | ------- | ------------------- |
 | webpki-roots | 1.0.12  | CDLA-Permissive-2.0 |
 
-webpki-roots 1.0.12の `LICENSE` の全文です。
-
-```text
-# Community Data License Agreement - Permissive - Version 2.0
-
-This is the Community Data License Agreement - Permissive, Version
-2.0 (the "agreement"). Data Provider(s) and Data Recipient(s) agree
-as follows:
-
-## 1. Provision of the Data
-
-1.1. A Data Recipient may use, modify, and share the Data made
-available by Data Provider(s) under this agreement if that Data
-Recipient follows the terms of this agreement.
-
-1.2. This agreement does not impose any restriction on a Data
-Recipient's use, modification, or sharing of any portions of the
-Data that are in the public domain or that may be used, modified,
-or shared under any other legal exception or limitation.
-
-## 2. Conditions for Sharing Data
-
-2.1. A Data Recipient may share Data, with or without modifications, so
-long as the Data Recipient makes available the text of this agreement
-with the shared Data.
-
-## 3. No Restrictions on Results
-
-3.1. This agreement does not impose any restriction or obligations
-with respect to the use, modification, or sharing of Results.
-
-## 4. No Warranty; Limitation of Liability
-
-4.1. All Data Recipients receive the Data subject to the following
-terms:
-
-THE DATA IS PROVIDED ON AN "AS IS" BASIS, WITHOUT REPRESENTATIONS,
-WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED
-INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS OF TITLE,
-NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
-
-NO DATA PROVIDER SHALL HAVE ANY LIABILITY FOR ANY DIRECT, INDIRECT,
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING
-WITHOUT LIMITATION LOST PROFITS), HOWEVER CAUSED AND ON ANY THEORY OF
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE DATA OR RESULTS,
-EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-
-## 5. Definitions
-
-5.1. "Data" means the material received by a Data Recipient under
-this agreement.
-
-5.2. "Data Provider" means any person who is the source of Data
-provided under this agreement and in reliance on a Data Recipient's
-agreement to its terms.
-
-5.3. "Data Recipient" means any person who receives Data directly
-or indirectly from a Data Provider and agrees to the terms of this
-agreement.
-
-5.4. "Results" means any outcome obtained by computational analysis
-of Data, including for example machine learning models and models'
-insights.
-```
+CDLA-Permissive-2.0は、データを共有するときに、その全文を一緒に示すことを条件にしています。webpki-rootsはcrateなので、webpki-roots 1.0.12の `LICENSE` の全文は、`CRATE_LICENSES.txt` に載っています。
 
 ## Sudachiの同義語辞書
 
@@ -561,13 +499,13 @@ Wordlist Command: mk-list --accents=strip en_US 60
 
 ## spellbook
 
-jafixのbinaryは、`spelling` が辞書を引くのに使うRustのcrateのspellbookを含みます。spellbookは、Mozilla Public License 2.0 (MPL-2.0)で公開されています。jafixは、spellbookのソースを変えずに使っています。
+jafixのbinaryは、`spelling` が辞書を引くのに使うRustのcrateのspellbookを含みます。spellbookは、Mozilla Public License 2.0 (MPL-2.0)で公開されています。MPL-2.0は、実行形式で配るときに、そのソースの入手先を示すことを条件にしています。この条件は `CRATE_LICENSES.txt` の一覧と文面だけでは満たせないので、入手先をここに書きます。jafixは、spellbookのソースを変えずに使っています。
 
 | 名前      | version | ライセンス | ソースの入手先                            |
 | --------- | ------- | ---------- | ----------------------------------------- |
 | spellbook | 0.4.2   | MPL-2.0    | https://github.com/helix-editor/spellbook |
 
-spellbook 0.4.2のソースは、https://crates.io/crates/spellbook/0.4.2 からも入手できます。MPL-2.0の全文は、https://mozilla.org/MPL/2.0/ にあります。
+spellbook 0.4.2のソースは、https://crates.io/crates/spellbook/0.4.2 からも入手できます。MPL-2.0の全文は、`CRATE_LICENSES.txt` と https://mozilla.org/MPL/2.0/ にあります。
 
 ## MIT License
 
