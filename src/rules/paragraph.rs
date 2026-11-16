@@ -26,7 +26,7 @@ pub fn report(src: &str, paragraphs: &[Paragraph], builtin: &Builtin) -> Vec<Rep
                 ..
             }]
         );
-        for sentence in sentence::split(src, paragraph, HardBreak::Close) {
+        for sentence in sentence::split(src, paragraph, HardBreak::ListItems) {
             if let Some(rule) = &builtin.sentence_length
                 && !paragraph.blockquote
                 && !only_link
@@ -62,12 +62,21 @@ fn sentence_length(sentence: &Sentence, rule: &SentenceLength) -> Option<Report>
             && matches!(&child.kind, InlineKind::Link { url } if *url == child.text))
     }) {
         if child.kind != InlineKind::Text {
-            text.push_str(&child.text);
+            if child.kind == InlineKind::Break {
+                text.push('\n');
+            } else {
+                text.push_str(&child.text);
+            }
             continue;
         }
         // 段落の直下の文字列は元のソースのままで、継続行の字下げを含む。CommonMarkは字下げを段落の内容に入れない
         let mut lines = child.text.split('\n');
-        text.extend(lines.next());
+        let first = lines.next().unwrap();
+        text.push_str(if text.ends_with('\n') {
+            first.trim_start_matches([' ', '\t'])
+        } else {
+            first
+        });
         for line in lines {
             text.push('\n');
             text.push_str(line.trim_start_matches([' ', '\t']));

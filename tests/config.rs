@@ -3373,6 +3373,7 @@ Edit ~/.bashrc, .env and owner/zuikaku, then recieve. Use recieve/send and e.g. 
         findings_of(&found, "spelling"),
         [
             "t.md:3:46: 英語の辞書に無い語「recieve」を使っている [spelling]",
+            "t.md:3:59: 英語の辞書に無い語「recieve」を使っている [spelling]",
             "t.md:5:17: 英語の辞書に無い語「teh」を使っている [spelling]",
         ]
     );
@@ -3626,4 +3627,150 @@ fn replacement_references_do_not_make_spaces_unconditionally_removable() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert!(findings_of(stdout(&output), "ja-no-space-around-slash").is_empty());
+}
+
+#[test]
+fn sentence_length_keeps_wrapped_sentences_but_splits_pseudo_list_items() {
+    let half = "あ".repeat(60);
+    for br in ["  \n", "\\\n"] {
+        for input in [
+            format!("{half}{br}{half}。\n"),
+            format!("– {half}{br}続き{half}。\n"),
+            format!("「{half}{br}{half}」。\n"),
+        ] {
+            let (_, found) = check_with_builtin("", &input);
+            assert_eq!(findings_of(&found, "sentence-length").len(), 1, "{input:?}");
+        }
+        for marker in ["– ", "• ", "・", "1.", "（１）"] {
+            let input = format!("{marker}{half}{br}{marker}{half}\n");
+            let (_, found) = check_with_builtin("", &input);
+            assert!(
+                findings_of(&found, "sentence-length").is_empty(),
+                "{input:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn spelling_checks_slash_separated_words_but_preserves_names_and_paths() {
+    let (_, found) = check_with_builtin(
+        "spelling = { suggestCorrections = false }",
+        "Demo/visualizaion bicubic/lighweight/real-world recieve/send\n\nowner/repo owner/zuikaku obra/superpowers uid/gid src/recieve.rs /recieve/send ./recieve/send ../recieve/send\n",
+    );
+    assert_eq!(
+        findings_of(&found, "spelling"),
+        [
+            "t.md:1:6: 英語の辞書に無い語「visualizaion」を使っている [spelling]",
+            "t.md:1:19: 英語の辞書に無い語「bicubic」を使っている [spelling]",
+            "t.md:1:27: 英語の辞書に無い語「lighweight」を使っている [spelling]",
+            "t.md:1:49: 英語の辞書に無い語「recieve」を使っている [spelling]",
+        ]
+    );
+}
+
+#[test]
+fn ja_no_successive_word_reports_repeated_brackets_and_iteration_marks() {
+    let (_, found) = check_with_builtin(
+        "",
+        "「「例」」。『『例』』。（（例））。時々々々。\n\n○○──△△……\n",
+    );
+    let findings = findings_of(&found, "ja-no-successive-word");
+    assert_eq!(findings.len(), 8, "{findings:?}");
+    for mark in ["「", "」", "『", "』", "（", "）", "々"] {
+        assert!(
+            findings
+                .iter()
+                .any(|line| line.contains(&format!("「{mark}」が"))),
+            "{mark}: {findings:?}"
+        );
+    }
+}
+
+#[test]
+fn ja_no_successive_word_checks_each_kind_of_bracket_and_iteration_mark() {
+    for input in [
+        "「「例」」",
+        "『『例』』",
+        "（（例））",
+        "【【例】】",
+        "《《例》》",
+        "あゝゝ",
+        "あゞゞ",
+        "アヽヽ",
+        "アヾヾ",
+        "時々々々",
+        "〻〻",
+    ] {
+        let (_, found) = check_with_builtin("", input);
+        assert!(
+            !findings_of(&found, "ja-no-successive-word").is_empty(),
+            "{input}: {found}"
+        );
+    }
+}
+
+#[test]
+fn ja_no_successive_word_preserves_wikilinks_and_ascii_grouping() {
+    let (_, found) = check_with_builtin("", "[[ページの名前]]と((式))。○○──△△……\n");
+    assert!(findings_of(&found, "ja-no-successive-word").is_empty());
+}
+
+#[test]
+fn spelling_preserves_repository_names_confirmed_by_link_destinations() {
+    let (_, found) = check_with_builtin(
+        "spelling = { suggestCorrections = false }",
+        "[google/automl](https://github.com/google/automl) and google/automl.\n\n[Demo/visualizaion](#demo)\n",
+    );
+    assert_eq!(
+        findings_of(&found, "spelling"),
+        ["t.md:3:7: 英語の辞書に無い語「visualizaion」を使っている [spelling]"]
+    );
+}
+
+#[test]
+fn sentence_length_separates_metadata_labels_from_following_prose() {
+    let (_, found) = check_with_builtin(
+        "",
+        &format!(
+            "**Location**: `template/file.md`  \n{}。\n",
+            "あ".repeat(90)
+        ),
+    );
+    assert!(findings_of(&found, "sentence-length").is_empty());
+}
+
+#[test]
+fn sentence_rules_keep_a_url_introduction_separate_from_its_destination() {
+    let (_, found) = check_with_builtin(
+        "",
+        "説明します。コードは以下で公開中である：  \nhttps://example.com/project\n",
+    );
+    assert_eq!(
+        findings_of(&found, "no-mix-dearu-desumasu").len(),
+        1,
+        "{found}"
+    );
+}
+
+#[test]
+fn spelling_preserves_system_identifiers_and_module_paths() {
+    let (_, found) = check_with_builtin(
+        "spelling = { suggestCorrections = false }",
+        "snap/overlay/cgroup/tmpfs/devtmpfs/squashfs/fuse shell/stdin topics/submodules\n",
+    );
+    assert!(findings_of(&found, "spelling").is_empty(), "{found}");
+}
+
+#[test]
+fn sentence_length_separates_pseudo_list_mapping_rows() {
+    let (_, found) = check_with_builtin(
+        "",
+        &format!(
+            "設定の対応表  \napi -> {}  \nadmin -> {}\n",
+            "a".repeat(60),
+            "b".repeat(60)
+        ),
+    );
+    assert!(findings_of(&found, "sentence-length").is_empty(), "{found}");
 }

@@ -96,3 +96,8 @@ fn copy_case(matched: &str, correct: &str) -> String {
         })
         .collect()
 }
+
+/// 先頭の語が既知の誤綴りなら、スラッシュで続く名前としては扱わない。
+pub(super) fn is_known_misspelling(word: &str) -> bool {
+    MISSPELLINGS.corrects.contains_key(word)
+}

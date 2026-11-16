@@ -119,7 +119,7 @@ jafixは、AI agentが書いた日本語のMarkdownを、機械的に直せる�
 - `max-ten` の `max` は0以上の整数です。`touten` と `kuten` は空でない文字列で、`kuten` は読点の数を0に戻す記号を決めるだけです。文の区切り方は変えません
 - `no-doubled-joshi` の `min_interval` は1以上の整数です。`allow` の要素は、指摘しない助詞の文字列です。`separatorCharacters` は数えるトークンを選ぶときだけ使い、文の区切り方は変えません
 - `no-mix-dearu-desumasu` の `preferInHeader`・`preferInBody`・`preferInList` は、`""`(多いほうに合わせる)・`"ですます"`・`"である"` のどれかです
-- `ja-no-successive-word` の `allow` の要素は、「[パターン](#パターン)」の書き方で書き、2つ目の語に当たれば指摘しません。品詞が記号のトークンの連続は、句点と読点(`。。`・`、、`)のほかは指摘しません
+- `ja-no-successive-word` の `allow` の要素は、「[パターン](#パターン)」の書き方で書き、2つ目の語に当たれば指摘しません。品詞が記号のトークンの連続は、句点、読点、括弧開、括弧閉を指摘します。踊り字(`々`・`〻`・`ゝ`・`ゞ`・`ヽ`・`ヾ`)の連続も指摘し、伏せ字や罫線の記号(`○○`・`──`・`△△`・`……`)は指摘しません
 - `ja-no-redundant-expression` の `allowNodeTypes` の要素は、`BlockQuote`・`ListItem`・`Link`・`LinkReference`・`Image`・`Emphasis`・`Strong`・`Delete`・`Code`・`ReferenceDef` のどれかです。`BlockQuote` と `ListItem` は、引用とリスト項目の中の段落を対象から外します。`Link` から `Delete` までは、一致の先頭がその要素の中にあれば指摘しません。`Code` と `ReferenceDef` は書けますが、何も変えません
 - `ja-no-redundant-expression` の `dictOptions` は、キーが `dict1` から `dict6` の表です。値の表には、`disabled`(真偽値)と `allows`(パターンの配列)を書けます。`allows` を書くと、その項目の既定の `allows` を置き換えます
 
@@ -381,7 +381,21 @@ write-good = { passive = false, whitelist = ["read-only"] }
 
 `spelling` は、英単語の綴りを、`dictionary-en` 4.0.0のen_USのhunspellの辞書で確かめます。辞書の `index.aff`・`index.dic` は、中身を変えずにbinaryへ埋め込み、`spellbook` 0.4.2で引きます。辞書は、`spelling` が有効で確かめる語があるときに1回だけ読みます。本文の範囲のすべて(見出し・引用・表のセル・リンクの文字列・強調・太字の中を含む)と、インラインの画像のalt(入れ子のリンクと画像の宛先とtitleを除く)に `wordDefinitionRegexp` を当てて語を取り出し、辞書に無い語を指摘します。範囲は語の全体です。`suggestCorrections` が `true` なら、辞書の候補を文面に入れます。文面は `英語の辞書に無い語「recieve」を使っている。候補: receive、relieve、reverie` で、候補が無ければ `候補は無い` を続けます。候補の並びは、同じ入力と設定なら実行ごとに変わりません。語が正しいかの判定と候補は `spellbook` に従うので、textlintと違うことがあります(「[textlintとの違い](#textlintとの違い)」)。
 
-`spelling` の既定の除外として、ASCIIの数字を含む語(`50ms`・`x86_64`)、`_` を含む語(`node_modules`)と `\_` に接する語(`mytoken\_value` の `mytoken`)、2文字目以降に大文字(`A`〜`Z`)を含む語(`README`・`JSON`・`GitHub`・`macOS`・`ruleId`)、ファイル名・パス・ドメイン名の中の語を辞書に当てません。綴りの誤りではなく、識別子・略語・固有名詞・名前として書かれた語だからです。ファイル名・パス・ドメイン名は、ASCIIの英数字と `_`・`-`・`.`・`/` が空白を挟まずに続く並びで、`/` を含むか、英数字の続く `.` を含むものです(`README.md` の `md`、`src/rules/foo.rs` の `src`・`rs`、`example.com` の `com`、`.env` の `env`)。文末の `.` (`recieve.`)と日本語の文字の前の `.` (`teh.の後`)には英数字が続かないので、その前の語は並びに入りません。`...` の後ろの語も、並びに入りません。`/` でつないだ語(`owner/repo`・`uid/gid`・`and/or`)も並びに入るので、`Demo/visualizaion` の `visualizaion` のような誤綴りも指摘しません。この除外は止められません。日本語の技術文書では、除外に当たらない小文字だけの識別子(`jafix`・`npm`・`config` など)と、頭文字だけが大文字の固有名詞(`Sudachi`・`Homebrew` など)が指摘に残ります。綴りの誤りと形で見分けられないので、`skipPatterns` に書いて除きます。
+`spelling` は、識別子として書かれた語を除外します。
+ASCIIの数字を含む語(`50ms`)、`_` を含む語と `\_` に接する語、2文字目以降に大文字を含む語(`GitHub`)が対象です。
+ファイル名とドメイン名は、ASCIIの英数字と `_`・`-`・`.`・`/` の並びのうち、英数字の続く `.` を含むものとして除外します。
+文末の `.` (`recieve.`)と日本語の文字の前の `.` (`teh.の後`)、`...` の後ろの語は、この条件に当たりません。
+
+`/` でつながった並びは、パスや名前と普通の語の列挙を次の条件で分けます。
+
+- 文書内のGitHubリンク先にある `owner/repo` と一致する並びは、リポジトリ名として除外します
+- `/` か `.` で始まるもの、`/` で終わるもの、先頭が `owner`・`src`・`lib`・`bin`・`etc`・`usr`・`var`・`tmp`・`home`・`docs`・`topics` のものは、パスか名前として除外します
+- 数字、`_`、2文字目以降の大文字を含む要素があれば、並びを除外します。`fs` で終わるファイルシステム名や `stdin`・`stdout`・`stderr` を含む並びも除外します。辞書に無い要素がハイフンを含む場合、大文字で始まる場合、3文字以下で既知の誤綴りでもない場合も、名前や略語として除外します
+- それ以外は、先頭の要素が辞書の語か `common-misspellings` の一覧の誤綴りなら、普通の語の列挙として調べます。3要素以上の並びは、どれかの要素が辞書にあれば調べます。`Demo/visualizaion`・`recieve/send`・`bicubic/lighweight/real-world` の誤綴りも対象です
+- 先頭が辞書にも誤綴りの一覧にも無い2要素の並びは、名前を優先して除外します。`obra/superpowers` と `uid/gid` が該当します。形だけでは名前か誤綴りかを確定できない場合の扱いです
+
+この除外は止められません。
+除外されない識別子や固有名詞は、`skipPatterns` に書いて除きます。
 
 ```toml
 [builtin]
@@ -522,7 +536,7 @@ patterns = [
 
 - 本文の範囲ごとに当てるルール: `max-kanji-continuous-len`・`arabic-kanji-numbers`・`no-exclamation-question-mark`・`ja-unnatural-alphabet`・`no-double-negative-ja`・`no-dropping-the-ra`・`ja-no-weak-phrase`・`ja-no-successive-word`・`ja-no-abusage`・`no-ai-hype-expressions`・`no-ai-words`・`no-short-topic-comma`・`ja-nakaguro-or-halfwidth-space-between-katakana`・`ja-space-after-exclamation`・`ja-space-after-question`・空白を求める側の `ja-space-between-half-and-full-width`・ひらがな系の5ルール・`@textlint-ja/no-insert-dropping-sa`・`no-todo` の `TODO:`・`date-weekday-mismatch`・`@textlint-rule/pattern` です。形態素解析を使うルールは、本文の範囲を1つずつトークンへ分けます。本文の範囲は、インラインコード・強調・リンク・HTMLのタグで区切られるので、境目をまたいでは一致せず、`照**合**` は `照合` に当たりません。長さ0の一致は指摘にしません。組み込みのルールは、引用・強調・リンクの中、段落の直下でない範囲を、ルールごとにtextlintと同じ文脈で対象から外します。`@textlint-rule/pattern` は、`allowNodeTypes` に書いた型の中だけを対象から外します
 - インラインコード・リンク・太字・強調の前後に当てるルール: 4つの `ja-space-around-*` の `true` の側です。nodeの直前か直後の文字が日本語の文字で、間に空白が無ければ指摘します。nodeの前か後ろに文字が無い側(文書の先頭か末尾)は見ません
-- 段落と文の単位で当てるルール: `sentence-length`・`max-comma`・`ja-no-mixed-period`・`no-unmatched-pair`・`max-ten`・`no-doubled-joshi`・`no-doubled-conjunctive-particle-ga`・`no-doubled-conjunction`・`ja-no-redundant-expression` です。Markdownの解析結果のままの段落を見ます。リスト項目・引用・脚注の定義の中の段落も見ますが、`ja-no-mixed-period` はこの3つの中の段落を対象にせず、`sentence-length` は引用の中の段落と、子がリンク1つだけの段落を対象にしません。段落の文字列には、本文のほかにインラインコードの中身と画像のaltも入ります。文は、`。` `.` `?` `!` などで区切り、括弧と引用符が開いている間と、`Mr.` のような英語の略語の `.` では区切りません。ハード改行(行末の2つの空白か `\`)では、括弧が開いていても文を区切ります。ただし、`no-unmatched-pair` はハード改行で文を区切りません。ハード改行は書き手が行を分けただけなので、括弧と引用符はその行をまたいで閉じてよいからです。`sentence-length` は、継続行の行頭の空白とタブを長さに数えません。形態素解析を使うルールは、引用の中の段落を対象にしません(`ja-no-redundant-expression` は `allowNodeTypes` で決まります)。また、インラインコードを中身と同じ文字数の `ー` に置き換えてから文をトークンに分けるので、コードの中身を判定に入れません
+- 段落と文の単位で当てるルール: `sentence-length`・`max-comma`・`ja-no-mixed-period`・`no-unmatched-pair`・`max-ten`・`no-doubled-joshi`・`no-doubled-conjunctive-particle-ga`・`no-doubled-conjunction`・`ja-no-redundant-expression` です。Markdownの解析結果のままの段落を見ます。リスト項目・引用・脚注の定義の中の段落も見ますが、`ja-no-mixed-period` はこの3つの中の段落を対象にせず、`sentence-length` は引用の中の段落と、子がリンク1つだけの段落を対象にしません。段落の文字列には、本文のほかにインラインコードの中身と画像のaltも入ります。文は、`。` `.` `?` `!` などで区切り、括弧と引用符が開いている間と、`Mr.` のような英語の略語の `.` では区切りません。ハード改行(行末の2つの空白か `\`)では、次の行が列挙の記号で始まる場合だけ、括弧が開いていても文を区切ります。記号は `– `・`— `・`• `・`・` とMarkdownの箇条書きの記号、数字に `.`・`．`・`)`・`、` を続けた番号、括弧で囲んだ数字か英字です。小数点と数字の続く番号は除きます。`api -> micro` のように、英数字の名前と空白を挟んだ矢印(`->`・`=>`・`→`)、空白の無い値だけからなる対応表の行でも区切ります。`**項目名**:` にインラインコードの値だけを続けたラベル行の末尾でも区切ります。コロンで終わる紹介文の次がURLだけの行である場合も、そこで区切ります。記号やラベルの無い行は、文の途中とみなします。独立した項目にも読める場合は、長い文の見逃しを避けるため、同じ扱いとします。ただし、`no-unmatched-pair` はハード改行で文を区切りません。ハード改行は書き手が行を分けただけなので、括弧と引用符はその行をまたいで閉じてよいからです。`sentence-length` は、継続行の行頭の空白とタブを長さに数えません。形態素解析を使うルールは、引用の中の段落を対象にしません(`ja-no-redundant-expression` は `allowNodeTypes` で決まります)。また、インラインコードを中身と同じ文字数の `ー` に置き換えてから文をトークンに分けるので、コードの中身を判定に入れません
 - リスト項目・見出し・段落の元の文字列に当てるルール: `no-ai-list-formatting` はリスト項目ごとに、項目の先頭の太字の型と、項目の範囲にある段落(入れ子の項目の段落を含む)の最初の絵文字を見ます。`no-ai-emphasis-patterns` は段落と見出しごとに見ます。どちらも、インラインコードとHTMLのタグの中で始まるか終わる一致を捨てるので、コードの中の `**` や絵文字には当たりません。リスト項目の中のコードブロックも見ません
 - リスト項目の直下の段落に当てるルール: `no-todo` のタスクです。項目の先頭のタスクの記号と、項目の直下の段落の文字列を見ます。インラインコード・リンク・強調の中と、入れ子の項目は見ません
 - リンクの宛先に当てるルール: `no-dead-link` です。インラインのリンク・自動リンク・裸のURL・参照リンクの定義の宛先を、見出し・表のセル・リスト項目・脚注の中を含めて見ます
@@ -811,7 +825,7 @@ IDは、jafixのルールのID(`sentence-length`)でも、textlintがpresetの�
 - `ja-no-mixed-period` と `arabic-kanji-numbers` は、textlintと違って自動で直さず、指摘だけを出します
 - `exclusionPatterns`・`forceAppendPeriod`・`checkFootnote`・`checkCode`・`checkImage` のオプションは使えません
 - `max-comma` と `max-kanji-continuous-len` の `max` に0は書けません。textlintは0をルール自身の既定値(4と5)に読み替えるので、同じ設定でも結果が変わります
-- 文は、ハード改行(行末の2つの空白か `\`)でも区切ります。textlintは区切らないので、句点の無い行をハード改行で並べた箇条書きのような行を、1つの長い文として `sentence-length` で指摘します。文の単位で当てるほかのルール(`max-comma` と、形態素解析を使う文の単位のルール)も、同じ区切りを使います。`no-unmatched-pair` は、textlintと同じくハード改行で文を区切らないので、ハード改行をまたいで閉じた括弧と引用符を指摘しません
+- 文は、ハード改行(行末の2つの空白か `\`)の次の行が列挙の記号で始まる場合と、ラベル行の末尾で区切ります。`– 項目A` と `– 項目B` などを1文に数えません。記号の条件は、上の段落と文の単位の説明のとおりです。記号の無い行は文の継続として扱うので、折り返した長い文も `sentence-length` で指摘します。textlintはハード改行で文を区切りません。文の単位で当てるほかのルール(`max-comma` と、形態素解析を使う文の単位のルール)も、同じ区切りを使います。`no-unmatched-pair` は、textlintと同じくハード改行で文を区切らないので、ハード改行をまたいで閉じた括弧と引用符を指摘しません
 - `sentence-length` は、リスト項目などの継続行の行頭の空白とタブを、文の長さに数えません。CommonMarkでは、この空白は段落の内容に入りません。textlintは数えるので、深く字下げした継続行のある文を長すぎると指摘します
 - 指摘の文面は、textlintの文面ではなく、jafixの1行の日本語です
 
@@ -825,7 +839,7 @@ IDは、jafixのルールのID(`sentence-length`)でも、textlintがpresetの�
 - 文の区切り方は、ほかの組み込みのルールと同じです。textlintの `max-ten` と `no-doubled-joshi` はオプションで文の区切り文字を変えますが、jafixの `kuten` と `separatorCharacters` は文の区切り方を変えません
 - `no-mix-dearu-desumasu` は、引用の中の文を数えず、入れ子のリスト項目の段落も1回ずつ数えます。textlintはリスト項目の原文を丸ごと解析するので、入れ子の項目を二重に数えます
 - `no-mix-dearu-desumasu` は、文に区切ってから文末を見るので、`．` で終わる文の文末も数えます。textlintの `analyze-desumasu-dearu` 5.0.2は、文末を `。` `!` `?` `！` `？` の前でだけ判定するので、`，` `．` で書いた文書の文体の混在を見逃します
-- `ja-no-successive-word` は、品詞が記号のトークンの連続を、句点と読点(`。。`・`、、`)のほかは指摘しません。伏せ字の `○○`、2倍のダッシュ `──`、2倍の三点リーダー `……` は正しい書き方だからです。textlintは、オプションを書かなければ指摘します
+- `ja-no-successive-word` は、品詞が記号のトークンの連続を、句点、読点、括弧開、括弧閉のほかは指摘しません。踊り字の連続はトークンの境界によらず指摘します。`「「`・`」」`・`時々々々` の打ち間違いを見逃さないためです。伏せ字の `○○`、2倍のダッシュ `──`、2倍の三点リーダー `……` は正しい書き方だからです。textlintは、オプションを書かなければ指摘します
 - `no-doubled-conjunctive-particle-ga` の `separatorChars` は使えません。textlintのREADMEに無いオプションです
 - `ja-no-abusage` は、`prh:disable` のコメントを扱いません
 - `ja-no-abusage` と `ja-no-redundant-expression` は、textlintと違って自動で直さず、指摘だけを出します
@@ -943,7 +957,7 @@ JTFスタイルガイドの37ルールも、判定の条件を `textlint-rule-pr
 - `terminology` の `terms` の項目も、`prh` と同じく、一致の周りがすでに置き換え後の文字列になっている箇所を直しません。`["JS", "JavaScript (JS)"]` は、`JavaScript (JS)` の `JS` を直しません
 - `terminology` の置き換え後の語を決められない一致(文字列の項目の `.` が別の文字に当たったもの)は、修正と指摘のどちらにもせずに続けます。textlintは例外を投げて止まります
 - `terminology` の `terms` のファイルのパスは、設定ファイルのあるディレクトリから解決し、npm moduleの名前は読みません。読んだ値が項目の配列でなければ、設定の不正にします。textlintは、配列でない値を空として扱います。項目の正規表現には、textlintと違って `u` を付けます
-- `spelling` は、既定の除外に当たる語を辞書に当てません。textlintは、`123`・`foo_bar`・`README`・`JSON` と、`mytoken\_value` の全体、`README.md` の `md`、`src/rules/foo.rs` の `src`、`owner/zuikaku` の `zuikaku` も指摘します
+- `spelling` は、既定の除外に当たる語を辞書に当てません。textlintは、`123`・`foo_bar`・`README`・`JSON` と、`mytoken\_value` の全体、`README.md` の `md`、`src/rules/foo.rs` の `src`、`owner/zuikaku` の `zuikaku` も指摘します。スラッシュでつないだ普通の語は除外せず、`Demo/visualizaion` の `visualizaion` も調べます
 - `spelling` の判定と候補は、textlintのnspellではなく `spellbook` に従います。既定の `wordDefinitionRegexp` で取り出し、既定の除外に当たらない語の判定は同じです。`-` か末尾の `.` を語に含める `wordDefinitionRegexp` では、`spellbook` は、ハイフンで分けた語がどれも辞書にある語(`well-known`・`up-to-date`)と、末尾の `.` を除けば辞書にある語(`Mr.`)を正しい語とします。nspellは辞書に無い語とします
 - `spelling` の候補は、`spellbook` の候補をその順で出すので、並びと数がtextlintと違います。語を2つに分けた候補(`text lint`)も出ます。textlintが `textlint` に出す候補 `texting` は出ません
 - `spelling` は、リンクと画像の `title` を見ません

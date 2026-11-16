@@ -65,7 +65,8 @@ impl Projection {
                 | InlineKind::Emphasis
                 | InlineKind::Strong
                 | InlineKind::Delete => self.push_inlines(src, &child.children, code),
-                InlineKind::Html | InlineKind::Break | InlineKind::FootnoteReference => {}
+                InlineKind::Break => self.push(' ', child.range.start),
+                InlineKind::Html | InlineKind::FootnoteReference => {}
             }
         }
     }
@@ -90,7 +91,7 @@ mod tests {
     /// 1つ目の段落の1文目の文字列と、`text` の中の `needle` の位置を戻した元のソースの位置
     fn project(src: &str, needle: &str) -> (String, usize) {
         let paragraph = &prose::parse(src).paragraphs[0];
-        let sentence = &sentence::split(src, paragraph, sentence::HardBreak::Close)[0];
+        let sentence = &sentence::split(src, paragraph, sentence::HardBreak::ListItems)[0];
         let projection = Projection::new(src, sentence);
         let index = projection.text.find(needle).unwrap();
         let source = projection.source(index);

@@ -25,9 +25,8 @@ impl Sentence {
 /// ハード改行で文を閉じるか
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HardBreak {
-    /// 括弧が開いていても文を閉じ、ハード改行はどの文にも入れない。描画で行が分かれるので、句点の無い行を並べた
-    /// 箇条書きのような行を1文にしないためである
-    Close,
+    /// 次の行が列挙の記号で始まるときと、ラベル行の末尾で文を閉じる。それ以外は、1文の折り返しとして扱う
+    ListItems,
     /// 文を開かず、開いている文があればその文に入れる。括弧と引用符の対は、行をまたいで閉じてよいからである
     Continue,
 }
@@ -47,8 +46,16 @@ pub fn split(src: &str, paragraph: &Paragraph, hard_break: HardBreak) -> Vec<Sen
     for child in &paragraph.children {
         match (&child.kind, hard_break) {
             (InlineKind::Text, _) => splitter.text(child.range.clone()),
-            (InlineKind::Break, HardBreak::Close) => splitter.close(),
-            (InlineKind::Break, HardBreak::Continue) => {
+            (InlineKind::Break, HardBreak::ListItems)
+                if starts_list_item(&src[child.range.end..paragraph.range.end])
+                    || ends_label_line(
+                        &src[paragraph.range.start..child.range.start],
+                        &src[child.range.end..paragraph.range.end],
+                    ) =>
+            {
+                splitter.close();
+            }
+            (InlineKind::Break, _) => {
                 if let Some(sentence) = &mut splitter.current {
                     sentence.push(child.clone());
                 }
@@ -58,6 +65,34 @@ pub fn split(src: &str, paragraph: &Paragraph, hard_break: HardBreak) -> Vec<Sen
     }
     splitter.close();
     splitter.sentences
+}
+
+/// Markdownのリストにならない列挙も含む。記号の無い行は、文の途中か独立した項目か判別できないので継続する。
+fn starts_list_item(rest: &str) -> bool {
+    static MARKER: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"^(?:[-+*–—•][ \t]+|・|[0-9０-９]+(?:[.．][^0-9０-９]|[)、])|[（(](?:[0-9０-９]+|[a-zA-Z])[）)]|[A-Za-z_][A-Za-z0-9_-]*[ \t]+(?:->|=>|→)[ \t]+\S+[ \t]*$)").unwrap()
+    });
+    MARKER.is_match(
+        rest.lines()
+            .next()
+            .unwrap_or_default()
+            .trim_start_matches([' ', '\t']),
+    )
+}
+
+/// コードだけの値を持つラベル行と、URLだけの行への紹介文は、本文の折り返しではない。
+fn ends_label_line(before: &str, after: &str) -> bool {
+    static LABEL: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"^\s*\*\*[^*]+\*\*[:：]\s*(?:`[^`]+`(?:,\s*)?)+\s*$").unwrap()
+    });
+    let line = before.rsplit('\n').next().unwrap().trim_end();
+    LABEL.is_match(line)
+        || (line.ends_with([':', '：'])
+            && after.lines().next().is_some_and(|line| {
+                let line = line.trim();
+                (line.starts_with("https://") || line.starts_with("http://"))
+                    && !line.chars().any(char::is_whitespace)
+            }))
 }
 
 const SEPARATORS: [char; 7] = ['.', '．', '。', '?', '!', '？', '！'];
@@ -311,7 +346,7 @@ mod tests {
         document
             .paragraphs
             .iter()
-            .flat_map(|paragraph| split(src, paragraph, HardBreak::Close))
+            .flat_map(|paragraph| split(src, paragraph, HardBreak::ListItems))
             .map(|sentence| &src[sentence.range])
             .collect()
     }
@@ -378,12 +413,12 @@ mod tests {
     }
 
     #[test]
-    fn splits_at_hard_breaks_even_while_a_pair_is_open() {
-        assert_eq!(sentences("一行目  \n二行目。"), vec!["一行目", "二行目。"]);
-        assert_eq!(sentences("一行目\\\n二行目。"), vec!["一行目", "二行目。"]);
+    fn keeps_wrapped_sentences_open_at_hard_breaks() {
+        assert_eq!(sentences("一行目  \n二行目。"), vec!["一行目  \n二行目。"]);
+        assert_eq!(sentences("一行目\\\n二行目。"), vec!["一行目\\\n二行目。"]);
         assert_eq!(
             sentences("「一行目  \n二行目」。"),
-            vec!["「一行目", "二行目」。"]
+            vec!["「一行目  \n二行目」。"]
         );
     }
 
@@ -405,7 +440,7 @@ mod tests {
     fn keeps_text_children_as_the_split_ranges_and_other_children_whole() {
         let src = "前`コード`後。次。";
         let document = parse(src);
-        let sentences = split(src, &document.paragraphs[0], HardBreak::Close);
+        let sentences = split(src, &document.paragraphs[0], HardBreak::ListItems);
         let children: Vec<Vec<(&str, &str)>> = sentences
             .iter()
             .map(|sentence| {

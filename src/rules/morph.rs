@@ -54,7 +54,7 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
         if !unquoted && redundant.is_none() {
             continue;
         }
-        let sentences = sentence::split(src, paragraph, HardBreak::Close);
+        let sentences = sentence::split(src, paragraph, HardBreak::ListItems);
         let projections: Vec<Projection> = sentences
             .iter()
             .map(|sentence| Projection::new(src, sentence))
@@ -101,7 +101,7 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
             .iter()
             .filter(|heading| !heading.blockquote)
         {
-            for sentence in sentence::split(src, heading, HardBreak::Close) {
+            for sentence in sentence::split(src, heading, HardBreak::ListItems) {
                 let projection = Projection::new(src, &sentence);
                 let analyzed = Analyzed::new(&sentence, &projection);
                 styles.count(Kind::Header, &analyzed, rule.strict);

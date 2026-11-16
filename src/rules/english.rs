@@ -39,7 +39,7 @@ pub fn report(
         let spelling = builtin
             .spelling
             .as_ref()
-            .map(|rule| scope.spawn(|| spelling::report(src, texts, alts, rule)));
+            .map(|rule| scope.spawn(|| spelling::report(src, texts, alts, &document.links, rule)));
         let terminology = builtin
             .terminology
             .as_ref()
