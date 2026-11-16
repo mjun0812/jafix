@@ -528,6 +528,136 @@ pub fn fix_rules_hitting(text: &str, builtin: &Builtin) -> Vec<RuleId> {
     rules
 }
 
+/// 辞書で語を別の書き方にするよう求める組み込みの指摘ルール。利用者の置き換えの結果をこれらが指摘すると、hookが直した語を
+/// agentが指摘に従って戻し、次の編集でhookがまた直す往復になる。ほかの指摘ルールは、別の言い方で両方を満たせる
+pub const DICTIONARY_REPORT_RULES: [RuleId; 13] = [
+    RuleId::JtfStyle(JtfRule::R2_1_5),
+    RuleId::JtfStyle(JtfRule::R2_1_6),
+    RuleId::JtfStyle(JtfRule::R2_2_1),
+    RuleId::JtfStyle(JtfRule::R2_2_3),
+    RuleId::JaHiraganaHojodoushi,
+    RuleId::JaHiraganaKeishikimeishi,
+    RuleId::JaKeishikimeishi,
+    RuleId::JaHiraganaFukushi,
+    RuleId::JaHiraganaDaimeishi,
+    RuleId::JaNoAbusage,
+    RuleId::NoSynonyms,
+    RuleId::Terminology,
+    RuleId::CommonMisspellings,
+];
+
+/// 利用者の置き換えの固定の部分 `parts` のそれぞれを、段落の直下にある本文の範囲1つだけの文書とみなして、
+/// `DICTIONARY_REPORT_RULES` のうち有効で指摘を出すものを、`parts` と同じ順に返す。指摘すれば、置き換えは指摘ルールと
+/// 逆である。部分は数千になりうるので、辞書の数百の正規表現を部分ごとに当て直さず、部分を改行でつないだ文字列に当てて、
+/// 指摘と重なる部分だけを1つずつ当て直す。英語の2つは、ASCIIの英字を含む部分だけに当てる
+pub fn dictionary_rules_reporting(parts: &[&str], builtin: &Builtin) -> Vec<Vec<RuleId>> {
+    if parts.is_empty() {
+        return Vec::new();
+    }
+    let all = Joined::new(parts, 0..parts.len());
+    let english = Joined::new(
+        parts,
+        (0..parts.len()).filter(|&i| parts[i].bytes().any(|b| b.is_ascii_alphabetic())),
+    );
+    let jtf = |text: &str, _: &[Range<usize>]| {
+        jtf_style::dictionary_report(text, &[&whole_prose(text)], builtin)
+    };
+    let english_rules = |text: &str, _: &[Range<usize>]| {
+        english::dictionary_report(text, &whole_prose(text), builtin)
+    };
+    let morph = |text: &str, parts: &[Range<usize>]| morph::dictionary_report(text, parts, builtin);
+    // hookは設定を読み終えるまで文書を解析しないので、この時間はそのままhookの時間に足される。3つの組を並行に当てる
+    let candidates = thread::scope(|scope| {
+        let jtf_candidates = scope.spawn(|| all.candidates(&jtf));
+        let english_candidates = scope.spawn(|| english.candidates(&english_rules));
+        let morph_candidates = all.candidates(&morph);
+        [
+            jtf_candidates.join().unwrap(),
+            english_candidates.join().unwrap(),
+            morph_candidates,
+        ]
+    });
+    let checks: [&DictionaryCheck; 3] = [&jtf, &english_rules, &morph];
+    let mut found = vec![Vec::new(); parts.len()];
+    for (candidates, check) in candidates.into_iter().zip(checks) {
+        for i in candidates {
+            for report in check(parts[i], std::slice::from_ref(&(0..parts[i].len()))) {
+                let rule = DICTIONARY_REPORT_RULES
+                    .into_iter()
+                    .find(|rule| rule.name() == report.rule)
+                    .expect("辞書の指摘ルールだけを当てた");
+                if !found[i].contains(&rule) {
+                    found[i].push(rule);
+                }
+            }
+        }
+    }
+    found
+}
+
+/// 辞書の指摘ルールの組を、つないだ文字列と、その中の部分のバイト範囲に当てて、指摘を返すもの
+type DictionaryCheck<'a> = dyn Fn(&str, &[Range<usize>]) -> Vec<Report> + 'a;
+
+/// `text` の全体を、段落の直下にある本文の範囲1つとしたもの
+fn whole_prose(text: &str) -> Prose {
+    Prose {
+        range: 0..text.len(),
+        context: Context {
+            plain: true,
+            paragraph: true,
+            ..Context::default()
+        },
+    }
+}
+
+/// 利用者の置き換えの固定の部分のいくつかを、改行でつないだ文字列
+struct Joined {
+    text: String,
+    /// つないだ部分の `text` の中の範囲と、`parts` での番号
+    parts: Vec<(Range<usize>, usize)>,
+}
+
+impl Joined {
+    /// `parts` のうち、番号が `indices` のものをつなぐ
+    fn new(parts: &[&str], indices: impl Iterator<Item = usize>) -> Self {
+        let mut text = String::new();
+        let mut joined = Vec::new();
+        for i in indices {
+            if !joined.is_empty() {
+                text.push('\n');
+            }
+            joined.push((text.len()..text.len() + parts[i].len(), i));
+            text.push_str(parts[i]);
+        }
+        Self {
+            text,
+            parts: joined,
+        }
+    }
+
+    /// `check` (つないだ文字列と部分の範囲から指摘を返すもの) を `text` に当て、指摘と重なる部分の `parts` での番号を、
+    /// 番号の順に返す。つないだ文字列では、正規表現が部分の境の改行をまたいで当たり (`サーバ([^ーァ-ン]{1,2}|(?=$))` が
+    /// `サーバ\nT` に当たる)、部分ごとに当てたときと違う指摘になるので、指摘を部分に割り当てずに、当て直す部分を選ぶのに使う
+    fn candidates(&self, check: &DictionaryCheck) -> Vec<usize> {
+        let ranges: Vec<Range<usize>> = self.parts.iter().map(|(range, _)| range.clone()).collect();
+        let mut candidates: Vec<usize> = check(&self.text, &ranges)
+            .iter()
+            .flat_map(|report| {
+                let first = self
+                    .parts
+                    .partition_point(|(range, _)| range.end < report.range.start);
+                let last = self.parts.partition_point(|(range, _)| {
+                    range.start < report.range.end.max(report.range.start + 1)
+                });
+                self.parts[first..last].iter().map(|&(_, part)| part)
+            })
+            .collect();
+        candidates.sort_unstable();
+        candidates.dedup();
+        candidates
+    }
+}
+
 /// 利用者の置き換えと辞書の4ルールと `spelling` を当てる本文の範囲と、`spelling` が語を取り出すインラインの画像のaltの、
 /// 元のソース上のバイト範囲。どちらも、最初の行から最後の行までのどれかが `targets` の対象行であるもの。行の索引を1回で
 /// 作るために、`prh` と `@textlint-rule/pattern` と `terminology` と辞書の4ルールと `spelling` で共有する。
@@ -565,11 +695,12 @@ fn target_texts<'a>(
     let alts = document
         .inline_nodes
         .iter()
-        .filter_map(|node| match &node.kind {
-            InlineNodeKind::Image { alt } => Some(alt.clone()),
-            _ => None,
+        .flat_map(|node| match &node.kind {
+            InlineNodeKind::Image { alt } => alt.as_slice(),
+            _ => &[],
         })
         .filter(|alt| overlaps(alt))
+        .cloned()
         .collect();
     (texts, alts)
 }

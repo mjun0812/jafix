@@ -25,7 +25,7 @@ pub(super) fn report(prose: &AnalyzedProse) -> Vec<Report> {
 }
 
 /// トークンの並びに一致した箇所ごとに、一致の最初のトークンに指摘を出す
-fn phrase_reports(prose: &AnalyzedProse) -> Vec<Report> {
+pub(super) fn phrase_reports(prose: &AnalyzedProse) -> Vec<Report> {
     let tokens = prose.tokens;
     ABUSAGES
         .iter()
@@ -51,7 +51,7 @@ fn phrase_reports(prose: &AnalyzedProse) -> Vec<Report> {
 }
 
 /// 73件の文字列の一致を合わせ、重なる一致は先頭に近いものだけを残して指摘を出す
-fn word_reports(prose: &AnalyzedProse) -> Vec<Report> {
+pub(super) fn word_reports(prose: &AnalyzedProse) -> Vec<Report> {
     let mut found: Vec<_> = WORDS
         .iter()
         .zip(&ABUSAGE_WORDS)

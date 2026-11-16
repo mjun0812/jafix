@@ -23,9 +23,10 @@ pub fn report(src: &str, texts: &[Prose], rule: &WriteGood) -> Vec<Report> {
         let text = &src[prose.range.clone()];
         let allowed = whitelisted(text, &rule.whitelist);
         let references = character_references(text);
+        let sentences = without_reference_ends(text, &references);
         let mut suggestions: Vec<(Range<usize>, Vec<WriteGoodCheck>)> = Vec::new();
         for &check in &rule.checks {
-            for range in suggest(check, text) {
+            for range in suggest(check, text, &sentences) {
                 if allowed.iter().any(|allowed| overlaps(&range, allowed))
                     || in_character_reference(&references, &range)
                 {
@@ -76,8 +77,22 @@ fn overlaps(suggestion: &Range<usize>, allowed: &Range<usize>) -> bool {
         || (allowed.start..=allowed.end).contains(&suggestion.end)
 }
 
-/// `check` の提案の、`text` の中のバイト範囲。位置の順に並ぶ
-fn suggest(check: WriteGoodCheck, text: &str) -> Vec<Range<usize>> {
+/// `text` の文字参照 `references` の終わりの `;` を、文を区切らない `_` にした文字列。`&amp;` は `&` の1文字なので、
+/// その `;` で文を終えると、続く語を文頭の語として誤って当てる。長さは `text` と同じである
+fn without_reference_ends<'t>(text: &'t str, references: &[Range<usize>]) -> Cow<'t, str> {
+    if references.is_empty() {
+        return Cow::Borrowed(text);
+    }
+    let mut masked = text.as_bytes().to_vec();
+    for reference in references {
+        masked[reference.end - 1] = b'_';
+    }
+    Cow::Owned(String::from_utf8(masked).expect("ASCIIの `;` をASCIIの `_` にしても、UTF-8のまま"))
+}
+
+/// `check` の提案の、`text` の中のバイト範囲。位置の順に並ぶ。`so` と `thereIs` は、文字参照の `;` を伏せた `sentences`
+/// (`text` と同じ長さ) で文を区切る
+fn suggest(check: WriteGoodCheck, text: &str, sentences: &str) -> Vec<Range<usize>> {
     match check {
         WriteGoodCheck::Weasel => WEASEL
             .find_iter(text)
@@ -101,8 +116,8 @@ fn suggest(check: WriteGoodCheck, text: &str) -> Vec<Range<usize>> {
             }
             found
         }
-        WriteGoodCheck::So => sentence_starts(&SO, text),
-        WriteGoodCheck::ThereIs => sentence_starts(&THERE_IS, text),
+        WriteGoodCheck::So => sentence_starts(&SO, sentences),
+        WriteGoodCheck::ThereIs => sentence_starts(&THERE_IS, sentences),
         WriteGoodCheck::Passive => PASSIVE
             .find_iter(text)
             .filter(|m| {

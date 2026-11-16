@@ -3356,3 +3356,227 @@ fn no_unmatched_pair_does_not_split_sentences_at_hard_breaks() {
         ["t.md:1:2: ( に対応する ) が無い [no-unmatched-pair]"]
     );
 }
+
+#[test]
+fn spelling_skips_words_in_file_names_paths_and_domains() {
+    let (_, found) = check_with_builtin(
+        "spelling = { suggestCorrections = false }",
+        "Open README.md, src/rules/foo.rs and references/stop-ai-slop-jp.md at example.com.
+
+Edit ~/.bashrc, .env and owner/zuikaku, then recieve. Use recieve/send and e.g. this.
+
+日本語のSKILL.mdを読む。teh.の後
+",
+    );
+    // 文末の `.` の前の語と、日本語の文字の前の `.` の前の語は、名前の並びにしない
+    assert_eq!(
+        findings_of(&found, "spelling"),
+        [
+            "t.md:3:46: 英語の辞書に無い語「recieve」を使っている [spelling]",
+            "t.md:5:17: 英語の辞書に無い語「teh」を使っている [spelling]",
+        ]
+    );
+}
+
+#[test]
+fn spelling_skips_words_joined_by_an_escaped_underscore() {
+    let (_, found) = check_with_builtin(
+        "spelling = { suggestCorrections = false }",
+        "Set mytoken\\_value and \\_mytoken now, then recieve\\-it.\n",
+    );
+    assert_eq!(
+        findings_of(&found, "spelling"),
+        ["t.md:1:44: 英語の辞書に無い語「recieve」を使っている [spelling]"]
+    );
+}
+
+#[test]
+fn english_rules_read_the_name_after_an_escaped_ampersand_as_words() {
+    let (_, found) = check_with_builtin(
+        "spelling = { suggestCorrections = false }",
+        "Use \\&nbsp; here and &nbsp; there.\n",
+    );
+    assert_eq!(
+        findings_of(&found, "spelling"),
+        ["t.md:1:7: 英語の辞書に無い語「nbsp」を使っている [spelling]"]
+    );
+    let (_, found) = check_with_builtin("common-misspellings = true", "Use \\&andd; here.\n");
+    assert_eq!(
+        findings_of(&found, "common-misspellings"),
+        ["t.md:1:7: よくある綴りの誤り「andd」を使っている。正しくは「and」 [common-misspellings]"]
+    );
+}
+
+#[test]
+fn write_good_does_not_end_sentences_at_character_references() {
+    let (_, found) = check_with_builtin(
+        "write-good = true",
+        "Read x &amp; so it works.\n\nRead x &amp; there is a cat.\n\nRead x; so it works.\n\nRead x; there is a cat.\n",
+    );
+    let starts: Vec<&str> = findings_of(&found, "write-good")
+        .into_iter()
+        .filter(|line| line.contains("(so)") || line.contains("(thereIs)"))
+        .collect();
+    assert_eq!(
+        starts,
+        [
+            "t.md:5:9: 「so」は意味を足さない文頭の語である(so) [write-good]",
+            "t.md:7:9: 「there is」は冗長な文頭の句である(thereIs) [write-good]",
+        ]
+    );
+}
+
+#[test]
+fn image_alts_leave_out_the_destinations_and_titles_of_nested_links_and_images() {
+    let (_, found) = check_with_builtin(
+        "spelling = { suggestCorrections = false }",
+        "![a ![x](recieve.png) c](d.png)
+
+![alpha [link](https://example.com/recieve.html \"titel\") gamma](d.png)
+
+![teh ![recieve](a.png)](b.png)
+",
+    );
+    assert_eq!(
+        findings_of(&found, "spelling"),
+        [
+            "t.md:5:3: 英語の辞書に無い語「teh」を使っている [spelling]",
+            "t.md:5:9: 英語の辞書に無い語「recieve」を使っている [spelling]",
+        ]
+    );
+
+    let caption = "\"1.1.5.図表のキャプション\" = true";
+    let (_, found) = check_with_builtin(
+        caption,
+        "![図はペンです。![図](a/である。.png \"これはである。\")](d.png)\n\n![これはペンです。](y.png)\n",
+    );
+    assert_eq!(
+        findings_of(&found, "1.1.5.図表のキャプション"),
+        Vec::<&str>::new()
+    );
+    // 入れ子の画像のaltの敬体は1回だけ数えるので、敬体1つと常体2つで、敬体を指摘する
+    let (_, found) = check_with_builtin(
+        caption,
+        "![図![これはペンです。](1.png)](2.png)\n\n![これはペンである。](3.png)\n\n![これはペンである。](4.png)\n",
+    );
+    assert_eq!(
+        findings_of(&found, "1.1.5.図表のキャプション"),
+        [
+            "t.md:1:11: 図表のキャプションを常体(である調)に揃える: 「です。」は敬体 [1.1.5.図表のキャプション]"
+        ]
+    );
+}
+
+#[test]
+fn prh_splits_two_digit_references_in_the_same_way_as_the_replacement() {
+    // `$01` は1番目のグループを参照するので、固定の部分は ` 言語` で、どの修正ルールにも当たらない
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(&format!("[builtin]\n{}", prh_rule("$01 言語", "/(あ)い/")));
+    assert_eq!(fix_with_config(&sandbox, "あい\n"), "あ 言語\n");
+    // `$10` はグループの数を超えるので書いたまま残り、`0 言語` の空白を `space-between-ja-and-alnum` が消す
+    assert_check_rejects_builtin(
+        &prh_rule("$10 言語", "/(あ)い/"),
+        &["$10 言語", "space-between-ja-and-alnum"],
+    );
+}
+
+#[test]
+fn user_replacements_are_rejected_when_a_dictionary_report_rule_rewrites_their_result() {
+    let synonyms = r#""@textlint-ja/no-synonyms" = { preferWords = ["サーバー"] }"#;
+    let to_server = prh_rule("サーバ", "サーバー");
+    for (builtin, expected) in [
+        (
+            format!("\"2.1.6.カタカナの長音\" = true\n{to_server}"),
+            vec![
+                "「サーバ」",
+                "`2.1.6.カタカナの長音`",
+                "`\"2.1.6.カタカナの長音\" = false`",
+            ],
+        ),
+        (
+            format!("{synonyms}\n{to_server}"),
+            vec![
+                "`@textlint-ja/no-synonyms`",
+                "`\"@textlint-ja/no-synonyms\" = false`",
+            ],
+        ),
+        (
+            format!(
+                "ja-hiragana-hojodoushi = true\n{}",
+                prh_rule("お願い致します", "お願いいたします")
+            ),
+            vec!["「お願い致します」", "`ja-hiragana-hojodoushi = false`"],
+        ),
+        (
+            prh_rule("例外を補足", "例外を捕捉"),
+            vec!["「例外を補足」", "`ja-no-abusage = false`"],
+        ),
+        (
+            r#"terminology = true
+"@textlint-rule/pattern" = { patterns = [{ message = "m", pattern = "JavaScript", replace = "Javascript" }] }"#
+                .to_owned(),
+            vec!["「Javascript」", "`terminology`"],
+        ),
+        (
+            r#"terminology = { terms = [["thee", "teh"]] }
+common-misspellings = true"#
+                .to_owned(),
+            vec!["「teh」", "`common-misspellings = false`"],
+        ),
+    ] {
+        assert_check_rejects_builtin(&builtin, &expected);
+    }
+
+    // 理由には、指摘された置き換えだけを書く
+    let sandbox = Sandbox::new();
+    sandbox.write("t.md", "日本語Rust\n");
+    sandbox.write_xdg_config(
+        "[builtin]\n\"2.1.6.カタカナの長音\" = true\n[builtin.prh]\nruleContents = ['''
+rules:
+  - expected: 確認
+    pattern: かくにん
+  - expected: サーバ
+    pattern: サーバー
+  - expected: Term
+    pattern: term
+''']\n",
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert_eq!(output.status.code(), Some(2), "{stderr}");
+    assert!(
+        stderr.contains("「サーバ」")
+            && !stderr.contains("「確認」")
+            && !stderr.contains("「Term」"),
+        "{stderr}"
+    );
+
+    // 指摘ルールを無効にすれば読み込める
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(&format!("[builtin]\n{to_server}"));
+    assert_eq!(
+        fix_with_config(&sandbox, "サーバーを使う。\n"),
+        "サーバを使う。\n"
+    );
+}
+
+#[test]
+fn user_replacements_whose_result_is_reported_only_in_context_are_accepted() {
+    // `致します` だけでは補助動詞と分からないので、`ja-hiragana-hojodoushi` が文脈で指摘しても設定の不正にしない
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(&format!(
+        "[builtin]\nja-hiragana-hojodoushi = true\n{}",
+        prh_rule("致します", "いたします")
+    ));
+    assert_eq!(
+        fix_with_config(&sandbox, "お願いいたします。\n"),
+        "お願い致します。\n"
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(
+        findings_of(stdout(&output), "ja-hiragana-hojodoushi").len(),
+        1,
+        "{}",
+        stdout(&output)
+    );
+}

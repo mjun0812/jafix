@@ -35,8 +35,8 @@ static DICTIONARY: LazyLock<Dictionary<FixedState>> = LazyLock::new(|| {
 /// 語から、`、` でつないだ候補 (無ければ空)。同じプロセスの中で同じ語には1回だけ求める
 static SUGGESTIONS: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(Mutex::default);
 
-/// `texts` と `alts` の元のソースに `wordDefinitionRegexp` を当てて語を取り出し、既定の除外 (ASCIIの数字か `_` を含む語、
-/// 2文字目以降に `A`〜`Z` を含む語)、`skipPatterns` の一致と重なる語、文字参照の名前を除き、辞書に無い語を指摘する。範囲は語の全体である。
+/// `texts` と `alts` の元のソースに `wordDefinitionRegexp` を当てて語を取り出し、既定の除外 (`is_identifier`)、
+/// `skipPatterns` の一致と重なる語、文字参照の名前を除き、辞書に無い語を指摘する。範囲は語の全体である。
 /// `suggestCorrections` が真なら、指摘にする語にだけ候補を求め、同じプロセスの中で同じ語の候補を再利用する
 pub fn report(src: &str, texts: &[&Prose], alts: &[Range<usize>], rule: &Spelling) -> Vec<Report> {
     let mut misspelled = Vec::new();
@@ -51,7 +51,7 @@ pub fn report(src: &str, texts: &[&Prose], alts: &[Range<usize>], rule: &Spellin
         for m in rule.word_definition.find_iter(text) {
             let word = &text[m.range()];
             if word.is_empty()
-                || is_identifier(word)
+                || is_identifier(text, m.range())
                 || in_character_reference(&references, &m.range())
                 || skipped
                     .iter()
@@ -89,11 +89,37 @@ pub fn report(src: &str, texts: &[&Prose], alts: &[Range<usize>], rule: &Spellin
         .collect()
 }
 
-/// 綴りの誤りではなく、識別子・略語・固有名詞として書かれた語 (ASCIIの数字か `_` を含む語、2文字目以降に `A`〜`Z` を
-/// 含む語) か
-fn is_identifier(word: &str) -> bool {
+/// `text` の `range` の語が、綴りの誤りではなく、識別子・略語・固有名詞・ファイル名として書かれた語か。ASCIIの数字か `_` を
+/// 含む語、2文字目以降に `A`〜`Z` を含む語、`\_` に接する語、名前の並び (`in_name`) の中の語である
+fn is_identifier(text: &str, range: Range<usize>) -> bool {
+    let word = &text[range.clone()];
     word.bytes().any(|b| b.is_ascii_digit() || b == b'_')
         || word.chars().skip(1).any(|c| c.is_ascii_uppercase())
+        // 描画では `\_` が `_` になるので、`mytoken\_value` の `mytoken` も `_` を含む語の一部である
+        || text[..range.start].ends_with("\\_")
+        || text[range.end..].starts_with("\\_")
+        || in_name(text.as_bytes(), range)
+}
+
+/// `range` の語が、`.` か `/` で空白を挟まずにほかの語とつながった、ファイル名・パス・ドメイン名の並び (`README.md`・
+/// `src/main.rs`・`example.com`・`.env`) の中にあるか。並びは、語を含み、ASCIIの英数字と `_`・`-`・`.`・`/` が続く範囲で、
+/// `/` を含むか、英数字の続く `.` を含むものである。`...` の後ろの語と、文末の `.` (`recieve.`) の前の語は、並びにしない。
+/// `and/or` の語も並びに入るが、`/` でつないだ語の多くはリポジトリの名前 (`owner/repo`) や識別子の組 (`uid/gid`) である
+fn in_name(text: &[u8], range: Range<usize>) -> bool {
+    let name_byte = |b: &u8| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'-' | b'.' | b'/');
+    let start = text[..range.start]
+        .iter()
+        .rposition(|b| !name_byte(b))
+        .map_or(0, |i| i + 1);
+    let end = text[range.end..]
+        .iter()
+        .position(|b| !name_byte(b))
+        .map_or(text.len(), |i| range.end + i);
+    let run = &text[start..end];
+    run.contains(&b'/')
+        || run.windows(2).enumerate().any(|(i, pair)| {
+            pair[0] == b'.' && pair[1].is_ascii_alphanumeric() && (i == 0 || run[i - 1] != b'.')
+        })
 }
 
 /// `words` のすべての語の候補を入れた `SUGGESTIONS` を返す。`suggest` は1語に数ms〜十数msかかるので、まだ求めていない語は

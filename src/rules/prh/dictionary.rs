@@ -37,6 +37,8 @@ pub struct Rule {
     /// ルールを読んだ出どころの、`Dictionary::load` に渡した一覧での番号。`imports` で取り込んだルールは、取り込んだ側の番号である
     pub source: usize,
     regex: Regex,
+    /// 正規表現の捕捉グループの数。`expected` の `$` が参照かを決めるのに使うので、`expected` が `$` を含まなければ0にする
+    groups: usize,
     /// `regexpMustEmpty` のグループの番号
     must_empty: Option<usize>,
     /// `ignoreRules` の `pattern` と比べる、JavaScriptの `RegExp.prototype.toString()` の形
@@ -324,6 +326,11 @@ fn rule(value: &Value, source: usize) -> Result<Rule, String> {
     };
     let regex = js_regex::compile(&compiled, flags)
         .map_err(|reason| format!("`expected` の「{expected}」の `pattern` を{reason}"))?;
+    let groups = if expected.contains('$') {
+        js_regex::group_count(&compiled, flags)
+    } else {
+        0
+    };
     let must_empty = match table.get("regexpMustEmpty") {
         None => None,
         Some(Value::String(value)) => Some(
@@ -346,6 +353,7 @@ fn rule(value: &Value, source: usize) -> Result<Rule, String> {
         note,
         source,
         regex,
+        groups,
         must_empty,
     };
     rule.check_specs(table.get("specs"))?;
@@ -522,25 +530,61 @@ impl Rule {
     }
 }
 
-/// `expected` の `$` と1〜2桁の数字を、一致の捕捉グループに展開する。2桁を先に読み、`$0` とグループの数を超える番号は
-/// 書いたまま、参加しなかったグループは空文字列にする
+impl Rule {
+    /// `expected` のうち、捕捉グループの参照を除いた部分。参照の区切り方は `expand` と同じである
+    pub fn fixed_parts(&self) -> impl Iterator<Item = &str> {
+        pieces(&self.expected, self.groups).filter_map(|piece| match piece {
+            Piece::Text(text) => Some(text),
+            Piece::Group(_) => None,
+        })
+    }
+}
+
+/// `expected` の `$` と1〜2桁の数字を、一致の捕捉グループに展開する。参加しなかったグループは空文字列にする
 fn expand(expected: &str, m: &regress::Match, text: &str) -> String {
     let mut out = String::with_capacity(expected.len());
-    let mut rest = expected;
-    while let Some(dollar) = rest.find('$') {
-        out.push_str(&rest[..dollar]);
-        let after = &rest[dollar + 1..];
-        let digits = after.bytes().take(2).take_while(u8::is_ascii_digit).count();
-        let number: usize = after[..digits].parse().unwrap_or(0);
-        if (1..=m.captures.len()).contains(&number) {
-            if let Some(range) = m.group(number) {
-                out.push_str(&text[range]);
+    for piece in pieces(expected, m.captures.len()) {
+        match piece {
+            Piece::Text(piece) => out.push_str(piece),
+            Piece::Group(number) => {
+                if let Some(range) = m.group(number) {
+                    out.push_str(&text[range]);
+                }
             }
-        } else {
-            out.push_str(&rest[dollar..dollar + 1 + digits]);
         }
-        rest = &after[digits..];
     }
-    out.push_str(rest);
     out
+}
+
+/// `expected` の1片
+enum Piece<'e> {
+    /// そのまま入れる文字列。参照にならない `$` と数字は、書いたまま含む
+    Text(&'e str),
+    /// 捕捉グループの番号
+    Group(usize),
+}
+
+/// `expected` を、`$` と1〜2桁の数字の参照で区切る。2桁を先に読み、1から `groups` (捕捉グループの数) までの番号を参照とし、
+/// `$0` と `groups` を超える番号は書いたまま残す
+fn pieces(expected: &str, groups: usize) -> impl Iterator<Item = Piece<'_>> {
+    let mut rest = expected;
+    std::iter::from_fn(move || {
+        if rest.is_empty() {
+            return None;
+        }
+        if let Some(after) = rest.strip_prefix('$') {
+            let digits = after.bytes().take(2).take_while(u8::is_ascii_digit).count();
+            let number: usize = after[..digits].parse().unwrap_or(0);
+            if (1..=groups).contains(&number) {
+                rest = &after[digits..];
+                return Some(Piece::Group(number));
+            }
+        }
+        // 参照にならない `$` は、次の `$` の手前までの文字列に含める
+        let skip = usize::from(rest.starts_with('$'));
+        let end = rest[skip..].find('$').map_or(rest.len(), |i| i + skip);
+        let (text, after) = rest.split_at(end);
+        rest = after;
+        Some(Piece::Text(text))
+    })
 }

@@ -95,6 +95,14 @@ impl<'a> Matcher<'a> {
         }
     }
 
+    /// 有効な辞書の並びの索引の表層の一覧。並びに当たる文字列は、どれかの表層を含む。表層を書いたトークンを持たない並びが
+    /// あれば無い
+    pub fn surfaces(&self) -> Option<Vec<&str>> {
+        let mut surfaces = self.builtin.surfaces()?;
+        surfaces.extend(self.user.surfaces()?);
+        Some(surfaces)
+    }
+
     /// `prose` に当たる、有効なひらがな系のルールの指摘を返す。同じルールの、範囲と文面が同じ指摘は1件にする
     pub fn report(&self, prose: &AnalyzedProse) -> Vec<Report> {
         let builtin = self
@@ -183,6 +191,13 @@ impl<'d, F: Fields> SurfaceIndex<'d, F> {
             by_surface,
             unindexed,
         }
+    }
+
+    /// 索引の表層の一覧。並びに当たる文字列は、どれかの表層を含む。表層を書いたトークンを持たない並びがあれば無い
+    pub fn surfaces(&self) -> Option<Vec<&'d str>> {
+        self.unindexed
+            .is_empty()
+            .then(|| self.by_surface.keys().copied().collect())
     }
 
     /// `tokens` に当たる一致を、(`new` に渡した並びの番号, 一致) で返す

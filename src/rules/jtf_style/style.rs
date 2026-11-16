@@ -63,11 +63,11 @@ pub fn report(src: &str, document: &Document, rules: &JtfStyle) -> Vec<Report> {
         let matches: Vec<StyleMatch> = document
             .inline_nodes
             .iter()
-            .filter_map(|node| match &node.kind {
-                InlineNodeKind::Image { alt } => Some(style_matches(src, alt.clone())),
-                _ => None,
+            .flat_map(|node| match &node.kind {
+                InlineNodeKind::Image { alt } => alt.as_slice(),
+                _ => &[],
             })
-            .flatten()
+            .flat_map(|alt| style_matches(src, alt.clone()))
             .collect();
         reports.extend(style_reports(
             src,

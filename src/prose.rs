@@ -69,8 +69,9 @@ pub enum InlineNodeKind {
     Emphasis,
     /// インラインの画像 (`![alt](url)`)。参照形式の画像は含めない
     Image {
-        /// altの元のソース上のバイト範囲。`![` の直後から、対応する `]` の直前までである
-        alt: Range<usize>,
+        /// altの元のソース上のバイト範囲の並び。altは `![` の直後から対応する `]` の直前までで、その中の入れ子のリンクと
+        /// 画像の宛先とtitle (`](…)`) を除いて区切る。空の範囲は含めない
+        alt: Vec<Range<usize>>,
     },
 }
 
@@ -341,7 +342,7 @@ fn collect_inline_nodes(node: &Node, src: &str, heading: bool, nodes: &mut Vec<I
             let image = node_range(node);
             let alt_start = image.start + "![".len();
             Some(InlineNodeKind::Image {
-                alt: alt_start..alt_end(&src[..image.end], alt_start),
+                alt: alt_pieces(src, alt_start..alt_end(&src[..image.end], alt_start)),
             })
         }
         _ => None,
@@ -386,6 +387,65 @@ fn alt_end(image: &str, start: usize) -> usize {
     image[start..]
         .rfind("](")
         .map_or(bytes.len(), |end| start + end)
+}
+
+/// altの元のソースの範囲 `alt` から、入れ子のリンクと画像の宛先とtitle (`](…)`) を除いた範囲の並び。altを閉じる `]` は
+/// `alt` の外にあるので、`alt` の中の `](` はどれも入れ子のリンクか画像の文字列の終わりである。宛先とtitleがリンクの形に
+/// ならない `](` は、文字のまま残す
+fn alt_pieces(src: &str, alt: Range<usize>) -> Vec<Range<usize>> {
+    let source = &src[..alt.end];
+    let bytes = source.as_bytes();
+    let mut pieces = Vec::new();
+    let mut start = alt.start;
+    let mut i = alt.start;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'\\' => i += 1,
+            b'`' => {
+                let run = backtick_run(bytes, i);
+                i = code_span_end(bytes, i + run, run).unwrap_or(i + run);
+                continue;
+            }
+            b']' if bytes.get(i + 1) == Some(&b'(') => {
+                if let Some(end) = resource_end(source, i + 1) {
+                    pieces.push(start..i);
+                    start = end;
+                    i = end;
+                    continue;
+                }
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    pieces.push(start..alt.end);
+    pieces.retain(|piece| !piece.is_empty());
+    pieces
+}
+
+/// `open` の `(` から始まるインラインのリンクの宛先とtitleを閉じる `)` の直後の位置。`source` の末尾までに閉じないか、
+/// 宛先とtitleの後ろが `)` でなければ `None` を返す
+fn resource_end(source: &str, open: usize) -> Option<usize> {
+    let bytes = source.as_bytes();
+    let skip_whitespace = |mut i: usize| {
+        while bytes.get(i).is_some_and(u8::is_ascii_whitespace) {
+            i += 1;
+        }
+        i
+    };
+    let destination = destination_after(source, open + 1);
+    // `<…>` の宛先の範囲は `<` と `>` の内側なので、閉じの `>` を飛ばす
+    let mut i = destination.end + usize::from(bytes[destination.start - 1] == b'<');
+    i = skip_whitespace(i);
+    if let Some(&quote) = bytes.get(i).filter(|&&b| matches!(b, b'"' | b'\'' | b'(')) {
+        let close = if quote == b'(' { b')' } else { quote };
+        i += 1;
+        while *bytes.get(i)? != close {
+            i += if bytes[i] == b'\\' { 2 } else { 1 };
+        }
+        i = skip_whitespace(i + 1);
+    }
+    (bytes.get(i) == Some(&b')')).then_some(i + 1)
 }
 
 /// `i` から続くバッククォートの数
@@ -969,37 +1029,68 @@ mod tests {
     fn collects_inline_images_with_the_source_range_of_their_alt() {
         let src =
             "![図 \\] [a] 図](x.png \"t\") ![](y.png) ![参照][r]\n\n# ![見](z.png)\n\n[r]: u\n";
-        let alts: Vec<(&str, bool)> = parse(src)
+        let alts: Vec<(Vec<&str>, bool)> = parse(src)
             .inline_nodes
             .into_iter()
             .filter_map(|node| match node.kind {
-                InlineNodeKind::Image { alt } => Some((&src[alt], node.heading)),
+                InlineNodeKind::Image { alt } => Some((
+                    alt.into_iter().map(|piece| &src[piece]).collect(),
+                    node.heading,
+                )),
                 _ => None,
             })
             .collect();
         assert_eq!(
             alts,
-            vec![("図 \\] [a] 図", false), ("", false), ("見", true)]
+            vec![
+                (vec!["図 \\] [a] 図"], false),
+                (vec![], false),
+                (vec!["見"], true)
+            ]
         );
     }
 
-    fn image_alts(src: &str) -> Vec<&str> {
+    /// 文書の画像ごとの、altの範囲の文字列の並び
+    fn image_alts(src: &str) -> Vec<Vec<&str>> {
         parse(src)
             .inline_nodes
             .into_iter()
             .filter_map(|node| match node.kind {
-                InlineNodeKind::Image { alt } => Some(&src[alt]),
+                InlineNodeKind::Image { alt } => {
+                    Some(alt.into_iter().map(|piece| &src[piece]).collect())
+                }
                 _ => None,
             })
             .collect()
     }
 
     #[test]
+    fn leaves_the_destinations_and_titles_of_nested_links_and_images_out_of_an_image_alt() {
+        assert_eq!(image_alts("![a ![x](y.png) c](d)\n"), [vec!["a ![x", " c"]]);
+        assert_eq!(
+            image_alts("![a [b](<u v> 't\\'') c](d)\n"),
+            [vec!["a [b", " c"]]
+        );
+        assert_eq!(image_alts("![[a](u (t)) c](d)\n"), [vec!["[a", " c"]]);
+        assert_eq!(image_alts("![[a](u \"t\")](d)\n"), [vec!["[a"]]);
+        // 宛先の後ろが `)` でない `](` は、リンクにならないので文字のまま残る
+        assert_eq!(image_alts("![a [b](u v) c](d)\n"), [vec!["a [b](u v) c"]]);
+        // コードスパンの中の `](` と、altの末尾で閉じない宛先とtitleは、範囲を区切らない
+        assert_eq!(image_alts("![a `](x)` b](d)\n"), [vec!["a `](x)` b"]]);
+        assert_eq!(image_alts("![a [b](<u](d)\n"), [vec!["a [b](<u"]]);
+        assert_eq!(image_alts("![a [b](u \"t](d)\n"), [vec!["a [b](u \"t"]]);
+        assert_eq!(
+            image_alts("![日本語[b](u\\)](d)\n"),
+            [vec!["日本語[b](u\\)"]]
+        );
+    }
+
+    #[test]
     fn does_not_end_an_image_alt_at_brackets_inside_a_code_span() {
-        assert_eq!(image_alts("![a `[` b](x.png)\n"), vec!["a `[` b"]);
-        assert_eq!(image_alts("![a `]` b](x.png)\n"), vec!["a `]` b"]);
-        assert_eq!(image_alts("![a `[` b](x.png) c]\n"), vec!["a `[` b"]);
-        assert_eq!(image_alts("![a ``x`]`` b](x.png)\n"), vec!["a ``x`]`` b"]);
+        assert_eq!(image_alts("![a `[` b](x.png)\n"), [vec!["a `[` b"]]);
+        assert_eq!(image_alts("![a `]` b](x.png)\n"), [vec!["a `]` b"]]);
+        assert_eq!(image_alts("![a `[` b](x.png) c]\n"), [vec!["a `[` b"]]);
+        assert_eq!(image_alts("![a ``x`]`` b](x.png)\n"), [vec!["a ``x`]`` b"]]);
     }
 
     #[test]

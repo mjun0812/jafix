@@ -12,11 +12,11 @@ use crate::js_regex;
 
 use super::RuleId;
 use super::english::terms::{TERMS, Term};
-use super::fix_rules_hitting;
 use super::jtf_style::JtfRule;
 use super::morph::pattern::{Expect, Field, OwnedFields};
 use super::prh::Checks;
 use super::prh::dictionary::{Dictionary, Source, parse_yaml};
+use super::{dictionary_rules_reporting, fix_rules_hitting};
 
 /// 組み込みのルールの設定。有効・無効と、オプションを持つルールのオプションである。
 /// 既定では、`preset-ja-technical-writing` の23ルールと修正ルールの3つが有効で、オプションはtextlintの
@@ -227,20 +227,44 @@ impl Builtin {
         Ok(())
     }
 
-    /// 利用者の置き換えの固定の部分に、有効な組み込みの修正ルールが直す箇所があれば理由を返す。
+    /// 利用者の置き換えの固定の部分に、有効な組み込みの修正ルールが直す箇所か、辞書で別の書き方にするよう求める有効な
+    /// 組み込みの指摘ルール (`DICTIONARY_REPORT_RULES`) が指摘する箇所があれば、最初の置き換えの理由を返す。
     /// すべてのキーを当てた後の有効・無効で判定する
     fn reject_opposite_replacements(&self) -> Result<(), String> {
+        let mut replacements = Vec::new();
         if let Some(rule) = &self.prh {
-            rule.reject_opposite_replacements(self)
-                .map_err(|reason| format!("`{}`: {reason}", RuleId::Prh.name()))?;
+            replacements.extend(rule.checked_replacements());
         }
         if let Some(rule) = &self.textlint_rule_pattern {
-            rule.reject_opposite_replacements(self)
-                .map_err(|reason| format!("`{}`: {reason}", RuleId::TextlintRulePattern.name()))?;
+            replacements.extend(rule.checked_replacements());
         }
         if let Some(rule) = &self.terminology {
-            rule.reject_opposite_replacements(self)
-                .map_err(|reason| format!("`{}`: {reason}", RuleId::Terminology.name()))?;
+            replacements.extend(rule.checked_replacements());
+        }
+        let parts: Vec<&str> = replacements
+            .iter()
+            .flat_map(|replacement| replacement.parts.iter().map(AsRef::as_ref))
+            .collect();
+        let mut reported = dictionary_rules_reporting(&parts, self).into_iter();
+        for replacement in &replacements {
+            let fixes: Vec<RuleId> = replacement
+                .parts
+                .iter()
+                .flat_map(|part| fix_rules_hitting(part, self))
+                .collect();
+            let reports: Vec<RuleId> = reported
+                .by_ref()
+                .take(replacement.parts.len())
+                .flatten()
+                .collect();
+            if let Some(reason) = opposite_reason(&fixes, &reports) {
+                return Err(format!(
+                    "`{}`: {}は {reason}、{}",
+                    replacement.rule.name(),
+                    replacement.shown,
+                    replacement.remedy
+                ));
+            }
         }
         Ok(())
     }
@@ -1686,39 +1710,60 @@ impl Prh {
         })
     }
 
-    /// 辞書のルールの `expected` を `$` と1〜2桁の数字 (`$0` を除く) で区切った各部分に、
-    /// 有効な組み込みの修正ルールが当たれば理由を返す
-    fn reject_opposite_replacements(&self, builtin: &Builtin) -> Result<(), String> {
-        for rule in self.dictionary.rules() {
-            let hits = fixed_parts(&rule.expected, 2)
-                .flat_map(|part| fix_rules_hitting(part, builtin))
-                .collect::<Vec<_>>();
-            if let Some(reason) = opposite_reason(&hits) {
-                return Err(format!(
-                    "{}: `expected` の「{}」は {reason}、このルールを辞書から外す",
+    /// 辞書のルールの `expected` の、捕捉グループの参照を除いた部分
+    fn checked_replacements(&self) -> impl Iterator<Item = CheckedReplacement<'_>> {
+        self.dictionary.rules().iter().map(|rule| {
+            CheckedReplacement::new(
+                RuleId::Prh,
+                format!(
+                    "{}: `expected` の「{}」",
                     self.source_names[rule.source], rule.expected
-                ));
-            }
-        }
-        Ok(())
+                ),
+                "このルールを辞書から外す",
+                rule.fixed_parts().map(Cow::Borrowed).collect(),
+            )
+        })
     }
 }
 
-/// `replacement` を、`$` と1〜`max_digits` 桁の数字 (`$0` を除く) の参照で区切った各部分
-fn fixed_parts(replacement: &str, max_digits: usize) -> impl Iterator<Item = &str> {
+/// 逆の置き換えかを確かめる、利用者の置き換えの1つ
+struct CheckedReplacement<'a> {
+    rule: RuleId,
+    /// 理由の先頭に書く、置き換えの出どころと置き換え後の文字列
+    shown: String,
+    /// 理由の最後に書く、置き換えの直し方
+    remedy: &'static str,
+    /// 置き換え後の文字列のうち、捕捉グループの参照を除いた空でない部分
+    parts: Vec<Cow<'a, str>>,
+}
+
+impl<'a> CheckedReplacement<'a> {
+    fn new(
+        rule: RuleId,
+        shown: String,
+        remedy: &'static str,
+        mut parts: Vec<Cow<'a, str>>,
+    ) -> Self {
+        parts.retain(|part| !part.is_empty());
+        Self {
+            rule,
+            shown,
+            remedy,
+            parts,
+        }
+    }
+}
+
+/// `replacement` を、`$1`〜`$9` の参照で区切った各部分
+fn fixed_parts(replacement: &str) -> impl Iterator<Item = &str> {
     let mut parts = Vec::new();
     let mut start = 0;
     let mut i = 0;
     let bytes = replacement.as_bytes();
     while i < bytes.len() {
-        let digits = bytes[i + 1..]
-            .iter()
-            .take(max_digits)
-            .take_while(|b| b.is_ascii_digit())
-            .count();
-        if bytes[i] == b'$' && digits > 0 && bytes[i + 1] != b'0' {
+        if bytes[i] == b'$' && bytes.get(i + 1).is_some_and(|b| matches!(b, b'1'..=b'9')) {
             parts.push(&replacement[start..i]);
-            i += 1 + digits;
+            i += 2;
             start = i;
         } else {
             i += 1;
@@ -1728,25 +1773,35 @@ fn fixed_parts(replacement: &str, max_digits: usize) -> impl Iterator<Item = &st
     parts.into_iter()
 }
 
-/// 置き換えの固定の部分に当たった組み込みの修正ルール `hits` から、置き換えが修正ルールと逆である理由を作る。
-/// 理由は「どちらかを無効にするか」までで、呼び出し側が置き換えの直し方を続ける
-fn opposite_reason(hits: &[RuleId]) -> Option<String> {
-    let mut names: Vec<&str> = Vec::new();
-    for hit in hits {
-        if !names.contains(&hit.name()) {
-            names.push(hit.name());
+/// 置き換えの固定の部分に当たった組み込みの修正ルール `fixes` と、固定の部分を指摘した辞書の指摘ルール `reports` から、
+/// 置き換えが逆である理由を作る。理由は「どちらかを無効にするか」までで、呼び出し側が置き換えの直し方を続ける
+fn opposite_reason(fixes: &[RuleId], reports: &[RuleId]) -> Option<String> {
+    let mut rules: Vec<RuleId> = Vec::new();
+    for &rule in fixes.iter().chain(reports) {
+        if !rules.contains(&rule) {
+            rules.push(rule);
         }
     }
-    if names.is_empty() {
-        return None;
-    }
-    let quoted: Vec<String> = names.iter().map(|name| format!("`{name}`")).collect();
-    let disabled: Vec<String> = names
+    let demand = match (fixes.is_empty(), reports.is_empty()) {
+        (true, true) => return None,
+        (false, true) => "が直す文字を含む",
+        (true, false) => "が別の書き方にするよう指摘する文字を含む",
+        (false, false) => "が直すか、別の書き方にするよう指摘する文字を含む",
+    };
+    let quoted: Vec<String> = rules
         .iter()
-        .map(|name| format!("`{} = false`", toml_key(name)))
+        .map(|rule| format!("`{}`", rule.name()))
+        .collect();
+    let disabled: Vec<String> = rules
+        .iter()
+        .map(|&rule| match rule {
+            // 指摘したのは組み込みの辞書なので、利用者の `terms` を残して組み込みの辞書だけを切る
+            RuleId::Terminology => "`terminology` の `defaultTerms = false`".to_owned(),
+            _ => format!("`{} = false`", toml_key(rule.name())),
+        })
         .collect();
     Some(format!(
-        "{} が直す文字を含む。{} にするか",
+        "{} {demand}。{} にするか",
         quoted.join("・"),
         disabled.join("・")
     ))
@@ -1832,23 +1887,17 @@ impl TextlintRulePattern {
         Ok(Self { patterns })
     }
 
-    /// `replace` を `$1`〜`$9` で区切った各部分に、有効な組み込みの修正ルールが当たれば理由を返す
-    fn reject_opposite_replacements(&self, builtin: &Builtin) -> Result<(), String> {
-        for (i, pattern) in self.patterns.iter().enumerate() {
-            let Some(replace) = &pattern.replace else {
-                continue;
-            };
-            let hits = fixed_parts(replace, 1)
-                .flat_map(|part| fix_rules_hitting(part, builtin))
-                .collect::<Vec<_>>();
-            if let Some(reason) = opposite_reason(&hits) {
-                return Err(format!(
-                    "`patterns` の{}番目: `replace` の「{replace}」は {reason}、`replace` を変える",
-                    i + 1
-                ));
-            }
-        }
-        Ok(())
+    /// `replace` のある要素の、`replace` を `$1`〜`$9` で区切った各部分
+    fn checked_replacements(&self) -> impl Iterator<Item = CheckedReplacement<'_>> {
+        self.patterns.iter().enumerate().filter_map(|(i, pattern)| {
+            let replace = pattern.replace.as_ref()?;
+            Some(CheckedReplacement::new(
+                RuleId::TextlintRulePattern,
+                format!("`patterns` の{}番目: `replace` の「{replace}」", i + 1),
+                "`replace` を変える",
+                fixed_parts(replace).map(Cow::Borrowed).collect(),
+            ))
+        })
     }
 }
 
@@ -2673,31 +2722,30 @@ impl Terminology {
     }
 
     /// 利用者の `terms` の項目の置き換えの固定の部分 (文字列の項目では項目の全体、配列の項目では置き換えの記法を
-    /// 除いた部分) に、有効な組み込みの修正ルールが当たれば理由を返す
-    fn reject_opposite_replacements(&self, builtin: &Builtin) -> Result<(), String> {
+    /// 除いた部分)
+    fn checked_replacements(&self) -> impl Iterator<Item = CheckedReplacement<'_>> {
         let words = self
             .word_terms
             .iter()
             .filter(|term| term.user)
-            .map(|term| (term.term.as_ref(), vec![term.term.to_string()]));
+            .map(|term| (term.term.as_ref(), vec![Cow::Borrowed(term.term.as_ref())]));
         let pairs = self.pair_terms.iter().filter(|term| term.user).map(|term| {
             (
                 term.replacement.as_ref(),
-                js_regex::substitution_fixed_parts(&term.replacement),
+                js_regex::substitution_fixed_parts(&term.replacement)
+                    .into_iter()
+                    .map(Cow::Owned)
+                    .collect(),
             )
         });
-        for (replacement, parts) in words.chain(pairs) {
-            let hits = parts
-                .iter()
-                .flat_map(|part| fix_rules_hitting(part, builtin))
-                .collect::<Vec<_>>();
-            if let Some(reason) = opposite_reason(&hits) {
-                return Err(format!(
-                    "`terms` の置き換えの「{replacement}」は {reason}、`terms` から外す"
-                ));
-            }
-        }
-        Ok(())
+        words.chain(pairs).map(|(replacement, parts)| {
+            CheckedReplacement::new(
+                RuleId::Terminology,
+                format!("`terms` の置き換えの「{replacement}」"),
+                "`terms` から外す",
+                parts,
+            )
+        })
     }
 }
 

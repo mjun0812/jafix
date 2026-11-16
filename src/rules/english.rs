@@ -69,6 +69,23 @@ pub fn enabled(builtin: &Builtin) -> bool {
         || builtin.write_good.is_some()
 }
 
+/// 辞書で語を別の書き方にするよう求める2つ (`terminology` の組み込みの辞書と `common-misspellings`) のうち、有効なものの
+/// `prose` への指摘
+pub fn dictionary_report(src: &str, prose: &Prose, builtin: &Builtin) -> Vec<Report> {
+    let mut reports = Vec::new();
+    if let Some(rule) = &builtin.terminology {
+        reports.extend(terminology::report(src, &[prose], rule));
+    }
+    if let Some(rule) = &builtin.common_misspellings {
+        reports.extend(common_misspellings::report(
+            src,
+            std::slice::from_ref(prose),
+            rule,
+        ));
+    }
+    reports
+}
+
 /// `terminology` の利用者の `terms` の項目の箇所を返す。重なりは `rules::replacements` が解く
 pub fn replacements(src: &str, texts: &[&Prose], rule: &Terminology) -> Vec<UserReplacement> {
     terminology::replacements(src, texts, rule)
@@ -80,10 +97,20 @@ static REFERENCE_CANDIDATE: LazyLock<Regex> =
 
 /// 本文の範囲の元のソース `text` の中の文字参照 (`&name;`・`&#数字;`・`&#x16進;`) の範囲。textlintは文字参照を解いた文字列を
 /// 見るので、4つのルールは参照の名前 (`&nbsp;` の `nbsp`) を語として扱わない。CommonMarkでは実在しない名前の `&foo;` や
-/// 桁の多すぎる数値は文字のまま残るので、候補をmarkdown-rsに解析させ、別の文字に解けたものだけを文字参照とする
+/// 桁の多すぎる数値は文字のまま残るので、候補をmarkdown-rsに解析させ、別の文字に解けたものだけを文字参照とする。
+/// 直前に奇数個の `\` がある `&` はエスケープした文字なので、`\&nbsp;` は文字参照ではない
 fn character_references(text: &str) -> Vec<Range<usize>> {
     REFERENCE_CANDIDATE
         .find_iter(text)
+        .filter(|candidate| {
+            text[..candidate.start()]
+                .bytes()
+                .rev()
+                .take_while(|&b| b == b'\\')
+                .count()
+                % 2
+                == 0
+        })
         .filter(|candidate| {
             markdown::to_mdast(candidate.as_str(), &ParseOptions::default())
                 .expect("MDXを有効にしない解析は失敗しない")

@@ -255,6 +255,17 @@ pub fn compile(source: &str, flags: Flags) -> Result<Regex, String> {
     .map_err(|e| format!("正規表現として読めない: {e}"))
 }
 
+/// `compile` で読める `source` の捕捉グループの数。`regress` はグループの数を返さないので、空の文字列に必ず当たる空の選択肢を
+/// 足した正規表現を空の文字列に当て、その一致のグループを数える
+pub fn group_count(source: &str, flags: Flags) -> usize {
+    compile(&format!("(?:{source})|"), flags)
+        .expect("読める正規表現に空の選択肢を足しても読める")
+        .find("")
+        .expect("空の選択肢は空の文字列に当たる")
+        .captures
+        .len()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -384,6 +395,14 @@ mod tests {
             ["a", "b", "c", "d$e$0"]
         );
         assert!(substitution_fixed_parts("$1$'").is_empty());
+    }
+
+    #[test]
+    fn group_count_counts_only_capturing_groups() {
+        let flags = Flags::default();
+        assert_eq!(group_count("x", flags), 0);
+        assert_eq!(group_count(r"(a)(?:b)(?<n>c)(?=d)[(]\(", flags), 2);
+        assert_eq!(group_count("(a)|(b)?", flags), 2);
     }
 
     #[test]

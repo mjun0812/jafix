@@ -22,12 +22,14 @@ pub(super) mod pattern;
 pub(super) mod projection;
 
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::ops::Range;
 
 use crate::morph::{self, Token};
 use crate::prose::{Context, Document, Inline, InlineKind};
 use crate::sentence::{self, HardBreak, Sentence};
 
+use self::dict::ABUSAGES;
 use self::no_mix_dearu_desumasu::{Kind, Styles};
 use self::projection::Projection;
 use super::builtin::Builtin;
@@ -173,6 +175,90 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
     }
     if let Some((rule, occurrences)) = synonyms {
         reports.extend(occurrences.report(rule));
+    }
+    reports
+}
+
+/// 辞書で語を別の書き方にするよう求める7つ (ひらがな系の5ルール・`ja-no-abusage`・`@textlint-ja/no-synonyms`) のうち、
+/// 有効なものの、`src` の中の `parts` (バイト範囲) それぞれを段落の直下にある本文の範囲1つだけの文書とみなした指摘。
+/// `@textlint-ja/no-synonyms` は、`preferWords` の語にするよう求めるときだけ当てる。`preferWords` が無ければ、文書の中の
+/// 表記の混ざりを指摘するだけで、ほかの表記を揃えれば両方を満たせるためである
+pub fn dictionary_report(src: &str, parts: &[Range<usize>], builtin: &Builtin) -> Vec<Report> {
+    let context = Context {
+        plain: true,
+        paragraph: true,
+        ..Context::default()
+    };
+    let mut reports = Vec::new();
+    if builtin.ja_no_abusage {
+        reports.extend(ja_no_abusage::word_reports(&AnalyzedProse {
+            start: 0,
+            context,
+            text: src,
+            tokens: &[],
+        }));
+    }
+    let hiragana = (builtin.ja_hiragana_hojodoushi.is_some()
+        || builtin.ja_hiragana_keishikimeishi
+        || builtin.ja_keishikimeishi.is_some()
+        || builtin.ja_hiragana_fukushi.is_some()
+        || builtin.ja_hiragana_daimeishi)
+        .then(|| hiragana::Matcher::new(builtin));
+    let synonyms = builtin
+        .no_synonyms
+        .as_ref()
+        .filter(|rule| !rule.prefer_words.is_empty());
+    if hiragana.is_none() && !builtin.ja_no_abusage && synonyms.is_none() {
+        return reports;
+    }
+    // 利用者の置き換えは数千になりうるので、トークンの並びの表層の先頭の文字をどれも含まない部分は解析しない。
+    // 同義語は辞書の見出しのすべての語に当たりうるので、`@textlint-ja/no-synonyms` を当てるときは、すべての部分を解析する
+    let phrases = hiragana::SurfaceIndex::new(ABUSAGES.iter().map(|phrase| phrase.pattern));
+    let starts: Option<HashSet<char>> = if synonyms.is_some() {
+        None
+    } else {
+        let words = hiragana
+            .as_ref()
+            .map_or(Some(Vec::new()), hiragana::Matcher::surfaces);
+        let phrases = if builtin.ja_no_abusage {
+            phrases.surfaces()
+        } else {
+            Some(Vec::new())
+        };
+        words.zip(phrases).map(|(words, phrases)| {
+            words
+                .into_iter()
+                .chain(phrases)
+                .filter_map(|surface| surface.chars().next())
+                .collect()
+        })
+    };
+    for part in parts {
+        let text = &src[part.clone()];
+        if starts
+            .as_ref()
+            .is_some_and(|starts| !text.chars().any(|c| starts.contains(&c)))
+        {
+            continue;
+        }
+        let tokens = morph::tokenize(text);
+        let analyzed = AnalyzedProse {
+            start: part.start,
+            context,
+            text,
+            tokens: &tokens,
+        };
+        if builtin.ja_no_abusage {
+            reports.extend(ja_no_abusage::phrase_reports(&analyzed));
+        }
+        if let Some(matcher) = &hiragana {
+            reports.extend(matcher.report(&analyzed));
+        }
+        if let Some(rule) = synonyms {
+            let mut occurrences = no_synonyms::Occurrences::default();
+            occurrences.collect(&analyzed);
+            reports.extend(occurrences.report(rule));
+        }
     }
     reports
 }

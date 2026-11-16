@@ -169,6 +169,11 @@ pub fn report(
     reports
 }
 
+/// 有効な辞書の4ルールの、`texts` への指摘
+pub fn dictionary_report(src: &str, texts: &[&Prose], builtin: &Builtin) -> Vec<Report> {
+    dictionaries::report(src, texts, &builtin.jtf_style)
+}
+
 /// 辞書の4ルールのどれかが有効か。無効なら、対象行と重なる本文の範囲を求めなくてよい
 pub fn uses_dictionaries(builtin: &Builtin) -> bool {
     dictionaries::any_enabled(&builtin.jtf_style)

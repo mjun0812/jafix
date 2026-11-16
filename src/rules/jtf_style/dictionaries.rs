@@ -91,8 +91,8 @@ mod tests {
 
     use toml::{Table, Value};
 
-    use super::super::super::RuleId;
     use super::super::super::builtin::Builtin;
+    use super::super::super::{DICTIONARY_REPORT_RULES, RuleId};
     use super::*;
 
     #[test]
@@ -109,12 +109,14 @@ mod tests {
         for (rule, yaml) in DICTIONARIES {
             let mut table = Table::new();
             for id in RuleId::ALL {
-                // `4.3.1` は既定で有効な `fullwidth-paren` と組になって設定の不正になる。指摘ルールなので、
+                // `4.3.1` は既定で有効な `fullwidth-paren` と組になって設定の不正になる。辞書の指摘ルールは、
+                // `2.2.1` の `致す` とひらがな系のルールのように、辞書どうしで逆の語を求めることがある。どちらも指摘ルールなので、
                 // 外しても判定に入る修正ルールは変わらない
                 if !matches!(
                     id,
                     RuleId::Prh | RuleId::TextlintRulePattern | RuleId::JtfStyle(JtfRule::R4_3_1)
-                ) {
+                ) && !DICTIONARY_REPORT_RULES.contains(&id)
+                {
                     table.insert(id.name().to_owned(), Value::Boolean(true));
                 }
             }
