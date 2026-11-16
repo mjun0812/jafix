@@ -14,6 +14,8 @@ use crate::prose::Prose;
 use crate::rules::builtin::Spelling;
 use crate::rules::{Report, RuleId, one_line};
 
+use super::{character_references, in_character_reference};
+
 /// `dictionary-en` 4.0.0 の `index.aff` と `index.dic` を、中身を変えずに写したもの
 static AFF: &str = include_str!("data/en_US.aff");
 static DIC: &str = include_str!("data/en_US.dic");
@@ -32,7 +34,7 @@ static DICTIONARY: LazyLock<Dictionary<FixedState>> = LazyLock::new(|| {
 static SUGGESTIONS: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(Mutex::default);
 
 /// `texts` と `alts` の元のソースに `wordDefinitionRegexp` を当てて語を取り出し、既定の除外 (ASCIIの数字か `_` を含む語、
-/// 2文字目以降に `A`〜`Z` を含む語) と `skipPatterns` の一致と重なる語を除き、辞書に無い語を指摘する。範囲は語の全体である。
+/// 2文字目以降に `A`〜`Z` を含む語)、`skipPatterns` の一致と重なる語、文字参照の名前を除き、辞書に無い語を指摘する。範囲は語の全体である。
 /// `suggestCorrections` が真なら、指摘にする語にだけ候補を求め、同じプロセスの中で同じ語の候補を再利用する
 pub fn report(src: &str, texts: &[&Prose], alts: &[Range<usize>], rule: &Spelling) -> Vec<Report> {
     let mut reports = Vec::new();
@@ -43,10 +45,12 @@ pub fn report(src: &str, texts: &[&Prose], alts: &[Range<usize>], rule: &Spellin
             .iter()
             .flat_map(|pattern| pattern.find_iter(text).map(|m| m.range()))
             .collect();
+        let references = character_references(text);
         for m in rule.word_definition.find_iter(text) {
             let word = &text[m.range()];
             if word.is_empty()
                 || is_identifier(word)
+                || in_character_reference(&references, &m.range())
                 || skipped
                     .iter()
                     .any(|skip| m.start() <= skip.end && skip.start <= m.end())

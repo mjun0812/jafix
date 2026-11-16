@@ -932,7 +932,7 @@ JTFスタイルガイドの37ルールも、判定の条件を `textlint-rule-pr
 - `spelling` は、リンクと画像の `title` を見ません
 - `spelling` の `wordDefinitionRegexp` は、READMEの書き方の `/source/flags` で読み、書いたフラグのまま当てます。textlintは、`/` を含む文字列をそのまま正規表現の元の文字列にするので、READMEの書き方では語を取り出せません。また、`g` 以外のフラグを落とします
 - `spelling` は、`wordDefinitionRegexp` の空の一致を語にしません。textlintは、`/[a-z]*/g` のような正規表現で空の語を指摘します
-- `spelling` の指摘の範囲は語の全体で、位置は元のソースでの位置です。textlintは、語の先頭の1文字を範囲にし、エスケープを解いた文字列の中の位置を出します
+- `spelling` の指摘の範囲は語の全体で、位置は元のソースでの位置です。textlintは、語の先頭の1文字を範囲にし、エスケープを解いた文字列の中の位置を出します。続く行の字下げ・引用の `> `・行末の空白を除いた文字列で数えるので、textlintの位置はその分もずれます
 - `common-misspellings` の一覧は、textlintが使う `misspellings` 1.1.0の4,273件ではなく、Wikipediaの一覧のrevision 1199637275から作った4,310件です。4,266件は正しい語まで同じです。違いは、Wikipediaの一覧にだけある43件、`misspellings` にだけある6件、正しい語の違う1件です
 - `common-misspellings` は、正しい語が複数ある項目(`alot`)でも、すべての正しい語を文面に入れます
 - `write-good` の `whitelist` は、本文の範囲の先頭の出現を含む、すべての出現を見ます。textlintは、文字列が本文の範囲の先頭にあると、後ろの出現もすべて見ません

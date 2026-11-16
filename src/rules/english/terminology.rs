@@ -11,6 +11,8 @@ use crate::rules::builtin::{PairTerm, Terminology};
 use crate::rules::textlint_rule_pattern::contains;
 use crate::rules::{Finding, Report, RuleId, UserReplacement, one_line};
 
+use super::{character_references, in_character_reference};
+
 /// 項目が当たり、置き換え後の語が一致と違う1箇所
 struct TermMatch {
     /// 元のソース上のバイト範囲。一致の全体である
@@ -25,7 +27,7 @@ struct TermMatch {
 
 /// 本文の範囲のうち `skip` の型の中にないものに、文字列の項目をまとめた正規表現、配列の項目の正規表現の順に、
 /// 1つずつ重ならない一致をすべて探し、置き換え後の語が一致と違う箇所を返す。本文の範囲ごとに、正規表現の順、位置の順に並ぶ。
-/// 置き換え後の語を求められない文字列の項目の一致は捨てる。範囲と置き換え後の語が同じ一致は、最初の1件にまとめ、
+/// 置き換え後の語を求められない文字列の項目の一致と、文字参照と重なる一致は捨てる。範囲と置き換え後の語が同じ一致は、最初の1件にまとめ、
 /// どれかが利用者の項目の一致なら利用者の一致にする
 fn matches(src: &str, texts: &[&Prose], rule: &Terminology) -> Vec<TermMatch> {
     let mut found = Vec::new();
@@ -38,6 +40,7 @@ fn matches(src: &str, texts: &[&Prose], rule: &Terminology) -> Vec<TermMatch> {
             continue;
         }
         let text = &src[prose.range.clone()];
+        let references = character_references(text);
         let first = found.len();
         let words = rule
             .words
@@ -61,6 +64,10 @@ fn matches(src: &str, texts: &[&Prose], rule: &Terminology) -> Vec<TermMatch> {
             })
         });
         for (range, replacement, user) in words.chain(pairs) {
+            // 文字参照の名前を書き換えると、参照が別の文字列になる
+            if in_character_reference(&references, &range) {
+                continue;
+            }
             let matched = &text[range.clone()];
             let replacement =
                 if sentence_start(&text[..range.start]) && upper_first(matched) == matched {

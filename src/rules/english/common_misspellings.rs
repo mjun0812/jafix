@@ -12,6 +12,8 @@ use crate::prose::Prose;
 use crate::rules::builtin::CommonMisspellings;
 use crate::rules::{Report, RuleId};
 
+use super::{character_references, in_character_reference};
+
 /// 先頭の `#` の行が出典とライセンスで、後は1行1項目の `<小文字の誤綴り>\t<正しい語>,<正しい語>…` である
 static LIST: &str = include_str!("data/common-misspellings.txt");
 
@@ -61,7 +63,11 @@ pub fn report(src: &str, texts: &[Prose], rule: &CommonMisspellings) -> Vec<Repo
     let mut reports = Vec::new();
     for prose in texts.iter().filter(|prose| !prose.context.blockquote) {
         let text = &src[prose.range.clone()];
+        let references = character_references(text);
         for m in MISSPELLINGS.regex.find_iter(text) {
+            if in_character_reference(&references, &m.range()) {
+                continue;
+            }
             let matched = &text[m.range()];
             let lower = matched.to_lowercase();
             // `i` と `u` の照合は `ſ` (U+017F) を `s` に当てるので、小文字にしても一覧に無い一致がありうる

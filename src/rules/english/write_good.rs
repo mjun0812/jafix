@@ -12,6 +12,8 @@ use crate::prose::Prose;
 use crate::rules::builtin::{WriteGood, WriteGoodCheck};
 use crate::rules::{Report, RuleId, one_line};
 
+use super::{character_references, in_character_reference};
+
 /// `Context::plain` の本文の範囲に有効な検査を当て、`whitelist` の文字列のすべての出現と重なる提案を外し、範囲が同じ提案を
 /// 1件にまとめて、文面を検査の順につなぐ。範囲は提案の範囲 (当たった文字列の全体) である
 pub fn report(src: &str, texts: &[Prose], rule: &WriteGood) -> Vec<Report> {
@@ -19,10 +21,13 @@ pub fn report(src: &str, texts: &[Prose], rule: &WriteGood) -> Vec<Report> {
     for prose in texts.iter().filter(|prose| prose.context.plain) {
         let text = &src[prose.range.clone()];
         let allowed = whitelisted(text, &rule.whitelist);
+        let references = character_references(text);
         let mut suggestions: Vec<(Range<usize>, Vec<WriteGoodCheck>)> = Vec::new();
         for &check in &rule.checks {
             for range in suggest(check, text) {
-                if allowed.iter().any(|allowed| overlaps(&range, allowed)) {
+                if allowed.iter().any(|allowed| overlaps(&range, allowed))
+                    || in_character_reference(&references, &range)
+                {
                     continue;
                 }
                 match suggestions.iter_mut().find(|(other, _)| *other == range) {

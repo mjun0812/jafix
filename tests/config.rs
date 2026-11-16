@@ -3121,3 +3121,59 @@ fn spelling_does_not_report_empty_words() {
         ["t.md:1:5: 英語の辞書に無い語「teh」を使っている [spelling]"]
     );
 }
+
+#[test]
+fn spelling_skips_character_reference_names() {
+    let (_, found) = check_with_builtin(
+        "spelling = { suggestCorrections = false }",
+        "Hello&nbsp;world&mdash;and &copy; here.
+
+We recieve&nbsp;it &#x2014;teh &#160;and &pacakge; here.
+
+日本語&nbsp;テスト&;と&nbsp
+",
+    );
+    // `&pacakge;` は実在しない名前なので文字参照でなく、範囲の末尾の `&nbsp` は `;` が無いので文字参照でない
+    assert_eq!(
+        findings_of(&found, "spelling"),
+        [
+            "t.md:3:4: 英語の辞書に無い語「recieve」を使っている [spelling]",
+            "t.md:3:28: 英語の辞書に無い語「teh」を使っている [spelling]",
+            "t.md:3:43: 英語の辞書に無い語「pacakge」を使っている [spelling]",
+            "t.md:5:17: 英語の辞書に無い語「nbsp」を使っている [spelling]",
+        ]
+    );
+}
+
+#[test]
+fn common_misspellings_and_write_good_skip_character_reference_names() {
+    let (_, found) =
+        check_with_builtin("common-misspellings = true", "Use &andd; and andd here.\n");
+    assert_eq!(
+        findings_of(&found, "common-misspellings"),
+        [
+            "t.md:1:16: よくある綴りの誤り「andd」を使っている。正しくは「and」 [common-misspellings]"
+        ]
+    );
+    let (_, found) = check_with_builtin(
+        "write-good = true",
+        "We said &therefore; and therefore left.\n",
+    );
+    assert_eq!(
+        findings_of(&found, "write-good"),
+        ["t.md:1:25: 「therefore」は冗長か不要な句である(tooWordy) [write-good]"]
+    );
+}
+
+#[test]
+fn terminology_does_not_fix_inside_character_references() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nterminology = { terms = [\"Copy\"] }\n");
+    sandbox.write("t.md", "&copy; copy\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(
+        findings_of(stdout(&output), "terminology"),
+        ["t.md:1:8: 「copy」を「Copy」にする [terminology]"]
+    );
+    assert_eq!(fix_with_config(&sandbox, "&copy; copy\n"), "&copy; Copy\n");
+}
