@@ -93,9 +93,10 @@ fixed = "アジヤとイタリヤ"
 
 [[cases]]
 name = "kn-dict-inside-correct-word"
+note = "textlintは正しい語「アンティーク」の途中にも当たる。jafixは別のカタカナ語の一部を指摘しない。"
 text = "アンティークとアンチーク"
-findings = ["1:1", "1:8"]
-messages = ["「アンティ」を「アンチ」にする", "「アンチーク」を「アンティーク」にする"]
+findings = ["1:8"]
+messages = ["「アンチーク」を「アンティーク」にする"]
 fixed = "アンティークとアンチーク"
 
 [[cases]]

@@ -114,16 +114,54 @@ pub fn substitute(replacement: &str, m: &Match, text: &str) -> String {
 
 /// `replacement` を、`substitute` が展開する記法で区切った固定の部分。`$$` は `$` として部分に含める。
 /// 利用者の置き換えの逆の置き換えの判定に渡す
-pub fn substitution_fixed_parts(replacement: &str) -> Vec<String> {
-    // 当てる正規表現のグループの数が分からないので、2桁までの番号と名前の参照をすべて参照とみなし、固定の部分を短く取る
-    let mut parts = vec![String::new()];
-    for piece in substitution_pieces(replacement, 99, true) {
-        match piece {
-            Piece::Text(text) => parts.last_mut().unwrap().push_str(text),
-            _ => parts.push(String::new()),
-        }
+pub fn substitution_fixed_parts(replacement: &str) -> Vec<FixedPart> {
+    // 捕捉の数が分からないので、すべての番号と名前を参照とみなし、判定する部分を短く取る
+    fixed_parts(
+        substitution_pieces(replacement, 99, true)
+            .into_iter()
+            .map(|piece| match piece {
+                Piece::Text(text) => Some(text),
+                _ => None,
+            }),
+    )
+}
+
+/// 置き換えの固定の部分と、前後に未知の参照があるか。参照の境を文書の端とみなさないために持つ
+#[derive(Debug, PartialEq, Eq)]
+pub struct FixedPart {
+    pub text: String,
+    pub leading_reference: bool,
+    pub trailing_reference: bool,
+}
+
+impl FixedPart {
+    /// 指摘の範囲が、参照に隣接する端に触れず、固定の部分だけで決まる候補か
+    pub fn contains(&self, range: &std::ops::Range<usize>) -> bool {
+        (!self.leading_reference || range.start > 0)
+            && (!self.trailing_reference || range.end < self.text.len())
     }
-    parts.retain(|part| !part.is_empty());
+}
+
+/// 固定の文字列と参照 (`None`) の並びを、端の情報を保って固定の部分にまとめる
+pub fn fixed_parts<'a>(pieces: impl IntoIterator<Item = Option<&'a str>>) -> Vec<FixedPart> {
+    let mut parts = vec![FixedPart {
+        text: String::new(),
+        leading_reference: false,
+        trailing_reference: false,
+    }];
+    for piece in pieces {
+        if let Some(text) = piece {
+            parts.last_mut().unwrap().text.push_str(text);
+            continue;
+        }
+        parts.last_mut().unwrap().trailing_reference = true;
+        parts.push(FixedPart {
+            text: String::new(),
+            leading_reference: true,
+            trailing_reference: false,
+        });
+    }
+    parts.retain(|part| !part.text.is_empty());
     parts
 }
 
@@ -389,9 +427,14 @@ mod tests {
 
     #[test]
     fn substitution_fixed_parts_split_at_references() {
-        assert_eq!(substitution_fixed_parts("frontend$1"), ["frontend"]);
+        let parts = substitution_fixed_parts("frontend$1");
+        assert_eq!(parts[0].text, "frontend");
+        assert!(!parts[0].leading_reference && parts[0].trailing_reference);
         assert_eq!(
-            substitution_fixed_parts("a$&b$<n>c$12d$$e$0"),
+            substitution_fixed_parts("a$&b$<n>c$12d$$e$0")
+                .iter()
+                .map(|part| part.text.as_str())
+                .collect::<Vec<_>>(),
             ["a", "b", "c", "d$e$0"]
         );
         assert!(substitution_fixed_parts("$1$'").is_empty());

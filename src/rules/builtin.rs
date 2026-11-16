@@ -8,7 +8,7 @@ use serde::Deserialize;
 use toml::{Table, Value};
 use url::{Origin, Url};
 
-use crate::js_regex;
+use crate::js_regex::{self, FixedPart};
 
 use super::RuleId;
 use super::english::terms::{TERMS, Term};
@@ -241,9 +241,9 @@ impl Builtin {
         if let Some(rule) = &self.terminology {
             replacements.extend(rule.checked_replacements());
         }
-        let parts: Vec<&str> = replacements
+        let parts: Vec<&FixedPart> = replacements
             .iter()
-            .flat_map(|replacement| replacement.parts.iter().map(AsRef::as_ref))
+            .flat_map(|replacement| &replacement.parts)
             .collect();
         let mut reported = dictionary_rules_reporting(&parts, self).into_iter();
         for replacement in &replacements {
@@ -1711,7 +1711,7 @@ impl Prh {
     }
 
     /// 辞書のルールの `expected` の、捕捉グループの参照を除いた部分
-    fn checked_replacements(&self) -> impl Iterator<Item = CheckedReplacement<'_>> {
+    fn checked_replacements(&self) -> impl Iterator<Item = CheckedReplacement> {
         self.dictionary.rules().iter().map(|rule| {
             CheckedReplacement::new(
                 RuleId::Prh,
@@ -1720,31 +1720,25 @@ impl Prh {
                     self.source_names[rule.source], rule.expected
                 ),
                 "このルールを辞書から外す",
-                rule.fixed_parts().map(Cow::Borrowed).collect(),
+                rule.fixed_parts(),
             )
         })
     }
 }
 
 /// 逆の置き換えかを確かめる、利用者の置き換えの1つ
-struct CheckedReplacement<'a> {
+struct CheckedReplacement {
     rule: RuleId,
     /// 理由の先頭に書く、置き換えの出どころと置き換え後の文字列
     shown: String,
     /// 理由の最後に書く、置き換えの直し方
     remedy: &'static str,
     /// 置き換え後の文字列のうち、捕捉グループの参照を除いた空でない部分
-    parts: Vec<Cow<'a, str>>,
+    parts: Vec<FixedPart>,
 }
 
-impl<'a> CheckedReplacement<'a> {
-    fn new(
-        rule: RuleId,
-        shown: String,
-        remedy: &'static str,
-        mut parts: Vec<Cow<'a, str>>,
-    ) -> Self {
-        parts.retain(|part| !part.is_empty());
+impl CheckedReplacement {
+    fn new(rule: RuleId, shown: String, remedy: &'static str, parts: Vec<FixedPart>) -> Self {
         Self {
             rule,
             shown,
@@ -1755,22 +1749,23 @@ impl<'a> CheckedReplacement<'a> {
 }
 
 /// `replacement` を、`$1`〜`$9` の参照で区切った各部分
-fn fixed_parts(replacement: &str) -> impl Iterator<Item = &str> {
+fn fixed_parts(replacement: &str) -> Vec<FixedPart> {
     let mut parts = Vec::new();
     let mut start = 0;
     let mut i = 0;
     let bytes = replacement.as_bytes();
     while i < bytes.len() {
         if bytes[i] == b'$' && bytes.get(i + 1).is_some_and(|b| matches!(b, b'1'..=b'9')) {
-            parts.push(&replacement[start..i]);
+            parts.push(Some(&replacement[start..i]));
+            parts.push(None);
             i += 2;
             start = i;
         } else {
             i += 1;
         }
     }
-    parts.push(&replacement[start..]);
-    parts.into_iter()
+    parts.push(Some(&replacement[start..]));
+    js_regex::fixed_parts(parts)
 }
 
 /// 置き換えの固定の部分に当たった組み込みの修正ルール `fixes` と、固定の部分を指摘した辞書の指摘ルール `reports` から、
@@ -1888,14 +1883,14 @@ impl TextlintRulePattern {
     }
 
     /// `replace` のある要素の、`replace` を `$1`〜`$9` で区切った各部分
-    fn checked_replacements(&self) -> impl Iterator<Item = CheckedReplacement<'_>> {
+    fn checked_replacements(&self) -> impl Iterator<Item = CheckedReplacement> {
         self.patterns.iter().enumerate().filter_map(|(i, pattern)| {
             let replace = pattern.replace.as_ref()?;
             Some(CheckedReplacement::new(
                 RuleId::TextlintRulePattern,
                 format!("`patterns` の{}番目: `replace` の「{replace}」", i + 1),
                 "`replace` を変える",
-                fixed_parts(replace).map(Cow::Borrowed).collect(),
+                fixed_parts(replace),
             ))
         })
     }
@@ -2723,19 +2718,17 @@ impl Terminology {
 
     /// 利用者の `terms` の項目の置き換えの固定の部分 (文字列の項目では項目の全体、配列の項目では置き換えの記法を
     /// 除いた部分)
-    fn checked_replacements(&self) -> impl Iterator<Item = CheckedReplacement<'_>> {
-        let words = self
-            .word_terms
-            .iter()
-            .filter(|term| term.user)
-            .map(|term| (term.term.as_ref(), vec![Cow::Borrowed(term.term.as_ref())]));
+    fn checked_replacements(&self) -> impl Iterator<Item = CheckedReplacement> {
+        let words = self.word_terms.iter().filter(|term| term.user).map(|term| {
+            (
+                term.term.as_ref(),
+                js_regex::fixed_parts([Some(term.term.as_ref())]),
+            )
+        });
         let pairs = self.pair_terms.iter().filter(|term| term.user).map(|term| {
             (
                 term.replacement.as_ref(),
-                js_regex::substitution_fixed_parts(&term.replacement)
-                    .into_iter()
-                    .map(Cow::Owned)
-                    .collect(),
+                js_regex::substitution_fixed_parts(&term.replacement),
             )
         });
         words.chain(pairs).map(|(replacement, parts)| {

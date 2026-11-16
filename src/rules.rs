@@ -19,6 +19,7 @@ use regex::Regex;
 
 use crate::apply::{LineIndex, TargetLines};
 use crate::filter::Ignored;
+use crate::js_regex::FixedPart;
 use crate::prose::{Context, Document, InlineNodeKind, Prose};
 
 pub(crate) use self::prh::dictionary::parse_yaml;
@@ -500,10 +501,11 @@ fn drop_overlaps<T>(items: &mut Vec<T>, range: impl Fn(&T) -> &Range<usize>) {
     });
 }
 
-/// 利用者の置き換えの固定の部分 `text` を、段落の直下にある本文の範囲1つだけの文書とみなして、
+/// 利用者の置き換えの固定の部分 `part` を、段落の直下にある本文の範囲1つだけの文書とみなして、
 /// 有効な組み込みの修正ルールのうち当たるものを `RuleId` の順に返す。当たれば、置き換えは組み込みの修正ルールと
-/// 逆である。同じ箇所に当たるルールをすべて返すので、重なりは解かない
-pub fn fix_rules_hitting(text: &str, builtin: &Builtin) -> Vec<RuleId> {
+/// 逆である。参照に接する端の空白の修正は、字下げかどうかが決まらないので除く。同じ箇所の重なりは解かない
+pub fn fix_rules_hitting(part: &FixedPart, builtin: &Builtin) -> Vec<RuleId> {
+    let text = &part.text;
     let document = Document {
         texts: vec![Prose {
             range: 0..text.len(),
@@ -522,6 +524,22 @@ pub fn fix_rules_hitting(text: &str, builtin: &Builtin) -> Vec<RuleId> {
     };
     let mut rules: Vec<RuleId> = fix_rule_findings(text, &document, builtin)
         .into_iter()
+        .filter(|fix| {
+            // 字種だけの修正は前後の参照によらず必要になる。空白の修正は、参照が改行や字下げかで変わる
+            matches!(
+                fix.finding.rule,
+                RuleId::FullwidthParen
+                    | RuleId::NoNfd
+                    | RuleId::NoInvalidControlCharacter
+                    | RuleId::NoZeroWidthSpaces
+                    | RuleId::NoHankakuKana
+                    | RuleId::NoMixedZenkakuAndHankakuAlphabet
+                    | RuleId::NoKangxiRadicals
+                    | RuleId::JtfStyle(
+                        JtfRule::R2_1_5 | JtfRule::R2_1_8 | JtfRule::R2_1_9 | JtfRule::R4_2_4
+                    )
+            ) || part.contains(&fix.finding.range)
+        })
         .map(|fix| fix.finding.rule)
         .collect();
     rules.dedup();
@@ -549,15 +567,16 @@ pub const DICTIONARY_REPORT_RULES: [RuleId; 13] = [
 /// 利用者の置き換えの固定の部分 `parts` のそれぞれを、段落の直下にある本文の範囲1つだけの文書とみなして、
 /// `DICTIONARY_REPORT_RULES` のうち有効で指摘を出すものを、`parts` と同じ順に返す。指摘すれば、置き換えは指摘ルールと
 /// 逆である。部分は数千になりうるので、辞書の数百の正規表現を部分ごとに当て直さず、部分を改行でつないだ文字列に当てて、
-/// 指摘と重なる部分だけを1つずつ当て直す。英語の2つは、ASCIIの英字を含む部分だけに当てる
-pub fn dictionary_rules_reporting(parts: &[&str], builtin: &Builtin) -> Vec<Vec<RuleId>> {
+/// 指摘と重なる部分だけを1つずつ当て直す。参照に接する端の指摘は除く。英語の2つは、ASCIIの英字を含む部分だけに当てる
+pub fn dictionary_rules_reporting(parts: &[&FixedPart], builtin: &Builtin) -> Vec<Vec<RuleId>> {
     if parts.is_empty() {
         return Vec::new();
     }
-    let all = Joined::new(parts, 0..parts.len());
+    let texts: Vec<&str> = parts.iter().map(|part| part.text.as_str()).collect();
+    let all = Joined::new(&texts, 0..parts.len());
     let english = Joined::new(
-        parts,
-        (0..parts.len()).filter(|&i| parts[i].bytes().any(|b| b.is_ascii_alphabetic())),
+        &texts,
+        (0..parts.len()).filter(|&i| texts[i].bytes().any(|b| b.is_ascii_alphabetic())),
     );
     let jtf = |text: &str, _: &[Range<usize>]| {
         jtf_style::dictionary_report(text, &[&whole_prose(text)], builtin)
@@ -581,7 +600,10 @@ pub fn dictionary_rules_reporting(parts: &[&str], builtin: &Builtin) -> Vec<Vec<
     let mut found = vec![Vec::new(); parts.len()];
     for (candidates, check) in candidates.into_iter().zip(checks) {
         for i in candidates {
-            for report in check(parts[i], std::slice::from_ref(&(0..parts[i].len()))) {
+            for report in check(texts[i], std::slice::from_ref(&(0..texts[i].len()))) {
+                if !parts[i].contains(&report.range) {
+                    continue;
+                }
                 let rule = DICTIONARY_REPORT_RULES
                     .into_iter()
                     .find(|rule| rule.name() == report.rule)

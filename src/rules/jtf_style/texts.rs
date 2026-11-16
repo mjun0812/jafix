@@ -13,12 +13,10 @@ use crate::prose::Prose;
 use super::super::builtin::JtfStyle;
 use super::super::spacing::is_indentation;
 use super::super::text::NUMBER_PATTERNS;
-use super::super::{Finding, FixRuleFinding, Report, RuleId};
+use super::super::{Finding, FixRuleFinding, Report, RuleId, SPACES};
 use super::{
     HANKAKU_KANA, JAPANESE, JAPANESE_WITHOUT_MARKS, JtfRule, KANJI, KATAKANA_WORD, contains,
 };
-
-static SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new("[ \u{3000}]+").unwrap());
 
 /// `3.3` の括弧
 const PARENTHESES: [char; 12] = [

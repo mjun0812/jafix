@@ -532,11 +532,13 @@ impl Rule {
 
 impl Rule {
     /// `expected` のうち、捕捉グループの参照を除いた部分。参照の区切り方は `expand` と同じである
-    pub fn fixed_parts(&self) -> impl Iterator<Item = &str> {
-        pieces(&self.expected, self.groups).filter_map(|piece| match piece {
-            Piece::Text(text) => Some(text),
-            Piece::Group(_) => None,
-        })
+    pub fn fixed_parts(&self) -> Vec<js_regex::FixedPart> {
+        js_regex::fixed_parts(
+            pieces(&self.expected, self.groups).map(|piece| match piece {
+                Piece::Text(text) => Some(text),
+                Piece::Group(_) => None,
+            }),
+        )
     }
 }
 

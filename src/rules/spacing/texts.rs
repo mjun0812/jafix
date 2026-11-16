@@ -12,10 +12,8 @@ use regex::Regex;
 use crate::prose::Prose;
 
 use super::super::builtin::{Builtin, JaSpaceBetweenHalfAndFullWidth};
-use super::super::{Finding, FixRuleFinding, Report, RuleId};
+use super::super::{Finding, FixRuleFinding, Report, RuleId, SPACES};
 use super::chars::{self, BETWEEN_FULL_WIDTH, HALF_AND_FULL_WIDTH, KATAKANA, KATAKANA_WORD};
-
-static SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new("[ \u{3000}]+").unwrap());
 
 static SLASH: LazyLock<Regex> = LazyLock::new(|| Regex::new("[ \u{3000}]*/[ \u{3000}]*").unwrap());
 

@@ -11,7 +11,7 @@ use super::super::builtin::JtfStyle;
 use super::super::prh::Checks;
 use super::super::prh::dictionary::{Dictionary, Replacement, Source};
 use super::super::{Report, one_line};
-use super::JtfRule;
+use super::{JtfRule, KANJI, KATAKANA_WORD, contains};
 
 /// 辞書を持つルールと、その辞書のYAML
 const DICTIONARIES: [(JtfRule, &str); 4] = [
@@ -44,6 +44,23 @@ pub fn report(src: &str, texts: &[&Prose], rules: &JtfStyle) -> Vec<Report> {
                 ..
             } in dictionary.replacements(text)
             {
+                let matched = &text[range.clone()];
+                let word_chars = match rule {
+                    JtfRule::R2_1_5 => KATAKANA_WORD,
+                    JtfRule::R2_2_1 if matched.chars().all(|c| contains(KANJI, c)) => KANJI,
+                    _ => &[],
+                };
+                if text[..range.start]
+                    .chars()
+                    .next_back()
+                    .is_some_and(|c| contains(word_chars, c))
+                    || text[range.end..]
+                        .chars()
+                        .next()
+                        .is_some_and(|c| contains(word_chars, c))
+                {
+                    continue;
+                }
                 reports.push(Report {
                     range: prose.range.start + range.start..prose.range.start + range.end,
                     rule: rule.name(),
@@ -99,6 +116,27 @@ mod tests {
     fn embedded_dictionaries_load_and_pass_their_specs() {
         for (rule, _) in DICTIONARIES {
             assert!(!dictionary(rule).rules().is_empty(), "{}", rule.name());
+        }
+    }
+
+    #[test]
+    fn dictionary_entries_do_not_match_inside_other_words() {
+        for (rule, words) in [
+            (
+                JtfRule::R2_1_5,
+                vec!["アンティーク", "バレーボール", "メインクーン", "ケアーズ"],
+            ),
+            (JtfRule::R2_2_1, vec!["何時間", "何時代", "最早期"]),
+        ] {
+            let table = Table::from_iter([(rule.name().to_owned(), Value::Boolean(true))]);
+            let builtin = Builtin::from_table(&table, Path::new(".")).unwrap();
+            for word in words {
+                let prose = super::super::super::whole_prose(word);
+                assert!(
+                    report(word, &[&prose], &builtin.jtf_style).is_empty(),
+                    "{word}"
+                );
+            }
         }
     }
 

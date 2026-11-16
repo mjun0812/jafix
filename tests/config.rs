@@ -3580,3 +3580,50 @@ fn user_replacements_whose_result_is_reported_only_in_context_are_accepted() {
         stdout(&output)
     );
 }
+
+#[test]
+fn replacement_references_do_not_create_document_boundaries() {
+    // terminologyは先読みを含む項目を語境界で包まないので、日本語に当てる項目に空の先読みを添える。
+    for (user, input, expected) in [
+        (prh_rule("サーバ$1", "/サーバー(ラック)/"), "サーバーラック\n", "サーバラック\n"),
+        (r#""@textlint-rule/pattern" = { patterns = [{ message = "m", pattern = "/サーバー(ラック)/", replace = "サーバ$1" }] }"#.to_owned(), "サーバーラック\n", "サーバラック\n"),
+        (r#"terminology = { terms = [["サーバー(ラック)(?=)", "サーバ$1"]] }"#.to_owned(), "サーバーラック\n", "サーバラック\n"),
+    ] {
+        let sandbox = Sandbox::new();
+        sandbox.write_xdg_config(&format!("[builtin]\n\"2.1.6.カタカナの長音\" = true\n{user}"));
+        assert_eq!(fix_with_config(&sandbox, input), expected, "{user}");
+        let output = sandbox.run(&["check", "t.md"]);
+        assert!(findings_of(stdout(&output), "2.1.6.カタカナの長音").is_empty(), "{}", stdout(&output));
+    }
+}
+
+#[test]
+fn replacement_references_preserve_conflicts_inside_fixed_parts() {
+    for user in [
+        prh_rule("$1。サーバ。です$2", "/(前)サーバー(後)/"),
+        r#""@textlint-rule/pattern" = { patterns = [{ message = "m", pattern = "/(前)サーバー(後)/", replace = "$1。サーバ。です$2" }] }"#.to_owned(),
+        r#"terminology = { terms = [["(前)サーバー(後)(?=)", "$1。サーバ。です$2"]] }"#.to_owned(),
+    ] {
+        assert_check_rejects_builtin(&format!("\"2.1.6.カタカナの長音\" = true\n{user}"), &["2.1.6.カタカナの長音"]);
+    }
+    assert_check_rejects_builtin(&prh_rule("（$1）", "/\\((.+)\\)/"), &["fullwidth-paren"]);
+}
+
+#[test]
+fn replacement_references_do_not_make_spaces_unconditionally_removable() {
+    // 参照は改行にもなる。固定の部分の先頭の空白が字下げかは、参照なしでは決まらない。
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(&format!(
+        "[builtin]\nja-no-space-around-slash = true\n{}",
+        prh_rule("$1 /", r"/(\n)スラッシュ/")
+    ));
+    sandbox.write("t.md", "文。\n /\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_ne!(
+        output.status.code(),
+        Some(2),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(findings_of(stdout(&output), "ja-no-space-around-slash").is_empty());
+}
