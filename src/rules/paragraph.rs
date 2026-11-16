@@ -6,7 +6,7 @@ use regex::Regex;
 
 use crate::js_regex;
 use crate::prose::{Inline, InlineKind, Paragraph};
-use crate::sentence::{self, Sentence, is_space};
+use crate::sentence::{self, HardBreak, Sentence, is_space};
 
 use super::builtin::{Builtin, CountBy, JaNoMixedPeriod, MaxComma, SentenceLength};
 use super::{Report, RuleId};
@@ -26,7 +26,7 @@ pub fn report(src: &str, paragraphs: &[Paragraph], builtin: &Builtin) -> Vec<Rep
                 ..
             }]
         );
-        for sentence in sentence::split(src, paragraph) {
+        for sentence in sentence::split(src, paragraph, HardBreak::Close) {
             if let Some(rule) = &builtin.sentence_length
                 && !paragraph.blockquote
                 && !only_link
@@ -36,7 +36,10 @@ pub fn report(src: &str, paragraphs: &[Paragraph], builtin: &Builtin) -> Vec<Rep
             if let Some(rule) = &builtin.max_comma {
                 reports.extend(max_comma(src, &sentence, rule));
             }
-            if builtin.no_unmatched_pair {
+        }
+        // ハード改行は書き手が行を分けただけなので、括弧と引用符はその行をまたいで閉じてよい
+        if builtin.no_unmatched_pair {
+            for sentence in sentence::split(src, paragraph, HardBreak::Continue) {
                 reports.extend(unmatched_pairs(src, &sentence));
             }
         }
@@ -53,15 +56,23 @@ fn at(range: Range<usize>, rule: RuleId, message: String) -> Report {
 }
 
 fn sentence_length(sentence: &Sentence, rule: &SentenceLength) -> Option<Report> {
-    let mut text: String = sentence
-        .children
-        .iter()
-        .filter(|child| {
-            !(rule.skip_url_string_link
-                && matches!(&child.kind, InlineKind::Link { url } if *url == child.text))
-        })
-        .map(|child| child.text.as_str())
-        .collect();
+    let mut text = String::new();
+    for child in sentence.children.iter().filter(|child| {
+        !(rule.skip_url_string_link
+            && matches!(&child.kind, InlineKind::Link { url } if *url == child.text))
+    }) {
+        if child.kind != InlineKind::Text {
+            text.push_str(&child.text);
+            continue;
+        }
+        // 段落の直下の文字列は元のソースのままで、継続行の字下げを含む。CommonMarkは字下げを段落の内容に入れない
+        let mut lines = child.text.split('\n');
+        text.extend(lines.next());
+        for line in lines {
+            text.push('\n');
+            text.push_str(line.trim_start_matches([' ', '\t']));
+        }
+    }
     for pattern in &rule.skip_patterns {
         text = js_regex::remove_all(pattern, &text).into_owned();
     }

@@ -22,9 +22,20 @@ impl Sentence {
     }
 }
 
+/// ハード改行で文を閉じるか
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HardBreak {
+    /// 括弧が開いていても文を閉じ、ハード改行はどの文にも入れない。描画で行が分かれるので、句点の無い行を並べた
+    /// 箇条書きのような行を1文にしないためである
+    Close,
+    /// 文を開かず、開いている文があればその文に入れる。括弧と引用符の対は、行をまたいで閉じてよいからである
+    Continue,
+}
+
 /// 段落を文に区切る。区切り文字は `.` `．` `。` `?` `!` `？` `！` で、括弧と引用符が開いている間と、
-/// 英語の略語の `.` と `!` では区切らない。`.` は、次の文字が空白か段落の終わりのときだけ区切る
-pub fn split(src: &str, paragraph: &Paragraph) -> Vec<Sentence> {
+/// 英語の略語の `.` と `!` では区切らない。`.` は、次の文字が空白か段落の終わりのときだけ区切る。
+/// ハード改行の扱いは `hard_break` で決める
+pub fn split(src: &str, paragraph: &Paragraph, hard_break: HardBreak) -> Vec<Sentence> {
     let mut splitter = Splitter {
         src,
         paragraph: paragraph.range.clone(),
@@ -34,10 +45,10 @@ pub fn split(src: &str, paragraph: &Paragraph) -> Vec<Sentence> {
         sentences: Vec::new(),
     };
     for child in &paragraph.children {
-        match child.kind {
-            InlineKind::Text => splitter.text(child.range.clone()),
-            // ハード改行は文を開かない
-            InlineKind::Break => {
+        match (&child.kind, hard_break) {
+            (InlineKind::Text, _) => splitter.text(child.range.clone()),
+            (InlineKind::Break, HardBreak::Close) => splitter.close(),
+            (InlineKind::Break, HardBreak::Continue) => {
                 if let Some(sentence) = &mut splitter.current {
                     sentence.push(child.clone());
                 }
@@ -300,7 +311,7 @@ mod tests {
         document
             .paragraphs
             .iter()
-            .flat_map(|paragraph| split(src, paragraph))
+            .flat_map(|paragraph| split(src, paragraph, HardBreak::Close))
             .map(|sentence| &src[sentence.range])
             .collect()
     }
@@ -362,16 +373,39 @@ mod tests {
     }
 
     #[test]
-    fn does_not_split_at_newlines_or_hard_breaks() {
+    fn does_not_split_at_newlines() {
         assert_eq!(sentences("一行目\n二行目。"), vec!["一行目\n二行目。"]);
-        assert_eq!(sentences("一行目  \n二行目。"), vec!["一行目  \n二行目。"]);
+    }
+
+    #[test]
+    fn splits_at_hard_breaks_even_while_a_pair_is_open() {
+        assert_eq!(sentences("一行目  \n二行目。"), vec!["一行目", "二行目。"]);
+        assert_eq!(sentences("一行目\\\n二行目。"), vec!["一行目", "二行目。"]);
+        assert_eq!(
+            sentences("「一行目  \n二行目」。"),
+            vec!["「一行目", "二行目」。"]
+        );
+    }
+
+    #[test]
+    fn keeps_a_sentence_open_across_hard_breaks_when_asked() {
+        let src = "「一行目  \n二行目」。三行目\\\n四行目。";
+        let document = parse(src);
+        let sentences: Vec<&str> = split(src, &document.paragraphs[0], HardBreak::Continue)
+            .into_iter()
+            .map(|sentence| &src[sentence.range])
+            .collect();
+        assert_eq!(
+            sentences,
+            vec!["「一行目  \n二行目」。", "三行目\\\n四行目。"]
+        );
     }
 
     #[test]
     fn keeps_text_children_as_the_split_ranges_and_other_children_whole() {
         let src = "前`コード`後。次。";
         let document = parse(src);
-        let sentences = split(src, &document.paragraphs[0]);
+        let sentences = split(src, &document.paragraphs[0], HardBreak::Close);
         let children: Vec<Vec<(&str, &str)>> = sentences
             .iter()
             .map(|sentence| {

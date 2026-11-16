@@ -10,7 +10,7 @@ use crate::prose::{Document, InlineKind, ListItem};
 use crate::rules::{Report, RuleId, one_line};
 
 /// textlintと同じく、`\s` はJavaScriptの空白で、全角空白を含む
-static TASK: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\[\s+\]\s").unwrap());
+static TASK: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\[\s+\](?:\s|$)").unwrap());
 
 /// リンクの文字列と引用の中を除く本文の範囲の `todo:` (大文字と小文字を区別しない) のすべての一致と、リスト項目ごとの
 /// 最初の未完了のタスクの記号 (項目の先頭のGFMのタスクの記号か、項目の直下の段落の直下の文字列の `[ ]`) を返す
@@ -62,8 +62,8 @@ pub fn report(src: &str, document: &Document) -> Vec<Report> {
     reports
 }
 
-/// 項目の先頭のGFMのタスクの記号が未完了で、後ろに空白が続くなら、`[` から `]` までの範囲。markdown-rsは `- [ ]` のように
-/// 記号の後ろに何も無い項目もタスクにするが、textlintの正規表現は後ろの空白を求めるので当てない
+/// 項目の先頭のGFMのタスクの記号が未完了なら、`[` から `]` までの範囲。markdown-rsは `- [ ]` のように記号の後ろに何も無い
+/// 項目もタスクにする。textlintの正規表現は後ろの空白を求めるが、行末の空白の有無で結果が変わらないように、後ろを見ない
 fn task_marker(src: &str, item: &ListItem) -> Option<Range<usize>> {
     if item.checked != Some(false) {
         return None;
@@ -72,13 +72,15 @@ fn task_marker(src: &str, item: &ListItem) -> Option<Range<usize>> {
         .find(|c: char| !(c.is_ascii_digit() || matches!(c, '-' | '*' | '+' | '.' | ')')))?;
     let rest = &src[item.range.start + marker_end..item.range.end];
     let start = item.range.start + marker_end + (rest.len() - rest.trim_start().len());
-    unchecked_box(src, start..item.range.end).filter(|range| range.start == start)
+    let close = src[start..item.range.end].find(']')?;
+    Some(start..start + close + 1)
 }
 
-/// `range` の中の最初の `[ ]` (角括弧の間が1文字以上の空白で、後ろに空白が続くもの) の、`[` から `]` までの範囲
+/// `range` の中の最初の `[ ]` (角括弧の間が1文字以上の空白で、後ろに空白が続くか、段落の末尾にあるもの) の、
+/// `[` から `]` までの範囲
 fn unchecked_box(src: &str, range: Range<usize>) -> Option<Range<usize>> {
     // markdown-rsの項目と文字列の範囲は行末の空白を含まないが、textlintは項目の原文の行末の空白にも `\s` を当てる。
-    // そのため、範囲の直後の1文字も、改行でなければ見る
+    // そのため、範囲の直後の1文字も、改行でなければ見る。改行の前か文書の末尾で終わる `[ ]` も、後ろに空白が続くとみなす
     let end = src[range.end..]
         .chars()
         .next()

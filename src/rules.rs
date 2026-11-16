@@ -429,8 +429,8 @@ pub fn replacements(
         .collect()
 }
 
-/// 利用者の置き換えの箇所を、`ignored` に含まれるものを除き、重なりを解いて位置の順に返す。範囲が同じ箇所は、
-/// `prh`、`patterns` の前の要素、`terminology` の順に残す
+/// 利用者の置き換えの箇所を、`ignored` に含まれるものと、すでに置き換え後の形になっているものを除き、重なりを解いて
+/// 位置の順に返す。範囲が同じ箇所は、`prh`、`patterns` の前の要素、`terminology` の順に残す
 fn user_replacements(
     src: &str,
     texts: &[&Prose],
@@ -449,9 +449,26 @@ fn user_replacements(
     }
     replacements.retain(|replacement| {
         !ignored.covers(&replacement.finding.range, replacement.finding.rule.name())
+            && !already_replaced(src, &replacement.finding)
     });
     drop_overlaps(&mut replacements, |replacement| &replacement.finding.range);
     replacements
+}
+
+/// 置き換え後の文字列の中に一致した文字列が現れる位置のどれかで、元のソースがすでに置き換え後の文字列になっているか。
+/// `サーバ` を `サーバー` にする置き換えは `サーバー` の `サーバ` にも当たり、直すたびに `ー` が増えるので、その一致は直さない
+fn already_replaced(src: &str, finding: &Finding) -> bool {
+    let matched = &src[finding.range.clone()];
+    let replacement: &str = &finding.replacement;
+    replacement.char_indices().any(|(offset, _)| {
+        replacement[offset..].starts_with(matched)
+            && finding
+                .range
+                .start
+                .checked_sub(offset)
+                .and_then(|start| src.get(start..start + replacement.len()))
+                == Some(replacement)
+    })
 }
 
 /// 直さずに指摘にする利用者の置き換えなら、指摘の文面に続ける理由を返す。見出しの中の箇所は見出しの理由だけを返す
@@ -821,5 +838,35 @@ mod tests {
     fn does_not_treat_a_newline_as_a_space() {
         assert_eq!(find_all("日本語\nRust"), vec![]);
         assert_eq!(find_all("日本語\n Rust"), vec![]);
+    }
+
+    /// `src` の中で最初に出る `matched` を `replacement` に置き換える箇所
+    fn replacing(src: &str, matched: &str, replacement: &'static str) -> Finding {
+        let start = src.find(matched).unwrap();
+        Finding {
+            range: start..start + matched.len(),
+            replacement: Cow::Borrowed(replacement),
+            rule: RuleId::Prh,
+            position: start,
+            message: Cow::Borrowed(""),
+        }
+    }
+
+    #[test]
+    fn already_replaced_reads_only_inside_the_source() {
+        assert!(already_replaced(
+            "サーバーを",
+            &replacing("サーバーを", "サーバ", "サーバー")
+        ));
+        // 置き換え後の文字列を合わせる位置が、元のソースの先頭より前、末尾より後ろ、多バイト文字の途中にかかる
+        assert!(!already_replaced(
+            "サーバ",
+            &replacing("サーバ", "サーバ", "サーバー")
+        ));
+        assert!(!already_replaced("js", &replacing("js", "js", "Node.js")));
+        assert!(!already_replaced(
+            "éサーバ",
+            &replacing("éサーバ", "サーバ", "xサーバ")
+        ));
     }
 }

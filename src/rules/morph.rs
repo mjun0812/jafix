@@ -26,7 +26,7 @@ use std::ops::Range;
 
 use crate::morph::{self, Token};
 use crate::prose::{Context, Document, Inline, InlineKind};
-use crate::sentence::{self, Sentence};
+use crate::sentence::{self, HardBreak, Sentence};
 
 use self::no_mix_dearu_desumasu::{Kind, Styles};
 use self::projection::Projection;
@@ -52,7 +52,7 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
         if !unquoted && redundant.is_none() {
             continue;
         }
-        let sentences = sentence::split(src, paragraph);
+        let sentences = sentence::split(src, paragraph, HardBreak::Close);
         let projections: Vec<Projection> = sentences
             .iter()
             .map(|sentence| Projection::new(src, sentence))
@@ -99,7 +99,7 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
             .iter()
             .filter(|heading| !heading.blockquote)
         {
-            for sentence in sentence::split(src, heading) {
+            for sentence in sentence::split(src, heading, HardBreak::Close) {
                 let projection = Projection::new(src, &sentence);
                 let analyzed = Analyzed::new(&sentence, &projection);
                 styles.count(Kind::Header, &analyzed, rule.strict);

@@ -291,14 +291,17 @@ messages = ["未完了のタスクが残っている"]
 
 [[cases]]
 name = "tk-end-of-line"
+note = "本文の無い未完了のタスクも指摘する。textlintは、`[ ]` の後ろに空白が無いと指摘しない"
 text = "- [ ]"
-findings = []
+findings = ["1:3"]
+messages = ["未完了のタスクが残っている"]
 
 [[cases]]
 name = "tk-end-of-line-then-task"
+note = "本文の無い未完了のタスクも指摘する。textlintは、2つ目の項目だけを指摘する"
 text = "- [ ]\n- [ ] 次の項目"
-findings = ["2:3"]
-messages = ["未完了のタスクが残っている"]
+findings = ["1:3", "2:3"]
+messages = ["未完了のタスクが残っている", "未完了のタスクが残っている"]
 
 [[cases]]
 name = "tk-no-space-after"

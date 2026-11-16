@@ -1,6 +1,7 @@
 //! `terminology` の組み込みの辞書。textlint-rule-terminology 5.2.16 の `terms.jsonc` (MIT) からscriptで作った。
 //! 項目の並びは `terms.jsonc` と同じである。JSONCの文字列の `\b` がバックスペースになり一度も当たらない
-//! `\bHTTP(?!:)`・`\bHTTPS(?!:)` の2項目は入れない
+//! `\bHTTP(?!:)`・`\bHTTPS(?!:)` の2項目は入れない。`co[- ]locat(ion|ing|e|ed)` の置き換えは、`colocate$1` のままでは
+//! `colocateed` のような語になるので、`colocat$1` に直した
 
 /// 辞書の1項目
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -248,7 +249,7 @@ pub const TERMS: [Term; 341] = [
     Term::Pair(r"change[- ]log(s)?", r"changelog$1"),
     Term::Pair(r"check[- ]box(es)?", r"checkbox$1"),
     Term::Pair(r"code[- ]base(es)?", r"codebase$1"),
-    Term::Pair(r"co[- ]locat(ion|ing|e|ed)", r"colocate$1"),
+    Term::Pair(r"co[- ]locat(ion|ing|e|ed)", r"colocat$1"),
     Term::Pair(r"copy[- ]past(e|ed|ing)?", r"copypast$1"),
     Term::Pair(r"end[- ]point(s)?", r"endpoint$1"),
     Term::Pair(r"e[- ]mail(s)?", r"email$1"),

@@ -255,15 +255,15 @@ messages = ["> に対応する < が無い"]
 
 [[cases]]
 name = "ab-arrow"
+note = "矢印の `>` は山かっこの対に数えない。textlintは、対応する `<` が無い `>` として指摘する"
 text = "入力 -> 出力 です"
-findings = ["1:5"]
-messages = ["> に対応する < が無い"]
+findings = []
 
 [[cases]]
 name = "ab-fat-arrow"
+note = "矢印の `>` は山かっこの対に数えない。textlintは、対応する `<` が無い `>` として指摘する"
 text = "A => B と C"
-findings = ["1:4"]
-messages = ["> に対応する < が無い"]
+findings = []
 
 [[cases]]
 name = "ab-less-or-equal-and-greater-or-equal"

@@ -20,8 +20,9 @@ pub(super) fn report(prose: &AnalyzedProse, rule: &JaNoSuccessiveWord) -> Vec<Re
             if previous.surface != token.surface {
                 return None;
             }
-            // linderaは改行とタブで区切るので、続く改行やタブが別々の空白のトークンになる
-            let space = previous.pos_detail_1 == "空白" || token.pos_detail_1 == "空白";
+            // 伏せ字の `○○` や2倍のダッシュ `──` は正しい書き方なので、句読点のほかの記号の連続は指摘しない。
+            // linderaが改行やタブを1文字ずつに分けた空白のトークンも、記号である
+            let symbol = token.pos == "記号" && !matches!(token.pos_detail_1, "句点" | "読点");
             let allowed = rule
                 .allow
                 .iter()
@@ -30,7 +31,7 @@ pub(super) fn report(prose: &AnalyzedProse, rule: &JaNoSuccessiveWord) -> Vec<Re
                 .iter()
                 .all(|token| token.pos == "名詞" && token.pos_detail_1 == "数");
             let onomatopee = rule.allow_onomatopee && ONOMATOPEE.is_match(token.surface);
-            if space || allowed || number || onomatopee {
+            if symbol || allowed || number || onomatopee {
                 return None;
             }
             Some(prose.report(

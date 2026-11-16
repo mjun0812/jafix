@@ -2738,12 +2738,6 @@ fn no_todo_reports_a_task_box_followed_only_by_trailing_spaces() {
             "{content:?}"
         );
     }
-    // 記号の後ろが改行なら、後ろに空白が続かないので指摘しない
-    let sandbox = Sandbox::new();
-    sandbox.write("t.md", "- [ ]\n");
-    sandbox.write_xdg_config("[builtin]\nno-todo = true\n");
-    let output = sandbox.run(&["check", "t.md"]);
-    assert!(findings_of(stdout(&output), "no-todo").is_empty());
 }
 
 /// 英語の4つのルール
@@ -3176,4 +3170,189 @@ fn terminology_does_not_fix_inside_character_references() {
         ["t.md:1:8: 「copy」を「Copy」にする [terminology]"]
     );
     assert_eq!(fix_with_config(&sandbox, "&copy; copy\n"), "&copy; Copy\n");
+}
+
+#[test]
+fn user_replacements_leave_text_already_in_the_replaced_form() {
+    let pattern = r#""@textlint-rule/pattern" = { patterns = [{ message = "m", pattern = "/JS/", replace = "JavaScript (JS)" }] }"#;
+    let terminology = r#"terminology = { terms = [["JS", "JavaScript (JS)"]] }"#;
+    for (builtin, rule, input, fixed) in [
+        (
+            prh_rule("サーバー", "サーバ"),
+            "prh",
+            "サーバーとサーバを使う。\n",
+            "サーバーとサーバーを使う。\n",
+        ),
+        (
+            prh_rule("Node.js", "Node"),
+            "prh",
+            "Node.jsとNodeを使う。\n",
+            "Node.jsとNode.jsを使う。\n",
+        ),
+        (
+            pattern.to_owned(),
+            "@textlint-rule/pattern",
+            "Use JavaScript (JS) and JS.\n",
+            "Use JavaScript (JS) and JavaScript (JS).\n",
+        ),
+        (
+            terminology.to_owned(),
+            "terminology",
+            "Use JavaScript (JS) and JS.\n",
+            "Use JavaScript (JS) and JavaScript (JS).\n",
+        ),
+    ] {
+        let sandbox = Sandbox::new();
+        sandbox.write_xdg_config(&format!("[builtin]\n{builtin}\n"));
+        assert_eq!(fix_with_config(&sandbox, input), fixed, "{builtin}");
+        let path = sandbox.path("t.md");
+        assert_eq!(sandbox.run(&["fix", "t.md"]).status.code(), Some(0));
+        assert_eq!(read(&path), fixed, "{builtin}");
+        let output = sandbox.run(&["check", "t.md"]);
+        assert_eq!(
+            findings_of(stdout(&output), rule),
+            Vec::<&str>::new(),
+            "{builtin}"
+        );
+    }
+}
+
+#[test]
+fn ja_no_successive_word_reports_repeated_punctuation_but_not_other_symbols() {
+    let (_, found) = check_with_builtin(
+        "",
+        "これは──例です。○○の場合です。これは……例です。\n\nあ、、い。。\n",
+    );
+    assert_eq!(
+        findings_of(&found, "ja-no-successive-word"),
+        [
+            "t.md:3:3: 「、」が2回続いている [ja-no-successive-word]",
+            "t.md:3:6: 「。」が2回続いている [ja-no-successive-word]",
+        ]
+    );
+}
+
+#[test]
+fn jtf_style_angle_brackets_do_not_count_arrows() {
+    let (_, found) = check_with_builtin(
+        "\"4.3.7.山かっこ<>\" = true",
+        "処理A -> 処理B => C <- D <= E <a\n",
+    );
+    assert_eq!(
+        findings_of(&found, "4.3.7.山かっこ<>"),
+        ["t.md:1:27: < に対応する > が無い [4.3.7.山かっこ<>]"]
+    );
+}
+
+#[test]
+fn no_todo_reports_an_unchecked_box_whatever_follows_it() {
+    for (input, position) in [
+        ("- [ ]\n", "1:3"),
+        ("- [ ] \n", "1:3"),
+        ("- [ ]", "1:3"),
+        ("- [ ]\n\n  b\n", "1:3"),
+        ("- [ ]\n  - [x] child\n", "1:3"),
+        ("- a [ ]\n", "1:5"),
+        ("- a [ ]", "1:5"),
+        ("- a [ ]\n\n  b\n", "1:5"),
+        ("- a [ ] b\n", "1:5"),
+    ] {
+        let (_, found) = check_with_builtin("no-todo = true", input);
+        assert_eq!(
+            findings_of(&found, "no-todo"),
+            [format!(
+                "t.md:{position}: 未完了のタスクが残っている [no-todo]"
+            )],
+            "{input:?}"
+        );
+    }
+    for input in [
+        "- [ ](https://example.com)\n",
+        "- a [ ](https://example.com)\n",
+        "- a `[ ]`\n",
+    ] {
+        let (_, found) = check_with_builtin("no-todo = true", input);
+        assert_eq!(
+            findings_of(&found, "no-todo"),
+            Vec::<&str>::new(),
+            "{input:?}"
+        );
+    }
+}
+
+#[test]
+fn sentence_length_ends_sentences_at_hard_breaks() {
+    let line = format!("– {}", "あ".repeat(60));
+    for input in [
+        format!("{line}  \n{line}  \n{line}\n"),
+        format!("{line}\\\n{line}\\\n{line}\n"),
+    ] {
+        let (_, found) = check_with_builtin("", &input);
+        assert_eq!(
+            findings_of(&found, "sentence-length"),
+            Vec::<&str>::new(),
+            "{input:?}"
+        );
+    }
+    let (_, found) = check_with_builtin("", &format!("{line}{}\n", "い".repeat(40)));
+    assert_eq!(
+        findings_of(&found, "sentence-length"),
+        ["t.md:1:1: 1文が100文字を超えている (102文字) [sentence-length]"]
+    );
+}
+
+#[test]
+fn sentence_length_does_not_count_the_indentation_of_continuation_lines() {
+    let half = "あ".repeat(40);
+    let indented = format!("- {half}\n{}{half}\n", " ".repeat(30));
+    let (_, found) = check_with_builtin("", &indented);
+    assert_eq!(
+        findings_of(&found, "sentence-length"),
+        Vec::<&str>::new(),
+        "{indented:?}"
+    );
+    let long = format!("- {half}\n{}{half}{}\n", " ".repeat(30), "い".repeat(20));
+    let (_, found) = check_with_builtin("", &long);
+    assert_eq!(
+        findings_of(&found, "sentence-length"),
+        ["t.md:1:3: 1文が100文字を超えている (101文字) [sentence-length]"]
+    );
+}
+
+#[test]
+fn terminology_suggests_colocated_for_co_located() {
+    let (_, found) = check_with_builtin(
+        "terminology = true",
+        "Use co-located files and co-location.\n",
+    );
+    assert_eq!(
+        findings_of(&found, "terminology"),
+        [
+            "t.md:1:5: 「co-located」を「colocated」にする [terminology]",
+            "t.md:1:26: 「co-location」を「colocation」にする [terminology]",
+        ]
+    );
+}
+
+#[test]
+fn no_unmatched_pair_does_not_split_sentences_at_hard_breaks() {
+    for input in [
+        "「一行目の文で  \n二行目の文」と書いた。\n",
+        "彼は（注記を書く\\\n続き）と言った。\n",
+        "「a  \n「b」」と書いた。\n",
+        "（注：詳細は  \n（別表）を参照）。\n",
+    ] {
+        let (_, found) =
+            check_with_builtin("no-unmatched-pair = true\nfullwidth-paren = false", input);
+        assert_eq!(
+            findings_of(&found, "no-unmatched-pair"),
+            Vec::<&str>::new(),
+            "{input:?}"
+        );
+    }
+    let (_, found) = check_with_builtin("no-unmatched-pair = true", "(注記  \n続き\n");
+    assert_eq!(
+        findings_of(&found, "no-unmatched-pair"),
+        ["t.md:1:2: ( に対応する ) が無い [no-unmatched-pair]"]
+    );
 }

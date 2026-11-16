@@ -41,11 +41,23 @@ pub fn report(src: &str, document: &Document, rules: &JtfStyle) -> Vec<Report> {
         let mut last_quote = None;
         let mut quotes = 0;
         for prose in texts_in(&document.texts, &paragraph.range) {
-            for (offset, c) in src[prose.range.clone()].char_indices() {
+            let text = &src[prose.range.clone()];
+            for (offset, c) in text.char_indices() {
                 let position = prose.range.start + offset;
                 if c == '"' {
                     quotes += 1;
                     last_quote = Some(position);
+                    continue;
+                }
+                // `->`・`=>`・`<-`・`<=`・`>=` は矢印か比較の記号で、山かっこではない
+                let arrow = match c {
+                    '>' => {
+                        text[..offset].ends_with(['-', '=']) || text[offset + 1..].starts_with('=')
+                    }
+                    '<' => text[offset + 1..].starts_with(['-', '=']),
+                    _ => false,
+                };
+                if arrow {
                     continue;
                 }
                 for (&(rule, opening, closing), stack) in pairs.iter().zip(&mut openings) {
