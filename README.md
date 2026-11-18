@@ -987,6 +987,24 @@ JTFスタイルガイドの37ルールも、判定の条件を `textlint-rule-pr
 - `allowlist` のパターンは、`@textlint-rule/pattern` と同じくJavaScriptの正規表現(`u` フラグ付き)で読みます。textlintの4.0.0は `@textlint/regexp-string-matcher` 1.1.1で読むので、`u` を付けず、`s` と `d` をフラグとみなしません。空の文字列は設定の不正で、`//` は文字列そのものです。textlintの4.0.0は、`//` を書くと止まらなくなります
 - 外すかどうかは、jafixの指摘と修正の箇所の範囲で判定します。textlintでは多くのルールが1文字の幅で報告するので、同じ設定でも外れる指摘は変わりえます。たとえば `allow = ["TODO"]` は、`TODO:` の5文字を範囲とする `no-todo` の指摘を外しません
 
+## ドキュメントサイト
+
+日本語版は `docs/` にMarkdownで書きます。
+日本語版をもとに英語版を書き、`docs/en/` に同じファイル名で置きます。
+トップページは [docs/index.md](docs/index.md)、ルール一覧は [docs/textlint-rules.md](docs/textlint-rules.md) です。
+ローカルで確認するには、Node.js 24以降を使い、リポジトリのルートで次を実行します。
+
+```sh
+npm ci
+npm run docs:dev
+```
+
+公開用のHTMLは `npm run docs:build` で `docs/.vitepress/dist/` に生成します。
+ビルドしたページは `npm run docs:preview` で確認できます。
+
+公開するときは、GitHubリポジトリの **Settings → Pages → Build and deployment** を開き、**Source** に **GitHub Actions** を選びます。
+その後、**Actions → Deploy documentation** で公開するブランチを選んで **Run workflow** を実行します。
+
 ## ライセンス
 
 [MIT License](LICENSE-MIT) と [Apache License 2.0](LICENSE-APACHE) のデュアルライセンスです。

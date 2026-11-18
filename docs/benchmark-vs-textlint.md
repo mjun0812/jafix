@@ -1,8 +1,8 @@
-# textlintとの速度の比較
+# textlintとの速度の比較 {#benchmark}
 
 jafixとtextlintに同じルールを設定して、`check`・`fix`・hookの3つの場面で速さを比べた。jafixは、どの場面とファイルの大きさでも、textlintより14〜142倍速く終わり、メモリも3分の1以下で済んだ。計測は2026-11-15に `scripts/bench-vs-textlint.sh` で行った。
 
-## 比べ方
+## 比べ方 {#method}
 
 両方の設定に、同じ働きの5つの規則を入れた。jafixは、組み込みの修正ルール3つと、`@textlint-rule/pattern` の2つの要素である。textlintでは、同じ働きを次のルールで書いた。
 
@@ -18,7 +18,7 @@ jafixとtextlintに同じルールを設定して、`check`・`fix`・hookの3�
 
 入力は4つのファイルである。見出し・段落・リスト・強調・コードブロックを含み、どのルールにも当たる約350バイトの塊を、10回・100回・1000回並べたものを3つ作った。残りの1つは、実際の文書としてのjafixの `README.md` である。hyperfineで3回の予行の後に20回(343KBのファイルだけ10回)計り、その平均を使った。
 
-## 同じ仕事をしているか
+## 同じ仕事をしているか {#work-performed}
 
 ルールの働きごとに数えた件数は、ほぼ一致した。3KBのファイルでは、全角括弧と、括弧の間の空白と2つの指摘ルールの件数が一致した。差が出たのは日本語と英数字の間の空白だけで、jafixのほうが30件多い。
 
@@ -30,7 +30,7 @@ jafixとtextlintに同じルールを設定して、`check`・`fix`・hookの3�
 
 この差は、textlintの `ja-space-between-half-and-full-width` が見逃す空白による。長音符の後の `サーバー API` の空白と、漢字の後の `系 38` の空白を、textlintは削除しない。jafixのほうが多く仕事をしているので、この差は比べる上でjafixに不利に働く。
 
-## 結果
+## 結果 {#results}
 
 計測の環境は、Apple M5 (macOS、arm64)である。jafix 0.1.0 (00b728a)のrelease buildと、textlint v15.8.0 (Node.js v26.13.0)を、hyperfine 2.0.0で計った。時間は壁時計時間の平均、メモリは最大常駐メモリの平均である。倍率は、textlintの時間をjafixの時間で割ったものである。
 
@@ -49,7 +49,7 @@ jafixとtextlintに同じルールを設定して、`check`・`fix`・hookの3�
 | hook  | README.md (69KB)       |  10.5ms / 12MB |  490.7ms / 188MB |  47倍 |
 | hook  | blocks-1000.md (343KB) | 192.6ms / 92MB | 6319.1ms / 408MB |  33倍 |
 
-## 読み取れること
+## 読み取れること {#interpretation}
 
 差が最も大きいのは、3KBの小さいファイルである。textlintは、1回の実行ごとにNode.jsの起動とルールの読み込みで約150msかかる。jafixは同じ部分が約2msで終わる。agentの1回の編集で書くような数KBから数十KBのファイルでは、この固定の時間が実行時間の大半を占める。
 
@@ -61,7 +61,7 @@ jafixとtextlintに同じルールを設定して、`check`・`fix`・hookの3�
 
 この計測は、予行の後の2回目以降の実行の時間である。textlintの初回の実行は、ディスクのキャッシュを使えないので、さらに遅くなる。
 
-## 測り直す
+## 測り直す {#reproduce}
 
 `scripts/bench-vs-textlint.sh` を実行すると、同じ表を標準出力に出す。引数にディレクトリを渡すと、hyperfineの結果のJSONをそこへ残す。
 
