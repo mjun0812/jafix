@@ -59,6 +59,7 @@ Claude CodeやCodexのPostToolUse hookに登録すると、その回の編集で
 - [設定と動作のリファレンス](REFERENCE.md)
 - [textlintとの速度の比較](docs/benchmark-vs-textlint.md)
 - [ドキュメントサイトの開発と公開](REFERENCE.md#ドキュメントサイト)
+- [リリースの手順](REFERENCE.md#リリース)
 
 ## ライセンス
 

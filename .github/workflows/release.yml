@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -26,15 +27,40 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Check release version
+        shell: bash
+        run: |
+          version=$(cargo metadata --locked --no-deps --format-version 1 | jq -er '.packages[] | select(.name == "jafix") | .version')
+          if [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            printf 'Expected release tag v%s for Cargo.toml, got %s\n' "$version" "$GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          printf 'JAFIX_VERSION=%s\n' "$version" >> "$GITHUB_ENV"
       - name: Install musl-tools
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y musl-tools
       - run: rustup target add "$TARGET"
+      - name: Run tests
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: cargo test --release --locked --target "$TARGET"
       # scripts/package.sh がcrateのライセンスの一覧を作るのに使う。
       # 0.9系は、cli のfeatureを付けないとコマンドが入らない
       - name: Install cargo-about
         run: cargo install --locked cargo-about@0.9.3 --features cli
       - run: scripts/package.sh "$TARGET"
+      - name: Check packaged binary and licenses
+        shell: bash
+        run: |
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          tar -xzf "dist/jafix-$TARGET.tar.gz" -C "$work"
+          test "$("$work/jafix" --version)" = "jafix $JAFIX_VERSION"
+          for file in CRATE_LICENSES.txt LICENSE-MIT LICENSE-APACHE THIRD_PARTY_NOTICES.md; do
+            test -s "$work/$file"
+          done
+          printf 'これは（確認）です。\n' > "$work/smoke.md"
+          XDG_CONFIG_HOME="$work" "$work/jafix" fix "$work/smoke.md"
+          test "$(cat "$work/smoke.md")" = 'これは(確認)です。'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: jafix-${{ matrix.target }}
@@ -42,6 +68,7 @@ jobs:
           if-no-files-found: error
 
   release:
+    if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -61,4 +88,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
-        run: gh release create "$TAG" --verify-tag --generate-notes jafix-*.tar.gz checksums.txt
+        shell: bash
+        run: |
+          options=(--verify-tag --generate-notes)
+          if [[ "${TAG%%+*}" == *-* ]]; then
+            options+=(--prerelease)
+          fi
+          gh release create "$TAG" "${options[@]}" jafix-*.tar.gz checksums.txt

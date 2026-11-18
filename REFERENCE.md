@@ -1087,6 +1087,22 @@ npm run docs:dev
 公開するときは、GitHubリポジトリの **Settings → Pages → Build and deployment** を開き、**Source** に **GitHub Actions** を選びます。
 その後、**Actions → Deploy documentation** で公開するブランチを選んで **Run workflow** を実行します。
 
+## リリース
+
+`Cargo.toml` と `Cargo.lock` のバージョンがそろったコミットを `main` にpushします。
+GitHub Actionsの **release** を手動で実行すると、3環境向けのtarballを各ジョブのartifactから確認できます。
+
+リリースするには、`Cargo.toml` のバージョンに `v` を付けたタグをpushします。
+たとえば、バージョンが `0.1.0` の場合は次のとおりです。
+
+```sh
+git tag -a v0.1.0 -m v0.1.0
+git push origin v0.1.0
+```
+
+テストと梱包が通ると、Actionsがtarballと `checksums.txt` をGitHub Releasesに登録します。
+`v0.2.0-rc.1` のようなタグはプレリリースになります。
+
 ## ライセンス
 
 [MIT License](LICENSE-MIT) と [Apache License 2.0](LICENSE-APACHE) のデュアルライセンスです。
