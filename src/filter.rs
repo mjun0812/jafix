@@ -24,12 +24,11 @@ pub struct Filters {
 }
 
 impl Filters {
-    /// 設定の `[filters]` の表から作る。キーはfilterのIDで、値は `false` (無効)・`true` (既定のオプションで有効)・
+    /// 設定の `[filters]` の表を適用する。キーはfilterのIDで、値は `false` (無効)・`true` (既定のオプションで有効)・
     /// オプションの表 (有効) である。`config_dir` は設定ファイルのあるディレクトリで、`allowlistConfigPaths` の
     /// 相対パスをここから解決する。知らないキー、値の型の誤り、知らないオプション、値の誤りは、キーとオプションの
     /// 名前を含む理由を返す
-    pub fn from_table(table: &Table, config_dir: &Path) -> Result<Self, String> {
-        let mut filters = Filters::default();
+    pub fn apply_table(&mut self, table: &Table, config_dir: &Path) -> Result<(), String> {
         let defaults = Table::new();
         for (key, value) in table {
             if !matches!(key.as_str(), "comments" | "allowlist") {
@@ -49,18 +48,18 @@ impl Filters {
             };
             let in_key = |reason: String| format!("`{key}`: {reason}");
             if key == "comments" {
-                filters.comments = options
+                self.comments = options
                     .map(Comments::from_options)
                     .transpose()
                     .map_err(in_key)?;
             } else {
-                filters.allowlist = options
+                self.allowlist = options
                     .map(|options| Allowlist::from_options(options, config_dir))
                     .transpose()
                     .map_err(in_key)?;
             }
         }
-        Ok(filters)
+        Ok(())
     }
 }
 

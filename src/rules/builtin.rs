@@ -19,12 +19,7 @@ use super::prh::dictionary::{Dictionary, Source, parse_yaml};
 use super::{dictionary_rules_reporting, fix_rules_hitting};
 
 /// 組み込みのルールの設定。有効・無効と、オプションを持つルールのオプションである。
-/// 既定では、`preset-ja-technical-writing` の23ルールと修正ルールの3つが有効で、オプションはtextlintの
-/// `preset-ja-technical-writing` と同じである。`@textlint-ja/preset-ai-writing` と `preset-ai-words-ja` の
-/// 7ルール、利用者の置き換えの2ルール (`prh`・`@textlint-rule/pattern`)、`preset-ja-spacing` の11ルール、
-/// `no-mixed-zenkaku-and-hankaku-alphabet`・`no-kangxi-radicals`、`preset-jtf-style` の37ルール、ひらがな系の5ルール、
-/// `@textlint-ja/no-insert-dropping-sa`・`@textlint-ja/no-synonyms`、`no-todo`・`date-weekday-mismatch`・`no-dead-link`、
-/// `terminology`・`spelling`・`common-misspellings`・`write-good` は無効である
+/// 初期状態で有効なルールは `Default` の実装で選ぶ。
 #[derive(Debug)]
 pub struct Builtin {
     pub fullwidth_paren: bool,
@@ -98,29 +93,29 @@ impl Default for Builtin {
             fullwidth_paren: true,
             space_between_ja_and_alnum: true,
             space_between_ja_and_paren: true,
-            sentence_length: Some(SentenceLength::default()),
-            max_comma: Some(MaxComma::default()),
-            max_kanji_continuous_len: Some(MaxKanjiContinuousLen::default()),
-            arabic_kanji_numbers: true,
-            ja_no_mixed_period: Some(JaNoMixedPeriod::default()),
+            sentence_length: None,
+            max_comma: None,
+            max_kanji_continuous_len: None,
+            arabic_kanji_numbers: false,
+            ja_no_mixed_period: None,
             no_nfd: true,
             no_invalid_control_character: Some(NoInvalidControlCharacter::default()),
             no_zero_width_spaces: true,
-            no_exclamation_question_mark: Some(NoExclamationQuestionMark::default()),
-            no_hankaku_kana: true,
-            ja_unnatural_alphabet: Some(JaUnnaturalAlphabet::default()),
+            no_exclamation_question_mark: None,
+            no_hankaku_kana: false,
+            ja_unnatural_alphabet: None,
             no_unmatched_pair: true,
-            max_ten: Some(MaxTen::default()),
-            no_mix_dearu_desumasu: Some(NoMixDearuDesumasu::default()),
-            no_doubled_conjunction: true,
-            no_doubled_conjunctive_particle_ga: true,
-            no_double_negative_ja: true,
-            no_doubled_joshi: Some(NoDoubledJoshi::default()),
-            no_dropping_the_ra: true,
-            ja_no_weak_phrase: true,
+            max_ten: None,
+            no_mix_dearu_desumasu: None,
+            no_doubled_conjunction: false,
+            no_doubled_conjunctive_particle_ga: false,
+            no_double_negative_ja: false,
+            no_doubled_joshi: None,
+            no_dropping_the_ra: false,
+            ja_no_weak_phrase: false,
             ja_no_successive_word: Some(JaNoSuccessiveWord::default()),
-            ja_no_abusage: true,
-            ja_no_redundant_expression: Some(JaNoRedundantExpression::default()),
+            ja_no_abusage: false,
+            ja_no_redundant_expression: None,
             no_ai_list_formatting: None,
             no_ai_hype_expressions: None,
             no_ai_emphasis_patterns: None,
@@ -142,7 +137,7 @@ impl Default for Builtin {
             ja_space_around_link: None,
             ja_space_around_strong: None,
             no_mixed_zenkaku_and_hankaku_alphabet: None,
-            no_kangxi_radicals: false,
+            no_kangxi_radicals: true,
             jtf_style: JtfStyle::default(),
             ja_hiragana_hojodoushi: None,
             ja_hiragana_keishikimeishi: false,
@@ -152,7 +147,7 @@ impl Default for Builtin {
             no_insert_dropping_sa: false,
             no_synonyms: None,
             no_todo: false,
-            date_weekday_mismatch: None,
+            date_weekday_mismatch: Some(DateWeekdayMismatch::default()),
             no_dead_link: None,
             terminology: None,
             spelling: None,
@@ -163,17 +158,15 @@ impl Default for Builtin {
 }
 
 impl Builtin {
-    /// 設定の `[builtin]` の表から作る。キーはルールのIDかpresetの名前である。ルールのIDの値は `false` (無効)・
+    /// 設定の `[builtin]` の表を適用する。キーはルールのIDかpresetの名前である。ルールのIDの値は `false` (無効)・
     /// `true` (既定のオプションで有効)・オプションの表 (有効)、presetの名前の値は `true` か `false` である。
     /// `config_dir` は設定ファイルのあるディレクトリで、オプションの相対パスをここから解決する。
     /// 未知のキー、値の型の誤り、未知のオプション、値の誤りは、キーとオプションの名前を含む理由を返す
-    pub fn from_table(table: &Table, config_dir: &Path) -> Result<Self, String> {
-        let mut builtin = Builtin::default();
+    pub fn apply_table(&mut self, table: &Table, config_dir: &Path) -> Result<(), String> {
         // presetの名前のキーを先に当て、ルールのIDのキーで上書きする。TOMLの表は順を持たないので、書いた順によらない
         for (key, value) in table {
             if let Some(preset) = Preset::from_name(key) {
-                builtin
-                    .apply_preset(preset, value, config_dir)
+                self.apply_preset(preset, value, config_dir)
                     .map_err(|reason| format!("`{key}`: {reason}"))?;
             }
         }
@@ -196,14 +189,16 @@ impl Builtin {
                     ));
                 }
             };
-            builtin
-                .set(id, options, config_dir)
+            self.set(id, options, config_dir)
                 .map_err(|reason| format!("`{key}`: {reason}"))?;
         }
+        Ok(())
+    }
+
+    pub fn validate(&self) -> Result<(), String> {
         // 利用者の辞書を直しても組み込みのルールどうしの不正は残るので、先に出す
-        builtin.reject_opposite_rules()?;
-        builtin.reject_opposite_replacements()?;
-        Ok(builtin)
+        self.reject_opposite_rules()?;
+        self.reject_opposite_replacements()
     }
 
     /// `OPPOSITE_RULES` の組のうち、両方のルールが有効なものがあれば、最初の組の理由を返す。

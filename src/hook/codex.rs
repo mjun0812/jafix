@@ -4,9 +4,8 @@ use std::path::{Path, PathBuf};
 use serde::Deserialize;
 use serde_json::Value;
 
-use super::{Target, Targets, is_markdown};
+use super::{Target, Targets};
 use crate::apply::TargetLines;
-use crate::config::Config;
 
 #[derive(Deserialize)]
 struct Input {
@@ -58,7 +57,7 @@ impl Chunk {
 /// 直すMarkdownファイルと対象行を決める。Codexはshellから呼んだapply_patchを自分で当ててPostToolUseを出さないので、
 /// `Bash` などの入力にあるpatchは当てられていない。Update Fileの対象行は、編集後のファイルを読んでchunkを位置づけて決める。
 /// `exclude` に当たるファイルは読まずに外す
-pub fn targets(input: &str, config: &Config) -> Targets {
+pub fn targets(input: &str, mut is_excluded: impl FnMut(&Path) -> Result<bool, String>) -> Targets {
     let mut targets = Targets::default();
     let input: Input = match serde_json::from_str(input) {
         Ok(input) => input,
@@ -86,7 +85,7 @@ pub fn targets(input: &str, config: &Config) -> Targets {
             FileChange::Update { path, chunks } => (path, Some(chunks)),
         };
         let path = input.cwd.join(path);
-        if !is_markdown(&path) || config.is_excluded(&path) {
+        if !targets.includes(&path, &mut is_excluded) {
             continue;
         }
         let Some(chunks) = chunks else {

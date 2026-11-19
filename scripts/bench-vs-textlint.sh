@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# jafixとtextlintを、同じ機能 (3つの修正ルールと2つの指摘ルール。jafixの移植した23ルールは無効にする) の設定にして、check・fix・hookの3つの場面で
+# jafixとtextlintを、同じ機能 (3つの修正ルールと2つの指摘ルール) の設定にして、check・fix・hookの3つの場面で
 # hyperfineで比べ、結果をMarkdownの表で標準出力に出す。
 #
 # textlintは、本体と次のルールを入れたprefix (`<prefix>/bin/textlint` と `<prefix>/node_modules`) を
@@ -34,32 +34,12 @@ words=(
     着実 迅速 柔軟 効率的 革新的 画期的 重要 不可欠 鍵となる 本質的
 )
 {
-    # 比べるのは同じ機能の5つのルールだけなので、移植した23ルールは無効にする
+    # jafix独自の3ルールと、利用者が指定した2つのパターンで比べる
     cat <<'TOML'
 [builtin]
-sentence-length = false
-max-comma = false
-max-kanji-continuous-len = false
-arabic-kanji-numbers = false
-ja-no-mixed-period = false
-no-nfd = false
-no-invalid-control-character = false
-no-zero-width-spaces = false
-no-exclamation-question-mark = false
-no-hankaku-kana = false
-ja-unnatural-alphabet = false
-no-unmatched-pair = false
-max-ten = false
-no-doubled-joshi = false
-no-doubled-conjunctive-particle-ga = false
-no-doubled-conjunction = false
-no-mix-dearu-desumasu = false
-no-double-negative-ja = false
-no-dropping-the-ra = false
-ja-no-weak-phrase = false
-ja-no-successive-word = false
-ja-no-abusage = false
-ja-no-redundant-expression = false
+preset-ja-technical-writing = false
+no-kangxi-radicals = false
+date-weekday-mismatch = false
 
 TOML
     echo '[[builtin."@textlint-rule/pattern".patterns]]'

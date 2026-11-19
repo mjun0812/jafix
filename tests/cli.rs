@@ -242,6 +242,7 @@ fn check_prints_reports_and_findings_in_position_order() {
 #[test]
 fn check_prints_fix_rule_findings_and_builtin_reports_in_position_order() {
     let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nno-exclamation-question-mark = true\n");
     sandbox.write("t.md", "日本語 Rust！\n");
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(output.status.code(), Some(1));
@@ -255,6 +256,7 @@ fn check_prints_fix_rule_findings_and_builtin_reports_in_position_order() {
 #[test]
 fn fix_leaves_builtin_reports_unchanged_and_prints_nothing() {
     let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nno-exclamation-question-mark = true\n");
     let path = sandbox.write("t.md", "すごい！\n");
     assert_eq!(sandbox.run(&["check", "t.md"]).status.code(), Some(1));
     let output = sandbox.run(&["fix", "t.md"]);
@@ -316,7 +318,10 @@ fn check_reports_spaces_around_parens_in_headings_with_the_heading_message() {
 fn version_prints_name_and_version() {
     let output = Sandbox::new().run(&["--version"]);
     assert_eq!(output.status.code(), Some(0));
-    assert_eq!(stdout(&output), "jafix 0.1.0\n");
+    assert_eq!(
+        stdout(&output),
+        concat!("jafix ", env!("CARGO_PKG_VERSION"), "\n")
+    );
 }
 
 #[test]

@@ -9,6 +9,148 @@ use common::{
 use serde_json::json;
 
 #[test]
+fn the_new_default_rules_can_be_disabled() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write("t.md", "⼈を待つ。2024年4月23日(月)に会う。\n");
+    sandbox
+        .write_xdg_config("[builtin]\nno-kangxi-radicals = false\ndate-weekday-mismatch = false\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    assert!(
+        findings_of(found, "no-kangxi-radicals").is_empty(),
+        "{found}"
+    );
+    assert!(
+        findings_of(found, "date-weekday-mismatch").is_empty(),
+        "{found}"
+    );
+    assert_eq!(sandbox.run(&["fix", "t.md"]).status.code(), Some(0));
+    assert_eq!(read(&path), "⼈を待つ。2024年4月23日(月)に会う。\n");
+}
+
+#[test]
+fn check_and_fix_use_the_project_of_each_file() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nspace-between-ja-and-alnum = false\n");
+    sandbox.write(
+        "a/.jafix.toml",
+        "[builtin]\nspace-between-ja-and-alnum = true\nfullwidth-paren = false\n",
+    );
+    let a = sandbox.write("a/docs/a.md", "日本語 Rust（補足）\n");
+    let b = sandbox.write("b/b.md", "日本語 Rust（補足）\n");
+    let output = sandbox.run(&["check", "a/docs/a.md", "b/b.md"]);
+    let found = stdout(&output);
+    assert!(
+        found.lines().any(|line| line.starts_with("a/docs/a.md:")
+            && line.ends_with("[space-between-ja-and-alnum]")),
+        "{found}"
+    );
+    assert!(
+        found
+            .lines()
+            .any(|line| line.starts_with("b/b.md:") && line.ends_with("[fullwidth-paren]")),
+        "{found}"
+    );
+    assert_eq!(
+        sandbox.run(&["fix", "a/docs/a.md", "b/b.md"]).status.code(),
+        Some(0)
+    );
+    assert_eq!(read(&a), "日本語Rust（補足）\n");
+    assert_eq!(read(&b), "日本語 Rust(補足)\n");
+}
+
+#[test]
+fn project_preset_overrides_a_global_rule_setting() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nsentence-length = { max = 3 }\n");
+    sandbox.write(
+        "project/.jafix.toml",
+        "[builtin]\npreset-ja-technical-writing = false\n",
+    );
+    sandbox.write("project/a.md", "やや長い日本語の文です。\n");
+    sandbox.write("b.md", "やや長い日本語の文です。\n");
+    let output = sandbox.run(&["check", "project/a.md", "b.md"]);
+    let found = findings_of(stdout(&output), "sentence-length");
+    assert_eq!(found.len(), 1);
+    assert!(found[0].starts_with("b.md:"));
+}
+
+#[test]
+fn nearest_project_config_stops_at_the_git_boundary() {
+    let sandbox = Sandbox::new();
+    sandbox.write(".jafix.toml", "[builtin]\nfullwidth-paren = false\n");
+    sandbox.write(
+        "root/sub/.jafix.toml",
+        "[builtin]\nfullwidth-paren = true\n",
+    );
+    sandbox.write("root/nested/.git", "gitdir: /tmp/elsewhere\n");
+    let root = sandbox.write("root/a.md", "（補足）\n");
+    let sub = sandbox.write("root/sub/deep/b.md", "（補足）\n");
+    let nested = sandbox.write("root/nested/c.md", "（補足）\n");
+    let fix = sandbox.run(&["fix", "root/a.md", "root/sub/deep/b.md", "root/nested/c.md"]);
+    assert_eq!(fix.status.code(), Some(0));
+    assert_eq!(read(&root), "（補足）\n");
+    assert_eq!(read(&sub), "(補足)\n");
+    assert_eq!(read(&nested), "(補足)\n");
+}
+
+#[test]
+fn project_file_patterns_replace_global_patterns_and_match_relative_to_the_project() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("exclude = [\"**/shared.md\"]\n");
+    sandbox.write("project/.jafix.toml", "exclude = [\"generated/**\"]\n");
+    let generated = sandbox.write("project/generated/a.md", "（補足）\n");
+    let project = sandbox.write("project/shared.md", "（補足）\n");
+    let global = sandbox.write("shared.md", "（補足）\n");
+    let fix = sandbox.run(&[
+        "fix",
+        "project/generated/a.md",
+        "project/shared.md",
+        "shared.md",
+    ]);
+    assert_eq!(fix.status.code(), Some(0));
+    assert_eq!(read(&generated), "（補足）\n");
+    assert_eq!(read(&project), "(補足)\n");
+    assert_eq!(read(&global), "（補足）\n");
+}
+
+#[test]
+fn each_dictionary_path_is_relative_to_the_config_that_sets_it() {
+    let sandbox = Sandbox::new();
+    let config = "[builtin.prh]\nrulePaths = [\"terms.yml\"]\n";
+    sandbox.write_xdg_config(config);
+    sandbox.write(
+        "xdg/jafix/terms.yml",
+        "rules:\n  - expected: Cookie\n    pattern: クッキー\n",
+    );
+    sandbox.write("project/.jafix.toml", config);
+    sandbox.write(
+        "project/terms.yml",
+        "rules:\n  - expected: Biscuit\n    pattern: クッキー\n",
+    );
+    let project = sandbox.write("project/a.md", "クッキーを使う。\n");
+    let global = sandbox.write("b.md", "クッキーを使う。\n");
+    let fix = sandbox.run(&["fix", "project/a.md", "b.md"]);
+    assert_eq!(fix.status.code(), Some(0), "{:?}", fix.stderr);
+    assert_eq!(read(&project), "Biscuitを使う。\n");
+    assert_eq!(read(&global), "Cookieを使う。\n");
+}
+
+#[test]
+fn project_settings_can_resolve_a_conflict_in_the_merged_rules() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\n\"4.3.1.丸かっこ（）\" = true\n");
+    sandbox.write(
+        "project/.jafix.toml",
+        "[builtin]\nfullwidth-paren = false\n",
+    );
+    sandbox.write("project/a.md", "和文(補足)です。\n");
+    let check = sandbox.run(&["check", "project/a.md"]);
+    assert_eq!(check.status.code(), Some(1));
+    assert_eq!(findings_of(stdout(&check), "4.3.1.丸かっこ（）").len(), 2);
+}
+
+#[test]
 fn check_skips_a_file_listed_in_exclude() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("t.md", "日本語 Rust\n");
@@ -53,9 +195,27 @@ fn exclude_expands_tilde_and_falls_back_to_home_config_without_xdg() {
 fn exclude_ignores_entries_for_missing_files() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("t.md", "日本語 Rust\n");
-    sandbox.write_xdg_config("exclude = [\"/nonexistent/x.md\"]\n");
+    let missing = sandbox.path("nonexistent/x.md");
+    sandbox.write_xdg_config(&format!("exclude = [{:?}]\n", missing.to_str().unwrap()));
     assert_eq!(sandbox.run(&["fix", "t.md"]).status.code(), Some(0));
     assert_eq!(read(&path), "日本語Rust\n");
+}
+
+#[test]
+fn exclude_accepts_an_absolute_glob_with_forward_slashes() {
+    let sandbox = Sandbox::new();
+    let excluded = sandbox.write("generated/a.md", "日本語 Rust\n");
+    let other = sandbox.write("other/a.md", "日本語 Rust\n");
+    let pattern = sandbox.path("generated/*.md");
+    #[cfg(windows)]
+    let pattern = pattern.to_str().unwrap().replace('\\', "/");
+    #[cfg(not(windows))]
+    let pattern = pattern.to_str().unwrap();
+    sandbox.write_xdg_config(&format!("exclude = [{pattern:?}]\n"));
+    let fix = sandbox.run(&["fix", "generated/a.md", "other/a.md"]);
+    assert_eq!(fix.status.code(), Some(0), "{:?}", fix.stderr);
+    assert_eq!(read(&excluded), "日本語 Rust\n");
+    assert_eq!(read(&other), "日本語Rust\n");
 }
 
 #[test]
@@ -113,6 +273,7 @@ fn exclude_treats_glob_characters_in_the_home_path_literally() {
     let output = sandbox
         .command()
         .env("HOME", sandbox.path("h[o]me"))
+        .env("USERPROFILE", sandbox.path("h[o]me"))
         .args(["fix", "h[o]me/a.md", "home/a.md"])
         .output()
         .unwrap();
@@ -172,7 +333,7 @@ fn check_exits_2_on_a_relative_exclude() {
 fn check_exits_2_on_an_exclude_that_is_not_a_glob() {
     let sandbox = Sandbox::new();
     sandbox.write("t.md", "日本語Rust\n");
-    sandbox.write_xdg_config("exclude = [\"/a/[b\"]\n");
+    sandbox.write_xdg_config("exclude = [\"**/a/[b\"]\n");
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(output.status.code(), Some(2));
     assert!(!output.stderr.is_empty());
@@ -581,20 +742,20 @@ fn hook_exits_1_on_an_unknown_builtin_rule_without_changing_files() {
 }
 
 #[test]
-fn check_reports_a_morphological_builtin_rule_by_default_and_not_when_disabled() {
+fn check_reports_a_morphological_builtin_rule_when_enabled() {
     let sandbox = Sandbox::new();
     sandbox.write("t.md", "私は本は読む。\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(stdout(&output), "");
+
+    sandbox.write_xdg_config("[builtin]\nno-doubled-joshi = true\n");
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         stdout(&output),
         "t.md:1:4: 同じ助詞「は」が続いている [no-doubled-joshi]\n"
     );
-
-    sandbox.write_xdg_config("[builtin]\nno-doubled-joshi = false\n");
-    let output = sandbox.run(&["check", "t.md"]);
-    assert_eq!(output.status.code(), Some(0));
-    assert_eq!(stdout(&output), "");
 }
 
 #[test]
@@ -671,8 +832,9 @@ const MORPHOLOGICAL_RULES_INPUT: &str = "走って、食べて、寝て、起き
 ";
 
 #[test]
-fn check_reports_each_morphological_builtin_rule_by_default() {
+fn check_reports_each_morphological_builtin_rule_with_the_preset() {
     let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\npreset-ja-technical-writing = true\n");
     sandbox.write("t.md", MORPHOLOGICAL_RULES_INPUT);
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(output.status.code(), Some(1));
@@ -694,7 +856,9 @@ fn check_reports_nothing_when_every_morphological_builtin_rule_is_disabled() {
         .iter()
         .map(|rule| format!("{rule} = false\n"))
         .collect();
-    sandbox.write_xdg_config(&format!("[builtin]\n{disabled}"));
+    sandbox.write_xdg_config(&format!(
+        "[builtin]\npreset-ja-technical-writing = true\n{disabled}"
+    ));
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(stdout(&output), "");
@@ -703,6 +867,7 @@ fn check_reports_nothing_when_every_morphological_builtin_rule_is_disabled() {
 #[test]
 fn fix_does_not_change_text_that_only_morphological_builtin_rules_report() {
     let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\npreset-ja-technical-writing = true\n");
     let path = sandbox.write("t.md", MORPHOLOGICAL_RULES_INPUT);
     assert_eq!(sandbox.run(&["fix", "t.md"]).status.code(), Some(0));
     assert_eq!(read(&path), MORPHOLOGICAL_RULES_INPUT);
@@ -933,7 +1098,7 @@ const JAFIX_FIX_RULES: [&str; 3] = [
     "space-between-ja-and-paren",
 ];
 
-/// `preset-ja-technical-writing` の23ルールと、jafix独自の修正ルール3つのそれぞれに当たる文書
+/// 技術文書向けの23ルールと、初期状態で有効な残りのルールのそれぞれに当たる文書
 fn technical_writing_rules_input() -> String {
     let others = [
         format!("{}。", "あ".repeat(101)),
@@ -950,17 +1115,47 @@ fn technical_writing_rules_input() -> String {
         "「閉じない文です。".to_owned(),
         "日本語 Rustです。".to_owned(),
         "注の文 （補足）です。".to_owned(),
+        "⼈を待つ。".to_owned(),
+        "2024年4月23日(月)に会う。".to_owned(),
     ];
     format!("{MORPHOLOGICAL_RULES_INPUT}\n{}\n", others.join("\n\n"))
 }
 
 #[test]
-fn preset_ja_technical_writing_false_disables_its_rules() {
+fn technical_writing_preset_can_enable_and_disable_its_rules() {
     let sandbox = Sandbox::new();
     sandbox.write("t.md", &technical_writing_rules_input());
+    let default_technical_rules = [
+        "no-nfd",
+        "no-invalid-control-character",
+        "no-zero-width-spaces",
+        "no-unmatched-pair",
+        "ja-no-successive-word",
+    ];
+    let default_rules_outside_preset = JAFIX_FIX_RULES
+        .into_iter()
+        .chain(["no-kangxi-radicals", "date-weekday-mismatch"]);
+
     let output = sandbox.run(&["check", "t.md"]);
     let found = stdout(&output);
-    for rule in TECHNICAL_WRITING_RULES.iter().chain(&JAFIX_FIX_RULES) {
+    for rule in TECHNICAL_WRITING_RULES {
+        assert_eq!(
+            !findings_of(found, rule).is_empty(),
+            default_technical_rules.contains(&rule),
+            "{rule}: {found}"
+        );
+    }
+    for rule in default_rules_outside_preset.clone() {
+        assert!(!findings_of(found, rule).is_empty(), "{rule}: {found}");
+    }
+
+    sandbox.write_xdg_config("[builtin]\npreset-ja-technical-writing = true\n");
+    let output = sandbox.run(&["check", "t.md"]);
+    let found = stdout(&output);
+    for rule in TECHNICAL_WRITING_RULES
+        .into_iter()
+        .chain(default_rules_outside_preset.clone())
+    {
         assert!(!findings_of(found, rule).is_empty(), "{rule}: {found}");
     }
 
@@ -970,7 +1165,7 @@ fn preset_ja_technical_writing_false_disables_its_rules() {
     for rule in TECHNICAL_WRITING_RULES {
         assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
     }
-    for rule in JAFIX_FIX_RULES {
+    for rule in default_rules_outside_preset {
         assert!(!findings_of(found, rule).is_empty(), "{rule}: {found}");
     }
 }
@@ -1266,7 +1461,7 @@ fn prh_rejects_invalid_dictionaries() {
     ] {
         let sandbox = Sandbox::new();
         sandbox.write("t.md", "a\n");
-        let path = sandbox.path("xdg/jafix/dict/prh.yml");
+        let path = sandbox.path("xdg").join("jafix").join("dict/prh.yml");
         if let Some(dictionary) = dictionary {
             sandbox.write("xdg/jafix/dict/prh.yml", dictionary);
         }
@@ -1503,13 +1698,17 @@ fn finding_lines(stdout: &str, rule: &str) -> Vec<usize> {
 }
 
 #[test]
-fn spacing_rules_are_off_by_default() {
+fn only_kangxi_radical_normalization_is_on_by_default_among_spacing_rules() {
     let sandbox = Sandbox::new();
     sandbox.write("t.md", SPACING_RULES_INPUT);
     let output = sandbox.run(&["check", "t.md"]);
     let found = stdout(&output);
     for rule in SPACING_RULES {
-        assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
+        assert_eq!(
+            findings_of(found, rule).is_empty(),
+            rule != "no-kangxi-radicals",
+            "{rule}: {found}"
+        );
     }
 
     // 同じ文書の各段落に、その段落のルールが当たることを、すべて有効にして確かめる。
@@ -1548,7 +1747,7 @@ fn preset_ja_spacing_enables_its_rules() {
             .contains(&rule);
         assert_eq!(
             finding_lines(found, rule).contains(&spacing_rule_line(rule)),
-            enabled_by_preset,
+            enabled_by_preset || rule == "no-kangxi-radicals",
             "{rule}: {found}"
         );
     }
@@ -1979,12 +2178,12 @@ fn preset_jtf_style_enables_its_rules() {
     sandbox.write_xdg_config(preset);
     let output = sandbox.run(&["check", "t.md"]);
     let found = stdout(&output);
-    // 同じ範囲に当たる `space-between-ja-and-alnum`・`no-hankaku-kana` の箇所が、重なりの規則で残る
-    let covered_by_fix_rules = ["3.1.1.全角文字と半角文字の間", "4.2.4.中黒(・)"];
+    // 同じ範囲に当たる `space-between-ja-and-alnum` の箇所が、重なりの規則で残る
+    let covered_by_spacing_rule = "3.1.1.全角文字と半角文字の間";
     for rule in JTF_STYLE_RULES {
         let expected = !JTF_STYLE_PRESET_OFF_RULES.contains(&rule)
             && rule != "4.3.8.一重引用符"
-            && !covered_by_fix_rules.contains(&rule);
+            && rule != covered_by_spacing_rule;
         assert_eq!(
             !findings_of(found, rule).is_empty(),
             expected,
@@ -1992,14 +2191,13 @@ fn preset_jtf_style_enables_its_rules() {
         );
     }
 
-    sandbox.write_xdg_config(&format!(
-        "{preset}space-between-ja-and-alnum = false\nno-hankaku-kana = false\n"
-    ));
+    sandbox.write_xdg_config(&format!("{preset}space-between-ja-and-alnum = false\n"));
     let output = sandbox.run(&["check", "t.md"]);
     let found = stdout(&output);
-    for rule in covered_by_fix_rules {
-        assert!(!findings_of(found, rule).is_empty(), "{rule}: {found}");
-    }
+    assert!(
+        !findings_of(found, covered_by_spacing_rule).is_empty(),
+        "{found}"
+    );
     for rule in JTF_STYLE_PRESET_OFF_RULES {
         assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
     }
@@ -2138,7 +2336,7 @@ fn overlapping_jtf_style_fix_rules_fix_once() {
     let sandbox = Sandbox::new();
     let config =
         "[builtin]\npreset-jtf-style = true\nfullwidth-paren = false\n\"2.1.5.カタカナ\" = true\n";
-    sandbox.write_xdg_config(config);
+    sandbox.write_xdg_config(&format!("{config}no-hankaku-kana = true\n"));
     let input = "日本語 Rust、ｻｰﾊﾞｰ、項目 （補足）\n";
     sandbox.write("t.md", input);
     let output = sandbox.run(&["check", "t.md"]);
@@ -2427,13 +2625,17 @@ const GENERAL_RULES_INPUT: &str = "TODO: 手順を書く。
 ";
 
 #[test]
-fn general_rules_and_filters_are_off_by_default() {
+fn date_check_is_on_by_default_and_filters_are_off() {
     let sandbox = Sandbox::new();
     sandbox.write("t.md", GENERAL_RULES_INPUT);
     let output = sandbox.run(&["check", "t.md"]);
     let found = stdout(&output);
     for rule in GENERAL_RULES {
-        assert!(findings_of(found, rule).is_empty(), "{rule}: {found}");
+        assert_eq!(
+            findings_of(found, rule).is_empty(),
+            rule != "date-weekday-mismatch",
+            "{rule}: {found}"
+        );
     }
     // `[filters]` を書かなければ `comments` は無効なので、コメントの後の箇所と指摘も出る
     let after_comment: Vec<&str> = found
@@ -2447,7 +2649,6 @@ fn general_rules_and_filters_are_off_by_default() {
             "t.md:9:9: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]",
             "t.md:9:11: 全角括弧を半角にする [fullwidth-paren]",
             "t.md:9:14: 全角括弧を半角にする [fullwidth-paren]",
-            "t.md:9:18: 「！」を使わない [no-exclamation-question-mark]",
         ],
         "{found}"
     );
@@ -2629,7 +2830,7 @@ fn allowlist_rejects_invalid_config_paths() {
         let output = sandbox.run(&["check", "t.md"]);
         assert_eq!(output.status.code(), Some(2), "{name}");
         let stderr = String::from_utf8(output.stderr).unwrap();
-        let path = sandbox.path(&format!("xdg/jafix/{name}"));
+        let path = sandbox.path("xdg").join("jafix").join(name);
         assert!(
             stderr.contains(&path.display().to_string()),
             "{name}: {stderr}"
@@ -2893,7 +3094,7 @@ fn terminology_reads_terms_file() {
         if let Some(content) = content {
             sandbox.write(&format!("xdg/jafix/{name}"), content);
         }
-        let path = sandbox.path(&format!("xdg/jafix/{name}"));
+        let path = sandbox.path("xdg").join("jafix").join(name);
         assert_check_rejects_builtin_in(
             &sandbox,
             &format!("terminology = {{ terms = {name:?} }}"),
@@ -3287,14 +3488,17 @@ fn sentence_length_ends_sentences_at_hard_breaks() {
         format!("{line}  \n{line}  \n{line}\n"),
         format!("{line}\\\n{line}\\\n{line}\n"),
     ] {
-        let (_, found) = check_with_builtin("", &input);
+        let (_, found) = check_with_builtin("sentence-length = true", &input);
         assert_eq!(
             findings_of(&found, "sentence-length"),
             Vec::<&str>::new(),
             "{input:?}"
         );
     }
-    let (_, found) = check_with_builtin("", &format!("{line}{}\n", "い".repeat(40)));
+    let (_, found) = check_with_builtin(
+        "sentence-length = true",
+        &format!("{line}{}\n", "い".repeat(40)),
+    );
     assert_eq!(
         findings_of(&found, "sentence-length"),
         ["t.md:1:1: 1文が100文字を超えている (102文字) [sentence-length]"]
@@ -3305,14 +3509,14 @@ fn sentence_length_ends_sentences_at_hard_breaks() {
 fn sentence_length_does_not_count_the_indentation_of_continuation_lines() {
     let half = "あ".repeat(40);
     let indented = format!("- {half}\n{}{half}\n", " ".repeat(30));
-    let (_, found) = check_with_builtin("", &indented);
+    let (_, found) = check_with_builtin("sentence-length = true", &indented);
     assert_eq!(
         findings_of(&found, "sentence-length"),
         Vec::<&str>::new(),
         "{indented:?}"
     );
     let long = format!("- {half}\n{}{half}{}\n", " ".repeat(30), "い".repeat(20));
-    let (_, found) = check_with_builtin("", &long);
+    let (_, found) = check_with_builtin("sentence-length = true", &long);
     assert_eq!(
         findings_of(&found, "sentence-length"),
         ["t.md:1:3: 1文が100文字を超えている (101文字) [sentence-length]"]
@@ -3509,7 +3713,7 @@ fn user_replacements_are_rejected_when_a_dictionary_report_rule_rewrites_their_r
             vec!["「お願い致します」", "`ja-hiragana-hojodoushi = false`"],
         ),
         (
-            prh_rule("例外を補足", "例外を捕捉"),
+            format!("ja-no-abusage = true\n{}", prh_rule("例外を補足", "例外を捕捉")),
             vec!["「例外を補足」", "`ja-no-abusage = false`"],
         ),
         (
@@ -3638,12 +3842,12 @@ fn sentence_length_keeps_wrapped_sentences_but_splits_pseudo_list_items() {
             format!("– {half}{br}続き{half}。\n"),
             format!("「{half}{br}{half}」。\n"),
         ] {
-            let (_, found) = check_with_builtin("", &input);
+            let (_, found) = check_with_builtin("sentence-length = true", &input);
             assert_eq!(findings_of(&found, "sentence-length").len(), 1, "{input:?}");
         }
         for marker in ["– ", "• ", "・", "1.", "（１）"] {
             let input = format!("{marker}{half}{br}{marker}{half}\n");
-            let (_, found) = check_with_builtin("", &input);
+            let (_, found) = check_with_builtin("sentence-length = true", &input);
             assert!(
                 findings_of(&found, "sentence-length").is_empty(),
                 "{input:?}"
@@ -3731,7 +3935,7 @@ fn spelling_preserves_repository_names_confirmed_by_link_destinations() {
 #[test]
 fn sentence_length_separates_metadata_labels_from_following_prose() {
     let (_, found) = check_with_builtin(
-        "",
+        "sentence-length = true",
         &format!(
             "**Location**: `template/file.md`  \n{}。\n",
             "あ".repeat(90)
@@ -3743,7 +3947,7 @@ fn sentence_length_separates_metadata_labels_from_following_prose() {
 #[test]
 fn sentence_rules_keep_a_url_introduction_separate_from_its_destination() {
     let (_, found) = check_with_builtin(
-        "",
+        "no-mix-dearu-desumasu = true",
         "説明します。コードは以下で公開中である：  \nhttps://example.com/project\n",
     );
     assert_eq!(
@@ -3765,7 +3969,7 @@ fn spelling_preserves_system_identifiers_and_module_paths() {
 #[test]
 fn sentence_length_separates_pseudo_list_mapping_rows() {
     let (_, found) = check_with_builtin(
-        "",
+        "sentence-length = true",
         &format!(
             "設定の対応表  \napi -> {}  \nadmin -> {}\n",
             "a".repeat(60),

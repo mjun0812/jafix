@@ -17,7 +17,7 @@ const TIMEOUT: Duration = Duration::from_secs(10);
 /// textlintと同じく、リダイレクトを辿る回数の上限
 const MAX_REDIRECTS: usize = 20;
 
-/// 1回の `jafix check` で共有する、外部のURLの確認器と確認の結果
+/// 1回の `jafix check` で、同じ設定を使うファイル間で共有する外部URLの確認器と結果
 pub struct UrlChecker {
     /// リダイレクトを辿らず、2xx以外の応答も誤りにしないclient
     agent: ureq::Agent,

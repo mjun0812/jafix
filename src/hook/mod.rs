@@ -19,6 +19,21 @@ pub struct Targets {
     pub errors: Vec<String>,
 }
 
-pub fn is_markdown(path: &Path) -> bool {
-    path.extension().is_some_and(|ext| ext == "md")
+impl Targets {
+    fn includes(
+        &mut self,
+        path: &Path,
+        is_excluded: &mut impl FnMut(&Path) -> Result<bool, String>,
+    ) -> bool {
+        if path.extension().is_none_or(|ext| ext != "md") {
+            return false;
+        }
+        match is_excluded(path) {
+            Ok(excluded) => !excluded,
+            Err(reason) => {
+                self.errors.push(reason);
+                false
+            }
+        }
+    }
 }

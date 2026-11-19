@@ -389,7 +389,11 @@ mod tests {
     #[test]
     fn a_surrogate_pair_after_an_alphabet_is_also_the_japanese_character_before_the_next_one() {
         let src = "あg𠮷hい";
-        let reports = report(src, &parse(src).texts, &Builtin::default());
+        let builtin = Builtin {
+            ja_unnatural_alphabet: Some(Default::default()),
+            ..Builtin::default()
+        };
+        let reports = report(src, &parse(src).texts, &builtin);
         let alphabets: Vec<&str> = reports.iter().map(|r| &src[r.range.clone()]).collect();
         assert_eq!(alphabets, vec!["g", "h"]);
     }

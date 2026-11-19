@@ -122,9 +122,9 @@ messages = ["リンク先のファイルが無い: missing.md", "リンク先の
 
 [[cases]]
 name = "rel-file-url"
-text = "[a](file:///nonexistent-jafix-dead-link) と <file:///nonexistent-jafix-dead-link>"
-findings = ["1:5", "1:45"]
-messages = ["リンク先のファイルが無い: file:///nonexistent-jafix-dead-link", "リンク先のファイルが無い: file:///nonexistent-jafix-dead-link"]
+text = "[a](file:///C:/nonexistent-jafix-dead-link) と <file:///C:/nonexistent-jafix-dead-link>"
+findings = ["1:5", "1:48"]
+messages = ["リンク先のファイルが無い: file:///C:/nonexistent-jafix-dead-link", "リンク先のファイルが無い: file:///C:/nonexistent-jafix-dead-link"]
 
 [[cases]]
 name = "abs-missing"
@@ -245,7 +245,7 @@ findings = []
 
 [[cases]]
 name = "skip-blockquote"
-text = "> [a](missing.md) と <file:///nonexistent-jafix-dead-link>"
+text = "> [a](missing.md) と <file:///C:/nonexistent-jafix-dead-link>"
 findings = []
 
 [[cases]]

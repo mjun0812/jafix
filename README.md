@@ -1,7 +1,7 @@
 # jafix
 
-jafixはAI agentが書いた日本語のMarkdownを校正するCLIです。
-全角括弧や空白などの表記をそろえ、助詞の重複などを指摘します。
+jafixは日本語の文章を校正するCLIです。
+全角括弧や空白などの表記をそろえ、同じ語が続く箇所などを指摘します。
 
 ## 導入
 
@@ -17,17 +17,21 @@ cargo install --path .
 ## 使い方
 
 ```sh
-jafix check example.md
-jafix fix example.md
+jafix check example.txt
+jafix fix example.txt
 ```
 
 `check` はファイルを変えず、修正できる箇所と指摘を表示します。
 `fix` は修正ルールを適用してファイルを書き換えます。
+どちらも拡張子を問わず、UTF-8のテキストファイルを受け付けます。
+Markdownの構文に従って本文を見分け、コードブロックなどを校正の対象から外します。
 
 ## 設定ファイル
 
-設定は `~/.config/jafix/config.toml` に書きます。
+共通設定は `~/.config/jafix/config.toml` に書きます。
 `XDG_CONFIG_HOME` を指定すると、`$XDG_CONFIG_HOME/jafix/config.toml` を読みます。
+プロジェクトごとの指定は `.jafix.toml` に書きます。
+対象ファイルに最も近い `.jafix.toml` の指定が共通設定より優先されます。
 
 `[builtin]` にルールのIDと値を書きます。
 `true` で有効、`false` で無効です。
@@ -36,15 +40,16 @@ jafix fix example.md
 ```toml
 [builtin]
 sentence-length = { max = 120 }
-no-exclamation-question-mark = false
+no-unmatched-pair = false
 common-misspellings = true
 ```
 
-初期状態ではjafix独自の修正ルール3つと、日本語の技術文書向けの23ルールが有効です。
+初期状態で有効なのは、括弧や空白を整え、文字の混入や語の重複などを見つける10ルールです。
+[初期設定のルール一覧](REFERENCE.md#組み込みのルール)
 
 ## hookへの登録
 
-Claude CodeやCodexのPostToolUse hookに登録すると、その回の編集で追加または変更したMarkdownの行を修正し、対象行の指摘をagentに返します。
+Claude CodeやCodexのPostToolUse hookに登録すると、`.md` ファイルで今回追加または変更した行を修正し、指摘をagentに返します。
 
 | 対象        | 設定ファイル    | matcher       | コマンド            |
 | ----------- | --------------- | ------------- | ------------------- |
@@ -55,7 +60,7 @@ Claude CodeやCodexのPostToolUse hookに登録すると、その回の編集で
 
 ## ドキュメントサイト
 
-- [ルール一覧](docs/textlint-rules.md) ([English](docs/en/textlint-rules.md))
+- [ルール一覧](docs/rules.md) ([English](docs/en/rules.md))
 - [設定と動作のリファレンス](REFERENCE.md)
 - [textlintとの速度の比較](docs/benchmark-vs-textlint.md)
 - [ドキュメントサイトの開発と公開](REFERENCE.md#ドキュメントサイト)

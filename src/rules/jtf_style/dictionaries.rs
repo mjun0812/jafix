@@ -129,7 +129,9 @@ mod tests {
             (JtfRule::R2_2_1, vec!["何時間", "何時代", "最早期"]),
         ] {
             let table = Table::from_iter([(rule.name().to_owned(), Value::Boolean(true))]);
-            let builtin = Builtin::from_table(&table, Path::new(".")).unwrap();
+            let mut builtin = Builtin::default();
+            builtin.apply_table(&table, Path::new(".")).unwrap();
+            builtin.validate().unwrap();
             for word in words {
                 let prose = super::super::super::whole_prose(word);
                 assert!(
@@ -164,7 +166,11 @@ mod tests {
                 Value::Array(vec![Value::String(yaml.to_owned())]),
             );
             table.insert(RuleId::Prh.name().to_owned(), Value::Table(prh));
-            if let Err(reason) = Builtin::from_table(&table, Path::new(".")) {
+            let mut builtin = Builtin::default();
+            if let Err(reason) = builtin
+                .apply_table(&table, Path::new("."))
+                .and_then(|()| builtin.validate())
+            {
                 panic!("{}: {reason}", rule.name());
             }
         }

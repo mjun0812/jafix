@@ -37,6 +37,7 @@ words=(
 {
     cat <<'TOML'
 [builtin]
+preset-ja-technical-writing = true
 "@textlint-ja/preset-ai-writing" = true
 preset-ai-words-ja = true
 no-short-topic-comma = true

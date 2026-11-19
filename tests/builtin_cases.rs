@@ -66,16 +66,15 @@ fn assert_fixture(path: &str, name: &str) {
         let path = sandbox.write("t.md", &format!("{}\n", case.text));
         let builtin = case.builtin.as_ref().or(fixture.builtin.as_ref());
         let filters = case.filters.as_ref().or(fixture.filters.as_ref());
-        if builtin.is_some() || filters.is_some() {
-            let mut config = String::new();
-            if let Some(builtin) = builtin {
-                config.push_str(&format!("[builtin]\n{builtin}\n"));
-            }
-            if let Some(filters) = filters {
-                config.push_str(&format!("[filters]\n{filters}\n"));
-            }
-            sandbox.write_xdg_config(&config);
+        // 技術文書向けルールの挙動と、ほかのルールとの重なりを、初期設定に依存せず確かめる。
+        let mut config = String::from("[builtin]\npreset-ja-technical-writing = true\n");
+        if let Some(builtin) = builtin {
+            config.push_str(&format!("{builtin}\n"));
         }
+        if let Some(filters) = filters {
+            config.push_str(&format!("[filters]\n{filters}\n"));
+        }
+        sandbox.write_xdg_config(&config);
         let output = sandbox.run(&["check", "t.md"]);
         // exit 2は設定の誤りか読み書きの失敗で、出力が空になり `findings = []` のcaseが素通りするので落とす
         if output.status.code() == Some(2) {

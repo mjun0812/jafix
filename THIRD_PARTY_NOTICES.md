@@ -1,6 +1,6 @@
 # Third-party notices
 
-この文書は、jafixのbinaryに含まれる他者の著作物のうち、Rustのcrateのライセンスの一覧では示しきれないものの出典と条件を書いたものです。binaryに埋め込んだ辞書やデータ、textlintのルールから写した部分、crateの一覧に載らない著作権表示とソースの入手先を扱います。binaryにリンクされるすべてのRustのcrateの名前・version・ライセンスと、ライセンスの文面は、GitHub Releasesのtarballの `CRATE_LICENSES.txt` にあります。`CRATE_LICENSES.txt` は、`scripts/package.sh` が梱包のときに、cargo-aboutで `Cargo.lock` と梱包するtargetの依存から作ります。
+この文書は、jafixのbinaryに含まれる他者の著作物のうち、Rustのcrateのライセンスの一覧では示しきれないものの出典と条件を書いたものです。binaryに埋め込んだ辞書やデータ、textlintのルールから写した部分、crateの一覧に載らない著作権表示とソースの入手先を扱います。binaryにリンクされるすべてのRustのcrateの名前・version・ライセンスと、ライセンスの文面は、GitHub Releasesの配布物に入っている `CRATE_LICENSES.txt` にあります。`CRATE_LICENSES.txt` は、`scripts/package.sh` が梱包のときに、cargo-aboutで `Cargo.lock` と梱包するtargetの依存から作ります。
 
 jafixのbinaryは、形態素解析のライブラリのlinderaと、linderaが埋め込むIPADICの辞書を含みます。linderaはMIT Licenseで、辞書の元のmecab-ipadicは「mecab-ipadic」の節の条件で公開されています。linderaのcrateのpackageはライセンスのファイルを含まないので、`CRATE_LICENSES.txt` にはMIT Licenseの標準の文面だけが載ります。linderaの著作権表示は、次の表に書いています。
 

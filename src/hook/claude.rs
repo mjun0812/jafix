@@ -1,12 +1,11 @@
 use std::collections::BTreeSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 use serde_json::Value;
 
-use super::{Target, Targets, is_markdown};
+use super::{Target, Targets};
 use crate::apply::TargetLines;
-use crate::config::Config;
 
 #[derive(Deserialize)]
 struct Input {
@@ -39,7 +38,7 @@ struct Hunk {
 
 /// Claude CodeのPostToolUseの入力JSONから、直すMarkdownファイルと対象行を決める。
 /// `exclude` に当たるファイルは、対象行を決めずに外す
-pub fn targets(input: &str, config: &Config) -> Targets {
+pub fn targets(input: &str, mut is_excluded: impl FnMut(&Path) -> Result<bool, String>) -> Targets {
     let mut targets = Targets::default();
     let input: Input = match serde_json::from_str(input) {
         Ok(input) => input,
@@ -62,7 +61,7 @@ pub fn targets(input: &str, config: &Config) -> Targets {
             return targets;
         }
     };
-    if !is_markdown(&path) || config.is_excluded(&path) {
+    if !targets.includes(&path, &mut is_excluded) {
         return targets;
     }
     match target_lines(input.tool_response) {
@@ -111,7 +110,7 @@ mod tests {
     use serde_json::json;
 
     fn targets(input: &str) -> Targets {
-        super::targets(input, &Config::default())
+        super::targets(input, |_| Ok(false))
     }
 
     fn edit(response: Value) -> String {

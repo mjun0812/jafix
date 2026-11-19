@@ -1,14 +1,12 @@
 # Performance comparison with textlint {#benchmark}
 
-We configured jafix and textlint to perform the same checks and fixes, then timed three workflows: `check`, `fix`, and a hook run.
-Across the tested workflows and file sizes, jafix finished 14 to 142 times faster and used at most one third as much memory.
-These measurements were taken on November 15, 2026, using `scripts/bench-vs-textlint.sh`.
+Against textlint with the same rules, jafix finished 14 to 142 times faster and used at most one third of the memory.
+We timed three workflows (`check`, `fix`, and a hook run) on four files from 3 KB to 343 KB.
+The measurements were taken on November 15, 2026, with `scripts/bench-vs-textlint.sh`.
 
 ## Method {#method}
 
-Both configurations covered the same five checks and fixes.
-jafix used three built-in fix rules and two entries under `@textlint-rule/pattern`.
-The table shows the corresponding textlint rules.
+Both tools were configured with five rules that do the same work.
 
 | Operation                                                             | jafix                        | textlint                                                |
 | --------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------- |
@@ -18,23 +16,35 @@ The table shows the corresponding textlint rules.
 | Flag words from a list of 30                                          | `@textlint-rule/pattern`     | `@textlint-rule/pattern`                                |
 | Flag runs of six or more kanji                                        | `@textlint-rule/pattern`     | `@textlint-rule/pattern`                                |
 
-The `check` workflow reports findings and leaves the file intact.
-The `fix` workflow applies fixes to the entire file and writes them back.
-For the hook workflow, we passed `jafix hook claude` input representing a Claude Code Edit that changed 20 lines starting at line 50.
-textlint processes the whole file, so its equivalent workflow ran `textlint --fix` and then `textlint` to report findings.
+We timed these commands for each workflow.
+
+| Workflow | jafix               | textlint                          |
+| -------- | ------------------- | --------------------------------- |
+| check    | `jafix check`       | `textlint`                        |
+| fix      | `jafix fix`         | `textlint --fix`                  |
+| hook     | `jafix hook claude` | `textlint --fix`, then `textlint` |
+
+The hook input represents a Claude Code Edit that rewrote 20 lines starting at line 50.
+textlint cannot read hook input or limit fixes to certain lines.
+We therefore counted two runs over the whole file as one hook run.
 
 We used four input files.
-We created three by repeating a Markdown block of about 350 bytes 10, 100, and 1,000 times.
+
+| File             | Size   | Content                                       |
+| ---------------- | ------ | --------------------------------------------- |
+| `blocks-10.md`   | 3 KB   | A block of about 350 bytes, repeated 10 times |
+| `blocks-100.md`  | 34 KB  | The same block, repeated 100 times            |
+| `blocks-1000.md` | 343 KB | The same block, repeated 1,000 times          |
+| `README.md`      | 69 KB  | The jafix README                              |
+
 The block contains headings and paragraphs as well as lists, emphasis, and code blocks.
-It exercises all five rules.
-The fourth input was jafix's `README.md`.
-We used hyperfine to run three warmups and average 20 measurements, or 10 for the 343 KB file.
+It matches every rule.
+With hyperfine, we ran three warmups and then averaged 20 runs (10 for the 343 KB file).
 
-## Comparing the work performed {#work-performed}
+## Matching counts {#work-performed}
 
-Counts were similar across the five operations.
-In the 3 KB file, the tools found the same number of full-width parentheses, spaces next to parentheses, and matches for the two report rules.
-jafix found 30 more spaces between Japanese and Latin text.
+The number of matches per rule was nearly the same.
+In the 3 KB file, the only difference was in spaces between Japanese and alphanumerics, where jafix matched 30 more.
 
 | Operation                                                       | jafix | textlint |
 | --------------------------------------------------------------- | ----: | -------: |
@@ -42,13 +52,20 @@ jafix found 30 more spaces between Japanese and Latin text.
 | Spaces between Japanese characters and Latin letters or digits  |   120 |       90 |
 | Spaces next to parentheses and matches for the two report rules |    70 |       70 |
 
-The extra matches include spaces after a long vowel mark in `サーバー API` and around a number in `系 38`.
-jafix removed those spaces, which gave it more work in the comparison.
+textlint's `ja-space-between-half-and-full-width` leaves the space after a long vowel mark (`サーバー API`) and after a kanji (`系 38`).
+jafix handles more spots, so this difference works against jafix in the comparison.
 
 ## Results {#results}
 
-The measurements used an Apple M5 running macOS on arm64, a release build of jafix 0.1.0 (00b728a), textlint v15.8.0 on Node.js v26.13.0, and hyperfine 2.0.0.
-Times are mean wall-clock times, memory is mean peak resident memory, and speedup is textlint's time divided by jafix's time.
+| Item      | Value                            |
+| --------- | -------------------------------- |
+| Machine   | Apple M5 (macOS, arm64)          |
+| jafix     | Release build of 0.1.0 (00b728a) |
+| textlint  | v15.8.0 (Node.js v26.13.0)       |
+| hyperfine | 2.0.0                            |
+
+Times are mean wall-clock times, and memory is mean peak resident memory.
+Speedup is textlint's time divided by jafix's time.
 
 | Workflow | File                   |          jafix |         textlint | Speedup |
 | -------- | ---------------------- | -------------: | ---------------: | ------: |
@@ -65,39 +82,41 @@ Times are mean wall-clock times, memory is mean peak resident memory, and speedu
 | hook     | README.md (69KB)       |  10.5ms / 12MB |  490.7ms / 188MB |     47× |
 | hook     | blocks-1000.md (343KB) | 192.6ms / 92MB | 6319.1ms / 408MB |     33× |
 
-## What the results show {#interpretation}
+## Speedup trends {#interpretation}
 
-The gap was largest for the smallest file, at 3 KB.
-Starting Node.js and loading its rules took textlint about 150 ms per invocation.
-The same part took jafix about 2 ms.
-For files ranging from a few kilobytes to a few dozen kilobytes, the size an agent might edit in one operation, startup accounts for much of the runtime.
+The gap is largest for the 3 KB file.
+On each run, textlint spends about 150 ms starting Node.js and loading its rules.
+jafix spends about 2 ms on the same part.
+For the files of a few to a few dozen kilobytes that an agent writes in one edit, this fixed time accounts for most of the runtime.
 
-For small files, the hook workflow had the largest gap.
-textlint paid the startup cost twice and parsed the whole file both times.
-jafix applied fixes and collected findings in one process, and limited its fixes to the edited lines.
+For files of a few kilobytes, the hook workflow has the largest gap.
+textlint fixes and reports in separate runs, so it pays the startup time twice and parses the whole file twice.
+jafix fixes and then collects findings in one process, and it fixes only the lines changed by the edit.
 
-The hook speedup narrowed from 142× at 3 KB to 33× at 343 KB.
-The results between 34 KB and 343 KB showed no consistent size trend for `check` and `fix`, with speedups ranging from 14× to 54×.
-At 343 KB, jafix was still 23 to 50 times faster.
-The hook parses the entire document even for a small edit, so its runtime grows with file size.
+The hook speedup narrows as files grow, from 142× at 3 KB to 33× at 343 KB.
+Parsing the text comes to outweigh the fixed time.
+jafix parses the whole file even when few lines changed, so its hook time grows in proportion to file size.
+For `check` and `fix`, the speedup between 34 KB and 343 KB ranges from 14× to 54× and shows no trend with size.
 
-Memory use also differed.
-jafix used around 6 to 7 MB for files of a few kilobytes and up to 92 MB at 343 KB.
-textlint used at least 120 MB in every run.
+jafix used 6 to 7 MB for files of a few kilobytes and stayed within 92 MB at 343 KB.
+textlint used at least 120 MB for every file.
 
-These measurements cover runs after warmup.
-textlint takes longer on a cold run because the files have not yet been cached.
+All values come from runs after warmup.
+textlint's first run cannot use the disk cache, so it takes longer.
 
 ## Reproducing the benchmark {#reproduce}
 
-Run `scripts/bench-vs-textlint.sh` to print the results table.
-Pass a directory to save hyperfine's JSON results there.
+`scripts/bench-vs-textlint.sh` prints the same tables to standard output.
+Pass a directory to keep hyperfine's JSON results there.
 
 ```sh
 scripts/bench-vs-textlint.sh /tmp/bench-results
 ```
 
-Set `TEXTLINT_PREFIX` to the directory containing `<prefix>/bin/textlint` and `<prefix>/node_modules`.
-The script uses `mise where npm:textlint` by default.
-Install `textlint-rule-prh`, `textlint-rule-ja-space-between-half-and-full-width`, and `@textlint-rule/textlint-rule-pattern` into that prefix.
-The script also requires `hyperfine` and `jq`.
+| Requirement | How to provide it                                                                                                                             |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| textlint    | Set `TEXTLINT_PREFIX` to the prefix. If unset, the script uses the location from `mise where npm:textlint`                                    |
+| Rules       | Install `textlint-rule-prh`, `textlint-rule-ja-space-between-half-and-full-width`, and `@textlint-rule/textlint-rule-pattern` into the prefix |
+| Commands    | `hyperfine` and `jq`                                                                                                                          |
+
+The prefix is a directory that contains `<prefix>/bin/textlint` and `<prefix>/node_modules`.

@@ -46,6 +46,8 @@ impl Sandbox {
             .current_dir(self.dir.path())
             .env("HOME", self.home())
             .env("XDG_CONFIG_HOME", self.path("xdg"));
+        #[cfg(windows)]
+        command.env("USERPROFILE", self.home());
         command
     }
 

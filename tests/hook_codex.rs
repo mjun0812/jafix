@@ -50,6 +50,24 @@ fn run_update(content: &str, chunks: &str) -> (String, std::process::Output) {
 }
 
 #[test]
+fn project_exclusion_is_applied_before_locating_the_patch() {
+    let sandbox = Sandbox::new();
+    sandbox.write("project/.jafix.toml", "exclude = [\"generated/**\"]\n");
+    let excluded = sandbox.write("project/generated/a.md", "日本語 Rust\n");
+    let other = sandbox.write("other/b.md", "日本語 Rustです。\n");
+    let patch = "*** Begin Patch\n*** Update File: project/generated/a.md\n@@\n+対象行が見つからない\n*** Add File: other/b.md\n+日本語 Rustです。\n*** End Patch\n";
+    let output = sandbox.hook("codex", &apply_patch_input(&sandbox.path(""), patch));
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(read(&excluded), "日本語 Rust\n");
+    assert_eq!(read(&other), "日本語Rustです。\n");
+}
+
+#[test]
 fn update_with_a_path_relative_to_cwd_fixes_only_the_plus_lines() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("work/docs/t.md", "語 A\n語 B\n語 C\n");
@@ -258,23 +276,27 @@ fn reports_and_unlocated_chunks_are_both_written_with_exit_2() {
 
 #[test]
 fn apply_patch_reports_a_builtin_report_rule_on_the_plus_line() {
-    let (_, output) = run_update("語 A\nすごい！\n", "@@\n 語 A\n-語 x\n+すごい！\n");
+    let (_, output) = run_update(
+        "語 A\n「閉じない引用。\n",
+        "@@\n 語 A\n-語 x\n+「閉じない引用。\n",
+    );
     assert_eq!(output.status.code(), Some(2));
     let stderr = String::from_utf8(output.stderr).unwrap();
     assert!(
         stderr
             .lines()
-            .any(|line| line.ends_with("[no-exclamation-question-mark]")),
+            .any(|line| line.ends_with("[no-unmatched-pair]")),
         "{stderr}"
     );
 }
 
 #[test]
 fn apply_patch_reports_a_doubled_particle_only_on_the_added_line() {
-    let (_, output) = run_update(
-        "私は本は読む。\n\n彼は本は読む。\n",
-        "@@\n 私は本は読む。\n \n+彼は本は読む。\n",
-    );
+    let sandbox = Sandbox::new();
+    sandbox.write(".jafix.toml", "[builtin]\nno-doubled-joshi = true\n");
+    sandbox.write("t.md", "私は本は読む。\n\n彼は本は読む。\n");
+    let patch = update_patch("t.md", "@@\n 私は本は読む。\n \n+彼は本は読む。\n");
+    let output = sandbox.hook("codex", &apply_patch_input(&sandbox.path(""), &patch));
     assert_eq!(output.status.code(), Some(2));
     let stderr = String::from_utf8(output.stderr).unwrap();
     assert!(

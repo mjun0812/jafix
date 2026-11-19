@@ -39,6 +39,33 @@ fn edit_input(path: &Path, tool_response: Value) -> String {
 }
 
 #[test]
+fn edit_uses_the_targets_project_settings_and_global_filters() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[filters]\ncomments = true\n");
+    sandbox.write(
+        "project/.jafix.toml",
+        "[builtin]\nfullwidth-paren = false\n",
+    );
+    let path = sandbox.write(
+        "project/docs/t.md",
+        "<!-- textlint-disable -->\n\n日本語 Rust（補足）\n",
+    );
+    let input = edit_input(&path, json!({"structuredPatch": [], "originalFile": null}));
+    let output = sandbox.hook("claude", &input);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(
+        read(&path),
+        "<!-- textlint-disable -->\n\n日本語 Rust（補足）\n"
+    );
+
+    let path = sandbox.write("project/docs/t.md", "日本語 Rust（補足）\n");
+    let input = edit_input(&path, json!({"structuredPatch": [], "originalFile": null}));
+    let output = sandbox.hook("claude", &input);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(read(&path), "日本語Rust（補足）\n");
+}
+
+#[test]
 fn edit_fixes_only_the_plus_lines_of_the_structured_patch() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("t.md", "前 A\n語 B\n後 C\n");
@@ -269,6 +296,7 @@ fn report_outside_the_changed_lines_is_not_returned() {
 #[test]
 fn edit_fixes_halfwidth_kana_only_on_the_changed_line() {
     let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nno-hankaku-kana = true\n");
     let path = sandbox.write("t.md", "最初はﾊﾝｶｸです。\n\n次もﾊﾝｶｸです。\n");
     let output = sandbox.hook("claude", &edit_changing_lines(&path, &[3]));
     assert_eq!(output.status.code(), Some(0));
@@ -290,6 +318,7 @@ fn write_long_sentence_file(sandbox: &Sandbox, third_line_prefix: &str) -> std::
 #[test]
 fn edit_reports_a_long_sentence_on_the_changed_line() {
     let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nsentence-length = true\n");
     let path = write_long_sentence_file(&sandbox, "");
     let output = sandbox.hook("claude", &edit_changing_lines(&path, &[3]));
     assert_eq!(output.status.code(), Some(2));
@@ -310,6 +339,7 @@ fn edit_reports_a_long_sentence_on_the_changed_line() {
 #[test]
 fn edit_does_not_report_a_long_sentence_outside_the_changed_line() {
     let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nsentence-length = true\n");
     let path = write_long_sentence_file(&sandbox, "");
     let output = sandbox.hook("claude", &edit_changing_lines(&path, &[1]));
     assert_eq!(output.status.code(), Some(0));
@@ -317,9 +347,8 @@ fn edit_does_not_report_a_long_sentence_outside_the_changed_line() {
 }
 
 #[test]
-fn edit_does_not_report_a_disabled_builtin_rule() {
+fn edit_does_not_report_a_long_sentence_by_default() {
     let sandbox = Sandbox::new();
-    sandbox.write_xdg_config("[builtin]\nsentence-length = false\n");
     let path = write_long_sentence_file(&sandbox, "");
     let output = sandbox.hook("claude", &edit_changing_lines(&path, &[3]));
     assert_eq!(output.status.code(), Some(0));
@@ -329,7 +358,9 @@ fn edit_does_not_report_a_disabled_builtin_rule() {
 #[test]
 fn edit_of_a_report_excluded_file_fixes_but_does_not_report_builtin_rules() {
     let sandbox = Sandbox::new();
-    sandbox.write_xdg_config("report-exclude = [\"**/t.md\"]\n");
+    sandbox.write_xdg_config(
+        "report-exclude = [\"**/t.md\"]\n[builtin]\nno-hankaku-kana = true\nsentence-length = true\n",
+    );
     let path = write_long_sentence_file(&sandbox, "ﾊﾝｶｸと");
     let output = sandbox.hook("claude", &edit_changing_lines(&path, &[3]));
     assert_eq!(output.status.code(), Some(0));
@@ -343,6 +374,7 @@ fn edit_of_a_report_excluded_file_fixes_but_does_not_report_builtin_rules() {
 #[test]
 fn edit_reports_a_doubled_particle_only_on_the_changed_line() {
     let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nno-doubled-joshi = true\n");
     let path = sandbox.write("t.md", "私は本は読む。\n\n彼は本は読む。\n");
     let output = sandbox.hook("claude", &edit_changing_lines(&path, &[3]));
     assert_eq!(output.status.code(), Some(2));

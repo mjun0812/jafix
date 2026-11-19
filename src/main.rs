@@ -16,9 +16,10 @@ use std::process::ExitCode;
 use clap::{Parser, Subcommand, ValueEnum};
 
 use crate::apply::{LineIndex, TargetLines};
+use crate::config::Configs;
 use crate::filter::{Filters, Ignored};
 use crate::rules::builtin::Builtin;
-use crate::rules::general::{Links, UrlChecker};
+use crate::rules::general::Links;
 
 /// AI agentが書いた日本語の文章を直す
 #[derive(Parser)]
@@ -54,23 +55,25 @@ fn main() -> ExitCode {
 
 /// 箇所が1件以上あればexit 1、読み書きや設定の失敗があればexit 2
 fn run_check(files: &[PathBuf]) -> ExitCode {
-    let config = match config::load() {
-        Ok(config) => config,
+    let mut configs = match Configs::load() {
+        Ok(configs) => configs,
         Err(e) => {
             eprintln!("jafix: {e}");
             return ExitCode::from(2);
         }
     };
-    // 外部のURLの確認の結果は、すべてのファイルで共有する
-    let urls = config
-        .builtin()
-        .no_dead_link
-        .is_some()
-        .then(UrlChecker::default);
     let mut stdout = std::io::stdout().lock();
     let mut failed = false;
     let mut found = false;
     for path in files {
+        let config = match configs.for_path(path) {
+            Ok(config) => config,
+            Err(e) => {
+                eprintln!("jafix: {e}");
+                failed = true;
+                continue;
+            }
+        };
         if config.is_excluded(path) {
             continue;
         }
@@ -105,7 +108,7 @@ fn run_check(files: &[PathBuf]) -> ExitCode {
                 &ignored,
                 &Links {
                     file: path,
-                    urls: urls.as_ref(),
+                    urls: config.url_checker(),
                 },
             )
         };
@@ -149,8 +152,8 @@ fn location_line(path: &Path, (line, column): (usize, usize), message: &str, rul
 
 /// 読み書きや設定の失敗があればexit 2
 fn run_fix(files: &[PathBuf]) -> ExitCode {
-    let config = match config::load() {
-        Ok(config) => config,
+    let mut configs = match Configs::load() {
+        Ok(configs) => configs,
         Err(e) => {
             eprintln!("jafix: {e}");
             return ExitCode::from(2);
@@ -158,6 +161,14 @@ fn run_fix(files: &[PathBuf]) -> ExitCode {
     };
     let mut failed = false;
     for path in files {
+        let config = match configs.for_path(path) {
+            Ok(config) => config,
+            Err(e) => {
+                eprintln!("jafix: {e}");
+                failed = true;
+                continue;
+            }
+        };
         if config.is_excluded(path) {
             continue;
         }
@@ -181,16 +192,21 @@ fn run_hook(agent: Agent) -> ExitCode {
         eprintln!("jafix: 標準入力を読めない: {e}");
         return ExitCode::FAILURE;
     }
-    let config = match config::load() {
-        Ok(config) => config,
+    let mut configs = match Configs::load() {
+        Ok(configs) => configs,
         Err(e) => {
             eprintln!("jafix: {e}");
             return ExitCode::FAILURE;
         }
     };
+    let is_excluded = |path: &Path| {
+        configs
+            .for_path(path)
+            .map(|config| config.is_excluded(path))
+    };
     let targets = match agent {
-        Agent::Claude => hook::claude::targets(&input, &config),
-        Agent::Codex => hook::codex::targets(&input, &config),
+        Agent::Claude => hook::claude::targets(&input, is_excluded),
+        Agent::Codex => hook::codex::targets(&input, is_excluded),
     };
     let mut errors: Vec<String> = targets
         .errors
@@ -199,6 +215,13 @@ fn run_hook(agent: Agent) -> ExitCode {
         .collect();
     let mut reports = Vec::new();
     for target in &targets.files {
+        let config = match configs.for_path(&target.path) {
+            Ok(config) => config,
+            Err(e) => {
+                errors.push(format!("jafix: {e}"));
+                continue;
+            }
+        };
         let fixed = match fix_file(
             &target.path,
             &target.lines,

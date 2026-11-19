@@ -29,17 +29,16 @@ textlintから移した94ルールの内訳は次のとおりです。
 ルールIDとオプションの名前はtextlintと同じです。
 設定ファイルの [`[builtin]`](#builtin) で、有効にするルールとオプションを選べます。
 
-設定に何も書かなければ、jafix独自の3ルールと `textlint-rule-preset-ja-technical-writing` の23ルールが有効です。
-23ルールのオプションの既定値はpresetと同じです。
+初期状態で有効なルールは次の10個です。
 
-AIらしい書き方を指摘する7ルール、空白と字種を見る13ルール、[JTFスタイルガイドの37ルール](#jtfスタイルガイドの37ルール)は、複数のルールが同じ書き方に当たることがあるため、初期状態では無効です。
-たとえば、日本語と英数字の間の空白には、jafix独自の修正ルールに加えて、空白を調べるルールも当たります。
-使いたいルールのIDか[presetの名前](#presetの名前)を `[builtin]` に書いて有効にします。
+- 括弧と空白を整える `fullwidth-paren`、`space-between-ja-and-alnum`、`space-between-ja-and-paren`
+- 康熙部首を漢字に置き換える `no-kangxi-radicals`
+- 分離した濁点や半濁点、制御文字、ゼロ幅スペースを直す `no-nfd`、`no-invalid-control-character`、`no-zero-width-spaces`
+- 括弧や引用符の閉じ忘れ、同じ語の連続、日付と曜日の食い違いを指摘する `no-unmatched-pair`、`ja-no-successive-word`、`date-weekday-mismatch`
 
-[ひらがな・さ入れ・同義語の7ルール](#ひらがなさ入れ同義語の7ルール)、[言語によらない3ルール](#言語によらない3ルール)、[英語の4ルール](#英語の4ルール)も初期状態では無効です。
-これらのルールはグループごとのpresetがないため、使うルールのIDを個別に書きます。
-`prh` と `@textlint-rule/pattern` も初期状態では無効です。
-辞書かパターンが必要なので、[利用者の置き換え](#利用者の置き換え)のオプションを書いたときだけ有効になります。
+ほかのルールは、使うルールのIDか[presetの名前](#presetの名前)を `[builtin]` に書いて有効にします。
+`preset-ja-technical-writing = true` を指定すると、文の長さや文体を見るルールを含む23ルールが有効になります。
+`prh` と `@textlint-rule/pattern` を使うには、[利用者の置き換え](#利用者の置き換え)のオプションに辞書かパターンを書きます。
 
 `textlint-rule-preset-ja-technical-writing` のうち、`max-ten` から `ja-no-redundant-expression` までの11ルールは、形態素解析で文を語(トークン)に分けて判定します。
 `no-ai-colon-continuation`、`no-ai-words`、`no-short-topic-comma` と、ひらがな、さ入れ、同義語の7ルールも形態素解析を使います。
@@ -94,7 +93,7 @@ AIらしい書き方を指摘する7ルール、空白と字種を見る13ルー
 | `ja-space-around-link`                            | 修正と指摘(既定で無効) | リンクと日本語の文字の間の空白を、`ja-space-around-code` と同じく削除するか指摘する                                  | `before`・`after`(いずれもfalse)                                                                                                                                                                      |
 | `ja-space-around-strong`                          | 修正と指摘(既定で無効) | 太字(`**x**`)と日本語の文字の間の空白を、`ja-space-around-code` と同じく削除するか指摘する                           | `before`・`after`(いずれもfalse)                                                                                                                                                                      |
 | `no-mixed-zenkaku-and-hankaku-alphabet`           | 修正(既定で無効)       | アルファベットを、`prefer` に合わせて半角か全角に揃える                                                              | `prefer`("半角")                                                                                                                                                                                      |
-| `no-kangxi-radicals`                              | 修正(既定で無効)       | 康熙部首(U+2F00からU+2FD5)を、同じ形の漢字にする                                                                     | なし                                                                                                                                                                                                  |
+| `no-kangxi-radicals`                              | 修正              | 康熙部首(U+2F00からU+2FD5)を、同じ形の漢字にする                                                                     | なし                                                                                                                                                                                                  |
 | `1.1.1.本文`                                      | 指摘(既定で無効)       | 本文で敬体と常体を併用する。文書の全体で数え、少ないほうを指摘する                                                   | なし                                                                                                                                                                                                  |
 | `1.1.2.見出し`                                    | 指摘(既定で無効)       | 見出しの末尾に `。` を付ける                                                                                         | なし                                                                                                                                                                                                  |
 | `1.1.3.箇条書き`                                  | 指摘(既定で無効)       | リストの項目で、末尾の `。` の有無か、敬体と常体が揃っていない                                                       | なし                                                                                                                                                                                                  |
@@ -140,7 +139,7 @@ AIらしい書き方を指摘する7ルール、空白と字種を見る13ルー
 | `@textlint-ja/no-insert-dropping-sa`              | 指摘(既定で無効)       | さ入れ言葉(`辛さそう`)かさ抜き言葉(`良そう`)を使う                                                                   | なし                                                                                                                                                                                                  |
 | `@textlint-ja/no-synonyms`                        | 指摘(既定で無効)       | 文書の中で、同義語の別の表記(`サーバ` と `サーバー` など)を使い分けずに混ぜる                                        | `allows`・`preferWords`(いずれも[])、`allowAlphabet`・`allowNumber`・`allowLexeme`(いずれもtrue)                                                                                                      |
 | `no-todo`                                         | 指摘(既定で無効)       | `TODO:` か、リスト項目の未完了のタスクの記号 `[ ]` が残っている                                                      | なし                                                                                                                                                                                                  |
-| `date-weekday-mismatch`                           | 指摘(既定で無効)       | 日付(`2024年4月23日`・`2024-04-23`・`April 23, 2024` など)の直後の括弧の中の曜日が、日付と食い違う                   | `lang`(なし)、`useCurrentYearIfMissing`(false)、`currentYear`(実行した時点の年)                                                                                                                       |
+| `date-weekday-mismatch`                           | 指摘              | 日付(`2024年4月23日`・`2024-04-23`・`April 23, 2024` など)の直後の括弧の中の曜日が、日付と食い違う                   | `lang`(なし)、`useCurrentYearIfMissing`(false)、`currentYear`(実行した時点の年)                                                                                                                       |
 | `no-dead-link`                                    | 指摘(既定で無効)       | リンク先のファイルが無いか、URLが届かないかリダイレクトする。外部のURLは `jafix check` だけが確かめる                | `checkRelative`(true)、`ignore`・`preferGET`(いずれも[])、`retry`(3)、`concurrency`(8)、`maxRetryTime`・`maxRetryAfterTime`(いずれも10)など                                                           |
 | `terminology`                                     | 修正と指摘(既定で無効) | 英語の技術語・ブランド・略語の表記が辞書と違う。利用者の `terms` の項目の箇所は直し、組み込みの辞書の箇所は指摘する  | `terms`([])、`skip`(["BlockQuote"])、`defaultTerms`(true)、`exclude`([])                                                                                                                              |
 | `spelling`                                        | 指摘(既定で無効)       | 英単語がen_USのhunspellの辞書に無い。辞書の候補を文面に示す                                                          | `language`("en")、`skipPatterns`([])、`wordDefinitionRegexp`(`/\b[\w']+\b/g`)、`suggestCorrections`(true)                                                                                             |
@@ -327,7 +326,9 @@ dict:
 - `date-weekday-mismatch`: `textlint-rule-date-weekday-mismatch` 1.1.1。日付の書式は、このpackageが使う `chrono-node` 1.4.9から写しています
 - `no-dead-link`: `textlint-rule-no-dead-link` 6.2.3
 
-3つはどれも指摘ルールで、`jafix fix` とhookは書き換えません。textlintの `date-weekday-mismatch` は曜日を、`no-dead-link` はリダイレクト先のURLを置き換えて直せます。jafixは直さずに、置き換え後の曜日かURLを文面に入れて指摘します。設定を書かなければ3つとも無効で、3つを束ねるpresetの名前もありません。`[builtin]` にルールのIDのキーを書いて有効にします。
+3つはどれも指摘ルールで、`jafix fix` とhookは書き換えません。textlintの `date-weekday-mismatch` は曜日を、`no-dead-link` はリダイレクト先のURLを置き換えて直せます。jafixは直さずに、置き換え後の曜日かURLを文面に入れて指摘します。初期状態で有効なのは `date-weekday-mismatch` です。
+3つを束ねるpresetはありません。
+`no-todo` と `no-dead-link` を使う場合は、`[builtin]` にルールのIDを書きます。
 
 ```toml
 [builtin]
@@ -613,12 +614,15 @@ patterns = [
 
 ## 導入
 
-配布バイナリの対象はmacOS(Apple Silicon)とLinux(x86_64、aarch64)です。
-GitHub Releasesにバイナリがある場合は、[mise](https://mise.jdx.dev/) で次のコマンドを実行して導入できます。
+配布バイナリの対象はmacOS (Apple Silicon)、Linux (x86_64、aarch64)、Windows (x64)です。
+macOSとLinuxでは、GitHub Releasesにバイナリがあれば [mise](https://mise.jdx.dev/) で導入できます。
 
 ```sh
 mise use -g github:mjun0812/jafix
 ```
+
+Windowsでは [GitHub Releases](https://github.com/mjun0812/jafix/releases) から `jafix-x86_64-pc-windows-msvc.zip` を取得して展開します。
+`jafix.exe` を `PATH` が通ったディレクトリに置きます。
 
 ソースからビルドする場合は、リポジトリを取得したディレクトリで次のコマンドを実行します。
 
@@ -723,18 +727,30 @@ print -r -- "$input" | jafix hook claude
 
 ## 設定ファイル
 
-設定ファイルは `$XDG_CONFIG_HOME/jafix/config.toml` です。
+共通設定は `$XDG_CONFIG_HOME/jafix/config.toml` です。
 `XDG_CONFIG_HOME` が未設定なら `~/.config/jafix/config.toml` を読みます。
 
-設定ファイルがない場合は、[組み込みのルール](#組み込みのルール)に記載した既定の設定を使います。
-ファイルの除外は行わず、指摘や修正の箇所を外す2つのfilterも無効です。
+`jafix check`、`jafix fix`、hookは、対象ファイルの実体があるディレクトリから親へたどり、最初に見つかった `.jafix.toml` をプロジェクト設定として読みます。
+途中に `.git` があれば、そのディレクトリまで探します。
+一度の実行で複数のプロジェクトを扱う場合も、各ファイルに対応する設定を使います。
+
+設定は[組み込みの既定値](#組み込みのルール)、共通設定、プロジェクト設定の順に適用します。
+`[builtin]` と `[filters]` は、上書きするルールやfilterだけを書きます。
+ルールやfilterのオプションを指定した場合は、その項目の設定全体が置き換わり、省略したオプションはその項目の既定値になります。
+各ファイルの `[builtin]` では、presetを先に適用してから個別のルールを適用します。
+そのため、プロジェクトのpresetは共通設定に書いた個別のルールにも適用されます。
+辞書ファイルなどの相対パスは、その指定を書いた設定ファイルのディレクトリを基準にします。
+
+`exclude` と `report-exclude` は、プロジェクト設定で指定した項目だけを一覧ごと置き換えます。
+共通設定の一覧を空にするには `[]` を指定します。
+設定ファイルがどちらも無ければ、ファイルの除外は行わず、2つのfilterも無効です。
 
 ```toml
 exclude = ["~/.dotfiles/docs/bad-examples.md", "**/drafts/**"]
 report-exclude = ["**/notes/**"]
 
 [builtin]
-no-exclamation-question-mark = false
+no-unmatched-pair = false
 sentence-length = { max = 120, countBy = "codepoints" }
 
 [[builtin."@textlint-rule/pattern".patterns]]
@@ -759,7 +775,10 @@ pattern = "/[!！]/"
 
 値のうち、globの特殊文字(`*`、`?`、`[`、`{`)を含む最初のパスの要素より前の部分は、`~/` で始まればホームディレクトリに展開し、そのパスが存在すればsymlinkを解決した実体のパスに置き換えます。特殊文字が無ければ値の全体が対象です。この部分に含まれる特殊文字は、文字そのものとして扱います。そのため、symlinkのパスを書いた値もその実体に当たり、意図して規則に反する例を含むファイルを、symlink経由で渡されても外せます。
 
-値は `/`、`~/`、`**/` のどれかで始めます。globは絶対パスと比べるうえ、hookを実行する作業ディレクトリは一定しないためです。
+共通設定で指定するglobは絶対パスで書くか、`~/` または `**/` で始めます。
+Windowsの絶対パスは `C:/work/docs/**` のように書けます。
+プロジェクト設定では `generated/**` のような相対パターンも使えます。
+相対パターンは `.jafix.toml` のあるディレクトリを基準にします。
 
 ### `[builtin]`
 
@@ -775,7 +794,7 @@ pattern = "/[!！]/"
 
 ```toml
 [builtin]
-no-exclamation-question-mark = false
+no-unmatched-pair = false
 sentence-length = { max = 120, countBy = "codepoints" }
 max-kanji-continuous-len = { allow = ["情報処理推進機構"] }
 ja-no-redundant-expression = { dictOptions = { dict5 = { disabled = true } } }
@@ -861,7 +880,7 @@ IDは、jafixのルールのID(`sentence-length`)でも、textlintがpresetの�
 次のときは、設定ファイルが不正です。理由を標準エラーに書いて終え、終了コードは `jafix check` と `jafix fix` が2、hookが1です。`[builtin]` が不正なときは、理由にルールのIDかpresetの名前を含め、オプションの誤りでは、オプションの名前も含めます。
 
 - TOMLとして読めないか、`exclude`・`report-exclude`・`builtin`・`filters` 以外のキーがある。`rules` の表は、知らないキーなので不正です。利用者のパターンは `[builtin]` の `@textlint-rule/pattern` に書きます
-- `exclude` か `report-exclude` の値が、`/`・`~/`・`**/` のどれでも始まらないか、globとして読めない
+- `exclude` か `report-exclude` の値をglobとして読めない。または共通設定の値が絶対パスにも `~/`・`**/` から始まるパターンにも当たらない
 - `[builtin]` のキーが組み込みのルールのIDでもpresetの名前でもない
 - `[builtin]` のpresetの名前の値が、`true` か `false` でない
 - `[builtin]` のルールのIDの値が、`true`・`false`・表のどれでもない
@@ -1073,7 +1092,7 @@ JTFスタイルガイドの37ルールも、判定の条件を `textlint-rule-pr
 
 日本語版は `docs/` にMarkdownで書きます。
 日本語版をもとに英語版を書き、`docs/en/` に同じファイル名で置きます。
-トップページは [docs/index.md](docs/index.md)、ルール一覧は [docs/textlint-rules.md](docs/textlint-rules.md) です。
+トップページは [docs/index.md](docs/index.md)、ルール一覧は [docs/rules.md](docs/rules.md) です。
 ローカルで確認するには、Node.js 24以降を使い、リポジトリのルートで次を実行します。
 
 ```sh
@@ -1090,17 +1109,21 @@ npm run docs:dev
 ## リリース
 
 `Cargo.toml` と `Cargo.lock` のバージョンがそろったコミットを `main` にpushします。
-GitHub Actionsの **release** を手動で実行すると、3環境向けのtarballを各ジョブのartifactから確認できます。
+GitHub Actionsの **release** を手動で実行すると、4環境向けの配布物を各ジョブのartifactから確認できます。
 
 リリースするには、`Cargo.toml` のバージョンに `v` を付けたタグをpushします。
-たとえば、バージョンが `0.1.0` の場合は次のとおりです。
+利用者向けの変更点を `release-notes.md` に書きます。
+たとえば、バージョンが `0.0.1` の場合は次のとおりです。
 
 ```sh
-git tag -a v0.1.0 -m v0.1.0
-git push origin v0.1.0
+git tag -a v0.0.1 --cleanup=whitespace -F release-notes.md
+git push origin v0.0.1
 ```
 
-テストと梱包が通ると、Actionsがtarballと `checksums.txt` をGitHub Releasesに登録します。
+タグに取り込んだ内容がリリースノートの冒頭に載り、GitHubが変更履歴を後ろに加えます。
+自動生成する変更履歴の分類は [`.github/release.yml`](.github/release.yml) で設定します。
+
+テストと梱包が通ると、Actionsが `.tar.gz`、Windows向けのZIP、`checksums.txt` をGitHub Releasesに登録します。
 `v0.2.0-rc.1` のようなタグはプレリリースになります。
 
 ## ライセンス
@@ -1109,11 +1132,11 @@ git push origin v0.1.0
 
 組み込みのルールのうち、textlintと同じIDのものは、textlintのルールとライブラリの挙動に合わせて書き直したもので、正規表現や語の表、辞書の一部をそれらのソースから写しています。`prh` と `@textlint-rule/pattern` は、`textlint-rule-prh`・`prh`・`@textlint-rule/textlint-rule-pattern`・`@textlint/regexp-string-matcher` の判定の条件を写しています。binaryには、MIT Licenseのlinderaと、mecab-ipadicの条件で配られるIPADICの辞書と、CC BY-SAの条件で配られるJTF日本語標準スタイルガイドの4つの辞書(`textlint-rule-preset-jtf-style` の `dict/*.yml`)も入っています。Apache License 2.0で配られる `sudachi-synonyms-dictionary` 20.0.0とSudachiDictの同義語辞書から、`@textlint-ja/no-synonyms` の判定に使う項目だけを取り出したデータも入っています。`no-dead-link` が外部のURLに接続するときのTLSの証明書の検証のために、CDLA-Permissive-2.0で配られる `webpki-roots` 1.0.12の証明書の一覧も入っています。`common-misspellings` が使う誤綴りの一覧は、Wikipediaの「Wikipedia:Lists of common misspellings/For machines」のrevision 1199637275 (`https://en.wikipedia.org/w/index.php?title=Wikipedia:Lists_of_common_misspellings/For_machines&oldid=1199637275`)から作ったもので、CC BY-SA 3.0の条件で入っています。`spelling` が使うhunspellの辞書は、`dictionary-en` 4.0.0のen_USの辞書を変えずに入れたもので、SCOWLとIspellの条件(`(MIT AND BSD)`)で配られています。辞書を引く `spellbook` 0.4.2は、MPL-2.0で配られています。`terminology` の辞書と `write-good` の単語リストは、MIT Licenseのpackageから写しています。`spelling` と `common-misspellings` のtextlintのルールはGPLなので、コードを写さず、判定の条件から書き直しました。それぞれの名前・version・著作権表示と、MIT License・mecab-ipadic・CC BY-SA・Apache License 2.0・SCOWLとIspellの条件は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にあります。`webpki-roots` と `spellbook` はcrateなので、CDLA-Permissive-2.0とMPL-2.0の全文は次の段落の `CRATE_LICENSES.txt` にあります。`THIRD_PARTY_NOTICES.md` には、その2つのcrateを含める理由と、MPL-2.0が求める `spellbook` のソースの入手先を書いています。
 
-GitHub Releasesのtarballには `CRATE_LICENSES.txt` が入っています。
+GitHub Releasesの配布物には `CRATE_LICENSES.txt` が入っています。
 バイナリにリンクするすべてのRustのcrateについて、名前、バージョン、ライセンスの種類と文面を記載したファイルです。
 `scripts/package.sh` は梱包時に [cargo-about](https://github.com/EmbarkStudios/cargo-about) を使い、`Cargo.lock` と梱包対象の依存関係からこのファイルを生成します。
 `CRATE_LICENSES.txt` はリポジトリには置いていません。
-tarballにはバイナリとともに `LICENSE-MIT`、`LICENSE-APACHE`、`THIRD_PARTY_NOTICES.md`、`CRATE_LICENSES.txt` を入れています。
+配布物にはバイナリとともに `LICENSE-MIT`、`LICENSE-APACHE`、`THIRD_PARTY_NOTICES.md`、`CRATE_LICENSES.txt` を入れています。
 
 依存関係を変えたときは、`cargo about generate --frozen --fail about.hbs -o /dev/null` で、`about.toml` の `accepted` にないライセンスのcrateが入っていないかを確かめられます。
 MPL-2.0とCDLA-Permissive-2.0を許可するのは、`THIRD_PARTY_NOTICES.md` に入手先や説明を書いたcrateだけです。

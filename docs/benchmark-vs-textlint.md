@@ -1,10 +1,12 @@
 # textlintとの速度の比較 {#benchmark}
 
-jafixとtextlintに同じルールを設定して、`check`・`fix`・hookの3つの場面で速さを比べた。jafixは、どの場面とファイルの大きさでも、textlintより14〜142倍速く終わり、メモリも3分の1以下で済んだ。計測は2026-11-15に `scripts/bench-vs-textlint.sh` で行った。
+同じルールを設定したtextlintと比べて、jafixは14〜142倍速く終わり、メモリは3分の1以下でした。
+`check`、`fix`、hookの3つの場面を、3KBから343KBの4つのファイルで計りました。
+計測日は2026-11-15で、`scripts/bench-vs-textlint.sh` を使いました。
 
 ## 比べ方 {#method}
 
-両方の設定に、同じ働きの5つの規則を入れた。jafixは、組み込みの修正ルール3つと、`@textlint-rule/pattern` の2つの要素である。textlintでは、同じ働きを次のルールで書いた。
+両方に、同じ働きの5つのルールを設定しました。
 
 | 働き                               | jafix                        | textlint                                                |
 | ---------------------------------- | ---------------------------- | ------------------------------------------------------- |
@@ -14,13 +16,34 @@ jafixとtextlintに同じルールを設定して、`check`・`fix`・hookの3�
 | 30語の単語リストを指摘する         | `@textlint-rule/pattern`     | `@textlint-rule/pattern`                                |
 | 漢字が6文字以上続く箇所を指摘する  | `@textlint-rule/pattern`     | `@textlint-rule/pattern`                                |
 
-場面は3つである。`check` はファイルを変えずに指摘を出し、`fix` はファイル全体を直して書き戻す。hookは、Claude CodeのEditで50行目から20行を書き換えた入力を `jafix hook claude` に渡す。textlintにはhookの入力を読む機能が無く、直す行も絞れない。そこでtextlint側では、ファイル全体に `textlint --fix` をかけてから `textlint` で指摘を出す2回の実行を、hookの1回分とした。
+場面ごとに次のコマンドを計りました。
 
-入力は4つのファイルである。見出し・段落・リスト・強調・コードブロックを含み、どのルールにも当たる約350バイトの塊を、10回・100回・1000回並べたものを3つ作った。残りの1つは、実際の文書としてのjafixの `README.md` である。hyperfineで3回の予行の後に20回(343KBのファイルだけ10回)計り、その平均を使った。
+| 場面  | jafix               | textlint                           |
+| ----- | ------------------- | ---------------------------------- |
+| check | `jafix check`       | `textlint`                         |
+| fix   | `jafix fix`         | `textlint --fix`                   |
+| hook  | `jafix hook claude` | `textlint --fix` の後に `textlint` |
 
-## 同じ仕事をしているか {#work-performed}
+hookの入力は、Claude CodeのEditで50行目から20行を書き換えたものです。
+textlintはhookの入力を読めず、直す行も絞れません。
+そのため、ファイル全体への2回の実行をhookの1回分としました。
 
-ルールの働きごとに数えた件数は、ほぼ一致した。3KBのファイルでは、全角括弧と、括弧の間の空白と2つの指摘ルールの件数が一致した。差が出たのは日本語と英数字の間の空白だけで、jafixのほうが30件多い。
+入力は次の4つのファイルです。
+
+| ファイル         | 大きさ | 内容                            |
+| ---------------- | ------ | ------------------------------- |
+| `blocks-10.md`   | 3KB    | 約350バイトの塊を10回並べたもの |
+| `blocks-100.md`  | 34KB   | 同じ塊を100回並べたもの         |
+| `blocks-1000.md` | 343KB  | 同じ塊を1000回並べたもの        |
+| `README.md`      | 69KB   | jafixのREADME                   |
+
+塊は見出し、段落、リスト、強調、コードブロックを含み、どのルールにも当たります。
+hyperfineで3回の予行の後に20回(343KBのファイルは10回)計り、平均を使いました。
+
+## 件数の一致 {#work-performed}
+
+ルールが当たった件数はほぼ一致しました。
+3KBのファイルで差が出たのは日本語と英数字の間の空白だけで、jafixのほうが30件多く当たります。
 
 | 働き                                      | jafix | textlint |
 | ----------------------------------------- | ----: | -------: |
@@ -28,11 +51,20 @@ jafixとtextlintに同じルールを設定して、`check`・`fix`・hookの3�
 | 日本語と英数字の間の空白                  |   120 |       90 |
 | 日本語と括弧の間の空白と、2つの指摘ルール |    70 |       70 |
 
-この差は、textlintの `ja-space-between-half-and-full-width` が見逃す空白による。長音符の後の `サーバー API` の空白と、漢字の後の `系 38` の空白を、textlintは削除しない。jafixのほうが多く仕事をしているので、この差は比べる上でjafixに不利に働く。
+textlintの `ja-space-between-half-and-full-width` は、長音符の後(`サーバー API`)と漢字の後(`系 38`)の空白を削除しません。
+jafixは処理する箇所が多いので、この差は比較でjafixに不利に働きます。
 
 ## 結果 {#results}
 
-計測の環境は、Apple M5 (macOS、arm64)である。jafix 0.1.0 (00b728a)のrelease buildと、textlint v15.8.0 (Node.js v26.13.0)を、hyperfine 2.0.0で計った。時間は壁時計時間の平均、メモリは最大常駐メモリの平均である。倍率は、textlintの時間をjafixの時間で割ったものである。
+| 項目      | 値                             |
+| --------- | ------------------------------ |
+| マシン    | Apple M5 (macOS、arm64)        |
+| jafix     | 0.1.0 (00b728a)のrelease build |
+| textlint  | v15.8.0 (Node.js v26.13.0)     |
+| hyperfine | 2.0.0                          |
+
+時間は壁時計時間の平均、メモリは最大常駐メモリの平均です。
+倍率は、textlintの時間をjafixの時間で割った値です。
 
 | 場面  | ファイル               |          jafix |         textlint |  倍率 |
 | ----- | ---------------------- | -------------: | ---------------: | ----: |
@@ -49,24 +81,41 @@ jafixとtextlintに同じルールを設定して、`check`・`fix`・hookの3�
 | hook  | README.md (69KB)       |  10.5ms / 12MB |  490.7ms / 188MB |  47倍 |
 | hook  | blocks-1000.md (343KB) | 192.6ms / 92MB | 6319.1ms / 408MB |  33倍 |
 
-## 読み取れること {#interpretation}
+## 倍率の傾向 {#interpretation}
 
-差が最も大きいのは、3KBの小さいファイルである。textlintは、1回の実行ごとにNode.jsの起動とルールの読み込みで約150msかかる。jafixは同じ部分が約2msで終わる。agentの1回の編集で書くような数KBから数十KBのファイルでは、この固定の時間が実行時間の大半を占める。
+差が最も大きいのは3KBのファイルです。
+textlintは1回の実行ごとに、Node.jsの起動とルールの読み込みで約150msかかります。
+jafixは同じ部分が約2msで終わります。
+agentが1回の編集で書く数KBから数十KBのファイルでは、この固定の時間が実行時間の大半を占めます。
 
-数KBのファイルでhookの場面の差が最も開くのは、textlintが直す処理と指摘する処理を別々に実行するからである。textlintは起動の固定の時間を2回払い、ファイル全体を2回解析する。jafixは1つのプロセスで直してから指摘を集め、直すのも今回変えた行だけである。
+数KBのファイルでは、hookの差が最も開きます。
+textlintは修正と指摘を別々に実行するので、起動の時間を2回払い、ファイル全体を2回解析します。
+jafixは1つのプロセスで修正してから指摘を集め、修正するのも今回変えた行だけです。
 
-ファイルが大きくなると、hookの倍率は縮み、3KBの142倍が343KBの33倍になる。本文を解析する時間が固定の時間より大きくなるためである。checkとfixの倍率は、34KBから343KBの間では14〜54倍の範囲で、大きさに従った変化は見えない。343KBのファイルでも、jafixは23〜50倍速い。ただしjafixは、変えた行が少なくてもファイル全体を解析するので、hookの時間はファイルの大きさに比例して伸びる。
+ファイルが大きくなるとhookの倍率は縮み、3KBの142倍が343KBでは33倍になります。
+本文を解析する時間が固定の時間より大きくなるためです。
+jafixは変えた行が少なくてもファイル全体を解析するので、hookの時間はファイルの大きさに比例して伸びます。
+checkとfixの倍率は34KBから343KBの間で14〜54倍で、大きさに従った変化は見えません。
 
-メモリの差も大きい。jafixは数KBのファイルで6〜7MB、343KBでも92MBに収まった。textlintは、どのファイルでも120MB以上を使った。
+メモリは、jafixが数KBのファイルで6〜7MB、343KBでも92MBに収まりました。
+textlintはどのファイルでも120MB以上を使いました。
 
-この計測は、予行の後の2回目以降の実行の時間である。textlintの初回の実行は、ディスクのキャッシュを使えないので、さらに遅くなる。
+どの値も予行の後の実行を計ったものです。
+textlintの初回の実行はディスクのキャッシュを使えないので、さらに遅くなります。
 
 ## 測り直す {#reproduce}
 
-`scripts/bench-vs-textlint.sh` を実行すると、同じ表を標準出力に出す。引数にディレクトリを渡すと、hyperfineの結果のJSONをそこへ残す。
+`scripts/bench-vs-textlint.sh` は同じ表を標準出力に出します。
+引数にディレクトリを渡すと、hyperfineの結果のJSONをそこに残します。
 
 ```sh
 scripts/bench-vs-textlint.sh /tmp/bench-results
 ```
 
-textlintは、本体とルールを入れたprefix (`<prefix>/bin/textlint` と `<prefix>/node_modules`)を、環境変数 `TEXTLINT_PREFIX` で渡す。未設定なら `mise where npm:textlint` の場所を使う。prefixには、`textlint-rule-prh`、`textlint-rule-ja-space-between-half-and-full-width`、`@textlint-rule/textlint-rule-pattern` を入れておく。ほかに、`hyperfine` と `jq` が要る。
+| 必要なもの | 渡し方                                                                                                                              |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| textlint   | 環境変数 `TEXTLINT_PREFIX` にprefixを指定する。未設定なら `mise where npm:textlint` の場所を使う                                    |
+| ルール     | prefixに `textlint-rule-prh`、`textlint-rule-ja-space-between-half-and-full-width`、`@textlint-rule/textlint-rule-pattern` を入れる |
+| コマンド   | `hyperfine` と `jq`                                                                                                                 |
+
+prefixは `<prefix>/bin/textlint` と `<prefix>/node_modules` を持つディレクトリです。
