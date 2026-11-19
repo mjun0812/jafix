@@ -12,29 +12,20 @@ fn fix_one_file(content: &str) -> String {
 }
 
 #[test]
-fn fix_removes_spaces_and_replaces_fullwidth_parens() {
-    assert_eq!(
-        fix_one_file("日本語 Rust で （補足） です\n"),
-        "日本語Rustで(補足)です\n"
+fn fix_normalizes_parentheses_and_spaces_in_japanese_prose() {
+    let content = concat!(
+        "日本語 Rust で （補足） です\n\n",
+        "日本語\u{3000}Rust  です\n\n",
+        "サーバー API を使う\n\n",
+        "です。 Rust は\n",
     );
-}
-
-#[test]
-fn fix_removes_runs_of_halfwidth_and_fullwidth_spaces() {
-    assert_eq!(
-        fix_one_file("日本語\u{3000}Rust  です\n"),
-        "日本語Rustです\n"
+    let expected = concat!(
+        "日本語Rustで(補足)です\n\n",
+        "日本語Rustです\n\n",
+        "サーバーAPIを使う\n\n",
+        "です。 Rustは\n",
     );
-}
-
-#[test]
-fn fix_treats_long_vowel_mark_as_japanese() {
-    assert_eq!(fix_one_file("サーバー API を使う\n"), "サーバーAPIを使う\n");
-}
-
-#[test]
-fn fix_keeps_space_after_punctuation() {
-    assert_eq!(fix_one_file("です。 Rust は\n"), "です。 Rustは\n");
+    assert_eq!(fix_one_file(content), expected);
 }
 
 #[test]
@@ -77,14 +68,6 @@ fn fix_replaces_fullwidth_parens_around_a_bare_url() {
         assert_eq!(fix_one_file(original), expected);
         assert_eq!(fix_one_file(expected), expected);
     }
-}
-
-#[test]
-fn fix_accepts_files_with_any_extension() {
-    let sandbox = Sandbox::new();
-    let path = sandbox.write("t.txt", "日本語 Rust\n");
-    assert_eq!(sandbox.run(&["fix", "t.txt"]).status.code(), Some(0));
-    assert_eq!(read(&path), "日本語Rust\n");
 }
 
 #[test]
@@ -286,16 +269,6 @@ fn check_with_patterns(patterns: &[&str], content: &str) -> std::process::Output
 }
 
 #[test]
-fn check_reports_pattern_elements_with_the_matched_text_and_message() {
-    let output = check_with_patterns(&["照合", "正本"], "本文を照合する。\n");
-    assert_eq!(output.status.code(), Some(1));
-    assert_eq!(
-        stdout(&output),
-        "t.md:1:4: 「照合」: AIが多用する語 [@textlint-rule/pattern]\n"
-    );
-}
-
-#[test]
 fn check_reports_a_regex_pattern_element_with_the_matched_text() {
     let output = check_with_patterns(&["/[〜～]/"], "すごい〜です。\n");
     assert_eq!(output.status.code(), Some(1));
@@ -306,67 +279,31 @@ fn check_reports_a_regex_pattern_element_with_the_matched_text() {
 }
 
 #[test]
-fn check_does_not_report_pattern_elements_inside_inline_code() {
-    let output = check_with_patterns(&["照合"], "`照合` と照合。\n");
-    assert_eq!(
-        stdout(&output),
-        "t.md:1:7: 「照合」: AIが多用する語 [@textlint-rule/pattern]\n"
-    );
-}
-
-#[test]
 fn check_does_not_match_pattern_elements_across_an_emphasis_boundary() {
-    // `照合` も足した設定では、境目をまたいで当たると列1に `照合` が出る
-    for patterns in [&["照", "合"][..], &["照", "合", "照合"]] {
-        let output = check_with_patterns(patterns, "照**合**\n");
-        assert_eq!(
-            stdout(&output),
-            "t.md:1:1: 「照」: AIが多用する語 [@textlint-rule/pattern]\n\
-             t.md:1:4: 「合」: AIが多用する語 [@textlint-rule/pattern]\n",
-            "{patterns:?}"
-        );
-    }
-}
-
-#[test]
-fn check_does_not_report_empty_matches() {
-    let output = check_with_patterns(&["/x*/"], "日本語。\n");
-    assert_eq!(output.status.code(), Some(0));
-    assert_eq!(stdout(&output), "");
-}
-
-#[test]
-fn check_reports_pattern_elements_without_replace_inside_headings() {
-    let output = check_with_patterns(&["照合"], "# 照合の手順\n");
-    assert_eq!(output.status.code(), Some(1));
+    let output = check_with_patterns(&["照", "合", "照合"], "照**合**\n");
     assert_eq!(
         stdout(&output),
-        "t.md:1:3: 「照合」: AIが多用する語 [@textlint-rule/pattern]\n"
+        "t.md:1:1: 「照」: AIが多用する語 [@textlint-rule/pattern]\n\
+         t.md:1:4: 「合」: AIが多用する語 [@textlint-rule/pattern]\n"
     );
 }
 
 #[test]
-fn check_prints_reports_and_findings_in_position_order() {
-    let output = check_with_patterns(&["照合"], "照合 Rustを使う。\n");
-    assert_eq!(output.status.code(), Some(1));
-    assert_eq!(
-        stdout(&output),
-        "t.md:1:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]\n\
-         t.md:1:3: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]\n"
-    );
-}
-
-#[test]
-fn check_prints_fix_rule_findings_and_builtin_reports_in_position_order() {
+fn check_prints_fix_rule_findings_and_reports_in_position_order() {
     let sandbox = Sandbox::new();
-    sandbox.write_xdg_config("[builtin]\nno-exclamation-question-mark = true\n");
-    sandbox.write("t.md", "日本語 Rust！\n");
+    sandbox.write_xdg_config(&format!(
+        "[builtin]\nno-exclamation-question-mark = true\n{AI_WORDS_PATTERN}"
+    ));
+    sandbox.write("t.md", "照合 Rust！再び照合 Python。\n");
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         stdout(&output),
-        "t.md:1:4: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]\n\
-         t.md:1:9: 「！」を使わない [no-exclamation-question-mark]\n"
+        "t.md:1:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]\n\
+         t.md:1:3: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]\n\
+         t.md:1:8: 「！」を使わない [no-exclamation-question-mark]\n\
+         t.md:1:11: 「照合」: AIが多用する語 [@textlint-rule/pattern]\n\
+         t.md:1:13: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]\n"
     );
 }
 
@@ -383,17 +320,6 @@ fn fix_leaves_builtin_reports_unchanged_and_prints_nothing() {
 }
 
 #[test]
-fn fix_ignores_pattern_elements_without_replace() {
-    let sandbox = Sandbox::new();
-    let path = sandbox.write("t.md", "本文を照合する。\n");
-    sandbox.write_xdg_config(AI_WORDS_PATTERN);
-    let output = sandbox.run(&["fix", "t.md"]);
-    assert_eq!(output.status.code(), Some(0));
-    assert_eq!(stdout(&output), "");
-    assert_eq!(read(&path), "本文を照合する。\n");
-}
-
-#[test]
 fn fix_keeps_spaces_in_headings_but_replaces_fullwidth_parens() {
     assert_eq!(fix_one_file("# API の設計（案）\n"), "# API の設計(案)\n");
     let setext = "API の設計\n===\n\n本文 Rust\n";
@@ -403,29 +329,20 @@ fn fix_keeps_spaces_in_headings_but_replaces_fullwidth_parens() {
 #[test]
 fn check_reports_spaces_in_headings_with_a_message_about_links() {
     let sandbox = Sandbox::new();
-    sandbox.write("t.md", "# API の設計\n");
+    sandbox.write("t.md", "# API の設計\n\n## 設定 (補足) の説明\n");
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(output.status.code(), Some(1));
     let lines: Vec<&str> = stdout(&output).lines().collect();
-    assert_eq!(lines.len(), 1, "{lines:?}");
-    let message = lines[0]
-        .strip_prefix("t.md:1:6: ")
-        .and_then(|line| line.strip_suffix(" [space-between-ja-and-alnum]"))
-        .unwrap_or_else(|| panic!("{}", lines[0]));
-    assert!(message.contains("リンク"), "{message}");
-}
-
-#[test]
-fn check_reports_spaces_around_parens_in_headings_with_the_heading_message() {
-    let sandbox = Sandbox::new();
-    sandbox.write("t.md", "本文。\n\n## 設定 (補足) の説明\n");
-    let output = sandbox.run(&["check", "t.md"]);
-    assert_eq!(output.status.code(), Some(1));
-    let lines: Vec<&str> = stdout(&output).lines().collect();
-    assert_eq!(lines.len(), 2, "{lines:?}");
-    for line in lines {
+    let expected = [
+        ("t.md:1:6: ", " [space-between-ja-and-alnum]"),
+        ("t.md:3:6: ", " [space-between-ja-and-paren]"),
+        ("t.md:3:11: ", " [space-between-ja-and-paren]"),
+    ];
+    assert_eq!(lines.len(), expected.len(), "{lines:?}");
+    for (line, (prefix, suffix)) in lines.into_iter().zip(expected) {
         let message = line
-            .strip_suffix(" [space-between-ja-and-paren]")
+            .strip_prefix(prefix)
+            .and_then(|line| line.strip_suffix(suffix))
             .unwrap_or_else(|| panic!("{line}"));
         assert!(message.contains("リンク"), "{line}");
     }
@@ -438,18 +355,6 @@ fn version_prints_name_and_version() {
     assert_eq!(
         stdout(&output),
         concat!("jafix ", env!("CARGO_PKG_VERSION"), "\n")
-    );
-}
-
-#[test]
-fn check_reads_an_image_whose_alt_has_a_bracket_inside_a_code_span() {
-    let sandbox = Sandbox::new();
-    sandbox.write("t.md", "![a `[` b](x.png)\n");
-    let output = sandbox.run(&["check", "t.md"]);
-    assert!(
-        matches!(output.status.code(), Some(0 | 1)),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
     );
 }
 

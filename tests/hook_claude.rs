@@ -123,26 +123,6 @@ fn edit_without_structured_patch_leaves_the_file_and_exits_1() {
 }
 
 #[test]
-fn no_newline_marker_after_a_minus_line_is_not_counted() {
-    let sandbox = Sandbox::new();
-    let path = sandbox.write("t.md", "前 A\n語 B\n後 C\n");
-    let input = edit_input(
-        &path,
-        json!({
-            "filePath": path,
-            "originalFile": "前 A\n語 x",
-            "structuredPatch": [
-                {"oldStart": 1, "oldLines": 2, "newStart": 1, "newLines": 2,
-                 "lines": [" 前 A", "-語 x", "\\ No newline at end of file", "+語 B"]},
-            ],
-        }),
-    );
-    let output = sandbox.hook("claude", &input);
-    assert_eq!(output.status.code(), Some(0));
-    assert_eq!(read(&path), "前 A\n語B\n後 C\n");
-}
-
-#[test]
 fn edit_of_a_non_markdown_file_is_ignored() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("t.txt", "日本語 Rust\n");

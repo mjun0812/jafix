@@ -13,6 +13,7 @@ builtin = 'no-short-topic-comma = true'
 
 [[cases]]
 name = "basic-3chars"
+note = "textlint 15.8.0は `true` ではルールを有効にしない (`{}` か `maxLength` を渡すと有効になる)が、jafixは `no-short-topic-comma = true` で有効にし、`maxLength` は既定の5である"
 text = "今日は、晴れです。"
 findings = ["1:4"]
 messages = ["主題を3文字示しただけで読点を打っている"]
@@ -571,14 +572,6 @@ builtin = 'no-short-topic-comma = { maxLength = 2 }'
 text = "今日は、雨です。私は、晴れです。"
 findings = ["1:11"]
 messages = ["主題を2文字示しただけで読点を打っている"]
-
-[[cases]]
-name = "true-enables"
-note = "textlint 15.8.0は `true` ではルールを有効にしない (`{}` か `maxLength` を渡すと有効になる)が、jafixは `no-short-topic-comma = true` で有効にし、`maxLength` は既定の5である"
-builtin = 'no-short-topic-comma = true'
-text = "今日は、晴れです。"
-findings = ["1:4"]
-messages = ["主題を3文字示しただけで読点を打っている"]
 
 [[cases]]
 name = "surrogate-counts-chars"

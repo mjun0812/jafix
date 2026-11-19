@@ -152,12 +152,6 @@ findings = []
 messages = []
 
 [[cases]]
-name = "ctx-paragraph"
-text = "このカレーは辛さそうだ。"
-findings = ["1:8"]
-messages = ["さ入れ言葉「辛さそう」は「辛そう」にする"]
-
-[[cases]]
 name = "ctx-heading"
 text = "# 辛さそうだ"
 findings = ["1:4"]

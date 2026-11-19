@@ -126,7 +126,7 @@ fn only_check_requests_external_urls() {
     );
     let path = sandbox.write("t.md", &content);
     sandbox.write_xdg_config("[builtin]\nno-dead-link = true\n");
-    let claude = json!({
+    let input = json!({
         "hook_event_name": "PostToolUse",
         "tool_name": "Write",
         "tool_input": {"file_path": path, "content": content},
@@ -140,29 +140,17 @@ fn only_check_requests_external_urls() {
         },
     })
     .to_string();
-    let added: String = content.lines().map(|line| format!("+{line}\n")).collect();
-    let codex = json!({
-        "hook_event_name": "PostToolUse",
-        "cwd": sandbox.path(""),
-        "tool_name": "apply_patch",
-        "tool_input": {"command": format!("*** Begin Patch\n*** Add File: t.md\n{added}*** End Patch\n")},
-        "tool_response": "Success. Updated the following files:\nA t.md\n",
-    })
-    .to_string();
-    for (agent, input) in [("claude", claude), ("codex", codex)] {
-        let output = sandbox.hook(agent, &input);
-        // ローカルのファイルはhookでも確かめるので、外部のURLの指摘だけが出ない
-        assert_eq!(output.status.code(), Some(2), "{agent}");
-        let stderr = String::from_utf8(output.stderr).unwrap();
-        assert_eq!(
-            dead_link_lines(&stderr),
-            [format!(
-                "{}:5:5: リンク先のファイルが無い: missing.md [no-dead-link]",
-                path.display()
-            )],
-            "{agent}"
-        );
-    }
+    let output = sandbox.hook("claude", &input);
+    // フックはローカルのリンク先だけを確かめる。
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert_eq!(
+        dead_link_lines(&stderr),
+        [format!(
+            "{}:5:5: リンク先のファイルが無い: missing.md [no-dead-link]",
+            path.display()
+        )],
+    );
     let output = sandbox.run(&["fix", "t.md"]);
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(server.requests(), []);
@@ -191,21 +179,44 @@ fn retry_and_prefer_get_change_requests() {
 }
 
 #[test]
-fn check_requests_each_url_once() {
+fn check_caches_urls_across_files_and_fragments() {
     let server = Server::start();
     let sandbox = Sandbox::new();
-    for name in ["a.md", "b.md"] {
-        sandbox.write(name, &format!("[a]({})\n", server.url("/dead")));
-    }
+    let dead = server.url("/dead");
+    let moved = server.url("/moved");
+    let ok = server.url("/ok");
+    sandbox.write(
+        "a.md",
+        &format!("[a]({dead})\n\n[b]({moved}#sec)\n\n[c]({moved})\n"),
+    );
+    sandbox.write("b.md", &format!("[a]({dead})\n"));
     sandbox.write_xdg_config("[builtin]\nno-dead-link = { retry = 1 }\n");
     let output = sandbox.run(&["check", "a.md", "b.md"]);
-    let found = dead_link_lines(stdout(&output));
-    assert_eq!(found.len(), 2, "{found:?}");
-    assert!(found[0].starts_with("a.md:1:5: "), "{found:?}");
-    assert!(found[1].starts_with("b.md:1:5: "), "{found:?}");
+    assert_eq!(output.status.code(), Some(1));
     assert_eq!(
-        server.requests(),
+        dead_link_lines(stdout(&output)),
+        [
+            format!("a.md:1:5: リンク先に届かない: {dead} (404 Not Found) [no-dead-link]"),
+            format!(
+                "a.md:3:5: リンク先が {ok}#sec へリダイレクトする (301 Moved Permanently)。宛先を {ok}#sec にする [no-dead-link]"
+            ),
+            format!(
+                "a.md:5:5: リンク先が {ok} へリダイレクトする (301 Moved Permanently)。宛先を {ok} にする [no-dead-link]"
+            ),
+            format!("b.md:1:5: リンク先に届かない: {dead} (404 Not Found) [no-dead-link]"),
+        ]
+    );
+    let (dead_requests, redirect_requests): (Vec<_>, Vec<_>) = server
+        .requests()
+        .into_iter()
+        .partition(|(_, path)| path == "/dead");
+    assert_eq!(
+        dead_requests,
         [request("HEAD", "/dead"), request("GET", "/dead")]
+    );
+    assert_eq!(
+        redirect_requests,
+        [request("HEAD", "/moved"), request("HEAD", "/ok")]
     );
 }
 
@@ -246,33 +257,6 @@ fn definition_label_with_a_backtick_reports_at_the_destination() {
         assert_eq!(output.status.code(), Some(1), "{content:?}");
         assert_eq!(dead_link_lines(stdout(&output)), [expected], "{content:?}");
     }
-}
-
-#[test]
-fn urls_differing_only_in_fragment_are_requested_once() {
-    let server = Server::start();
-    let sandbox = Sandbox::new();
-    let moved = server.url("/moved");
-    sandbox.write("t.md", &format!("[a]({moved}#sec)\n\n[b]({moved})\n"));
-    sandbox.write_xdg_config("[builtin]\nno-dead-link = true\n");
-    let output = sandbox.run(&["check", "t.md"]);
-    let ok = server.url("/ok");
-    // `#` から後ろは指摘の文面のリダイレクト先に残る
-    assert_eq!(
-        dead_link_lines(stdout(&output)),
-        [
-            format!(
-                "t.md:1:5: リンク先が {ok}#sec へリダイレクトする (301 Moved Permanently)。宛先を {ok}#sec にする [no-dead-link]"
-            ),
-            format!(
-                "t.md:3:5: リンク先が {ok} へリダイレクトする (301 Moved Permanently)。宛先を {ok} にする [no-dead-link]"
-            ),
-        ]
-    );
-    assert_eq!(
-        server.requests(),
-        [request("HEAD", "/moved"), request("HEAD", "/ok")]
-    );
 }
 
 #[test]

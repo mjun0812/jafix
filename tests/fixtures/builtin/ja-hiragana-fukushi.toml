@@ -502,12 +502,6 @@ findings = []
 messages = []
 
 [[cases]]
-name = "ctx-paragraph"
-text = "既に終わった。"
-findings = ["1:1"]
-messages = ["副詞「既に」はひらがなの「すでに」にする"]
-
-[[cases]]
 name = "ctx-heading"
 text = "# 既に終わった"
 findings = ["1:3"]

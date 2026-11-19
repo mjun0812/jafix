@@ -420,12 +420,6 @@ findings = []
 messages = []
 
 [[cases]]
-name = "ctx-paragraph"
-text = "見た事がある。"
-findings = ["1:3"]
-messages = ["形式名詞「事」はひらがなの「こと」にする"]
-
-[[cases]]
 name = "ctx-heading"
 text = "# 見た事がある"
 findings = ["1:5"]

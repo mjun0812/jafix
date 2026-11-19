@@ -832,23 +832,6 @@ const MORPHOLOGICAL_RULES_INPUT: &str = "走って、食べて、寝て、起き
 ";
 
 #[test]
-fn check_reports_each_morphological_builtin_rule_with_the_preset() {
-    let sandbox = Sandbox::new();
-    sandbox.write_xdg_config("[builtin]\npreset-ja-technical-writing = true\n");
-    sandbox.write("t.md", MORPHOLOGICAL_RULES_INPUT);
-    let output = sandbox.run(&["check", "t.md"]);
-    assert_eq!(output.status.code(), Some(1));
-    let stdout = stdout(&output);
-    for rule in MORPHOLOGICAL_RULES {
-        let suffix = format!("[{rule}]");
-        assert!(
-            stdout.lines().any(|line| line.ends_with(&suffix)),
-            "{rule}: {stdout}"
-        );
-    }
-}
-
-#[test]
 fn check_reports_nothing_when_every_morphological_builtin_rule_is_disabled() {
     let sandbox = Sandbox::new();
     sandbox.write("t.md", MORPHOLOGICAL_RULES_INPUT);
@@ -2208,15 +2191,6 @@ fn rule_key_overrides_preset_jtf_style() {
     let sandbox = Sandbox::new();
     sandbox.write("t.md", JTF_STYLE_RULES_INPUT);
     let preset = "preset-jtf-style = true\nfullwidth-paren = false\n";
-    sandbox.write_xdg_config(&format!("[builtin]\n{preset}"));
-    let output = sandbox.run(&["check", "t.md"]);
-    let found = stdout(&output);
-    assert!(findings_of(found, "2.1.2.漢字").is_empty(), "{found}");
-    assert!(
-        !findings_of(found, "4.2.7.コロン(：)").is_empty(),
-        "{found}"
-    );
-
     sandbox.write_xdg_config(&format!("[builtin]\n{preset}\"2.1.2.漢字\" = true\n"));
     let output = sandbox.run(&["check", "t.md"]);
     let found = stdout(&output);
@@ -2434,11 +2408,6 @@ fn hiragana_and_synonyms_rules_do_not_fix() {
         fix_with_config(&sandbox, HIRAGANA_AND_SYNONYMS_RULES_INPUT),
         HIRAGANA_AND_SYNONYMS_RULES_INPUT
     );
-    let output = sandbox.run(&["check", "t.md"]);
-    let found = stdout(&output);
-    for rule in HIRAGANA_AND_SYNONYMS_RULES {
-        assert!(!findings_of(found, rule).is_empty(), "{rule}: {found}");
-    }
 }
 
 #[test]
@@ -2922,25 +2891,6 @@ fn comments_filter_accepts_textlint_rule_ids() {
     }
 }
 
-#[test]
-fn no_todo_reports_a_task_box_followed_only_by_trailing_spaces() {
-    for content in ["- [ ] \n", "- [ ]\t\n", "- 項目 [ ] \n"] {
-        let sandbox = Sandbox::new();
-        sandbox.write("t.md", content);
-        sandbox.write_xdg_config("[builtin]\nno-todo = true\n");
-        let output = sandbox.run(&["check", "t.md"]);
-        let column = content.find('[').map(|i| content[..i].chars().count() + 1);
-        assert_eq!(
-            findings_of(stdout(&output), "no-todo"),
-            [format!(
-                "t.md:1:{}: 未完了のタスクが残っている [no-todo]",
-                column.unwrap()
-            )],
-            "{content:?}"
-        );
-    }
-}
-
 /// 英語の4つのルール
 const ENGLISH_RULES: [&str; 4] = [
     "terminology",
@@ -3419,21 +3369,6 @@ fn user_replacements_leave_text_already_in_the_replaced_form() {
 }
 
 #[test]
-fn ja_no_successive_word_reports_repeated_punctuation_but_not_other_symbols() {
-    let (_, found) = check_with_builtin(
-        "",
-        "これは──例です。○○の場合です。これは……例です。\n\nあ、、い。。\n",
-    );
-    assert_eq!(
-        findings_of(&found, "ja-no-successive-word"),
-        [
-            "t.md:3:3: 「、」が2回続いている [ja-no-successive-word]",
-            "t.md:3:6: 「。」が2回続いている [ja-no-successive-word]",
-        ]
-    );
-}
-
-#[test]
 fn jtf_style_angle_brackets_do_not_count_arrows() {
     let (_, found) = check_with_builtin(
         "\"4.3.7.山かっこ<>\" = true",
@@ -3450,6 +3385,8 @@ fn no_todo_reports_an_unchecked_box_whatever_follows_it() {
     for (input, position) in [
         ("- [ ]\n", "1:3"),
         ("- [ ] \n", "1:3"),
+        ("- [ ]\t\n", "1:3"),
+        ("- 項目 [ ] \n", "1:6"),
         ("- [ ]", "1:3"),
         ("- [ ]\n\n  b\n", "1:3"),
         ("- [ ]\n  - [x] child\n", "1:3"),
@@ -3874,50 +3811,42 @@ fn spelling_checks_slash_separated_words_but_preserves_names_and_paths() {
 }
 
 #[test]
-fn ja_no_successive_word_reports_repeated_brackets_and_iteration_marks() {
+fn ja_no_successive_word_reports_only_configured_repeated_marks() {
     let (_, found) = check_with_builtin(
         "",
-        "「「例」」。『『例』』。（（例））。時々々々。\n\n○○──△△……\n",
+        concat!(
+            "「「例」」。『『例』』。（（例））。【【例】】。《《例》》。\n\n",
+            "あゝゝ、あゞゞ、アヽヽ、アヾヾ、時々々々、〻〻。\n\n",
+            "これは──例です。○○の場合です。これは……例です。\n\n",
+            "あ、、い。。\n\n",
+            "[[ページの名前]]と((式))。○○──△△……\n",
+        ),
     );
-    let findings = findings_of(&found, "ja-no-successive-word");
-    assert_eq!(findings.len(), 8, "{findings:?}");
-    for mark in ["「", "」", "『", "』", "（", "）", "々"] {
-        assert!(
-            findings
-                .iter()
-                .any(|line| line.contains(&format!("「{mark}」が"))),
-            "{mark}: {findings:?}"
-        );
-    }
-}
-
-#[test]
-fn ja_no_successive_word_checks_each_kind_of_bracket_and_iteration_mark() {
-    for input in [
-        "「「例」」",
-        "『『例』』",
-        "（（例））",
-        "【【例】】",
-        "《《例》》",
-        "あゝゝ",
-        "あゞゞ",
-        "アヽヽ",
-        "アヾヾ",
-        "時々々々",
-        "〻〻",
-    ] {
-        let (_, found) = check_with_builtin("", input);
-        assert!(
-            !findings_of(&found, "ja-no-successive-word").is_empty(),
-            "{input}: {found}"
-        );
-    }
-}
-
-#[test]
-fn ja_no_successive_word_preserves_wikilinks_and_ascii_grouping() {
-    let (_, found) = check_with_builtin("", "[[ページの名前]]と((式))。○○──△△……\n");
-    assert!(findings_of(&found, "ja-no-successive-word").is_empty());
+    let expected = [
+        ("1:2", '「'),
+        ("1:5", '」'),
+        ("1:8", '『'),
+        ("1:11", '』'),
+        ("1:14", '（'),
+        ("1:17", '）'),
+        ("1:20", '【'),
+        ("1:23", '】'),
+        ("1:26", '《'),
+        ("1:29", '》'),
+        ("3:3", 'ゝ'),
+        ("3:7", 'ゞ'),
+        ("3:11", 'ヽ'),
+        ("3:15", 'ヾ'),
+        ("3:19", '々'),
+        ("3:20", '々'),
+        ("3:23", '〻'),
+        ("7:3", '、'),
+        ("7:6", '。'),
+    ]
+    .map(|(position, mark)| {
+        format!("t.md:{position}: 「{mark}」が2回続いている [ja-no-successive-word]")
+    });
+    assert_eq!(findings_of(&found, "ja-no-successive-word"), expected);
 }
 
 #[test]

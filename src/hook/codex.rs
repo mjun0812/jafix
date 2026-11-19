@@ -400,6 +400,10 @@ mod tests {
         let file = "a\nB\nc\nx\ny\n";
         let patch = "@@\n+x\n@@\n a\n-b\n+B\n@@\n+y\n";
         assert_eq!(update_lines(file, patch), Ok(set(&[2, 4, 5])));
+        assert_eq!(
+            update_lines("a\nx\ny\n", "@@\n+x\n@@\n+y\n"),
+            Ok(set(&[2, 3]))
+        );
     }
 
     #[test]

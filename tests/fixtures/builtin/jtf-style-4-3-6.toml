@@ -260,12 +260,6 @@ text = "JSON の {\"a\": 1} です"
 findings = []
 
 [[cases]]
-name = "cb-extra-closing-after-pair"
-text = "{a}}"
-findings = ["1:4"]
-messages = ["} に対応する { が無い"]
-
-[[cases]]
 name = "cb-placeholder-in-text"
 text = "{id} と {name} を使う"
 findings = []

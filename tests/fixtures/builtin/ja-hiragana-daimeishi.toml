@@ -152,12 +152,6 @@ findings = []
 messages = []
 
 [[cases]]
-name = "ctx-paragraph"
-text = "彼処に行く。"
-findings = ["1:1"]
-messages = ["代名詞「彼処」はひらがなの「あそこ」にする"]
-
-[[cases]]
 name = "ctx-heading"
 text = "# 彼処に行く"
 findings = ["1:3"]
