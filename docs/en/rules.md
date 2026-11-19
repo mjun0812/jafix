@@ -1,6 +1,6 @@
 # Rules
 
-jafix has 99 built-in rules.
+jafix has 102 built-in rules.
 Switch them by rule ID or preset name under `[builtin]` in the [configuration](./configuration.md#rules).
 
 | Column  | Meaning                                                                                                               |
@@ -64,6 +64,16 @@ Set `no-short-topic-comma = true` separately to check commas after short topics.
 | `ai-tech-writing-guideline` | Report | -       | Flags patterns such as redundancy, passive voice, vague wording, and inconsistent spelling                |
 | `no-ai-words`               | Report | -       | Flags words common in AI writing by matching their base form and part of speech                           |
 | `no-short-topic-comma`      | Report | -       | Flags a Japanese comma immediately after は when it marks a short topic                                   |
+
+### Rules adapted from yomiyasu {#yomiyasu}
+
+Enable each of these rules separately. All three are off by default.
+
+| Rule ID                        | Action | Default | What it does                                                                          |
+| ------------------------------ | ------ | ------- | ------------------------------------------------------------------------------------- |
+| `yomiyasu-bold-not-rendered`   | Report | -       | Flags pairs of `**` that appear as literal text instead of rendering as bold          |
+| `yomiyasu-instruction-residue` | Report | -       | Flags writing instructions left in the prose and scope exclusions without a reference |
+| `yomiyasu-chat-response`       | Report | -       | Flags stock chat replies left in prose, such as `ご質問ありがとうございます`          |
 
 ## Spacing and character forms {#spacing}
 

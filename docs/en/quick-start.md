@@ -78,10 +78,34 @@ example.md:4:4: 「を」が2回続いている [ja-no-successive-word]
 ```
 
 You can pass several files.
+`check` and `fix` detect UTF-8 or Shift_JIS (including CP932) for each file.
 Each file is read as Markdown regardless of its extension.
+
+`fix` saves the file in its original encoding. If automatic detection fails, specify `--encoding utf-8` or `--encoding shift-jis`.
+
+Rules that analyze Japanese words and grammar run on paragraphs and headings that may contain Japanese. You can enable both Japanese and English rules for mixed-language text.
+
+## Proofread Git changes {#git-diff}
+
+In a Git repository, `--diff` checks or fixes lines added or changed since `HEAD`. jafix reads each whole file for Markdown context.
+
+```sh
+jafix check --diff
+jafix fix --diff
+```
+
+`fix --diff` writes to the working tree. Run `git add` to include the fixes in your commit.
+
+Use `check --staged` to check the staged changes. It reads the text to check from the Git index.
+
+```sh
+jafix check --staged
+```
+
+Pass file paths to limit the scope of any of these commands. Run `git add` to include untracked files in the diff.
 
 ## Next steps {#next}
 
 - [Configuration](./configuration.md): choose the rules to use
 - [Hooks](./hooks.md): run jafix on every edit by Claude Code or Codex
-- [Rules](./rules.md): look up the IDs and behavior of all 99 rules
+- [Rules](./rules.md): look up rule IDs and behavior

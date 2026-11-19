@@ -3,7 +3,7 @@ layout: home
 hero:
   name: jafix
   text: A CLI for proofreading Japanese text
-  tagline: Fixes brackets and spacing, and reports what it cannot fix mechanically.
+  tagline: Proofread text files in UTF-8 or Shift_JIS.
   actions:
     - theme: brand
       text: Quick start

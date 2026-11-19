@@ -2,17 +2,17 @@
 
 [READMEに戻る](README.md)
 
-jafixはAI agentが書いた日本語のMarkdownを校正するCLIです。
-本文の全角括弧や半角カナなどを直し、日本語と英数字や括弧の間の空白を削除します。
-機械的に直せない箇所は指摘します。
+jafixは日本語のテキストファイルを校正するCLIです。
+UTF-8とShift_JISのテキストファイルを受け付けます。拡張子を問わず、Markdownの構文に従って本文を判定します。
 
-使えるのは、全角括弧と空白を直す3つのルール、textlintの5つのpresetと16の単独ルールから移した規則、利用者が辞書やパターンで指定する置き換えです。
+全角括弧や空白を直すルールに加え、textlint由来のルールも使えます。辞書やパターンを設定すると、プロジェクト固有の表記に合わせて本文を校正できます。
 
 ## 組み込みのルール
 
-組み込みのルールは99あります。
+組み込みのルールは102個です。
 `fullwidth-paren`、`space-between-ja-and-alnum`、`space-between-ja-and-paren` の3つはjafix独自の修正ルールです。
 `prh` と `@textlint-rule/pattern` は、利用者が書いた辞書やパターンに従って置き換えや指摘をします。
+yomiyasuから移した3つの指摘ルールは、[ルール一覧](docs/rules.md#yomiyasu)にあります。
 
 textlintから移した94ルールの内訳は次のとおりです。
 
@@ -26,10 +26,19 @@ textlintから移した94ルールの内訳は次のとおりです。
 - 言語によらない3ルール(`no-todo`、`date-weekday-mismatch`、`no-dead-link`)
 - 英語の文章を見る4ルール(`terminology`、`spelling`、`common-misspellings`、`write-good`)
 
-ルールIDとオプションの名前はtextlintと同じです。
+textlint由来のルールでは、ルールIDとオプションの名前を揃えています。
 設定ファイルの [`[builtin]`](#builtin) で、有効にするルールとオプションを選べます。
 
-初期状態で有効なルールは次の10個です。
+yomiyasu由来のルールは、次のように1つずつ有効にします。`yomiyasu-chat-response` は、上流の `meta_filler` のうちチャット応答の2つの型を対象にします。
+
+```toml
+[builtin]
+yomiyasu-bold-not-rendered = true
+yomiyasu-instruction-residue = true
+yomiyasu-chat-response = true
+```
+
+設定ファイルがなくても、次の10ルールが有効です。
 
 - 括弧と空白を整える `fullwidth-paren`、`space-between-ja-and-alnum`、`space-between-ja-and-paren`
 - 康熙部首を漢字に置き換える `no-kangxi-radicals`
@@ -480,11 +489,23 @@ skipPatterns = [
 
 ## 利用者の置き換え
 
-`prh` と `@textlint-rule/pattern` は、利用者が書いた辞書やパターンで本文を直し、指摘するルールです。辞書とパターンはtextlintで使っているものをそのまま書けるので、textlintから移るときに書き直す必要がありません。prhのルールの箇所と、`replace` を持つ `@textlint-rule/pattern` の要素の箇所と、`terminology` の `terms` に利用者が書いた項目の箇所は修正ルールです。`jafix fix` とhookが直し、`jafix check` が箇所として出します。この置き換えを、以下では利用者の置き換えと呼びます。`terminology` の組み込みの辞書の項目の箇所は、利用者の置き換えではなく、指摘ルールの指摘です。`replace` を持たない要素の箇所は、利用者の置き換えではなく、指摘ルールの指摘です。
+設定に書いた辞書やパターンを使って本文を直す処理を「利用者の置き換え」と呼びます。次の設定が対象です。
+
+- `prh` の辞書
+- `@textlint-rule/pattern` の `replace` を指定した要素
+- `terminology` の `terms` に追加した項目
+
+`jafix fix` とhookは該当箇所を書き換え、`jafix check` は位置を表示します。`replace` を省いたパターンと、`terminology` の組み込み辞書に該当する箇所は指摘として扱います。
+
+`prh` の辞書や `@textlint-rule/pattern` のパターンは、textlintの書式で設定できます。
 
 ### `prh`
 
-`prh` のオプションは、辞書の出どころの `rulePaths`・`ruleContents` と、見る範囲を決める `check` で始まる5つです。`rulePaths` は空でない文字列の配列で、`ruleContents` は文字列の配列です。2つを合わせて辞書が1つ以上要るので、`prh = true` は不正です。`rulePaths` の相対パスは設定ファイルのあるディレクトリから解決し、`~/` で始まればホームディレクトリに展開します。`checkLink`・`checkBlockQuote`・`checkEmphasis` の初期値はfalseで、リンク・引用・強調(`*x*`)の中を見ません。`true` にするとその中も見ます。ただし `checkLink` が見るのはリンクの文字列で、本文でない裸のURLと自動リンクの文字列は見ません。`checkHeader` と `checkParagraph` の初期値はtrueで、`false` にすると見出しと段落の中を見ません。textlint-rule-prhの `checkCodeComment` と `debug` は、jafixがコードを見ないので使えません。
+辞書は `rulePaths` でファイルを参照するか、`ruleContents` に直接書きます。`rulePaths` は空でないパス文字列の配列、`ruleContents` は文字列の配列です。どちらかで辞書を1つ以上指定する必要があるため、`prh = true` は設定エラーになります。相対パスの基準は設定ファイルがあるディレクトリです。`~/` はホームディレクトリに展開します。
+
+`checkLink`、`checkBlockQuote`、`checkEmphasis` を `true` にすると、それぞれリンクの文字列、引用、強調(`*x*`)の中も確認します。この3つの既定値は `false` です。裸のURLと自動リンクの文字列は対象外です。
+
+`checkHeader` と `checkParagraph` の既定値は `true` です。`false` にすると、それぞれ見出しまたは段落が対象から外れます。textlint-rule-prhの `checkCodeComment` と `debug` には対応していません。
 
 ```toml
 [builtin.prh]
@@ -576,7 +597,7 @@ patterns = [
 
 ## 修正ルール
 
-修正ルールは、Markdownの本文にだけ適用します。`jafix fix` とhookが直し、`jafix check` は直す箇所を指摘として出します。
+修正ルールの対象はMarkdownの本文です。`jafix fix` とhookは当てはまる箇所を書き換え、`jafix check` は位置を表示します。
 
 `space-between-ja-and-alnum` と `space-between-ja-and-paren` の日本語の文字は、漢字・ひらがな・カタカナと長音符 `ー` です。句読点(`。` `、`)は日本語の文字に含めないので、`です。 Rust` の空白は残ります。空白は半角空白と全角空白で、続けて並んだものはまとめて削除します。textlintから移したルールの日本語の文字は、ルールごとにtextlintと同じ範囲です(「[空白と字種の13ルール](#空白と字種の13ルール)」「[JTFスタイルガイドの37ルール](#jtfスタイルガイドの37ルール)」)。
 
@@ -622,7 +643,7 @@ mise use -g github:mjun0812/jafix
 ```
 
 Windowsでは [GitHub Releases](https://github.com/mjun0812/jafix/releases) から `jafix-x86_64-pc-windows-msvc.zip` を取得して展開します。
-`jafix.exe` を `PATH` が通ったディレクトリに置きます。
+`PATH` で指定済みのディレクトリへ `jafix.exe` を移します。
 
 ソースからビルドする場合は、リポジトリを取得したディレクトリで次のコマンドを実行します。
 
@@ -630,7 +651,7 @@ Windowsでは [GitHub Releases](https://github.com/mjun0812/jafix/releases) か�
 cargo install --path .
 ```
 
-binaryには形態素解析のIPADICの辞書が入るので、大きさは約50MBです。初めてビルドするときは、辞書のソースを `https://Lindera.dev/` から取得するので、ネットワークにつながっている必要があります。
+形態素解析用のIPADIC辞書を含むため、バイナリの大きさは約50MBです。初回のビルドでは `https://Lindera.dev/` から辞書を取得するため、ネットワーク接続が必要です。
 
 ## 使い方
 
@@ -646,13 +667,21 @@ t.md:1:3: 日本語と英数字の間の空白を削除する [space-between-ja-
 t.md:2:1: 1文が100文字を超えている (101文字) [sentence-length]
 ```
 
-`jafix fix` は、ファイルの全行に修正ルールを適用して書き戻します。指摘ルールの指摘は出しません。
+`jafix fix` はファイルの全行を修正ルールの判定対象にし、修正した内容を書き戻します。指摘は `jafix check` で確認できます。
 
 ```sh
 jafix fix t.md
 ```
 
-どちらも、引数で渡されたファイルは拡張子を問わずMarkdownとして扱います。終了コードは次のとおりです。
+どちらのコマンドにも、テキストファイルを複数指定できます。どの拡張子でも、jafixはMarkdownの構文に従って本文を判定します。
+
+文字コードはファイルごとに判定します。UTF-8として読めなければ、Shift_JIS (CP932を含む)かどうかを推定します。Shift_JISの推定が成立し、再変換で元のバイト列を再現できる場合に読み込みます。文字コードが分かっている場合は、`--encoding utf-8` または `--encoding shift-jis` で指定できます。指定は引数の全ファイルに適用します。
+
+`fix` は元の文字コードで保存します。Shift_JISでは、変換結果を読み直して修正後の文字列と一致することを確認します。一致しなければ、元のファイルを保ったまま終了コード2を返します。
+
+NUL (U+0000)を含むファイルは、自動判定の対象外です。この文字を含むUTF-8ファイルを校正するときは、`--encoding utf-8` を指定します。
+
+形態素解析を使う日本語向けルールは、段落や見出しの本文にある文字をもとに適用します。日本語の可能性がある箇所には、利用者が有効にしたルールを適用します。漢字だけの短文や日英の混在も対象です。英語向けルールと、`no-ai-words` に追加した利用者の辞書は、設定に従って適用します。
 
 | 終了コード | `jafix check`                             | `jafix fix`                                    |
 | ---------- | ----------------------------------------- | ---------------------------------------------- |
@@ -660,12 +689,20 @@ jafix fix t.md
 | 1          | 修正ルールに当たる箇所か指摘が1件以上ある | -                                              |
 | 2          | ファイルを読めない、設定ファイルが不正    | ファイルを読み書きできない、設定ファイルが不正 |
 
+### Gitの差分
+
+`check --diff` と `fix --diff` は、`HEAD` と作業ツリーを比較します。ステージ済みと未ステージの変更の両方が対象です。`fix --diff` の修正先は作業ツリーです。
+
+`check --staged` は、`HEAD` とインデックスを比較します。校正対象の本文はインデックスから読み、設定ファイルとローカルのリンク先は作業ツリーで探します。最初のコミットより前に実行すると、ステージ済みのファイル全体を対象にします。
+
+各コマンドは、ファイルを指定すると対象を絞ります。未追跡のファイルと、削除した行は対象外です。対象ファイル全体を解析し、Gitの差分で追加または変更した行から始まる箇所を修正または報告します。Gitの実行や差分の読み取りに失敗した場合は終了コード2を返します。
+
 ## hookへの登録
 
 `jafix hook claude` と `jafix hook codex` は、PostToolUse hookの入力JSONを標準入力から読みます。
-修正するのは、agentが今回の編集で追加または変更したMarkdownファイル(`.md`)の対象行です。
-修正を書き戻した後の内容を調べ、対象行から始まる指摘を標準エラーでagentに返します。
-標準出力には何も書きません。
+校正の対象は、今回の編集で追加または変更した `.md` ファイルの行です。
+hookはUTF-8のファイルを扱います。
+修正後のファイルを調べ、対象行から始まる指摘を標準エラー出力でagentに返します。標準出力は使いません。
 
 Claude Codeでは `settings.json` の `PostToolUse` に登録します。
 EditとWriteの結果にある差分の `+` 行が対象です。
@@ -684,7 +721,9 @@ EditとWriteの結果にある差分の `+` 行が対象です。
 }
 ```
 
-Codexでは、`hooks.json` の `PostToolUse` に、matcherを `apply_patch` だけにして登録します。対象行は、apply_patchのpatchの `+` 行を編集後のファイルで位置づけたものです。`tool_name` が `apply_patch` 以外の入力は、`Bash` のcommandにpatchの文字列があっても読みません。Codexはshellから呼んだapply_patchを自分で当ててPostToolUseを出さないので、`Bash` の入力にあるpatchは当てられていないためです。
+Codexでは、`hooks.json` の `PostToolUse` に登録し、matcherを `apply_patch` にします。
+jafixはパッチの `+` 行に対応する位置を編集後のファイルで探し、対象行を決めます。
+`tool_name` が `apply_patch` の入力を処理します。`Bash` のコマンドにパッチが含まれていても対象外です。
 
 ```json
 {
@@ -699,14 +738,16 @@ Codexでは、`hooks.json` の `PostToolUse` に、matcherを `apply_patch` だ�
 }
 ```
 
-指摘が1件以上あると、hookは標準エラーに次の形で書いてexit 2で終えます。PostToolUseのexit 2の標準エラーは、Claude CodeとCodexのどちらでもagentへ届きます。1行目で、編集は適用済みであることと、指摘を直すか、誤検知なら直さずに進めてよいことを伝えます。Codexでは元のtoolの出力がこの文面に置き換わるためです。2行目からは、指摘を `jafix check` と同じ形で1件1行ずつ書きます。`<path>` は、hookが直したファイルのパスです。同じ実行で対象行を決められなかった理由や、ファイルを読み書きできなかった理由があれば、指摘の後に書きます。
+指摘があると、hookは標準エラー出力にメッセージを書き、終了コード2を返します。Claude CodeとCodexはいずれもこの出力をagentに届けます。Codexでは元のツール出力が置き換わるため、メッセージの1行目で、編集を適用済みであることと指摘への対応を伝えます。
+
+2行目からは、`jafix check` と同じ書式で指摘を1件ずつ並べます。同じ実行で対象行の判定やファイルの読み書きに失敗した場合は、指摘の後に理由を表示します。
 
 ```text
 jafix: 今回変えた行に指摘がある。編集は適用済み。指摘を直すか、誤検知なら直さずに進めてよい
 /path/to/t.md:2:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]
 ```
 
-指摘は今回変えた行の分しか出ないので、同じ行を編集し直さない限り、同じ指摘は繰り返し出ません。hookの終了コードは次のとおりです。終了コード1はagentの作業を止めず(Claude CodeとCodexのどちらも同じ)、利用者に失敗として見えます。
+同じ行をもう一度編集すると、その行が再び指摘の対象になります。終了コード1の場合は、Claude CodeとCodexのどちらでも利用者に失敗を表示し、agentは作業を続けます。
 
 | 終了コード | 意味                                                                                                                                     |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
@@ -716,7 +757,8 @@ jafix: 今回変えた行に指摘がある。編集は適用済み。指摘を�
 
 対象行を決められないのは、Claude Codeの入力に差分が無いときと、編集後のファイルでCodexのpatchのchunkの位置を1か所に決められないときです。そのファイルは変えずに、他のファイルは直します。
 
-jafixの対象行は、agentが書いた直後のファイルを前提にします。oxfmtなど同じファイルを書き換える他のformatterと並列に登録すると、行の位置がずれることもあります。その場合は、1つのhookのscriptの中でjafixを先に呼び、hookの入力JSONを標準入力でjafixへ渡してから、他のformatterを呼びます。
+jafixは編集直後のファイルを読み、校正の対象行を決めます。oxfmtなどが同じファイルを先に書き換えると、対象行の位置を誤って判定することがあります。
+別のformatterと併用する場合は、1つのスクリプトでjafixを先に実行します。入力JSONは標準入力から渡します。
 
 ```zsh
 #!/usr/bin/env zsh
@@ -727,18 +769,18 @@ print -r -- "$input" | jafix hook claude
 
 ## 設定ファイル
 
-共通設定は `$XDG_CONFIG_HOME/jafix/config.toml` です。
-`XDG_CONFIG_HOME` が未設定なら `~/.config/jafix/config.toml` を読みます。
+共通設定は `~/.config/jafix/config.toml` に書きます。
+環境変数 `XDG_CONFIG_HOME` に空でない値を設定している場合は、`$XDG_CONFIG_HOME/jafix/config.toml` を使います。
 
 `jafix check`、`jafix fix`、hookは、対象ファイルの実体があるディレクトリから親へたどり、最初に見つかった `.jafix.toml` をプロジェクト設定として読みます。
 途中に `.git` があれば、そのディレクトリまで探します。
 一度の実行で複数のプロジェクトを扱う場合も、各ファイルに対応する設定を使います。
 
 設定は[組み込みの既定値](#組み込みのルール)、共通設定、プロジェクト設定の順に適用します。
-`[builtin]` と `[filters]` は、上書きするルールやfilterだけを書きます。
-ルールやfilterのオプションを指定した場合は、その項目の設定全体が置き換わり、省略したオプションはその項目の既定値になります。
-各ファイルの `[builtin]` では、presetを先に適用してから個別のルールを適用します。
-そのため、プロジェクトのpresetは共通設定に書いた個別のルールにも適用されます。
+`[builtin]` と `[filters]` は、ルールやfilterごとに上書きします。
+オプションの表を指定すると、該当するルールやfilterの設定全体が置き換わります。新しい表で省いたオプションは既定値に戻ります。
+同じファイルの `[builtin]` では、presetを先に適用し、次に個別のルールを適用します。
+プロジェクト設定のpresetは、共通設定の個別のルールより優先されます。
 辞書ファイルなどの相対パスは、その指定を書いた設定ファイルのディレクトリを基準にします。
 
 `exclude` と `report-exclude` は、プロジェクト設定で指定した項目だけを一覧ごと置き換えます。
@@ -782,9 +824,8 @@ Windowsの絶対パスは `C:/work/docs/**` のように書けます。
 
 ### `[builtin]`
 
-`[builtin]` にルールIDを書くと個別に設定でき、preset名を書くと複数のルールをまとめて設定できます。
-ルールIDの値は下の表から選びます。
-個別の指定やpresetがないルールには、[組み込みのルール](#組み込みのルール)に記載した既定の設定が適用されます。
+`[builtin]` では、使うルールをIDで選べます。複数のルールをまとめて設定するときはpreset名を使います。
+個別の指定やpresetが適用されないルールには、[組み込みのルール](#組み込みのルール)に記載した既定値を使います。
 
 | 値                            | 意味                                                           |
 | ----------------------------- | -------------------------------------------------------------- |
@@ -857,9 +898,17 @@ comments = true
 allowlist = { allow = ["/TODO: 移行の後に消す/"], allowlistConfigPaths = ["allow.yml"] }
 ```
 
-filterは指摘を出さず、ほかのルールの指摘と修正の箇所から、外す範囲に入るものを除きます。除くのは、指摘ルールの指摘、組み込みの修正ルールの箇所、利用者の置き換えの箇所です。指摘は指摘の範囲で、修正の箇所は置き換える範囲で判定し、始まりと終わりがどちらも外す範囲の中か端にあれば除きます。除いた修正の箇所は、`jafix check` に出ず、`jafix fix` とhookが直しません。修正の箇所は重なりを解く前に除くので、除いた箇所が、同じ空白に当たるほかのルールの箇所を捨てさせることはありません。`jafix fix` とhookは、利用者の置き換えの前と、組み込みの修正ルールを当てる繰り返しの1回ごとに、その時点の内容から外す範囲を求め直します。外す範囲は文書の全体から求めるので、hookでも、対象行の外にあるコメントとパターンの一致で対象行の指摘を外せます。
+filterは、指定した範囲に収まる指摘と修正を除きます。修正には、組み込みの修正ルールと利用者の置き換えが含まれます。指摘は報告する範囲、修正は置き換える範囲で判定します。始点と終点がどちらも指定範囲の内側か境界にあれば除外します。
 
-`comments` は、HTMLのコメントで書いた無効化から有効化までを外します。コメントの中身が `enablingComment`(既定は `textlint-enable`)を含めば有効化で、含まずに `disablingComment`(既定は `textlint-disable`)を含めば無効化です。2つのオプションは空でない文字列で、大文字と小文字を区別します。外す範囲は、無効化のコメントの `<!--` から、それを閉じる有効化のコメントの `<!--` までです。閉じる有効化が無ければ、文書の末尾までです。コメントは、引用・リスト項目・表のセル・見出しの中でも読み、コードブロックとインラインコードの中では読みません。
+除外は、重なり合う修正箇所の優先順位を決める前に行います。そのため、修正箇所がfilterで除外されても、重なる別の候補は残ります。
+
+`jafix fix` とhookは、利用者の置き換えの前と、組み込みの修正ルールを適用するたびに、ファイルのその時点の内容から除外範囲を求め直します。判定には文書全体を使います。hookの対象行の外にあるコメントやパターンの一致によって、対象行の指摘を除くこともできます。
+
+`comments` は、HTMLコメントで囲んだ範囲を校正の対象から外します。開始位置は無効化コメントの `<!--`、終了位置は対応する有効化コメントの `<!--` です。有効化コメントを省くと、文書の末尾まで除外します。
+
+コメントに `enablingComment` の値があれば有効化します。既定値は `textlint-enable` です。これに該当せず、`disablingComment` の値があれば無効化します。既定値は `textlint-disable` です。どちらも空でない文字列で、大文字と小文字を区別します。
+
+引用、リスト項目、表のセル、見出しの中にあるコメントも読みます。コードブロックとインラインコードの中は対象外です。
 
 ```markdown
 <!-- textlint-disable no-todo, sentence-length -- 移行の後に消す -->
@@ -1090,37 +1139,37 @@ JTFスタイルガイドの37ルールも、判定の条件を `textlint-rule-pr
 
 ## ドキュメントサイト
 
-日本語版は `docs/` にMarkdownで書きます。
-日本語版をもとに英語版を書き、`docs/en/` に同じファイル名で置きます。
-トップページは [docs/index.md](docs/index.md)、ルール一覧は [docs/rules.md](docs/rules.md) です。
-ローカルで確認するには、Node.js 24以降を使い、リポジトリのルートで次を実行します。
+ドキュメントは `docs/` にある日本語版を基準にします。英語に翻訳したページは、同じファイル名で `docs/en/` に置きます。
+日本語版のトップページは [docs/index.md](docs/index.md)、ルール一覧は [docs/rules.md](docs/rules.md) です。
+
+ローカルでページを確認するには、Node.js 24以降を使い、リポジトリのルートで次のコマンドを実行します。
 
 ```sh
 npm ci
 npm run docs:dev
 ```
 
-公開用のHTMLは `npm run docs:build` で `docs/.vitepress/dist/` に生成します。
-ビルドしたページは `npm run docs:preview` で確認できます。
+`npm run docs:build` は、公開用のHTMLを `docs/.vitepress/dist/` に生成します。
+生成したページは `npm run docs:preview` で確認できます。
 
 公開するときは、GitHubリポジトリの **Settings → Pages → Build and deployment** を開き、**Source** に **GitHub Actions** を選びます。
 その後、**Actions → Deploy documentation** で公開するブランチを選んで **Run workflow** を実行します。
 
 ## リリース
 
-`Cargo.toml` と `Cargo.lock` のバージョンがそろったコミットを `main` にpushします。
-GitHub Actionsの **release** を手動で実行すると、4環境向けの配布物を各ジョブのartifactから確認できます。
+まず `Cargo.toml` と `Cargo.lock` のバージョンをそろえたコミットを `main` にpushします。
+配布物を事前に確認する場合は、GitHub Actionsの **release** を手動で実行します。4環境向けの配布物を、対応するジョブのartifactから取得できます。
 
-リリースするには、`Cargo.toml` のバージョンに `v` を付けたタグをpushします。
-利用者向けの変更点を `release-notes.md` に書きます。
-たとえば、バージョンが `0.0.1` の場合は次のとおりです。
+タグを作る前に、利用者向けの変更点を `release-notes.md` に書きます。
+`Cargo.toml` のバージョンの先頭に `v` を付けてタグを作り、pushするとリリースが始まります。
+次の例は、バージョン `0.0.1` をリリースする場合のコマンドです。
 
 ```sh
 git tag -a v0.0.1 --cleanup=whitespace -F release-notes.md
 git push origin v0.0.1
 ```
 
-タグに取り込んだ内容がリリースノートの冒頭に載り、GitHubが変更履歴を後ろに加えます。
+タグに取り込んだ変更点は、リリースノートの冒頭に表示されます。その後ろにGitHubが変更履歴を追加します。
 自動生成する変更履歴の分類は [`.github/release.yml`](.github/release.yml) で設定します。
 
 テストと梱包が通ると、Actionsが `.tar.gz`、Windows向けのZIP、`checksums.txt` をGitHub Releasesに登録します。

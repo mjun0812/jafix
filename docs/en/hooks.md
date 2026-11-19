@@ -3,6 +3,7 @@
 Registered as a PostToolUse hook, jafix runs each time the agent edits a Markdown file (`.md`).
 It fixes only the lines that the edit added or changed.
 Findings on those lines go back to the agent.
+Hooks process UTF-8 files.
 
 The hooks read the [same configuration files](./configuration.md) as `jafix check`.
 
