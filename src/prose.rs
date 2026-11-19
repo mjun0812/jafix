@@ -13,6 +13,8 @@ pub struct Document {
     /// 見出し。段落と同じ形で持つ。`footnote`・`list_item_index`・`next_block` は使わない。
     /// `paragraphs` には入らない
     pub headings: Vec<Paragraph>,
+    /// GFM表のセルの元のソース上の範囲。隣のセルにまたがる太字の記号は組にしない
+    pub table_cells: Vec<Range<usize>>,
     /// リスト項目。出現順に並び、入れ子の項目は親の項目の後に来る
     pub list_items: Vec<ListItem>,
     /// 文書のどこにあるかによらない、すべてのインラインコード・リンク・太字・強調・画像。出現順に並び、
@@ -207,6 +209,7 @@ pub fn parse(src: &str) -> Document {
         texts,
         paragraphs: blocks.paragraphs,
         headings: blocks.headings,
+        table_cells: blocks.table_cells,
         list_items: blocks.list_items,
         inline_nodes,
         comments,
@@ -522,6 +525,7 @@ fn collect(node: &Node, src: &str, context: Context, ranges: &mut Vec<Prose>) {
 struct Blocks {
     paragraphs: Vec<Paragraph>,
     headings: Vec<Paragraph>,
+    table_cells: Vec<Range<usize>>,
     list_items: Vec<ListItem>,
     /// これまでに見たリストの数
     lists: usize,
@@ -549,6 +553,10 @@ fn collect_paragraphs(
     let target = match node {
         Node::Paragraph(_) => &mut blocks.paragraphs,
         Node::Heading(_) => &mut blocks.headings,
+        Node::TableCell(_) => {
+            blocks.table_cells.push(node_range(node));
+            return;
+        }
         _ => {
             let mut children_ancestors = Ancestors {
                 blockquote: ancestors.blockquote || matches!(node, Node::Blockquote(_)),

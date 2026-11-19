@@ -88,6 +88,123 @@ fn fix_accepts_files_with_any_extension() {
 }
 
 #[test]
+fn check_and_fix_detect_shift_jis_and_fix_preserves_the_encoding_and_crlf() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.path("t.txt");
+    // CP932で書いた「表記を（確認）します。」
+    let original = b"\x95\x5c\x8b\x4c\x82\xf0\x81\x69\x8a\x6d\x94\x46\x81\x6a\x82\xb5\x82\xdc\x82\xb7\x81\x42\r\n";
+    std::fs::write(&path, original).unwrap();
+    let check = sandbox.run(&["check", "t.txt"]);
+    assert_eq!(check.status.code(), Some(1), "{check:?}");
+    assert_eq!(
+        stdout(&check),
+        "t.txt:1:4: 全角括弧を半角にする [fullwidth-paren]\n\
+         t.txt:1:7: 全角括弧を半角にする [fullwidth-paren]\n"
+    );
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    let utf8 = sandbox.write("u.txt", "表記を（確認）します。\n");
+    let fix = sandbox.run(&["fix", "t.txt", "u.txt"]);
+    assert_eq!(fix.status.code(), Some(0), "{fix:?}");
+    assert_eq!(
+        std::fs::read(&path).unwrap(),
+        b"\x95\x5c\x8b\x4c\x82\xf0(\x8a\x6d\x94\x46)\x82\xb5\x82\xdc\x82\xb7\x81\x42\r\n"
+    );
+    assert_eq!(read(&utf8), "表記を(確認)します。\n");
+}
+
+#[test]
+fn explicit_shift_jis_overrides_valid_utf8() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nno-hankaku-kana = true\n");
+    // UTF-8では「¶」、CP932では「ﾂｶ」になる。
+    std::fs::write(sandbox.path("t.txt"), b"\xc2\xb6\n").unwrap();
+    let auto = sandbox.run(&["check", "t.txt"]);
+    assert_eq!(auto.status.code(), Some(0), "{auto:?}");
+    assert_eq!(stdout(&auto), "");
+
+    let explicit = sandbox.run(&["check", "--encoding", "shift-jis", "t.txt"]);
+    assert_eq!(explicit.status.code(), Some(1), "{explicit:?}");
+    assert_eq!(
+        stdout(&explicit),
+        "t.txt:1:1: 半角カナを全角にする [no-hankaku-kana]\n"
+    );
+}
+
+#[test]
+fn fix_keeps_shift_jis_source_when_replacement_cannot_be_read_back() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.path("t.txt");
+    let original = b"\x93\xfa\x96\x7b\x8c\xea\x82\xcc\x95\xb6\x8f\xcd\x82\xf0\x8d\x5a\x90\xb3\x82\xb5\x82\xdc\x82\xb7\x81\x42";
+    std::fs::write(&path, original).unwrap();
+    for replacement in ["¥", "😀"] {
+        sandbox.write_xdg_config(&format!(
+            "[[builtin.\"@textlint-rule/pattern\".patterns]]\npattern = \"校正\"\nreplace = \"{replacement}\"\nmessage = \"置き換える\"\n"
+        ));
+        let output = sandbox.run(&["fix", "--encoding", "shift-jis", "t.txt"]);
+        assert_eq!(output.status.code(), Some(2), "{output:?}");
+        assert!(String::from_utf8_lossy(&output.stderr).contains("Shift_JISで保存できない"));
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+    }
+}
+
+#[test]
+fn fix_does_not_rewrite_unsupported_encodings() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.path("t.txt");
+    for original in [
+        &b"\xa4\xcf\xa4\xa4"[..], // EUC-JPの「はい」
+        b"A\0B\0",                // BOMのないUTF-16LEの「AB」
+        b"\x1b$B$O$$\x1b(B",      // ISO-2022-JPの「はい」
+    ] {
+        std::fs::write(&path, original).unwrap();
+        let output = sandbox.run(&["fix", "t.txt"]);
+        assert_eq!(output.status.code(), Some(2), "{output:?}");
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+    }
+}
+
+#[test]
+fn check_routes_japanese_morphology_by_paragraph_and_keeps_english_rules() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(
+        "[builtin]\nmax-ten = { max = 0, strict = true, touten = \",\" }\ncommon-misspellings = true\n",
+    );
+    sandbox.write(
+        "t.md",
+        "Teh first sentence, with `日本語` in the code.\n\nCheck this, 結果をを確認します。\n\n操作操作\n",
+    );
+    let output = sandbox.run(&["check", "t.md"]);
+    let findings = stdout(&output);
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    assert!(
+        findings
+            .lines()
+            .any(|line| line.starts_with("t.md:1:") && line.ends_with("[common-misspellings]")),
+        "{findings}"
+    );
+    assert_eq!(
+        findings
+            .lines()
+            .filter(|line| line.ends_with("[max-ten]"))
+            .count(),
+        1,
+        "{findings}"
+    );
+    assert!(
+        findings
+            .lines()
+            .any(|line| line.starts_with("t.md:3:") && line.ends_with("[max-ten]")),
+        "{findings}"
+    );
+    assert!(
+        findings
+            .lines()
+            .any(|line| line.starts_with("t.md:5:") && line.ends_with("[ja-no-successive-word]")),
+        "{findings}"
+    );
+}
+
+#[test]
 fn fix_continues_after_an_unreadable_file_and_exits_2() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("t.md", "日本語 Rust\n");

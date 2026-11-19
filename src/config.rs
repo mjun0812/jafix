@@ -66,8 +66,18 @@ impl Configs {
     }
 
     pub fn for_path(&mut self, path: &Path) -> Result<&Config, String> {
+        let canonical = path.canonicalize().ok();
+        self.for_project(canonical.as_deref().and_then(project_config_path))
+    }
+
+    /// インデックスのファイルは、作業ツリーで削除されたりsymlinkに置き換わったりしていてもGit上のパスで探す。
+    pub fn for_staged_path(&mut self, path: &Path) -> Result<&Config, String> {
+        self.for_project(project_config_path(path))
+    }
+
+    fn for_project(&mut self, project_config: Option<PathBuf>) -> Result<&Config, String> {
         self.resolved
-            .entry(project_config_path(path))
+            .entry(project_config)
             .or_insert_with_key(|project| {
                 let project = match project {
                     Some(path) => ConfigFile::read(path.clone())?,
@@ -95,7 +105,6 @@ impl Configs {
 }
 
 fn project_config_path(path: &Path) -> Option<PathBuf> {
-    let path = path.canonicalize().ok()?;
     for dir in path.ancestors().skip(1) {
         let config = dir.join(".jafix.toml");
         match config.symlink_metadata() {
@@ -228,6 +237,14 @@ impl Config {
     /// `path` の実体が `report-exclude` のglobのいずれかに当たればtrue。当たるファイルでは指摘ルールの指摘を出さない
     pub fn is_report_excluded(&self, path: &Path) -> bool {
         matches_canonical(&self.report_exclude, path)
+    }
+
+    pub fn is_staged_path_excluded(&self, path: &Path) -> bool {
+        self.exclude.is_match(path)
+    }
+
+    pub fn is_staged_report_excluded(&self, path: &Path) -> bool {
+        self.report_exclude.is_match(path)
     }
 
     pub fn builtin(&self) -> &Builtin {

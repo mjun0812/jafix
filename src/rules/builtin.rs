@@ -85,6 +85,9 @@ pub struct Builtin {
     pub spelling: Option<Spelling>,
     pub common_misspellings: Option<CommonMisspellings>,
     pub write_good: Option<WriteGood>,
+    pub yomiyasu_bold_not_rendered: bool,
+    pub yomiyasu_instruction_residue: bool,
+    pub yomiyasu_chat_response: bool,
 }
 
 impl Default for Builtin {
@@ -153,6 +156,9 @@ impl Default for Builtin {
             spelling: None,
             common_misspellings: None,
             write_good: None,
+            yomiyasu_bold_not_rendered: false,
+            yomiyasu_instruction_residue: false,
+            yomiyasu_chat_response: false,
         }
     }
 }
@@ -469,6 +475,11 @@ impl Builtin {
             RuleId::WriteGood => {
                 self.write_good = options.map(WriteGood::from_options).transpose()?;
             }
+            RuleId::YomiyasuBoldNotRendered => self.yomiyasu_bold_not_rendered = enabled(options)?,
+            RuleId::YomiyasuInstructionResidue => {
+                self.yomiyasu_instruction_residue = enabled(options)?
+            }
+            RuleId::YomiyasuChatResponse => self.yomiyasu_chat_response = enabled(options)?,
         }
         Ok(())
     }

@@ -1,0 +1,101 @@
+mod common;
+
+use common::{Sandbox, read, stdout};
+
+const RULES: &str = "[builtin]\nyomiyasu-bold-not-rendered = true\nyomiyasu-instruction-residue = true\nyomiyasu-chat-response = true\n";
+
+#[test]
+fn yomiyasu_rules_are_opt_in_and_only_report() {
+    let sandbox = Sandbox::new();
+    let text = "選択肢は**「有効」**です。\n\nこの記事では、AIっぽさが出ないように書きます 🚀\n\nご質問ありがとうございます。\n";
+    let path = sandbox.write("t.md", text);
+    let off = sandbox.run(&["check", "t.md"]);
+    assert_eq!(off.status.code(), Some(0), "{off:?}");
+    sandbox.write_xdg_config(RULES);
+
+    let check = sandbox.run(&["check", "t.md"]);
+    assert_eq!(check.status.code(), Some(1), "{check:?}");
+    assert_eq!(
+        stdout(&check),
+        "t.md:1:5: 太字の記号がそのまま表示される。記号と括弧や空白の位置を確認する [yomiyasu-bold-not-rendered]\n\
+         t.md:3:1: 執筆時の指示が本文に残っていないか確認する [yomiyasu-instruction-residue]\n\
+         t.md:5:1: チャット応答の定型句が本文に残っていないか確認する [yomiyasu-chat-response]\n"
+    );
+    let fix = sandbox.run(&["fix", "t.md"]);
+    assert_eq!(fix.status.code(), Some(0), "{fix:?}");
+    assert_eq!(read(&path), text);
+}
+
+#[test]
+fn broken_bold_checks_blocks_and_skips_markers_in_code_and_escaped_text() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nyomiyasu-bold-not-rendered = true\n");
+    sandbox.write(
+        "t.md",
+        concat!(
+            "前**「複数行に\nまたがる」**後\n\n",
+            "前**「名前`x`」**後\n\n",
+            "| label |\n| --- |\n| 前**「設定」**後 |\n\n",
+            "選択肢は **「有効」** です。\n\n",
+            "インラインコードは `前**「設定」**後` です。\n\n",
+            "```md\n前**「設定」**後\n```\n\n",
+            "エスケープした\\*\\*「有効」\\*\\*です。\n",
+        ),
+    );
+    let check = sandbox.run(&["check", "t.md"]);
+    assert_eq!(check.status.code(), Some(1), "{check:?}");
+    let findings: Vec<_> = stdout(&check)
+        .lines()
+        .map(|line| line.splitn(4, ':').take(3).collect::<Vec<_>>().join(":"))
+        .collect();
+    assert_eq!(findings, ["t.md:1:2", "t.md:4:2", "t.md:8:4"], "{check:?}");
+}
+
+#[test]
+fn instruction_residue_keeps_reader_scope_and_adjacent_references() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nyomiyasu-instruction-residue = true\n");
+    sandbox.write(
+        "t.md",
+        concat!(
+            "このマニュアルでは内部実装は扱いません。\n\n",
+            "この記事では運用の詳細は扱いません。詳しくは[別のガイド](guide.md)を参照してください。\n\n",
+            "この記事では運用の詳細は扱いません。\n\n",
+            "> この記事では、AIっぽさが出ないように書きます。\n\n",
+            "引用「この記事では飾らない言葉で書きます。」の処理を試します。\n",
+        ),
+    );
+    let check = sandbox.run(&["check", "t.md"]);
+    assert_eq!(check.status.code(), Some(1), "{check:?}");
+    assert_eq!(stdout(&check).lines().count(), 1, "{check:?}");
+    assert!(stdout(&check).starts_with("t.md:5:1:"), "{check:?}");
+}
+
+#[test]
+fn chat_response_detects_chat_formulas_without_flagging_regular_instructions() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nyomiyasu-chat-response = true\n");
+    sandbox.write(
+        "t.md",
+        concat!(
+            "必要なら管理者に確認してください。\n\n",
+            "引用例は「ご質問ありがとうございます。」です。\n\n",
+            "ご希望があれば、続けて設定例を紹介します 👍\n\n",
+            "必要ならこの後の手順を確認します。\n\n",
+            "ご質問`x`ありがとうございます。\n\n",
+            "**ご質問**ありがとうございます。\n",
+        ),
+    );
+    let check = sandbox.run(&["check", "t.md"]);
+    assert_eq!(check.status.code(), Some(1), "{check:?}");
+    let mut findings = stdout(&check).lines();
+    assert!(
+        findings.next().unwrap().starts_with("t.md:5:1:"),
+        "{check:?}"
+    );
+    assert!(
+        findings.next().unwrap().starts_with("t.md:11:1:"),
+        "{check:?}"
+    );
+    assert!(findings.next().is_none(), "{check:?}");
+}

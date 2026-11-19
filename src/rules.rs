@@ -14,6 +14,7 @@ mod prh;
 mod spacing;
 mod text;
 mod textlint_rule_pattern;
+mod yomiyasu;
 
 use regex::Regex;
 
@@ -28,7 +29,7 @@ use self::builtin::Builtin;
 use self::general::Links;
 use self::jtf_style::JtfRule;
 
-/// 組み込みのルール。全角括弧と空白の3つ以外は、textlintのpreset (`preset-ja-technical-writing`・
+/// 組み込みのルール。全角括弧と空白の3つ、およびyomiyasu由来の3つ以外は、textlintのpreset (`preset-ja-technical-writing`・
 /// `@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`・`preset-ja-spacing`・`preset-jtf-style`) の中の名前か、
 /// textlintの設定に書くルールの名前 (textlintが `textlint-rule-` を除いてruleIdとして出す名前) と同じIDである。宣言の順は `ALL` と同じで、組み込みの修正ルールの箇所の
 /// 範囲が同じときに、前にあるルールの箇所を残すのに使う
@@ -98,11 +99,14 @@ pub enum RuleId {
     Spelling,
     CommonMisspellings,
     WriteGood,
+    YomiyasuBoldNotRendered,
+    YomiyasuInstructionResidue,
+    YomiyasuChatResponse,
 }
 
 impl RuleId {
     /// 組み込みのルールのすべて。設定の `[builtin]` のキーをルールのIDとして読むのに使う
-    pub const ALL: [RuleId; 99] = [
+    pub const ALL: [RuleId; 102] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
         RuleId::SpaceBetweenJaAndParen,
@@ -202,6 +206,9 @@ impl RuleId {
         RuleId::Spelling,
         RuleId::CommonMisspellings,
         RuleId::WriteGood,
+        RuleId::YomiyasuBoldNotRendered,
+        RuleId::YomiyasuInstructionResidue,
+        RuleId::YomiyasuChatResponse,
     ];
 
     /// `check` の出力の `[<rule-id>]` に使う名前
@@ -272,6 +279,9 @@ impl RuleId {
             RuleId::Spelling => "spelling",
             RuleId::CommonMisspellings => "common-misspellings",
             RuleId::WriteGood => "write-good",
+            RuleId::YomiyasuBoldNotRendered => "yomiyasu-bold-not-rendered",
+            RuleId::YomiyasuInstructionResidue => "yomiyasu-instruction-residue",
+            RuleId::YomiyasuChatResponse => "yomiyasu-chat-response",
         }
     }
 }
@@ -360,6 +370,7 @@ pub fn report(
         reports.extend(paragraph::report(src, &document.paragraphs, builtin));
         reports.extend(morph::report(src, document, builtin));
         reports.extend(ai_writing::report(src, document, builtin));
+        reports.extend(yomiyasu::report(src, document, builtin));
         if let Some(rule) = &builtin.textlint_rule_pattern {
             reports.extend(textlint_rule_pattern::report(src, &texts, rule));
         }
@@ -517,6 +528,7 @@ pub fn fix_rules_hitting(part: &FixedPart, builtin: &Builtin) -> Vec<RuleId> {
         }],
         paragraphs: Vec::new(),
         headings: Vec::new(),
+        table_cells: Vec::new(),
         list_items: Vec::new(),
         inline_nodes: Vec::new(),
         comments: Vec::new(),
@@ -856,6 +868,7 @@ mod tests {
             }],
             paragraphs: Vec::new(),
             headings: Vec::new(),
+            table_cells: Vec::new(),
             list_items: Vec::new(),
             inline_nodes: Vec::new(),
             comments: Vec::new(),

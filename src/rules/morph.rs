@@ -22,8 +22,12 @@ pub(super) mod pattern;
 pub(super) mod projection;
 
 use std::borrow::Cow;
+use std::cell::LazyCell;
 use std::collections::HashSet;
 use std::ops::Range;
+use std::sync::LazyLock;
+
+use regex::Regex;
 
 use crate::morph::{self, Token};
 use crate::prose::{Context, Document, Inline, InlineKind};
@@ -39,6 +43,12 @@ use super::{Report, RuleId};
 pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> {
     let mut reports = Vec::new();
     let mut styles = Styles::default();
+    let non_japanese = LazyCell::new(|| non_japanese_blocks(src, document));
+    let skips_japanese = |start| {
+        non_japanese
+            .get(non_japanese.partition_point(|range| range.end <= start))
+            .is_some_and(|range| range.contains(&start))
+    };
     // `ja-no-redundant-expression` 以外の文の単位のルールは、引用の中の段落を対象にしない
     let unquoted_rules = builtin.max_ten.is_some()
         || builtin.no_doubled_joshi.is_some()
@@ -51,7 +61,7 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
             .as_ref()
             .filter(|rule| ja_no_redundant_expression::targets(rule, paragraph));
         let unquoted = unquoted_rules && !paragraph.blockquote;
-        if !unquoted && redundant.is_none() {
+        if (!unquoted && redundant.is_none()) || skips_japanese(paragraph.range.start) {
             continue;
         }
         let sentences = sentence::split(src, paragraph, HardBreak::ListItems);
@@ -99,7 +109,7 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
         for heading in document
             .headings
             .iter()
-            .filter(|heading| !heading.blockquote)
+            .filter(|heading| !heading.blockquote && !skips_japanese(heading.range.start))
         {
             for sentence in sentence::split(src, heading, HardBreak::ListItems) {
                 let projection = Projection::new(src, &sentence);
@@ -134,6 +144,15 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
         return reports;
     }
     for prose in &document.texts {
+        let non_japanese = skips_japanese(prose.range.start);
+        if non_japanese
+            && builtin
+                .no_ai_words
+                .as_ref()
+                .is_none_or(|rule| rule.user_words.is_empty())
+        {
+            continue;
+        }
         let text = &src[prose.range.clone()];
         let tokens = morph::tokenize(text);
         let analyzed = AnalyzedProse {
@@ -142,6 +161,14 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
             text,
             tokens: &tokens,
         };
+        if non_japanese {
+            // 利用者の辞書には英語などの語も書ける。
+            reports.extend(no_ai_words::report(
+                &analyzed,
+                builtin.no_ai_words.as_ref().unwrap(),
+            ));
+            continue;
+        }
         if builtin.no_double_negative_ja {
             reports.extend(no_double_negative_ja::report(&analyzed));
         }
@@ -177,6 +204,34 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
         reports.extend(occurrences.report(rule));
     }
     reports
+}
+
+fn non_japanese_blocks(src: &str, document: &Document) -> Vec<Range<usize>> {
+    // 漢字だけの短文や日英混在は判定を保留し、日本語向けルールも適用する。
+    static JAPANESE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}ー々〻、。「」『』]").unwrap()
+    });
+    let mut ranges = Vec::new();
+    for block in document.paragraphs.iter().chain(&document.headings) {
+        let first = document
+            .texts
+            .partition_point(|text| text.range.end <= block.range.start);
+        let texts = document.texts[first..]
+            .iter()
+            .take_while(|text| text.range.start < block.range.end)
+            .map(|text| &src[text.range.clone()]);
+        if texts
+            .clone()
+            .any(|text| !text.is_ascii() && JAPANESE.is_match(text))
+        {
+            continue;
+        }
+        if texts.flat_map(str::chars).any(char::is_alphabetic) {
+            ranges.push(block.range.clone());
+        }
+    }
+    ranges.sort_unstable_by_key(|range| range.start);
+    ranges
 }
 
 /// 辞書で語を別の書き方にするよう求める7つ (ひらがな系の5ルール・`ja-no-abusage`・`@textlint-ja/no-synonyms`) のうち、

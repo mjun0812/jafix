@@ -91,6 +91,10 @@ jafixの組み込みのルールのうち、textlintと同じIDのものは、�
 
 `textlint-rule-terminology` の辞書 `terms.jsonc` は、binaryに含まれます。`write-good` から `e-prime` までの7つは、`textlint-rule-write-good` が使う `write-good` と、その6つの単語リストのpackageです。jafixは、`write-good` の正規表現と、6つのpackageの単語リストを写し、binaryに埋め込んでいます。`textlint-rule-write-good`・`weasel-words`・`passive-voice` の3つは、LICENSEのファイルを持ちません。`textlint-rule-write-good` は `package.json` とReadMe.mdに作者 `nodaguti` とMIT Licenseを書いています。`weasel-words` と `passive-voice` は、`package.json` に作者 `Brian Ford` とMIT Licenseを書いています。
 
+## yomiyasu
+
+太字、チャット応答、執筆時の指示を確認する3ルールは、[yomiyasu 3.2.0](https://github.com/nanaism/yomiyasu/tree/v3.2.0)の `yomiyasu_lint.py` に基づきます。判定の一部と正規表現を移植しています。著作権表示は `Copyright (c) 2026 nanaism` です。許諾文は、この文書の[MIT License](#mit-license)にあります。
+
 ## webpki-rootsの証明書の一覧
 
 jafixのbinaryは、webpki-rootsの証明書の一覧を含みます。`no-dead-link` は、外部のURLへの接続でTLSの証明書を検証するのに、この一覧を使います。この一覧はCommunity Data License Agreement - Permissive - Version 2.0 (CDLA-Permissive-2.0)で公開されているデータで、改変せずに含みます。
