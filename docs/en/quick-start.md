@@ -25,7 +25,7 @@ cargo install --path .
 
 ```console
 $ jafix --version
-jafix 0.0.1
+jafix 0.0.2
 ```
 
 ## Check a file {#check}

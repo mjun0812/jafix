@@ -1162,11 +1162,11 @@ npm run docs:dev
 
 タグを作る前に、利用者向けの変更点を `release-notes.md` に書きます。
 `Cargo.toml` のバージョンの先頭に `v` を付けてタグを作り、pushするとリリースが始まります。
-次の例は、バージョン `0.0.1` をリリースする場合のコマンドです。
+次の例は、バージョン `0.0.2` をリリースする場合のコマンドです。
 
 ```sh
-git tag -a v0.0.1 --cleanup=whitespace -F release-notes.md
-git push origin v0.0.1
+git tag -a v0.0.2 --cleanup=whitespace -F release-notes.md
+git push origin v0.0.2
 ```
 
 タグに取り込んだ変更点は、リリースノートの冒頭に表示されます。その後ろにGitHubが変更履歴を追加します。
