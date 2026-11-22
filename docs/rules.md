@@ -97,9 +97,11 @@ AIが多用する語を調べるには `preset-ai-words-ja = true` を指定し�
 | `no-mixed-zenkaku-and-hankaku-alphabet`           | 修正       | -        | アルファベットを設定に従って半角か全角にそろえる                                   |
 | `no-kangxi-radicals`                              | 修正       | 有効     | 康熙部首を対応する漢字に置き換える。たとえば `⼭` (U+2F2D)を `山` (U+5C71)に直す   |
 
-## JTFスタイルガイド {#jtf-style}
+## 日本語標準スタイルガイド {#jtf-style}
 
-JTFスタイルガイドの37ルールのうち、33ルールは `preset-jtf-style = true` で有効になります。
+日本翻訳連盟(Japan Translation Federation、JTF)の[JTF日本語標準スタイルガイド(翻訳用)](https://www.jtf.jp/tips/styleguide)は、翻訳文の日本語表記をそろえるための指針です。
+
+jafixには、このガイドに基づく37ルールがあります。そのうち33ルールは `preset-jtf-style = true` で有効になります。
 残る `2.1.2.漢字`、`2.1.5.カタカナ`、`2.1.6.カタカナの長音`、`2.2.1.ひらがなと漢字の使い分け` は個別に指定します。
 JTFのルールIDをTOMLのキーに書くときは、引用符で囲みます。
 

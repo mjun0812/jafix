@@ -2,17 +2,30 @@
 
 ## インストール {#install}
 
-配布バイナリはmacOS (Apple Silicon)、Linux (x86_64、aarch64)、Windows (x64)向けです。
-macOSとLinuxでは [mise](https://mise.jdx.dev/) で導入します。
+### 配布バイナリを直接ダウンロード {#download}
+
+[GitHub Releases](https://github.com/mjun0812/jafix/releases)から環境に合うファイルをダウンロードして展開します。リポジトリが非公開の場合は、アクセス権のあるアカウントでGitHubにログインします。
+
+| 環境                  | 配布ファイル                            |
+| --------------------- | --------------------------------------- |
+| macOS (Apple Silicon) | `jafix-aarch64-apple-darwin.tar.gz`       |
+| Linux (x86_64)        | `jafix-x86_64-unknown-linux-musl.tar.gz`  |
+| Linux (ARM64)         | `jafix-aarch64-unknown-linux-musl.tar.gz` |
+| Windows (x64)         | `jafix-x86_64-pc-windows-msvc.zip`        |
+
+展開した `jafix` または `jafix.exe` を `PATH` の通ったディレクトリに置きます。
+
+### miseでインストール {#mise}
+
+[mise](https://mise.jdx.dev/)は、環境に合う配布バイナリをGitHub Releasesから取得します。リポジトリが非公開の場合は、読み取り権限のあるトークンを環境変数 `MISE_GITHUB_TOKEN` に設定してから実行します。[miseの認証手順](https://mise.jdx.dev/dev-tools/github-tokens.html)
 
 ```sh
 mise use -g github:mjun0812/jafix
 ```
 
-Windowsでは [GitHub Releases](https://github.com/mjun0812/jafix/releases) から `jafix-x86_64-pc-windows-msvc.zip` を取得して展開します。
-`PATH` で指定済みのディレクトリへ `jafix.exe` を移します。
+### ソースからビルド {#source}
 
-ソースからビルドする場合は、リポジトリを取得して次を実行します。
+リポジトリを取得して次を実行します。
 初回のビルドには形態素解析の辞書のダウンロードが必要です。
 
 ```sh
@@ -20,6 +33,10 @@ git clone https://github.com/mjun0812/jafix.git
 cd jafix
 cargo install --path .
 ```
+
+### インストールを確認する {#verify-install}
+
+`jafix --version` を実行します。miseを有効にしていないシェルでは `mise exec -- jafix --version` を使えます。
 
 ```console
 $ jafix --version

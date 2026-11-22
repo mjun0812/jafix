@@ -4,17 +4,30 @@ The [Japanese documentation](../quick-start.md) is the source of truth.
 
 ## Install {#install}
 
-Prebuilt binaries support macOS (Apple Silicon), Linux (x86_64 and aarch64), and Windows (x64).
-On macOS and Linux, install with [mise](https://mise.jdx.dev/).
+### Download a prebuilt binary {#download}
+
+Download the archive for your platform from [GitHub Releases](https://github.com/mjun0812/jafix/releases) and extract it. If the repository is private, sign in to GitHub with an account that has access.
+
+| Platform              | Release asset                           |
+| --------------------- | --------------------------------------- |
+| macOS (Apple Silicon) | `jafix-aarch64-apple-darwin.tar.gz`       |
+| Linux (x86_64)        | `jafix-x86_64-unknown-linux-musl.tar.gz`  |
+| Linux (ARM64)         | `jafix-aarch64-unknown-linux-musl.tar.gz` |
+| Windows (x64)         | `jafix-x86_64-pc-windows-msvc.zip`        |
+
+Place the extracted `jafix` or `jafix.exe` in a directory on your `PATH`.
+
+### Install with mise {#mise}
+
+[mise](https://mise.jdx.dev/) downloads the prebuilt binary for your platform from GitHub Releases. If the repository is private, set `MISE_GITHUB_TOKEN` to a token with read access to the repository before running the command. [GitHub authentication in mise](https://mise.jdx.dev/dev-tools/github-tokens.html)
 
 ```sh
 mise use -g github:mjun0812/jafix
 ```
 
-On Windows, extract `jafix-x86_64-pc-windows-msvc.zip` from [GitHub Releases](https://github.com/mjun0812/jafix/releases).
-Place `jafix.exe` in a directory on your `PATH`.
+### Build from source {#source}
 
-To build from source, clone the repository and run the following.
+Clone the repository and run the following.
 The first build downloads the morphological dictionary.
 
 ```sh
@@ -22,6 +35,10 @@ git clone https://github.com/mjun0812/jafix.git
 cd jafix
 cargo install --path .
 ```
+
+### Verify the installation {#verify-install}
+
+Run `jafix --version`. If mise is not activated in your shell, use `mise exec -- jafix --version`.
 
 ```console
 $ jafix --version

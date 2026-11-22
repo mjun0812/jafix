@@ -20,7 +20,7 @@ textlintから移した94ルールの内訳は次のとおりです。
 - `@textlint-ja/textlint-rule-preset-ai-writing` の5ルール(`no-ai-list-formatting` から `ai-tech-writing-guideline` まで)
 - `textlint-rule-preset-ai-words-ja` の2ルール(`no-ai-words` と `no-short-topic-comma`)
 - `textlint-rule-preset-ja-spacing` の11ルール(`ja-nakaguro-or-halfwidth-space-between-katakana` から `ja-space-around-strong` まで)
-- `textlint-rule-preset-jtf-style` の37ルール(`1.1.1.本文` から `4.3.8.一重引用符` まで)
+- 日本翻訳連盟(Japan Translation Federation、JTF)のスタイルガイドに基づく37ルール(`textlint-rule-preset-jtf-style` の `1.1.1.本文` から `4.3.8.一重引用符` まで)
 - `textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet` と `textlint-rule-no-kangxi-radicals`
 - ひらがなで書く語、さ入れ言葉、同義語を見る7ルール(`ja-hiragana-hojodoushi` から `@textlint-ja/no-synonyms` まで)
 - 言語によらない3ルール(`no-todo`、`date-weekday-mismatch`、`no-dead-link`)
@@ -218,7 +218,7 @@ AIらしい書き方を指摘する7ルールのオプションは、次のと�
 
 ### JTFスタイルガイドの37ルール
 
-`textlint-rule-preset-jtf-style` の37ルールは、JTF日本語標準スタイルガイドの規則で、句読点・記号・括弧の字種、敬体と常体の統一、表記を見ます。IDは、textlintのpresetの設定に書くキー(`1.1.1.本文` など)と同じ文字列です。全角の括弧や空白を含むので、`[builtin]` には `"4.3.1.丸かっこ（）" = true` のように引用符で囲んで書きます。以下では、IDを先頭の番号(`4.3.1`)で略します。
+`textlint-rule-preset-jtf-style` の37ルールは、[JTF日本語標準スタイルガイド(翻訳用)](https://www.jtf.jp/tips/styleguide)に基づき、句読点・記号・括弧の使い方、文体の統一、表記などを確認します。IDは、textlintのpresetの設定に書くキー(`1.1.1.本文` など)と同じ文字列です。全角の括弧や空白を含むので、`[builtin]` には `"4.3.1.丸かっこ（）" = true` のように引用符で囲んで書きます。以下では、IDを先頭の番号(`4.3.1`)で略します。
 
 37ルールは、空白と字種の13ルールと同じ考え方で、修正ルールと指摘ルールに分かれます。字種だけを置き換える箇所と、空白を削除する箇所は直します。記号の種類を変える箇所・記号を外す箇所・空白を足す箇所・辞書で語を置き換える箇所は指摘します。同じIDでも、`2.1.5` は半角カナの部分が修正で辞書の部分が指摘になり、`3.3` は空白を削除する側が修正で空白を求める側が指摘になります。
 
@@ -635,17 +635,23 @@ patterns = [
 
 ## 導入
 
-配布バイナリの対象はmacOS (Apple Silicon)、Linux (x86_64、aarch64)、Windows (x64)です。
-macOSとLinuxでは、GitHub Releasesにバイナリがあれば [mise](https://mise.jdx.dev/) で導入できます。
+### 配布バイナリを直接ダウンロード
+
+[GitHub Releases](https://github.com/mjun0812/jafix/releases)から環境に合うファイルをダウンロードして展開します。配布対象はmacOS (Apple Silicon)、Linux (x86_64とARM64)、Windows (x64)です。展開した `jafix` または `jafix.exe` を `PATH` の通ったディレクトリに置きます。
+
+リポジトリが非公開の場合は、アクセス権のあるアカウントでGitHubにログインします。環境ごとのファイル名は[クイックスタート](docs/quick-start.md)にあります。
+
+### miseでインストール
+
+[mise](https://mise.jdx.dev/)は、環境に合う配布バイナリをGitHub Releasesから取得します。リポジトリが非公開の場合は、読み取り権限のあるトークンを環境変数 `MISE_GITHUB_TOKEN` に設定してから実行します。[miseの認証手順](https://mise.jdx.dev/dev-tools/github-tokens.html)
 
 ```sh
 mise use -g github:mjun0812/jafix
 ```
 
-Windowsでは [GitHub Releases](https://github.com/mjun0812/jafix/releases) から `jafix-x86_64-pc-windows-msvc.zip` を取得して展開します。
-`PATH` で指定済みのディレクトリへ `jafix.exe` を移します。
+### ソースからビルド
 
-ソースからビルドする場合は、リポジトリを取得したディレクトリで次のコマンドを実行します。
+リポジトリを取得したディレクトリで次のコマンドを実行します。
 
 ```sh
 cargo install --path .

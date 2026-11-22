@@ -88,13 +88,13 @@ Quote IDs that contain `@`, `/`, or `.`.
 A preset is a key that groups several rules.
 Its value is `true` or `false`.
 
-| Preset                           | Rules it enables                                                        |
-| -------------------------------- | ----------------------------------------------------------------------- |
-| `preset-ja-technical-writing`    | 23 rules for [Japanese technical writing](./rules.md#technical-writing) |
-| `@textlint-ja/preset-ai-writing` | 5 rules for [patterns common in AI writing](./rules.md#ai-writing)      |
-| `preset-ai-words-ja`             | `no-ai-words`                                                           |
-| `preset-ja-spacing`              | 9 rules for [spacing](./rules.md#spacing)                               |
-| `preset-jtf-style`               | 33 rules of the [JTF style guide](./rules.md#jtf-style)                 |
+| Preset                           | Rules it enables                                                                             |
+| -------------------------------- | -------------------------------------------------------------------------------------------- |
+| `preset-ja-technical-writing`    | 23 rules for [Japanese technical writing](./rules.md#technical-writing)                      |
+| `@textlint-ja/preset-ai-writing` | 5 rules for [patterns common in AI writing](./rules.md#ai-writing)                           |
+| `preset-ai-words-ja`             | `no-ai-words`                                                                                |
+| `preset-ja-spacing`              | 9 rules for [spacing](./rules.md#spacing)                                                    |
+| `preset-jtf-style`               | 33 rules based on the [Japan Translation Federation (JTF) style guide](./rules.md#jtf-style) |
 
 Within one file, an individual rule setting takes precedence over a preset.
 

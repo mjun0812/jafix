@@ -97,9 +97,11 @@ The two character-form rules are outside this preset. Of those two, `no-kangxi-r
 | `no-mixed-zenkaku-and-hankaku-alphabet`           | Fix            | -       | Standardizes Latin letters to the configured half-width or full-width form                                                         |
 | `no-kangxi-radicals`                              | Fix            | On      | Replaces Kangxi radical characters with their corresponding kanji                                                                  |
 
-## JTF style guide {#jtf-style}
+## Japanese translation style guide {#jtf-style}
 
-The `preset-jtf-style` group has 37 IDs. Enable these four individually: `2.1.2.漢字`, `2.1.5.カタカナ`, `2.1.6.カタカナの長音`, and `2.2.1.ひらがなと漢字の使い分け`.
+The Japan Translation Federation (JTF) publishes a [style guide for translators working into Japanese](https://www.jtf.jp/tips/styleguide) to help them use consistent spelling and punctuation.
+
+jafix includes 37 rules based on the guide. Set `preset-jtf-style = true` to enable 33 of them. Enable the remaining four individually (`2.1.2.漢字`, `2.1.5.カタカナ`, `2.1.6.カタカナの長音`, and `2.2.1.ひらがなと漢字の使い分け`).
 Quote JTF rule IDs when using them as TOML keys.
 
 The JTF parentheses rule calls for full-width parentheses. jafix's `fullwidth-paren` rule, enabled by default, converts them to half-width.
