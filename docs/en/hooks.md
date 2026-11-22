@@ -49,7 +49,7 @@ From the second line on, the format matches `jafix check`.
 
 ```text
 jafix: 今回変えた行に指摘がある。編集は適用済み。指摘を直すか、誤検知なら直さずに進めてよい
-/path/to/notes.md:4:4: 「を」が2回続いている [ja-no-successive-word]
+/path/to/notes.md:4:4: [ja-no-successive-word] 「を」が2回続いている
 ```
 
 The first line tells the agent that the edit has been applied, and that it should fix the findings or move on if they are false positives.

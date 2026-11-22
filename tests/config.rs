@@ -3,7 +3,7 @@ mod common;
 use std::path::Path;
 
 use common::{
-    AI_RULES_INPUT, AI_WORDS_PATTERN, HIRAGANA_AND_SYNONYMS_RULES, Sandbox,
+    AI_RULES_INPUT, AI_WORDS_PATTERN, HIRAGANA_AND_SYNONYMS_RULES, Sandbox, finding_rule,
     hiragana_and_synonyms_rules_config, read, stdout,
 };
 use serde_json::json;
@@ -42,13 +42,13 @@ fn check_and_fix_use_the_project_of_each_file() {
     let found = stdout(&output);
     assert!(
         found.lines().any(|line| line.starts_with("a/docs/a.md:")
-            && line.ends_with("[space-between-ja-and-alnum]")),
+            && finding_rule(line) == Some("space-between-ja-and-alnum")),
         "{found}"
     );
     assert!(
-        found
-            .lines()
-            .any(|line| line.starts_with("b/b.md:") && line.ends_with("[fullwidth-paren]")),
+        found.lines().any(
+            |line| line.starts_with("b/b.md:") && finding_rule(line) == Some("fullwidth-paren")
+        ),
         "{found}"
     );
     assert_eq!(
@@ -460,7 +460,7 @@ fn check_reports_only_fix_rules_for_a_report_excluded_file() {
     let lines: Vec<&str> = stdout(&output).lines().collect();
     assert_eq!(lines.len(), 1, "{lines:?}");
     assert!(
-        lines[0].ends_with(" [space-between-ja-and-alnum]"),
+        finding_rule(lines[0]) == Some("space-between-ja-and-alnum"),
         "{lines:?}"
     );
 }
@@ -507,7 +507,7 @@ fn check_reports_a_builtin_report_rule_only_while_it_is_enabled() {
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         stdout(&output),
-        "t.md:1:4: 「！」を使わない [no-exclamation-question-mark]\n"
+        "t.md:1:4: [no-exclamation-question-mark] 「！」を使わない\n"
     );
 
     sandbox.write_xdg_config("[builtin]\nno-exclamation-question-mark = false\n");
@@ -671,7 +671,7 @@ fn builtin_option_patterns_use_javascript_regex() {
     assert_eq!(code, Some(1));
     assert_eq!(
         stdout,
-        "t.md:3:1: 1文が3文字を超えている (4文字) [sentence-length]\n"
+        "t.md:3:1: [sentence-length] 1文が3文字を超えている (4文字)\n"
     );
 
     assert_check_rejects_builtin(
@@ -689,7 +689,7 @@ fn builtin_option_digit_class_is_ascii() {
     assert_eq!(code, Some(1));
     assert_eq!(
         stdout,
-        "t.md:2:2: 「!」を使わない [no-exclamation-question-mark]\n"
+        "t.md:2:2: [no-exclamation-question-mark] 「!」を使わない\n"
     );
 }
 
@@ -718,7 +718,7 @@ fn builtin_option_slash_form_follows_pattern_rule() {
     assert_eq!(code, Some(1));
     assert_eq!(
         stdout,
-        "t.md:1:2: 「!」を使わない [no-exclamation-question-mark]\n"
+        "t.md:1:2: [no-exclamation-question-mark] 「!」を使わない\n"
     );
 
     // フラグ `d` を受けて無視するので、`/a!/d` は正規表現 `a!` になる
@@ -754,7 +754,7 @@ fn check_reports_a_morphological_builtin_rule_when_enabled() {
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         stdout(&output),
-        "t.md:1:4: 同じ助詞「は」が続いている [no-doubled-joshi]\n"
+        "t.md:1:4: [no-doubled-joshi] 同じ助詞「は」が続いている\n"
     );
 }
 
@@ -864,7 +864,7 @@ fn max_ten_resets_the_count_at_the_kuten_before_comparing_it_with_max() {
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(
         stdout(&output),
-        "t.md:1:2: 1文の「、」が0個を超えている [max-ten]\n"
+        "t.md:1:2: [max-ten] 1文の「、」が0個を超えている\n"
     );
 
     // 読点と句点が同じ文字なら、数えた直後に0に戻るので、上限の0を超えない
@@ -876,10 +876,9 @@ fn max_ten_resets_the_count_at_the_kuten_before_comparing_it_with_max() {
 
 /// `stdout` のうち、`rule` の指摘の行
 fn findings_of<'a>(stdout: &'a str, rule: &str) -> Vec<&'a str> {
-    let suffix = format!(" [{rule}]");
     stdout
         .lines()
-        .filter(|line| line.ends_with(&suffix))
+        .filter(|line| finding_rule(line) == Some(rule))
         .collect()
 }
 
@@ -1043,7 +1042,7 @@ fn preset_ai_words_ja_enables_only_no_ai_words() {
     let found = stdout(&output);
     assert_eq!(
         findings_of(found, "no-short-topic-comma"),
-        ["t.md:17:4: 主題を3文字示しただけで読点を打っている [no-short-topic-comma]"]
+        ["t.md:17:4: [no-short-topic-comma] 主題を3文字示しただけで読点を打っている"]
     );
 }
 
@@ -1199,8 +1198,8 @@ fn no_ai_words_appends_user_dictionary() {
     assert_eq!(
         findings_of(stdout(&output), "no-ai-words"),
         [
-            "t.md:1:1: 「再考」は言い換える [no-ai-words]",
-            "t.md:1:4: AIが多用する語「照合」を使っている [no-ai-words]",
+            "t.md:1:1: [no-ai-words] 「再考」は言い換える",
+            "t.md:1:4: [no-ai-words] AIが多用する語「照合」を使っている",
         ]
     );
 }
@@ -1216,7 +1215,7 @@ fn no_ai_words_override_uses_only_user_dictionary() {
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(
         findings_of(stdout(&output), "no-ai-words"),
-        ["t.md:1:1: 「再考」は言い換える [no-ai-words]"]
+        ["t.md:1:1: [no-ai-words] 「再考」は言い換える"]
     );
 }
 
@@ -1267,7 +1266,7 @@ fn no_ai_words_expands_tilde_in_dictionary_path() {
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(
         findings_of(stdout(&output), "no-ai-words"),
-        ["t.md:1:1: 「再考」は言い換える [no-ai-words]"]
+        ["t.md:1:1: [no-ai-words] 「再考」は言い換える"]
     );
 }
 
@@ -1875,7 +1874,7 @@ fn half_and_full_width_space_is_opposite_to_space_between_ja_and_alnum() {
     assert_eq!(
         findings_of(stdout(&output), "ja-space-between-half-and-full-width"),
         [
-            "t.md:1:3: 全角文字と半角文字の間に半角空白を入れる [ja-space-between-half-and-full-width]"
+            "t.md:1:3: [ja-space-between-half-and-full-width] 全角文字と半角文字の間に半角空白を入れる"
         ]
     );
 
@@ -1925,15 +1924,15 @@ fn overlapping_fix_rules_fix_once() {
     assert_eq!(
         findings_of(found, "space-between-ja-and-alnum"),
         [
-            "t.md:1:4: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]",
-            "t.md:1:9: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]",
+            "t.md:1:4: [space-between-ja-and-alnum] 日本語と英数字の間の空白を削除する",
+            "t.md:1:9: [space-between-ja-and-alnum] 日本語と英数字の間の空白を削除する",
         ]
     );
     assert_eq!(
         findings_of(found, "space-between-ja-and-paren"),
         [
-            "t.md:1:12: 日本語と括弧の間の空白を削除する [space-between-ja-and-paren]",
-            "t.md:1:17: 日本語と括弧の間の空白を削除する [space-between-ja-and-paren]",
+            "t.md:1:12: [space-between-ja-and-paren] 日本語と括弧の間の空白を削除する",
+            "t.md:1:17: [space-between-ja-and-paren] 日本語と括弧の間の空白を削除する",
         ]
     );
     for rule in [
@@ -2317,17 +2316,17 @@ fn overlapping_jtf_style_fix_rules_fix_once() {
     let found = stdout(&output);
     assert_eq!(
         findings_of(found, "space-between-ja-and-alnum"),
-        ["t.md:1:4: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]"],
+        ["t.md:1:4: [space-between-ja-and-alnum] 日本語と英数字の間の空白を削除する"],
         "{found}"
     );
     assert_eq!(
         findings_of(found, "no-hankaku-kana"),
-        ["t.md:1:10: 半角カナを全角にする [no-hankaku-kana]"],
+        ["t.md:1:10: [no-hankaku-kana] 半角カナを全角にする"],
         "{found}"
     );
     assert_eq!(
         findings_of(found, "space-between-ja-and-paren"),
-        ["t.md:1:18: 日本語と括弧の間の空白を削除する [space-between-ja-and-paren]"],
+        ["t.md:1:18: [space-between-ja-and-paren] 日本語と括弧の間の空白を削除する"],
         "{found}"
     );
     for rule in [
@@ -2348,7 +2347,7 @@ fn overlapping_jtf_style_fix_rules_fix_once() {
     let found = stdout(&output);
     assert_eq!(
         findings_of(found, "2.1.5.カタカナ"),
-        ["t.md:1:10: 半角カナ「ｻｰﾊﾞｰ」を全角にする [2.1.5.カタカナ]"],
+        ["t.md:1:10: [2.1.5.カタカナ] 半角カナ「ｻｰﾊﾞｰ」を全角にする"],
         "{found}"
     );
 }
@@ -2490,7 +2489,7 @@ dict:
         assert_eq!(
             findings_of(stdout(&output), rule),
             [format!(
-                "t.md:1:1: 漢字で書かない語: 「再考」を「さいこう」にする [{rule}]"
+                "t.md:1:1: [{rule}] 漢字で書かない語: 「再考」を「さいこう」にする"
             )],
             "{rule}"
         );
@@ -2553,7 +2552,7 @@ fn both_keishikimeishi_rules() {
         assert_eq!(
             findings_of(found, rule),
             [format!(
-                "t.md:1:3: 形式名詞「事」はひらがなの「こと」にする [{rule}]"
+                "t.md:1:3: [{rule}] 形式名詞「事」はひらがなの「こと」にする"
             )],
             "{found}"
         );
@@ -2614,10 +2613,10 @@ fn date_check_is_on_by_default_and_filters_are_off() {
     assert_eq!(
         after_comment,
         [
-            "t.md:9:4: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]",
-            "t.md:9:9: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]",
-            "t.md:9:11: 全角括弧を半角にする [fullwidth-paren]",
-            "t.md:9:14: 全角括弧を半角にする [fullwidth-paren]",
+            "t.md:9:4: [space-between-ja-and-alnum] 日本語と英数字の間の空白を削除する",
+            "t.md:9:9: [space-between-ja-and-alnum] 日本語と英数字の間の空白を削除する",
+            "t.md:9:11: [fullwidth-paren] 全角括弧を半角にする",
+            "t.md:9:14: [fullwidth-paren] 全角括弧を半角にする",
         ],
         "{found}"
     );
@@ -2777,7 +2776,7 @@ fn allowlist_reads_config_paths() {
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(
         findings_of(stdout(&output), "no-todo"),
-        ["t.md:5:1: TODOが残っている: 「TODO: c」 [no-todo]"]
+        ["t.md:5:1: [no-todo] TODOが残っている: 「TODO: c」"]
     );
 }
 
@@ -2833,7 +2832,7 @@ fn filtered_fix_findings_do_not_win_overlaps() {
     let found = stdout(&output);
     assert_eq!(
         findings_of(found, "space-between-ja-and-alnum"),
-        ["t.md:1:4: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]"],
+        ["t.md:1:4: [space-between-ja-and-alnum] 日本語と英数字の間の空白を削除する"],
         "{found}"
     );
     assert!(
@@ -2853,7 +2852,7 @@ fn filtered_fix_findings_do_not_win_overlaps() {
     );
     assert_eq!(
         findings_of(found, "ja-space-between-half-and-full-width"),
-        ["t.md:3:4: 全角文字と半角文字の間の空白を削除する [ja-space-between-half-and-full-width]"],
+        ["t.md:3:4: [ja-space-between-half-and-full-width] 全角文字と半角文字の間の空白を削除する"],
         "{found}"
     );
 }
@@ -3080,9 +3079,9 @@ terminology = { terms = ["GitHub", ["front[- ]end(\\w*)", "frontend$1"]] }
     assert_eq!(
         findings_of(stdout(&output), "terminology"),
         [
-            "t.md:1:7: 「github」を「GitHub」にする。見出しのアンカーが変わるので、見出しへのリンクも直す [terminology]",
-            "t.md:3:5: 「github」を「GitHub」にする [terminology]",
-            "t.md:3:20: 「front-end」を「frontend」にする [terminology]",
+            "t.md:1:7: [terminology] 「github」を「GitHub」にする。見出しのアンカーが変わるので、見出しへのリンクも直す",
+            "t.md:3:5: [terminology] 「github」を「GitHub」にする",
+            "t.md:3:20: [terminology] 「front-end」を「frontend」にする",
         ],
         "{}",
         stdout(&output)
@@ -3117,7 +3116,7 @@ fn terminology_default_terms_are_reported() {
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(
         findings_of(stdout(&output), "terminology"),
-        ["t.md:1:5: 「javascript」を「JavaScript」にする [terminology]"]
+        ["t.md:1:5: [terminology] 「javascript」を「JavaScript」にする"]
     );
 }
 
@@ -3132,7 +3131,7 @@ fn terminology_matches_after_space_removal() {
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(
         findings_of(stdout(&output), "terminology"),
-        ["t.md:1:5: 「javascript」を「JavaScript」にする [terminology]"]
+        ["t.md:1:5: [terminology] 「javascript」を「JavaScript」にする"]
     );
 }
 
@@ -3148,7 +3147,7 @@ fn terminology_user_term_same_as_a_default_term_is_one_fix() {
         let output = sandbox.run(&["check", "t.md"]);
         assert_eq!(
             findings_of(stdout(&output), "terminology"),
-            ["t.md:1:5: 「javascript」を「JavaScript」にする [terminology]"],
+            ["t.md:1:5: [terminology] 「javascript」を「JavaScript」にする"],
             "{terms}"
         );
         assert_eq!(
@@ -3166,7 +3165,7 @@ fn terminology_user_term_same_as_a_default_term_is_one_fix() {
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(
         findings_of(stdout(&output), "terminology"),
-        ["t.md:1:5: 「github」を「GitHub」にする [terminology]"]
+        ["t.md:1:5: [terminology] 「github」を「GitHub」にする"]
     );
     assert_eq!(
         fix_with_config(&sandbox, "Use github here.\n"),
@@ -3211,7 +3210,7 @@ fn spelling_skips_identifiers_and_abbreviations() {
     assert_eq!(
         findings_of(&found, "spelling"),
         [
-            "t.md:1:4: 英語の辞書に無い語「recieve」を使っている。候補: receive、relieve、reverie [spelling]"
+            "t.md:1:4: [spelling] 英語の辞書に無い語「recieve」を使っている。候補: receive、relieve、reverie"
         ]
     );
 }
@@ -3223,7 +3222,7 @@ fn spelling_suggests_candidates() {
     assert_eq!(
         findings_of(&found, "spelling"),
         [
-            "t.md:1:14: 英語の辞書に無い語「recieve」を使っている。候補: receive、relieve、reverie [spelling]"
+            "t.md:1:14: [spelling] 英語の辞書に無い語「recieve」を使っている。候補: receive、relieve、reverie"
         ]
     );
     let (_, found) = check_with_builtin(
@@ -3232,7 +3231,7 @@ fn spelling_suggests_candidates() {
     );
     assert_eq!(
         findings_of(&found, "spelling"),
-        ["t.md:1:14: 英語の辞書に無い語「recieve」を使っている [spelling]"]
+        ["t.md:1:14: [spelling] 英語の辞書に無い語「recieve」を使っている"]
     );
 }
 
@@ -3263,7 +3262,7 @@ fn spelling_does_not_report_empty_words() {
     );
     assert_eq!(
         findings_of(&found, "spelling"),
-        ["t.md:1:5: 英語の辞書に無い語「teh」を使っている [spelling]"]
+        ["t.md:1:5: [spelling] 英語の辞書に無い語「teh」を使っている"]
     );
 }
 
@@ -3282,10 +3281,10 @@ We recieve&nbsp;it &#x2014;teh &#160;and &pacakge; here.
     assert_eq!(
         findings_of(&found, "spelling"),
         [
-            "t.md:3:4: 英語の辞書に無い語「recieve」を使っている [spelling]",
-            "t.md:3:28: 英語の辞書に無い語「teh」を使っている [spelling]",
-            "t.md:3:43: 英語の辞書に無い語「pacakge」を使っている [spelling]",
-            "t.md:5:17: 英語の辞書に無い語「nbsp」を使っている [spelling]",
+            "t.md:3:4: [spelling] 英語の辞書に無い語「recieve」を使っている",
+            "t.md:3:28: [spelling] 英語の辞書に無い語「teh」を使っている",
+            "t.md:3:43: [spelling] 英語の辞書に無い語「pacakge」を使っている",
+            "t.md:5:17: [spelling] 英語の辞書に無い語「nbsp」を使っている",
         ]
     );
 }
@@ -3297,7 +3296,7 @@ fn common_misspellings_and_write_good_skip_character_reference_names() {
     assert_eq!(
         findings_of(&found, "common-misspellings"),
         [
-            "t.md:1:16: よくある綴りの誤り「andd」を使っている。正しくは「and」 [common-misspellings]"
+            "t.md:1:16: [common-misspellings] よくある綴りの誤り「andd」を使っている。正しくは「and」"
         ]
     );
     let (_, found) = check_with_builtin(
@@ -3306,7 +3305,7 @@ fn common_misspellings_and_write_good_skip_character_reference_names() {
     );
     assert_eq!(
         findings_of(&found, "write-good"),
-        ["t.md:1:25: 「therefore」は冗長か不要な句である(tooWordy) [write-good]"]
+        ["t.md:1:25: [write-good] 「therefore」は冗長か不要な句である(tooWordy)"]
     );
 }
 
@@ -3318,7 +3317,7 @@ fn terminology_does_not_fix_inside_character_references() {
     let output = sandbox.run(&["check", "t.md"]);
     assert_eq!(
         findings_of(stdout(&output), "terminology"),
-        ["t.md:1:8: 「copy」を「Copy」にする [terminology]"]
+        ["t.md:1:8: [terminology] 「copy」を「Copy」にする"]
     );
     assert_eq!(fix_with_config(&sandbox, "&copy; copy\n"), "&copy; Copy\n");
 }
@@ -3376,7 +3375,7 @@ fn jtf_style_angle_brackets_do_not_count_arrows() {
     );
     assert_eq!(
         findings_of(&found, "4.3.7.山かっこ<>"),
-        ["t.md:1:27: < に対応する > が無い [4.3.7.山かっこ<>]"]
+        ["t.md:1:27: [4.3.7.山かっこ<>] < に対応する > が無い"]
     );
 }
 
@@ -3399,7 +3398,7 @@ fn no_todo_reports_an_unchecked_box_whatever_follows_it() {
         assert_eq!(
             findings_of(&found, "no-todo"),
             [format!(
-                "t.md:{position}: 未完了のタスクが残っている [no-todo]"
+                "t.md:{position}: [no-todo] 未完了のタスクが残っている"
             )],
             "{input:?}"
         );
@@ -3438,7 +3437,7 @@ fn sentence_length_ends_sentences_at_hard_breaks() {
     );
     assert_eq!(
         findings_of(&found, "sentence-length"),
-        ["t.md:1:1: 1文が100文字を超えている (102文字) [sentence-length]"]
+        ["t.md:1:1: [sentence-length] 1文が100文字を超えている (102文字)"]
     );
 }
 
@@ -3456,7 +3455,7 @@ fn sentence_length_does_not_count_the_indentation_of_continuation_lines() {
     let (_, found) = check_with_builtin("sentence-length = true", &long);
     assert_eq!(
         findings_of(&found, "sentence-length"),
-        ["t.md:1:3: 1文が100文字を超えている (101文字) [sentence-length]"]
+        ["t.md:1:3: [sentence-length] 1文が100文字を超えている (101文字)"]
     );
 }
 
@@ -3469,8 +3468,8 @@ fn terminology_suggests_colocated_for_co_located() {
     assert_eq!(
         findings_of(&found, "terminology"),
         [
-            "t.md:1:5: 「co-located」を「colocated」にする [terminology]",
-            "t.md:1:26: 「co-location」を「colocation」にする [terminology]",
+            "t.md:1:5: [terminology] 「co-located」を「colocated」にする",
+            "t.md:1:26: [terminology] 「co-location」を「colocation」にする",
         ]
     );
 }
@@ -3494,7 +3493,7 @@ fn no_unmatched_pair_does_not_split_sentences_at_hard_breaks() {
     let (_, found) = check_with_builtin("no-unmatched-pair = true", "(注記  \n続き\n");
     assert_eq!(
         findings_of(&found, "no-unmatched-pair"),
-        ["t.md:1:2: ( に対応する ) が無い [no-unmatched-pair]"]
+        ["t.md:1:2: [no-unmatched-pair] ( に対応する ) が無い"]
     );
 }
 
@@ -3513,9 +3512,9 @@ Edit ~/.bashrc, .env and owner/zuikaku, then recieve. Use recieve/send and e.g. 
     assert_eq!(
         findings_of(&found, "spelling"),
         [
-            "t.md:3:46: 英語の辞書に無い語「recieve」を使っている [spelling]",
-            "t.md:3:59: 英語の辞書に無い語「recieve」を使っている [spelling]",
-            "t.md:5:17: 英語の辞書に無い語「teh」を使っている [spelling]",
+            "t.md:3:46: [spelling] 英語の辞書に無い語「recieve」を使っている",
+            "t.md:3:59: [spelling] 英語の辞書に無い語「recieve」を使っている",
+            "t.md:5:17: [spelling] 英語の辞書に無い語「teh」を使っている",
         ]
     );
 }
@@ -3528,7 +3527,7 @@ fn spelling_skips_words_joined_by_an_escaped_underscore() {
     );
     assert_eq!(
         findings_of(&found, "spelling"),
-        ["t.md:1:44: 英語の辞書に無い語「recieve」を使っている [spelling]"]
+        ["t.md:1:44: [spelling] 英語の辞書に無い語「recieve」を使っている"]
     );
 }
 
@@ -3540,12 +3539,12 @@ fn english_rules_read_the_name_after_an_escaped_ampersand_as_words() {
     );
     assert_eq!(
         findings_of(&found, "spelling"),
-        ["t.md:1:7: 英語の辞書に無い語「nbsp」を使っている [spelling]"]
+        ["t.md:1:7: [spelling] 英語の辞書に無い語「nbsp」を使っている"]
     );
     let (_, found) = check_with_builtin("common-misspellings = true", "Use \\&andd; here.\n");
     assert_eq!(
         findings_of(&found, "common-misspellings"),
-        ["t.md:1:7: よくある綴りの誤り「andd」を使っている。正しくは「and」 [common-misspellings]"]
+        ["t.md:1:7: [common-misspellings] よくある綴りの誤り「andd」を使っている。正しくは「and」"]
     );
 }
 
@@ -3562,8 +3561,8 @@ fn write_good_does_not_end_sentences_at_character_references() {
     assert_eq!(
         starts,
         [
-            "t.md:5:9: 「so」は意味を足さない文頭の語である(so) [write-good]",
-            "t.md:7:9: 「there is」は冗長な文頭の句である(thereIs) [write-good]",
+            "t.md:5:9: [write-good] 「so」は意味を足さない文頭の語である(so)",
+            "t.md:7:9: [write-good] 「there is」は冗長な文頭の句である(thereIs)",
         ]
     );
 }
@@ -3582,8 +3581,8 @@ fn image_alts_leave_out_the_destinations_and_titles_of_nested_links_and_images()
     assert_eq!(
         findings_of(&found, "spelling"),
         [
-            "t.md:5:3: 英語の辞書に無い語「teh」を使っている [spelling]",
-            "t.md:5:9: 英語の辞書に無い語「recieve」を使っている [spelling]",
+            "t.md:5:3: [spelling] 英語の辞書に無い語「teh」を使っている",
+            "t.md:5:9: [spelling] 英語の辞書に無い語「recieve」を使っている",
         ]
     );
 
@@ -3604,7 +3603,7 @@ fn image_alts_leave_out_the_destinations_and_titles_of_nested_links_and_images()
     assert_eq!(
         findings_of(&found, "1.1.5.図表のキャプション"),
         [
-            "t.md:1:11: 図表のキャプションを常体(である調)に揃える: 「です。」は敬体 [1.1.5.図表のキャプション]"
+            "t.md:1:11: [1.1.5.図表のキャプション] 図表のキャプションを常体(である調)に揃える: 「です。」は敬体"
         ]
     );
 }
@@ -3802,10 +3801,10 @@ fn spelling_checks_slash_separated_words_but_preserves_names_and_paths() {
     assert_eq!(
         findings_of(&found, "spelling"),
         [
-            "t.md:1:6: 英語の辞書に無い語「visualizaion」を使っている [spelling]",
-            "t.md:1:19: 英語の辞書に無い語「bicubic」を使っている [spelling]",
-            "t.md:1:27: 英語の辞書に無い語「lighweight」を使っている [spelling]",
-            "t.md:1:49: 英語の辞書に無い語「recieve」を使っている [spelling]",
+            "t.md:1:6: [spelling] 英語の辞書に無い語「visualizaion」を使っている",
+            "t.md:1:19: [spelling] 英語の辞書に無い語「bicubic」を使っている",
+            "t.md:1:27: [spelling] 英語の辞書に無い語「lighweight」を使っている",
+            "t.md:1:49: [spelling] 英語の辞書に無い語「recieve」を使っている",
         ]
     );
 }
@@ -3844,7 +3843,7 @@ fn ja_no_successive_word_reports_only_configured_repeated_marks() {
         ("7:6", '。'),
     ]
     .map(|(position, mark)| {
-        format!("t.md:{position}: 「{mark}」が2回続いている [ja-no-successive-word]")
+        format!("t.md:{position}: [ja-no-successive-word] 「{mark}」が2回続いている")
     });
     assert_eq!(findings_of(&found, "ja-no-successive-word"), expected);
 }
@@ -3857,7 +3856,7 @@ fn spelling_preserves_repository_names_confirmed_by_link_destinations() {
     );
     assert_eq!(
         findings_of(&found, "spelling"),
-        ["t.md:3:7: 英語の辞書に無い語「visualizaion」を使っている [spelling]"]
+        ["t.md:3:7: [spelling] 英語の辞書に無い語「visualizaion」を使っている"]
     );
 }
 

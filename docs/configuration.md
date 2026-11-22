@@ -89,13 +89,13 @@ sentence-length = { max = 120 } # オプションを変えて追加する
 presetを使うと、関連するルールをまとめて指定できます。
 `true` で有効にし、`false` で無効にします。
 
-| preset                           | 有効になるルール                                           |
-| -------------------------------- | ---------------------------------------------------------- |
-| `preset-ja-technical-writing`    | [日本語の技術文書](./rules.md#technical-writing)の23ルール |
-| `@textlint-ja/preset-ai-writing` | [AIが多用する書き方](./rules.md#ai-writing)の5ルール       |
-| `preset-ai-words-ja`             | `no-ai-words`                                              |
-| `preset-ja-spacing`              | [空白](./rules.md#spacing)の9ルール                        |
-| `preset-jtf-style`               | [JTFスタイルガイド](./rules.md#jtf-style)の33ルール        |
+| preset                           | 有効になるルール                                                                                        |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `preset-ja-technical-writing`    | [日本語の技術文書](./rules.md#technical-writing)の23ルール                                              |
+| `@textlint-ja/preset-ai-writing` | [AIが多用する書き方](./rules.md#ai-writing)の5ルール                                                    |
+| `preset-ai-words-ja`             | `no-ai-words`                                                                                           |
+| `preset-ja-spacing`              | [空白](./rules.md#spacing)の9ルール                                                                     |
+| `preset-jtf-style`               | 日本翻訳連盟(Japan Translation Federation、JTF)の[スタイルガイド](./rules.md#jtf-style)に基づく33ルール |
 
 同じファイルの中では、個別のルールの指定がpresetより優先されます。
 

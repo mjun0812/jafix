@@ -146,12 +146,15 @@ fn check_batch(config: &str, cases: &[FixtureCase], failures: &mut Vec<String>) 
     let mut to_fix = Vec::new();
     for (path, entry) in paths.iter().zip(cases) {
         let label = format!("{}: {}", entry.fixture, entry.case.name);
-        let suffix = format!(" [{}]", entry.rule);
+        let prefix = format!("[{}] ", entry.rule);
         let (findings, messages): (Vec<_>, Vec<_>) = by_path
             .get(path.as_str())
             .into_iter()
             .flatten()
-            .filter_map(|line| line.strip_suffix(&suffix)?.split_once(": "))
+            .filter_map(|line| {
+                let (position, report) = line.split_once(": ")?;
+                Some((position, report.strip_prefix(&prefix)?))
+            })
             .unzip();
         if findings != entry.case.findings {
             failures.push(format!(

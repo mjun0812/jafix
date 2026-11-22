@@ -2,7 +2,7 @@ mod common;
 
 use std::path::Path;
 
-use common::{AI_WORDS_PATTERN, Sandbox, read, stdout};
+use common::{AI_WORDS_PATTERN, Sandbox, finding_rule, read, stdout};
 use serde_json::json;
 
 /// Codexが実際に渡すapply_patchの入力の形
@@ -182,7 +182,7 @@ fn apply_patch_reports_the_plus_line_to_stderr_and_exits_2() {
     assert_eq!(read(&path), "語 A\n照合B\n");
     let stderr = String::from_utf8(output.stderr).unwrap();
     let expected = format!(
-        "{}:2:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]",
+        "{}:2:1: [@textlint-rule/pattern] 「照合」: AIが多用する語",
         path.display()
     );
     assert!(stderr.lines().any(|line| line == expected), "{stderr}");
@@ -216,11 +216,11 @@ fn reports_and_unlocated_chunks_are_both_written_with_exit_2() {
     assert!(
         stderr
             .lines()
-            .any(|line| line.contains(&missing_path) && !line.ends_with("[@textlint-rule/pattern]")),
+            .any(|line| line.contains(&missing_path) && finding_rule(line).is_none()),
         "{stderr}"
     );
     let report = format!(
-        "{}:2:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]",
+        "{}:2:1: [@textlint-rule/pattern] 「照合」: AIが多用する語",
         reported.display()
     );
     assert!(stderr.lines().any(|line| line == report), "{stderr}");
@@ -237,7 +237,7 @@ fn apply_patch_reports_a_builtin_report_rule_on_the_plus_line() {
     assert!(
         stderr
             .lines()
-            .any(|line| line.ends_with("[no-unmatched-pair]")),
+            .any(|line| finding_rule(line) == Some("no-unmatched-pair")),
         "{stderr}"
     );
 }

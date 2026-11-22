@@ -2,17 +2,30 @@
 
 ## インストール {#install}
 
-配布バイナリはmacOS (Apple Silicon)、Linux (x86_64、aarch64)、Windows (x64)向けです。
-macOSとLinuxでは [mise](https://mise.jdx.dev/) で導入します。
+### 配布バイナリを直接ダウンロード {#download}
+
+[GitHub Releases](https://github.com/mjun0812/jafix/releases)から環境に合うファイルをダウンロードして展開します。リポジトリが非公開の場合は、アクセス権のあるアカウントでGitHubにログインします。
+
+| 環境                  | 配布ファイル                            |
+| --------------------- | --------------------------------------- |
+| macOS (Apple Silicon) | `jafix-aarch64-apple-darwin.tar.gz`       |
+| Linux (x86_64)        | `jafix-x86_64-unknown-linux-musl.tar.gz`  |
+| Linux (ARM64)         | `jafix-aarch64-unknown-linux-musl.tar.gz` |
+| Windows (x64)         | `jafix-x86_64-pc-windows-msvc.zip`        |
+
+展開した `jafix` または `jafix.exe` を `PATH` の通ったディレクトリに置きます。
+
+### miseでインストール {#mise}
+
+[mise](https://mise.jdx.dev/)は、環境に合う配布バイナリをGitHub Releasesから取得します。リポジトリが非公開の場合は、読み取り権限のあるトークンを環境変数 `MISE_GITHUB_TOKEN` に設定してから実行します。[miseの認証手順](https://mise.jdx.dev/dev-tools/github-tokens.html)
 
 ```sh
 mise use -g github:mjun0812/jafix
 ```
 
-Windowsでは [GitHub Releases](https://github.com/mjun0812/jafix/releases) から `jafix-x86_64-pc-windows-msvc.zip` を取得して展開します。
-`PATH` で指定済みのディレクトリへ `jafix.exe` を移します。
+### ソースからビルド {#source}
 
-ソースからビルドする場合は、リポジトリを取得して次を実行します。
+リポジトリを取得して次を実行します。
 初回のビルドには形態素解析の辞書のダウンロードが必要です。
 
 ```sh
@@ -20,6 +33,10 @@ git clone https://github.com/mjun0812/jafix.git
 cd jafix
 cargo install --path .
 ```
+
+### インストールを確認する {#verify-install}
+
+`jafix --version` を実行します。miseを有効にしていないシェルでは `mise exec -- jafix --version` を使えます。
 
 ```console
 $ jafix --version
@@ -38,14 +55,14 @@ jafix は全角括弧（かっこ）を半角にします。
 ```
 
 `jafix check` は修正できる箇所と指摘を1件1行で出力します。ファイルの内容はそのままです。
-各行には `パス:行:列: 文面 [ルールID]` の順で表示します。
+各行には `パス:行:列: [ルールID] 文面` の順で表示します。
 
 ```console
 $ jafix check example.md
-example.md:3:6: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]
-example.md:3:12: 全角括弧を半角にする [fullwidth-paren]
-example.md:3:16: 全角括弧を半角にする [fullwidth-paren]
-example.md:4:4: 「を」が2回続いている [ja-no-successive-word]
+example.md:3:6: [space-between-ja-and-alnum] 日本語と英数字の間の空白を削除する
+example.md:3:12: [fullwidth-paren] 全角括弧を半角にする
+example.md:3:16: [fullwidth-paren] 全角括弧を半角にする
+example.md:4:4: [ja-no-successive-word] 「を」が2回続いている
 ```
 
 | 終了コード | 意味                                   |
@@ -56,7 +73,7 @@ example.md:4:4: 「を」が2回続いている [ja-no-successive-word]
 
 ## 修正する {#fix}
 
-`jafix fix` は修正ルールを適用して、ファイルを書き換えます。
+`jafix fix` は修正ルールを適用して、ファイルを書き換えます。成功時は何も表示しません。
 
 ```console
 $ jafix fix example.md
@@ -67,11 +84,18 @@ jafixは全角括弧(かっこ)を半角にします。
 結果をを確認します。
 ```
 
+保存した変更を確認するときは、目的に合うオプションを指定します。
+
+- `--list` は修正したファイルのパスだけを表示します。
+- `--summary` は修正したファイル数と変更のなかったファイル数を表示します。
+- `--timing` はファイルごとの処理時間を秒単位で表示します。
+- `--show-diff` はファイルを保存したあと、修正前後の差分を表示します。
+
 この例では、`fix` で括弧と空白が直ります。もう一度 `check` を実行すると、残った指摘を確認できます。
 
 ```console
 $ jafix check example.md
-example.md:4:4: 「を」が2回続いている [ja-no-successive-word]
+example.md:4:4: [ja-no-successive-word] 「を」が2回続いている
 ```
 
 `check` と `fix` にはテキストファイルを複数指定できます。UTF-8とShift_JIS (CP932を含む)はファイルごとに自動で判定します。

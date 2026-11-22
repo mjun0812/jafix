@@ -212,7 +212,7 @@ fn edit_reports_only_on_the_changed_line_to_stderr_and_exits_2() {
     assert_eq!(
         lines[1],
         format!(
-            "{}:2:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]",
+            "{}:2:1: [@textlint-rule/pattern] 「照合」: AIが多用する語",
             path.display()
         )
     );
@@ -241,7 +241,7 @@ fn write_of_a_new_heading_reports_the_space_and_leaves_the_file() {
     assert!(
         stderr(&output)
             .lines()
-            .any(|line| line.contains(":1:6:") && line.ends_with("[space-between-ja-and-alnum]")),
+            .any(|line| line.contains(":1:6: [space-between-ja-and-alnum] ")),
         "{}",
         stderr(&output)
     );
@@ -256,7 +256,10 @@ fn report_column_is_counted_on_the_fixed_line() {
     assert_eq!(output.status.code(), Some(2));
     assert_eq!(read(&path), "語A、照合\n");
     assert!(
-        stderr(&output).contains(&format!("{}:1:4: 「照合」", path.display())),
+        stderr(&output).contains(&format!(
+            "{}:1:4: [@textlint-rule/pattern] 「照合」",
+            path.display()
+        )),
         "{}",
         stderr(&output)
     );
@@ -307,7 +310,7 @@ fn edit_reports_a_long_sentence_on_the_changed_line() {
         lines.get(1).copied(),
         Some(
             format!(
-                "{}:3:1: 1文が100文字を超えている (101文字) [sentence-length]",
+                "{}:3:1: [sentence-length] 1文が100文字を超えている (101文字)",
                 path.display()
             )
             .as_str()
@@ -362,7 +365,7 @@ fn edit_reports_a_doubled_particle_only_on_the_changed_line() {
     assert_eq!(
         lines[1..],
         [format!(
-            "{}:3:4: 同じ助詞「は」が続いている [no-doubled-joshi]",
+            "{}:3:4: [no-doubled-joshi] 同じ助詞「は」が続いている",
             path.display()
         )],
         "{lines:?}"
@@ -389,7 +392,7 @@ fn edit_reports_a_mixed_style_counted_over_the_whole_file_on_the_changed_line() 
         lines.get(1).copied(),
         Some(
             format!(
-                "{}:5:5: 本文に「である」調が混ざっている [no-mix-dearu-desumasu]",
+                "{}:5:5: [no-mix-dearu-desumasu] 本文に「である」調が混ざっている",
                 path.display()
             )
             .as_str()
@@ -418,7 +421,7 @@ fn reports_ai_writing_findings_on_target_lines() {
     assert_eq!(
         lines[1..],
         [format!(
-            "{}:3:4: 誇張した表現「革命的な」を使っている [no-ai-hype-expressions]",
+            "{}:3:4: [no-ai-hype-expressions] 誇張した表現「革命的な」を使っている",
             path.display()
         )],
         "{lines:?}"

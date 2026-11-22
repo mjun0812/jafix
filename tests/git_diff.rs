@@ -61,11 +61,25 @@ fn worktree_diff_limits_findings_and_fixes_to_added_lines_with_markdown_context(
     let lines: Vec<_> = stdout(&output).lines().collect();
     assert_eq!(lines.len(), 4, "{lines:?}");
     assert!(lines[..3].iter().all(|line| line.starts_with("t.txt:3:")));
-    assert!(lines[3].starts_with("t.txt:13:1:"), "{lines:?}");
-    assert!(lines[3].ends_with("[yomiyasu-chat-response]"), "{lines:?}");
+    assert!(
+        lines[3].starts_with("t.txt:13:1: [yomiyasu-chat-response] "),
+        "{lines:?}"
+    );
 
-    let output = sandbox.run(&["fix", "--diff"]);
+    let output = sandbox.run(&["fix", "--diff", "--show-diff"]);
     assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(stdout(&output).starts_with("--- t.txt\n+++ t.txt\n"));
+    assert_eq!(
+        stdout(&output)
+            .lines()
+            .filter(|line| line.starts_with(['-', '+']))
+            .skip(2)
+            .collect::<Vec<_>>(),
+        [
+            "-追加の（本文）と結果をを確認します。",
+            "+追加の(本文)と結果をを確認します。"
+        ]
+    );
     assert_eq!(
         read(&path),
         concat!(

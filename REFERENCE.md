@@ -20,7 +20,7 @@ textlintから移した94ルールの内訳は次のとおりです。
 - `@textlint-ja/textlint-rule-preset-ai-writing` の5ルール(`no-ai-list-formatting` から `ai-tech-writing-guideline` まで)
 - `textlint-rule-preset-ai-words-ja` の2ルール(`no-ai-words` と `no-short-topic-comma`)
 - `textlint-rule-preset-ja-spacing` の11ルール(`ja-nakaguro-or-halfwidth-space-between-katakana` から `ja-space-around-strong` まで)
-- `textlint-rule-preset-jtf-style` の37ルール(`1.1.1.本文` から `4.3.8.一重引用符` まで)
+- 日本翻訳連盟(Japan Translation Federation、JTF)のスタイルガイドに基づく37ルール(`textlint-rule-preset-jtf-style` の `1.1.1.本文` から `4.3.8.一重引用符` まで)
 - `textlint-rule-no-mixed-zenkaku-and-hankaku-alphabet` と `textlint-rule-no-kangxi-radicals`
 - ひらがなで書く語、さ入れ言葉、同義語を見る7ルール(`ja-hiragana-hojodoushi` から `@textlint-ja/no-synonyms` まで)
 - 言語によらない3ルール(`no-todo`、`date-weekday-mismatch`、`no-dead-link`)
@@ -218,7 +218,7 @@ AIらしい書き方を指摘する7ルールのオプションは、次のと�
 
 ### JTFスタイルガイドの37ルール
 
-`textlint-rule-preset-jtf-style` の37ルールは、JTF日本語標準スタイルガイドの規則で、句読点・記号・括弧の字種、敬体と常体の統一、表記を見ます。IDは、textlintのpresetの設定に書くキー(`1.1.1.本文` など)と同じ文字列です。全角の括弧や空白を含むので、`[builtin]` には `"4.3.1.丸かっこ（）" = true` のように引用符で囲んで書きます。以下では、IDを先頭の番号(`4.3.1`)で略します。
+`textlint-rule-preset-jtf-style` の37ルールは、[JTF日本語標準スタイルガイド(翻訳用)](https://www.jtf.jp/tips/styleguide)に基づき、句読点・記号・括弧の使い方、文体の統一、表記などを確認します。IDは、textlintのpresetの設定に書くキー(`1.1.1.本文` など)と同じ文字列です。全角の括弧や空白を含むので、`[builtin]` には `"4.3.1.丸かっこ（）" = true` のように引用符で囲んで書きます。以下では、IDを先頭の番号(`4.3.1`)で略します。
 
 37ルールは、空白と字種の13ルールと同じ考え方で、修正ルールと指摘ルールに分かれます。字種だけを置き換える箇所と、空白を削除する箇所は直します。記号の種類を変える箇所・記号を外す箇所・空白を足す箇所・辞書で語を置き換える箇所は指摘します。同じIDでも、`2.1.5` は半角カナの部分が修正で辞書の部分が指摘になり、`3.3` は空白を削除する側が修正で空白を求める側が指摘になります。
 
@@ -635,17 +635,23 @@ patterns = [
 
 ## 導入
 
-配布バイナリの対象はmacOS (Apple Silicon)、Linux (x86_64、aarch64)、Windows (x64)です。
-macOSとLinuxでは、GitHub Releasesにバイナリがあれば [mise](https://mise.jdx.dev/) で導入できます。
+### 配布バイナリを直接ダウンロード
+
+[GitHub Releases](https://github.com/mjun0812/jafix/releases)から環境に合うファイルをダウンロードして展開します。配布対象はmacOS (Apple Silicon)、Linux (x86_64とARM64)、Windows (x64)です。展開した `jafix` または `jafix.exe` を `PATH` の通ったディレクトリに置きます。
+
+リポジトリが非公開の場合は、アクセス権のあるアカウントでGitHubにログインします。環境ごとのファイル名は[クイックスタート](docs/quick-start.md)にあります。
+
+### miseでインストール
+
+[mise](https://mise.jdx.dev/)は、環境に合う配布バイナリをGitHub Releasesから取得します。リポジトリが非公開の場合は、読み取り権限のあるトークンを環境変数 `MISE_GITHUB_TOKEN` に設定してから実行します。[miseの認証手順](https://mise.jdx.dev/dev-tools/github-tokens.html)
 
 ```sh
 mise use -g github:mjun0812/jafix
 ```
 
-Windowsでは [GitHub Releases](https://github.com/mjun0812/jafix/releases) から `jafix-x86_64-pc-windows-msvc.zip` を取得して展開します。
-`PATH` で指定済みのディレクトリへ `jafix.exe` を移します。
+### ソースからビルド
 
-ソースからビルドする場合は、リポジトリを取得したディレクトリで次のコマンドを実行します。
+リポジトリを取得したディレクトリで次のコマンドを実行します。
 
 ```sh
 cargo install --path .
@@ -656,15 +662,15 @@ cargo install --path .
 ## 使い方
 
 `jafix check` はファイルを書き換えず、修正ルールに当たる箇所と指摘ルールの指摘を、ファイル内の位置の順に1件1行で出力します。
-列は文字単位で数え、先頭の列は1です。
+書式は `パス:行:列: [ルールID] 文面` です。列は文字単位で数え、先頭の列は1です。
 `@textlint-rule/pattern` の行では、パターンに一致した文字列を `「」` で囲み、要素の `message` を続けます。
 ほかのルールは1行の文面を出します。
 
 ```console
 $ jafix check t.md
-t.md:1:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]
-t.md:1:3: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]
-t.md:2:1: 1文が100文字を超えている (101文字) [sentence-length]
+t.md:1:1: [@textlint-rule/pattern] 「照合」: AIが多用する語
+t.md:1:3: [space-between-ja-and-alnum] 日本語と英数字の間の空白を削除する
+t.md:2:1: [sentence-length] 1文が100文字を超えている (101文字)
 ```
 
 `jafix fix` はファイルの全行を修正ルールの判定対象にし、修正した内容を書き戻します。指摘は `jafix check` で確認できます。
@@ -688,6 +694,20 @@ NUL (U+0000)を含むファイルは、自動判定の対象外です。この�
 | 0          | 修正ルールに当たる箇所も指摘も無い        | 成功した                                       |
 | 1          | 修正ルールに当たる箇所か指摘が1件以上ある | -                                              |
 | 2          | ファイルを読めない、設定ファイルが不正    | ファイルを読み書きできない、設定ファイルが不正 |
+
+### 修正結果の表示
+
+`jafix fix` は成功時に何も表示しません。保存した変更を確認するときは、次のオプションを使います。
+
+| オプション    | 出力先     | 内容                                                   |
+| ------------- | ---------- | ------------------------------------------------------ |
+| `--list`      | 標準出力   | 修正したファイルのパスを1行ずつ表示                     |
+| `--summary`   | 標準エラー | 修正したファイル数と変更のなかったファイル数             |
+| `--timing`    | 標準エラー | 読み込みから修正、保存までにかかった時間をファイルごとに秒単位で表示 |
+| `--show-diff` | 標準出力   | 保存した変更のunified diffをUTF-8で表示                 |
+
+`--list` と `--show-diff` はどちらか一方を指定します。`--summary` と `--timing` はほかのオプションと併用できます。
+たとえば `jafix fix --diff --show-diff` は、Gitの差分にある行を修正して保存し、その修正の差分を表示します。
 
 ### Gitの差分
 
@@ -744,7 +764,7 @@ jafixはパッチの `+` 行に対応する位置を編集後のファイルで�
 
 ```text
 jafix: 今回変えた行に指摘がある。編集は適用済み。指摘を直すか、誤検知なら直さずに進めてよい
-/path/to/t.md:2:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]
+/path/to/t.md:2:1: [@textlint-rule/pattern] 「照合」: AIが多用する語
 ```
 
 同じ行をもう一度編集すると、その行が再び指摘の対象になります。終了コード1の場合は、Claude CodeとCodexのどちらでも利用者に失敗を表示し、agentは作業を続けます。

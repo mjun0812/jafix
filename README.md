@@ -5,14 +5,15 @@ jafixは日本語のテキストファイルを校正するCLIです。
 
 ## 導入
 
-ソースから導入する場合は、リポジトリのルートで次のコマンドを実行します。
-初回のビルドには形態素解析の辞書のダウンロードが必要です。
+[GitHub Releases](https://github.com/mjun0812/jafix/releases)から環境に合うバイナリをダウンロードします。展開した `jafix` または `jafix.exe` を `PATH` の通ったディレクトリに置きます。
+
+[mise](https://mise.jdx.dev/)を使う場合は、次のコマンドで配布バイナリをインストールできます。
 
 ```sh
-cargo install --path .
+mise use -g github:mjun0812/jafix
 ```
 
-[配布バイナリとmiseでの導入](REFERENCE.md#導入)
+配布ファイルの選び方、非公開リポジトリの認証、ソースからのビルド手順は[導入の詳細](REFERENCE.md#導入)にあります。
 
 ## 使い方
 

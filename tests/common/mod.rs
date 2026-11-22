@@ -83,6 +83,12 @@ pub fn stdout(output: &Output) -> &str {
     std::str::from_utf8(&output.stdout).unwrap()
 }
 
+pub fn finding_rule(line: &str) -> Option<&str> {
+    let (_, finding) = line.split_once(": [")?;
+    let (rule, _) = finding.split_once("] ")?;
+    Some(rule)
+}
+
 pub fn fixture(name: &str) -> String {
     read(
         &Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -168,12 +174,12 @@ pub fn user_replacement_reports(path: &Path) -> Vec<String> {
     let path = path.display();
     vec![
         format!(
-            "{path}:1:3: 「クッキー」を「Cookie」にする。見出しのアンカーが変わるので、見出しへのリンクも直す [prh]"
+            "{path}:1:3: [prh] 「クッキー」を「Cookie」にする。見出しのアンカーが変わるので、見出しへのリンクも直す"
         ),
         format!(
-            "{path}:1:8: 「TODO」: TODOを残さない。見出しのアンカーが変わるので、見出しへのリンクも直す [@textlint-rule/pattern]"
+            "{path}:1:8: [@textlint-rule/pattern] 「TODO」: TODOを残さない。見出しのアンカーが変わるので、見出しへのリンクも直す"
         ),
-        format!("{path}:5:13: 「FIXME」: FIXMEを残さない [@textlint-rule/pattern]"),
+        format!("{path}:5:13: [@textlint-rule/pattern] 「FIXME」: FIXMEを残さない"),
     ]
 }
 
@@ -211,13 +217,13 @@ pub fn spacing_rule_reports(path: &Path) -> Vec<String> {
     let path = path.display();
     vec![
         format!(
-            "{path}:1:3: 全角のアルファベット「Ｒｕｓｔ」を半角にする。見出しのアンカーが変わるので、見出しへのリンクも直す [no-mixed-zenkaku-and-hankaku-alphabet]"
+            "{path}:1:3: [no-mixed-zenkaku-and-hankaku-alphabet] 全角のアルファベット「Ｒｕｓｔ」を半角にする。見出しのアンカーが変わるので、見出しへのリンクも直す"
         ),
         format!(
-            "{path}:1:8: 康熙部首「⼊」を漢字「入」にする。見出しのアンカーが変わるので、見出しへのリンクも直す [no-kangxi-radicals]"
+            "{path}:1:8: [no-kangxi-radicals] 康熙部首「⼊」を漢字「入」にする。見出しのアンカーが変わるので、見出しへのリンクも直す"
         ),
         format!(
-            "{path}:5:5: 文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする [ja-space-after-exclamation]"
+            "{path}:5:5: [ja-space-after-exclamation] 文末の「！」の後に別の文が続くので、直後の半角空白を全角空白にする"
         ),
     ]
 }
@@ -242,7 +248,7 @@ pub fn spacing_rule_lines(stderr: &str) -> Vec<&str> {
     ];
     stderr
         .lines()
-        .filter(|line| IDS.iter().any(|id| line.ends_with(&format!(" [{id}]"))))
+        .filter(|line| finding_rule(line).is_some_and(|id| IDS.contains(&id)))
         .collect()
 }
 
@@ -291,12 +297,12 @@ pub const JTF_STYLE_RULES_HOOK_FIXED: &str = "# 見出し。
 pub fn jtf_style_rule_reports(path: &Path) -> Vec<String> {
     let path = path.display();
     vec![
-        format!("{path}:3:7: 本文を敬体(ですます調)に揃える: 「だ。」は常体 [1.1.1.本文]"),
-        format!("{path}:3:10: コロンは全角の「：」にする [4.2.7.コロン(：)]"),
+        format!("{path}:3:7: [1.1.1.本文] 本文を敬体(ですます調)に揃える: 「だ。」は常体"),
+        format!("{path}:3:10: [4.2.7.コロン(：)] コロンは全角の「：」にする"),
         format!(
-            "{path}:7:1: 箇条書きの文末の「。」の有無を揃える: 「。」を付ける [1.1.3.箇条書き]"
+            "{path}:7:1: [1.1.3.箇条書き] 箇条書きの文末の「。」の有無を揃える: 「。」を付ける"
         ),
-        format!("{path}:7:3: 「サーバは7」を「サーバーは7」にする [2.1.6.カタカナの長音]"),
+        format!("{path}:7:3: [2.1.6.カタカナの長音] 「サーバは7」を「サーバーは7」にする"),
     ]
 }
 
@@ -305,8 +311,7 @@ pub fn jtf_style_rule_lines(stderr: &str) -> Vec<&str> {
     stderr
         .lines()
         .filter(|line| {
-            line.rsplit_once(" [")
-                .is_some_and(|(_, id)| id.starts_with(|c: char| c.is_ascii_digit()))
+            finding_rule(line).is_some_and(|id| id.starts_with(|c: char| c.is_ascii_digit()))
         })
         .collect()
 }
@@ -350,19 +355,19 @@ pub fn hiragana_and_synonyms_rule_reports(path: &Path) -> Vec<String> {
     let path = path.display();
     vec![
         format!(
-            "{path}:3:3: 形式名詞「事」はひらがなの「こと」にする [ja-hiragana-keishikimeishi]"
+            "{path}:3:3: [ja-hiragana-keishikimeishi] 形式名詞「事」はひらがなの「こと」にする"
         ),
-        format!("{path}:3:3: 形式名詞「事」はひらがなの「こと」にする [ja-keishikimeishi]"),
-        format!("{path}:3:8: 副詞「既に」はひらがなの「すでに」にする [ja-hiragana-fukushi]"),
-        format!("{path}:3:15: 代名詞「彼処」はひらがなの「あそこ」にする [ja-hiragana-daimeishi]"),
+        format!("{path}:3:3: [ja-keishikimeishi] 形式名詞「事」はひらがなの「こと」にする"),
+        format!("{path}:3:8: [ja-hiragana-fukushi] 副詞「既に」はひらがなの「すでに」にする"),
+        format!("{path}:3:15: [ja-hiragana-daimeishi] 代名詞「彼処」はひらがなの「あそこ」にする"),
         format!(
-            "{path}:5:8: さ入れ言葉「辛さそう」は「辛そう」にする [@textlint-ja/no-insert-dropping-sa]"
-        ),
-        format!(
-            "{path}:5:13: 同義語の「サーバ」と「サーバー」が混ざっている [@textlint-ja/no-synonyms]"
+            "{path}:5:8: [@textlint-ja/no-insert-dropping-sa] さ入れ言葉「辛さそう」は「辛そう」にする"
         ),
         format!(
-            "{path}:5:23: 補助動詞「致し」はひらがなの「いたし」にする [ja-hiragana-hojodoushi]"
+            "{path}:5:13: [@textlint-ja/no-synonyms] 同義語の「サーバ」と「サーバー」が混ざっている"
+        ),
+        format!(
+            "{path}:5:23: [ja-hiragana-hojodoushi] 補助動詞「致し」はひらがなの「いたし」にする"
         ),
     ]
 }
@@ -372,9 +377,7 @@ pub fn hiragana_and_synonyms_rule_lines(stderr: &str) -> Vec<&str> {
     stderr
         .lines()
         .filter(|line| {
-            HIRAGANA_AND_SYNONYMS_RULES
-                .iter()
-                .any(|id| line.ends_with(&format!(" [{id}]")))
+            finding_rule(line).is_some_and(|id| HIRAGANA_AND_SYNONYMS_RULES.contains(&id))
         })
         .collect()
 }
@@ -406,11 +409,11 @@ TODO: 2024年4月23日(月)に[設定](missing.md)と[別](allowed.md)を見る�
 pub fn general_rule_reports(path: &Path) -> Vec<String> {
     let path = path.display();
     vec![
-        format!("{path}:1:1: TODOが残っている: 「TODO: 2024年4月23日(月)に」 [no-todo]"),
+        format!("{path}:1:1: [no-todo] TODOが残っている: 「TODO: 2024年4月23日(月)に」"),
         format!(
-            "{path}:1:18: 「2024年4月23日(」の曜日は「火」で、「月」ではない [date-weekday-mismatch]"
+            "{path}:1:18: [date-weekday-mismatch] 「2024年4月23日(」の曜日は「火」で、「月」ではない"
         ),
-        format!("{path}:1:26: リンク先のファイルが無い: missing.md [no-dead-link]"),
+        format!("{path}:1:26: [no-dead-link] リンク先のファイルが無い: missing.md"),
     ]
 }
 
@@ -419,9 +422,9 @@ pub fn general_rule_lines(stderr: &str) -> Vec<&str> {
     stderr
         .lines()
         .filter(|line| {
-            ["no-todo", "date-weekday-mismatch", "no-dead-link"]
-                .iter()
-                .any(|id| line.ends_with(&format!(" [{id}]")))
+            finding_rule(line).is_some_and(|id| {
+                ["no-todo", "date-weekday-mismatch", "no-dead-link"].contains(&id)
+            })
         })
         .collect()
 }
@@ -462,18 +465,18 @@ We recieve teh cat, which is clearly wrong.
 pub fn english_rule_reports(path: &Path) -> Vec<String> {
     let path = path.display();
     vec![
-        format!("{path}:3:5: 「javascript」を「JavaScript」にする [terminology]"),
-        format!("{path}:3:5: 英語の辞書に無い語「javascript」を使っている [spelling]"),
-        format!("{path}:5:4: 英語の辞書に無い語「recieve」を使っている [spelling]"),
+        format!("{path}:3:5: [terminology] 「javascript」を「JavaScript」にする"),
+        format!("{path}:3:5: [spelling] 英語の辞書に無い語「javascript」を使っている"),
+        format!("{path}:5:4: [spelling] 英語の辞書に無い語「recieve」を使っている"),
         format!(
-            "{path}:5:4: よくある綴りの誤り「recieve」を使っている。正しくは「receive」 [common-misspellings]"
+            "{path}:5:4: [common-misspellings] よくある綴りの誤り「recieve」を使っている。正しくは「receive」"
         ),
-        format!("{path}:5:12: 英語の辞書に無い語「teh」を使っている [spelling]"),
+        format!("{path}:5:12: [spelling] 英語の辞書に無い語「teh」を使っている"),
         format!(
-            "{path}:5:12: よくある綴りの誤り「teh」を使っている。正しくは「the」 [common-misspellings]"
+            "{path}:5:12: [common-misspellings] よくある綴りの誤り「teh」を使っている。正しくは「the」"
         ),
         format!(
-            "{path}:5:30: 「clearly」は曖昧な語、意味を弱める語である(weasel・adverb) [write-good]"
+            "{path}:5:30: [write-good] 「clearly」は曖昧な語、意味を弱める語である(weasel・adverb)"
         ),
     ]
 }
@@ -483,14 +486,15 @@ pub fn english_rule_lines(stderr: &str) -> Vec<&str> {
     stderr
         .lines()
         .filter(|line| {
-            [
-                "terminology",
-                "spelling",
-                "common-misspellings",
-                "write-good",
-            ]
-            .iter()
-            .any(|id| line.ends_with(&format!(" [{id}]")))
+            finding_rule(line).is_some_and(|id| {
+                [
+                    "terminology",
+                    "spelling",
+                    "common-misspellings",
+                    "write-good",
+                ]
+                .contains(&id)
+            })
         })
         .collect()
 }

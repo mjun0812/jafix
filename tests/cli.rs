@@ -1,6 +1,6 @@
 mod common;
 
-use common::{AI_WORDS_PATTERN, Sandbox, fixture, read, stdout};
+use common::{AI_WORDS_PATTERN, Sandbox, finding_rule, fixture, read, stdout};
 
 fn fix_one_file(content: &str) -> String {
     let sandbox = Sandbox::new();
@@ -81,8 +81,8 @@ fn check_and_fix_detect_shift_jis_and_fix_preserves_the_encoding_and_crlf() {
     assert_eq!(check.status.code(), Some(1), "{check:?}");
     assert_eq!(
         stdout(&check),
-        "t.txt:1:4: 全角括弧を半角にする [fullwidth-paren]\n\
-         t.txt:1:7: 全角括弧を半角にする [fullwidth-paren]\n"
+        "t.txt:1:4: [fullwidth-paren] 全角括弧を半角にする\n\
+         t.txt:1:7: [fullwidth-paren] 全角括弧を半角にする\n"
     );
     assert_eq!(std::fs::read(&path).unwrap(), original);
     let utf8 = sandbox.write("u.txt", "表記を（確認）します。\n");
@@ -109,7 +109,7 @@ fn explicit_shift_jis_overrides_valid_utf8() {
     assert_eq!(explicit.status.code(), Some(1), "{explicit:?}");
     assert_eq!(
         stdout(&explicit),
-        "t.txt:1:1: 半角カナを全角にする [no-hankaku-kana]\n"
+        "t.txt:1:1: [no-hankaku-kana] 半角カナを全角にする\n"
     );
 }
 
@@ -162,13 +162,14 @@ fn check_routes_japanese_morphology_by_paragraph_and_keeps_english_rules() {
     assert!(
         findings
             .lines()
-            .any(|line| line.starts_with("t.md:1:") && line.ends_with("[common-misspellings]")),
+            .any(|line| line.starts_with("t.md:1:")
+                && finding_rule(line) == Some("common-misspellings")),
         "{findings}"
     );
     assert_eq!(
         findings
             .lines()
-            .filter(|line| line.ends_with("[max-ten]"))
+            .filter(|line| finding_rule(line) == Some("max-ten"))
             .count(),
         1,
         "{findings}"
@@ -176,24 +177,75 @@ fn check_routes_japanese_morphology_by_paragraph_and_keeps_english_rules() {
     assert!(
         findings
             .lines()
-            .any(|line| line.starts_with("t.md:3:") && line.ends_with("[max-ten]")),
+            .any(|line| line.starts_with("t.md:3:") && finding_rule(line) == Some("max-ten")),
         "{findings}"
     );
     assert!(
-        findings
-            .lines()
-            .any(|line| line.starts_with("t.md:5:") && line.ends_with("[ja-no-successive-word]")),
+        findings.lines().any(|line| line.starts_with("t.md:5:")
+            && finding_rule(line) == Some("ja-no-successive-word")),
         "{findings}"
     );
+}
+
+#[test]
+fn fix_lists_changed_files_and_reports_counts_and_times() {
+    let sandbox = Sandbox::new();
+    let changed = sandbox.write("changed.md", "文（例）です。\n");
+    let unchanged = sandbox.write("unchanged.md", "文(例)です。\n");
+    let output = sandbox.run(&[
+        "fix",
+        "--list",
+        "--summary",
+        "--timing",
+        "./changed.md",
+        "unchanged.md",
+    ]);
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert_eq!(stdout(&output), "./changed.md\n");
+    assert_eq!(read(&changed), "文(例)です。\n");
+    assert_eq!(read(&unchanged), "文(例)です。\n");
+
+    let stderr = std::str::from_utf8(&output.stderr).unwrap();
+    let lines: Vec<_> = stderr.lines().collect();
+    assert_eq!(lines.len(), 3, "{stderr}");
+    for (line, path) in lines.iter().zip(["./changed.md: ", "unchanged.md: "]) {
+        let seconds: f64 = line
+            .strip_prefix(path)
+            .and_then(|time| time.strip_suffix(" s"))
+            .unwrap_or_else(|| panic!("{line}"))
+            .parse()
+            .unwrap();
+        assert!(seconds.is_finite() && seconds >= 0.0);
+    }
+    assert_eq!(lines[2], "修正: 1ファイル、変更なし: 1ファイル");
+}
+
+#[test]
+fn fix_shows_the_saved_diff_without_a_trailing_newline() {
+    let sandbox = Sandbox::new();
+    let path = sandbox.write("t.md", "文（例）です。");
+    let output = sandbox.run(&["fix", "--show-diff", "t.md"]);
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty());
+    assert_eq!(read(&path), "文(例)です。");
+    assert_eq!(
+        stdout(&output),
+        "--- t.md\n+++ t.md\n@@ -1 +1 @@\n-文（例）です。\n\\ No newline at end of file\n+文(例)です。\n\\ No newline at end of file\n"
+    );
+    let unchanged = sandbox.run(&["fix", "--show-diff", "t.md"]);
+    assert_eq!(unchanged.status.code(), Some(0), "{unchanged:?}");
+    assert!(unchanged.stdout.is_empty());
+    assert!(unchanged.stderr.is_empty());
 }
 
 #[test]
 fn fix_continues_after_an_unreadable_file_and_exits_2() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("t.md", "日本語 Rust\n");
-    let output = sandbox.run(&["fix", "missing.md", "t.md"]);
+    let output = sandbox.run(&["fix", "--list", "missing.md", "t.md"]);
     assert_eq!(output.status.code(), Some(2));
     assert!(!output.stderr.is_empty());
+    assert_eq!(stdout(&output), "t.md\n");
     assert_eq!(read(&path), "日本語Rust\n");
 }
 
@@ -205,7 +257,7 @@ fn check_prints_findings_without_changing_the_file() {
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         stdout(&output),
-        "t.md:1:4: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]\n"
+        "t.md:1:4: [space-between-ja-and-alnum] 日本語と英数字の間の空白を削除する\n"
     );
     assert_eq!(read(&path), "日本語 Rustです。");
 }
@@ -218,9 +270,9 @@ fn check_prints_each_rule_with_line_and_character_column() {
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         stdout(&output),
-        "t.md:3:8: 日本語と括弧の間の空白を削除する [space-between-ja-and-paren]\n\
-         t.md:3:9: 全角括弧を半角にする [fullwidth-paren]\n\
-         t.md:3:12: 全角括弧を半角にする [fullwidth-paren]\n"
+        "t.md:3:8: [space-between-ja-and-paren] 日本語と括弧の間の空白を削除する\n\
+         t.md:3:9: [fullwidth-paren] 全角括弧を半角にする\n\
+         t.md:3:12: [fullwidth-paren] 全角括弧を半角にする\n"
     );
 }
 
@@ -274,7 +326,7 @@ fn check_reports_a_regex_pattern_element_with_the_matched_text() {
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         stdout(&output),
-        "t.md:1:4: 「〜」: AIが多用する語 [@textlint-rule/pattern]\n"
+        "t.md:1:4: [@textlint-rule/pattern] 「〜」: AIが多用する語\n"
     );
 }
 
@@ -283,8 +335,8 @@ fn check_does_not_match_pattern_elements_across_an_emphasis_boundary() {
     let output = check_with_patterns(&["照", "合", "照合"], "照**合**\n");
     assert_eq!(
         stdout(&output),
-        "t.md:1:1: 「照」: AIが多用する語 [@textlint-rule/pattern]\n\
-         t.md:1:4: 「合」: AIが多用する語 [@textlint-rule/pattern]\n"
+        "t.md:1:1: [@textlint-rule/pattern] 「照」: AIが多用する語\n\
+         t.md:1:4: [@textlint-rule/pattern] 「合」: AIが多用する語\n"
     );
 }
 
@@ -299,11 +351,11 @@ fn check_prints_fix_rule_findings_and_reports_in_position_order() {
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         stdout(&output),
-        "t.md:1:1: 「照合」: AIが多用する語 [@textlint-rule/pattern]\n\
-         t.md:1:3: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]\n\
-         t.md:1:8: 「！」を使わない [no-exclamation-question-mark]\n\
-         t.md:1:11: 「照合」: AIが多用する語 [@textlint-rule/pattern]\n\
-         t.md:1:13: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]\n"
+        "t.md:1:1: [@textlint-rule/pattern] 「照合」: AIが多用する語\n\
+         t.md:1:3: [space-between-ja-and-alnum] 日本語と英数字の間の空白を削除する\n\
+         t.md:1:8: [no-exclamation-question-mark] 「！」を使わない\n\
+         t.md:1:11: [@textlint-rule/pattern] 「照合」: AIが多用する語\n\
+         t.md:1:13: [space-between-ja-and-alnum] 日本語と英数字の間の空白を削除する\n"
     );
 }
 
@@ -334,15 +386,14 @@ fn check_reports_spaces_in_headings_with_a_message_about_links() {
     assert_eq!(output.status.code(), Some(1));
     let lines: Vec<&str> = stdout(&output).lines().collect();
     let expected = [
-        ("t.md:1:6: ", " [space-between-ja-and-alnum]"),
-        ("t.md:3:6: ", " [space-between-ja-and-paren]"),
-        ("t.md:3:11: ", " [space-between-ja-and-paren]"),
+        "t.md:1:6: [space-between-ja-and-alnum] ",
+        "t.md:3:6: [space-between-ja-and-paren] ",
+        "t.md:3:11: [space-between-ja-and-paren] ",
     ];
     assert_eq!(lines.len(), expected.len(), "{lines:?}");
-    for (line, (prefix, suffix)) in lines.into_iter().zip(expected) {
+    for (line, prefix) in lines.into_iter().zip(expected) {
         let message = line
             .strip_prefix(prefix)
-            .and_then(|line| line.strip_suffix(suffix))
             .unwrap_or_else(|| panic!("{line}"));
         assert!(message.contains("リンク"), "{line}");
     }
