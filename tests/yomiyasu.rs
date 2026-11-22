@@ -17,9 +17,9 @@ fn yomiyasu_rules_are_opt_in_and_only_report() {
     assert_eq!(check.status.code(), Some(1), "{check:?}");
     assert_eq!(
         stdout(&check),
-        "t.md:1:5: 太字の記号がそのまま表示される。記号と括弧や空白の位置を確認する [yomiyasu-bold-not-rendered]\n\
-         t.md:3:1: 執筆時の指示が本文に残っていないか確認する [yomiyasu-instruction-residue]\n\
-         t.md:5:1: チャット応答の定型句が本文に残っていないか確認する [yomiyasu-chat-response]\n"
+        "t.md:1:5: [yomiyasu-bold-not-rendered] 太字の記号がそのまま表示される。記号と括弧や空白の位置を確認する\n\
+         t.md:3:1: [yomiyasu-instruction-residue] 執筆時の指示が本文に残っていないか確認する\n\
+         t.md:5:1: [yomiyasu-chat-response] チャット応答の定型句が本文に残っていないか確認する\n"
     );
     let fix = sandbox.run(&["fix", "t.md"]);
     assert_eq!(fix.status.code(), Some(0), "{fix:?}");

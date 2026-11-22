@@ -127,9 +127,9 @@ echo "## 機能ごとの件数 (blocks-10.md)"
 echo
 echo "| 機能 | jafix | textlint |"
 echo "| --- | --: | --: |"
-echo "| 全角括弧 | $(grep -c '\[fullwidth-paren\]$' <<<"$jafix_out" || true) | $(grep -c '/prh\]$' <<<"$textlint_out" || true) |"
-echo "| 日本語と英数字の間の空白 | $(grep -c '\[space-between-ja-and-alnum\]$' <<<"$jafix_out" || true) | $(grep -c '/ja-space-between-half-and-full-width\]$' <<<"$textlint_out" || true) |"
-echo "| 日本語と括弧の間の空白と、2つの指摘ルール | $(grep -c -E '\[(space-between-ja-and-paren|@textlint-rule/pattern)\]$' <<<"$jafix_out" || true) | $(grep -c '/@textlint-rule/pattern\]$' <<<"$textlint_out" || true) |"
+echo "| 全角括弧 | $(grep -c -E ':[0-9]+:[0-9]+: \[fullwidth-paren\] ' <<<"$jafix_out" || true) | $(grep -c '/prh\]$' <<<"$textlint_out" || true) |"
+echo "| 日本語と英数字の間の空白 | $(grep -c -E ':[0-9]+:[0-9]+: \[space-between-ja-and-alnum\] ' <<<"$jafix_out" || true) | $(grep -c '/ja-space-between-half-and-full-width\]$' <<<"$textlint_out" || true) |"
+echo "| 日本語と括弧の間の空白と、2つの指摘ルール | $(grep -c -E ':[0-9]+:[0-9]+: \[(space-between-ja-and-paren|@textlint-rule/pattern)\] ' <<<"$jafix_out" || true) | $(grep -c '/@textlint-rule/pattern\]$' <<<"$textlint_out" || true) |"
 echo
 
 for file in "${files[@]}"; do

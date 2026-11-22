@@ -13,8 +13,10 @@ mod text_file;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
+use std::time::Instant;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
+use similar::TextDiff;
 
 use crate::apply::{LineIndex, TargetLines};
 use crate::config::Configs;
@@ -36,8 +38,8 @@ struct Cli {
 enum Command {
     /// 修正ルールに当たる箇所と指摘ルールの指摘を、ファイルを書き換えずに出力する
     Check(CheckArgs),
-    /// ファイルの全行に修正ルールを適用して書き戻す
-    Fix(Files),
+    /// 対象行に修正ルールを適用して書き戻す
+    Fix(FixArgs),
     /// agentのPostToolUse hookの入力を標準入力から読み、今回の編集の行を直して、その行の指摘を標準エラーで返す
     Hook { agent: Agent },
 }
@@ -49,6 +51,24 @@ struct CheckArgs {
     /// ステージ済みの内容を読み、HEADとの差分にある行だけを確認する
     #[arg(long, conflicts_with = "diff")]
     staged: bool,
+}
+
+#[derive(Args)]
+struct FixArgs {
+    #[command(flatten)]
+    files: Files,
+    /// 修正したファイルのパスを標準出力に1行ずつ表示する
+    #[arg(long, conflicts_with = "show_diff")]
+    list: bool,
+    /// 修正したファイル数と変更の無かったファイル数を標準エラーに表示する
+    #[arg(long)]
+    summary: bool,
+    /// 各ファイルの処理時間を秒単位で標準エラーに表示する
+    #[arg(long)]
+    timing: bool,
+    /// ファイルを修正して保存し、修正前後の差分を標準出力に表示する
+    #[arg(long)]
+    show_diff: bool,
 }
 
 #[derive(Args)]
@@ -217,14 +237,14 @@ fn run_check(args: &Files, staged: bool) -> ExitCode {
     }
 }
 
-/// `check` とhookが箇所と指摘を出す `<path>:<line>:<column>: <message> [<rule-id>]` の行
+/// `check` とhookが箇所と指摘を出す `<path>:<line>:<column>: [<rule-id>] <message>` の行
 fn location_line(path: &Path, (line, column): (usize, usize), message: &str, rule: &str) -> String {
-    format!("{}:{line}:{column}: {message} [{rule}]", path.display())
+    format!("{}:{line}:{column}: [{rule}] {message}", path.display())
 }
 
 /// 読み書きや設定の失敗があればexit 2
-fn run_fix(args: &Files) -> ExitCode {
-    let Some(selection) = select_files(args, false) else {
+fn run_fix(args: &FixArgs) -> ExitCode {
+    let Some(selection) = select_files(&args.files, false) else {
         return ExitCode::from(2);
     };
     let mut configs = match Configs::load() {
@@ -235,6 +255,9 @@ fn run_fix(args: &Files) -> ExitCode {
         }
     };
     let mut failed = false;
+    let mut changed = 0;
+    let mut unchanged = 0;
+    let mut stdout = std::io::stdout().lock();
     for target in &selection.files {
         let path = selection.root.join(&target.path);
         let config = match configs.for_path(&path) {
@@ -248,16 +271,46 @@ fn run_fix(args: &Files) -> ExitCode {
         if config.is_excluded(&path) {
             continue;
         }
-        if let Err(e) = fix_file(
+        let started = args.timing.then(Instant::now);
+        let fixed = match fix_file(
             &path,
-            args.encoding,
+            args.files.encoding,
             &target.lines,
             config.builtin(),
             config.filters(),
         ) {
-            eprintln!("jafix: {}: {e}", target.path.display());
-            failed = true;
+            Ok(fixed) => fixed,
+            Err(e) => {
+                eprintln!("jafix: {}: {e}", target.path.display());
+                failed = true;
+                continue;
+            }
+        };
+        if let Some(started) = started {
+            eprintln!(
+                "{}: {:.3} s",
+                target.path.display(),
+                started.elapsed().as_secs_f64()
+            );
         }
+        let Some(original) = fixed.original else {
+            unchanged += 1;
+            continue;
+        };
+        changed += 1;
+        if args.show_diff {
+            let name = target.path.display().to_string();
+            let diff = TextDiff::from_lines(original.as_str(), fixed.content.as_str());
+            let _ = diff
+                .unified_diff()
+                .header(&name, &name)
+                .to_writer(&mut stdout);
+        } else if args.list {
+            let _ = writeln!(stdout, "{}", target.path.display());
+        }
+    }
+    if args.summary {
+        eprintln!("修正: {changed}ファイル、変更なし: {unchanged}ファイル");
     }
     if failed {
         ExitCode::from(2)
@@ -371,6 +424,8 @@ fn run_hook(agent: Agent) -> ExitCode {
 /// `fix_file` が直した結果。`document`・`fixes`・`ignored` は `content` のものである
 struct Fixed {
     content: String,
+    /// ファイルを書き換えた場合の、修正前の内容
+    original: Option<String>,
     document: prose::Document,
     fixes: Vec<rules::FixRuleFinding>,
     ignored: Ignored,
@@ -404,11 +459,15 @@ fn fix_file(
         let fixes = rules::fix_findings(&fixed, &document, builtin, &ignored);
         let next = apply::apply(&fixed, &rules::fixable(&fixes), lines);
         if next == fixed {
-            if fixed != *src {
+            let original = if fixed != *src {
                 file.write(path, &fixed)?;
-            }
+                Some(file.content)
+            } else {
+                None
+            };
             return Ok(Fixed {
                 content: fixed,
+                original,
                 document,
                 fixes,
                 ignored,

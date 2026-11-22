@@ -57,14 +57,14 @@ jafix は全角括弧（かっこ）を半角にします。
 ```
 
 `jafix check` leaves the file unchanged and prints one line per fixable spot or finding.
-The format is `path:line:column: message [rule-id]`. Messages are in Japanese.
+The format is `path:line:column: [rule-id] message`. Messages are in Japanese.
 
 ```console
 $ jafix check example.md
-example.md:3:6: 日本語と英数字の間の空白を削除する [space-between-ja-and-alnum]
-example.md:3:12: 全角括弧を半角にする [fullwidth-paren]
-example.md:3:16: 全角括弧を半角にする [fullwidth-paren]
-example.md:4:4: 「を」が2回続いている [ja-no-successive-word]
+example.md:3:6: [space-between-ja-and-alnum] 日本語と英数字の間の空白を削除する
+example.md:3:12: [fullwidth-paren] 全角括弧を半角にする
+example.md:3:16: [fullwidth-paren] 全角括弧を半角にする
+example.md:4:4: [ja-no-successive-word] 「を」が2回続いている
 ```
 
 | Exit code | Meaning                                                   |
@@ -75,7 +75,7 @@ example.md:4:4: 「を」が2回続いている [ja-no-successive-word]
 
 ## Fix a file {#fix}
 
-`jafix fix` applies the fix rules and rewrites the file.
+`jafix fix` applies the fix rules and rewrites the file. It is silent on success by default.
 
 ```console
 $ jafix fix example.md
@@ -86,12 +86,19 @@ jafixは全角括弧(かっこ)を半角にします。
 結果をを確認します。
 ```
 
+Use these options to see the results:
+
+- `--list` prints only the paths of changed files.
+- `--summary` prints the number of changed and unchanged files.
+- `--timing` prints the processing time for each file in seconds.
+- `--show-diff` saves the files and prints a unified diff of the changes.
+
 Report rules never rewrite the file.
 Run `check` again to see what is left to fix by hand.
 
 ```console
 $ jafix check example.md
-example.md:4:4: 「を」が2回続いている [ja-no-successive-word]
+example.md:4:4: [ja-no-successive-word] 「を」が2回続いている
 ```
 
 You can pass several files.

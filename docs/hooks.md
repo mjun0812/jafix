@@ -48,7 +48,7 @@ matcherは `apply_patch` だけにします。
 
 ```text
 jafix: 今回変えた行に指摘がある。編集は適用済み。指摘を直すか、誤検知なら直さずに進めてよい
-/path/to/notes.md:4:4: 「を」が2回続いている [ja-no-successive-word]
+/path/to/notes.md:4:4: [ja-no-successive-word] 「を」が2回続いている
 ```
 
 | 終了コード | 意味                                           |

@@ -4,7 +4,7 @@ use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 
-use common::{Sandbox, stdout};
+use common::{Sandbox, finding_rule, stdout};
 use serde_json::json;
 
 /// 127.0.0.1の空いたportで要求を受け、宛先ごとに決めた応答を返し、受けた要求の方式と宛先を記録するHTTPサーバー。
@@ -79,7 +79,7 @@ fn request(method: &str, path: &str) -> (String, String) {
 fn dead_link_lines(stdout: &str) -> Vec<&str> {
     stdout
         .lines()
-        .filter(|line| line.ends_with(" [no-dead-link]"))
+        .filter(|line| finding_rule(line) == Some("no-dead-link"))
         .collect()
 }
 
@@ -105,11 +105,11 @@ fn check_reports_dead_and_redirected_urls() {
         dead_link_lines(stdout(&output)),
         [
             format!(
-                "t.md:1:5: リンク先に届かない: {} (404 Not Found) [no-dead-link]",
+                "t.md:1:5: [no-dead-link] リンク先に届かない: {} (404 Not Found)",
                 server.url("/dead")
             ),
             format!(
-                "t.md:5:5: リンク先が {ok} へリダイレクトする (301 Moved Permanently)。宛先を {ok} にする [no-dead-link]"
+                "t.md:5:5: [no-dead-link] リンク先が {ok} へリダイレクトする (301 Moved Permanently)。宛先を {ok} にする"
             ),
         ]
     );
@@ -147,7 +147,7 @@ fn only_check_requests_external_urls() {
     assert_eq!(
         dead_link_lines(&stderr),
         [format!(
-            "{}:5:5: リンク先のファイルが無い: missing.md [no-dead-link]",
+            "{}:5:5: [no-dead-link] リンク先のファイルが無い: missing.md",
             path.display()
         )],
     );
@@ -196,14 +196,14 @@ fn check_caches_urls_across_files_and_fragments() {
     assert_eq!(
         dead_link_lines(stdout(&output)),
         [
-            format!("a.md:1:5: リンク先に届かない: {dead} (404 Not Found) [no-dead-link]"),
+            format!("a.md:1:5: [no-dead-link] リンク先に届かない: {dead} (404 Not Found)"),
             format!(
-                "a.md:3:5: リンク先が {ok}#sec へリダイレクトする (301 Moved Permanently)。宛先を {ok}#sec にする [no-dead-link]"
+                "a.md:3:5: [no-dead-link] リンク先が {ok}#sec へリダイレクトする (301 Moved Permanently)。宛先を {ok}#sec にする"
             ),
             format!(
-                "a.md:5:5: リンク先が {ok} へリダイレクトする (301 Moved Permanently)。宛先を {ok} にする [no-dead-link]"
+                "a.md:5:5: [no-dead-link] リンク先が {ok} へリダイレクトする (301 Moved Permanently)。宛先を {ok} にする"
             ),
-            format!("b.md:1:5: リンク先に届かない: {dead} (404 Not Found) [no-dead-link]"),
+            format!("b.md:1:5: [no-dead-link] リンク先に届かない: {dead} (404 Not Found)"),
         ]
     );
     let (dead_requests, redirect_requests): (Vec<_>, Vec<_>) = server
@@ -243,11 +243,11 @@ fn definition_label_with_a_backtick_reports_at_the_destination() {
     for (content, expected) in [
         (
             "[a`b]: /x`\n\nfoo bar baz\n",
-            "t.md:1:8: リンク先のファイルが無い: /x` [no-dead-link]",
+            "t.md:1:8: [no-dead-link] リンク先のファイルが無い: /x`",
         ),
         (
             "[`a]: /y`\n",
-            "t.md:1:7: リンク先のファイルが無い: /y` [no-dead-link]",
+            "t.md:1:7: [no-dead-link] リンク先のファイルが無い: /y`",
         ),
     ] {
         let sandbox = Sandbox::new();
@@ -273,7 +273,7 @@ fn location_fragment_wins_over_the_original_fragment() {
     assert_eq!(
         dead_link_lines(stdout(&output)),
         [format!(
-            "t.md:1:5: リンク先が {to} へリダイレクトする (301 Moved Permanently)。宛先を {to} にする [no-dead-link]"
+            "t.md:1:5: [no-dead-link] リンク先が {to} へリダイレクトする (301 Moved Permanently)。宛先を {to} にする"
         )]
     );
 }
