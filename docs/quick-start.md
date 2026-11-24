@@ -153,7 +153,7 @@ codex mcp add jafix -- jafix mcp
 
 ## Agent Skillを導入する {#agent-skill}
 
-Agent Skillを導入すると、Claude CodeやCodexが日本語の文書を編集した後に、今回変えた行と新規ファイルをjafixで校正します。hookを登録していない環境でも、agentが自動修正と手修正を使い分け、指摘が無くなるまで確かめます。
+Agent Skillを導入すると、Claude CodeやCodexが日本語の文書を編集した後に、今回追加・変更した行と新規ファイルをjafixで校正します。hookを登録していない環境でも、agentが自動修正と手修正を使い分け、指摘が無くなるまで確かめます。
 
 ```sh
 npx skills add mjun0812/jafix

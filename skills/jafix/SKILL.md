@@ -1,6 +1,6 @@
 ---
 name: jafix
-description: Proofread Japanese documents with the jafix CLI. Use this skill after you write or edit Japanese Markdown or text files in the current task, even when the user did not ask for proofreading. It auto-fixes and checks only the lines you changed and the files you created. jafixで日本語の文書を校正します。今回の作業で日本語のMarkdownやテキストファイルを書いた・編集した後に、校正を頼まれていなくても使います。今回変えた行と新しく作ったファイルだけを自動修正し、チェックします。
+description: Proofread Japanese documents with the jafix CLI. Use this skill after you write or edit Japanese Markdown or text files in the current task, even when the user did not ask for proofreading. It auto-fixes and checks only the lines you changed and the files you created. jafixで日本語の文書を校正します。今回の作業で日本語のMarkdownやテキストファイルを書いた・編集した後に、校正を頼まれていなくても使います。今回追加・変更した行と新しく作ったファイルだけを自動修正し、チェックします。
 license: MIT OR Apache-2.0
 compatibility: Requires the jafix CLI on PATH. Uses git to find changed lines.
 ---

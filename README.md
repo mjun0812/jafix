@@ -34,7 +34,7 @@ jafix fix example.txt
 どちらもMarkdownの構文に従って本文を判定し、コードブロックなどを対象から外します。
 
 入力はUTF-8とShift_JIS (CP932を含む)に対応します。文字コードはファイルごとに自動で判定します。[文字コードを指定する方法](REFERENCE.md#使い方)
-Gitの変更行だけを校正するには `--diff` を指定します。ステージ済みの変更を確認するには `check --staged` を使います。
+Gitで追加・変更した行だけを校正するには `--diff` を指定します。ステージ済みの変更を確認するには `check --staged` を使います。
 
 ## 設定ファイル
 
@@ -75,7 +75,7 @@ Claude CodeやCodexのPostToolUse hookに登録すると、jafixは `.md` ファ
 
 ## Agent Skill
 
-Agent Skillを導入すると、Claude CodeやCodexが日本語の文書を編集した後に、今回変えた行と新規ファイルをjafixで校正します。
+Agent Skillを導入すると、Claude CodeやCodexが日本語の文書を編集した後に、今回追加・変更した行と新規ファイルをjafixで校正します。
 hookを登録していない環境でも、agentが自動修正と手修正を使い分け、指摘が無くなるまで確かめます。
 
 ```sh
