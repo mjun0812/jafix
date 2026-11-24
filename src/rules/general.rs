@@ -28,7 +28,7 @@ pub fn report(
     src: &str,
     document: &Document,
     builtin: &Builtin,
-    links: &Links,
+    links: Option<&Links<'_>>,
     ignored: &Ignored,
 ) -> Vec<Report> {
     let mut reports = Vec::new();
@@ -38,7 +38,7 @@ pub fn report(
     if let Some(rule) = &builtin.date_weekday_mismatch {
         reports.extend(date_weekday_mismatch::report(src, &document.texts, rule));
     }
-    if let Some(rule) = &builtin.no_dead_link {
+    if let (Some(rule), Some(links)) = (&builtin.no_dead_link, links) {
         reports.extend(no_dead_link::report(document, rule, links, ignored));
     }
     reports

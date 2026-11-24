@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -83,9 +84,9 @@ impl TextFile {
         })
     }
 
-    pub fn write(&self, path: &Path, content: &str) -> io::Result<()> {
+    pub fn encode<'a>(&self, content: &'a str) -> io::Result<Cow<'a, [u8]>> {
         if !self.shift_jis {
-            return fs::write(path, content);
+            return Ok(Cow::Borrowed(content.as_bytes()));
         }
         let (encoded, _, errors) = SHIFT_JIS.encode(content);
         // 円記号など、エンコードに成功しても読み直すと文字が変わる場合がある。
@@ -97,7 +98,7 @@ impl TextFile {
         {
             return Err(invalid_data("修正後の内容をShift_JISで保存できない"));
         }
-        fs::write(path, encoded)
+        Ok(encoded)
     }
 }
 

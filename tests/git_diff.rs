@@ -46,6 +46,10 @@ fn worktree_diff_limits_findings_and_fixes_to_added_lines_with_markdown_context(
         ),
     );
     commit(&sandbox);
+    let clean = sandbox.run(&["check", "--diff", "--output-format", "json"]);
+    assert_eq!(clean.status.code(), Some(0), "{clean:?}");
+    let report: serde_json::Value = serde_json::from_slice(&clean.stdout).unwrap();
+    assert_eq!(report["checked_files"], 0);
     sandbox.write_xdg_config("[builtin]\nyomiyasu-chat-response = true\n");
     fs::write(
         &path,
@@ -66,8 +70,13 @@ fn worktree_diff_limits_findings_and_fixes_to_added_lines_with_markdown_context(
         "{lines:?}"
     );
 
+    let before = read(&path);
+    let preview = sandbox.run(&["fix", "--diff", "--dry-run", "--show-diff"]);
+    assert_eq!(preview.status.code(), Some(0), "{preview:?}");
+    assert_eq!(read(&path), before);
     let output = sandbox.run(&["fix", "--diff", "--show-diff"]);
     assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert_eq!(preview.stdout, output.stdout);
     assert!(stdout(&output).starts_with("--- t.txt\n+++ t.txt\n"));
     assert_eq!(
         stdout(&output)

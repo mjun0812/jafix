@@ -71,7 +71,9 @@ example.md:4:4: [ja-no-successive-word] 「を」が2回続いている
 | --------- | --------------------------------------------------------- |
 | 0         | No output                                                 |
 | 1         | One or more lines were printed                            |
-| 2         | A file could not be read, or the configuration is invalid |
+| 2         | The target selection, file read, or configuration failed |
+
+Use `jafix check --output-format json example.md` to get machine-readable results, including the number of files checked, findings, and execution errors. [JSON format](https://github.com/mjun0812/jafix/blob/main/REFERENCE.md#json出力)
 
 ## Fix a file {#fix}
 
@@ -92,6 +94,8 @@ Use these options to see the results:
 - `--summary` prints the number of changed and unchanged files.
 - `--timing` prints the processing time for each file in seconds.
 - `--show-diff` saves the files and prints a unified diff of the changes.
+
+Run `jafix fix --dry-run --show-diff example.md` to preview the diff without writing the file.
 
 Report rules never rewrite the file.
 Run `check` again to see what is left to fix by hand.
@@ -127,6 +131,19 @@ jafix check --staged
 ```
 
 Pass file paths to limit the scope of any of these commands. Run `git add` to include untracked files in the diff.
+
+## Proofread drafts with MCP {#mcp}
+
+Register `jafix mcp` as a stdio server in your MCP client. For Claude Code or Codex, run one of these commands.
+
+```sh
+claude mcp add jafix -- jafix mcp
+codex mcp add jafix -- jafix mcp
+```
+
+Both `check_text` and `fix_text` accept Markdown in a `text` argument. `check_text` returns findings. `fix_text` returns the corrected text and any remaining findings. The tools do not write files.
+
+The server uses global settings and looks for project settings from its working directory. To use a different directory, launch it with `jafix mcp --project-dir /path/to/repo`. File exclusions (`exclude` and `report-exclude`) and `no-dead-link` do not apply to MCP text input.
 
 ## Next steps {#next}
 

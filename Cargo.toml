@@ -16,11 +16,14 @@ lindera = { version = "6.2.0", default-features = false, features = ["embed-ipad
 markdown = "1"
 regex = "1.13.1"
 regress = "0.12.0"
+rmcp = { version = "3.11.0", default-features = false, features = ["macros", "server", "transport-io"] }
+schemars = "1.0"
 serde = { version = "1.0.229", features = ["derive"] }
 serde-saphyr = { version = "2.1.1", default-features = false, features = ["deserialize"] }
 serde_json = "1.0.154"
 similar = "3.2.0"
 spellbook = { version = "0.4.2", default-features = false }
+tokio = { version = "1.54.1", features = ["rt"] }
 toml = "1.2.1"
 unicode-normalization = "0.1.26"
 ureq = { version = "3.5.2", default-features = false, features = ["rustls"] }

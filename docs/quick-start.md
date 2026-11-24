@@ -69,7 +69,9 @@ example.md:4:4: [ja-no-successive-word] 「を」が2回続いている
 | ---------- | -------------------------------------- |
 | 0          | 修正できる箇所も指摘も見つからなかった |
 | 1          | 修正できる箇所または指摘が見つかった   |
-| 2          | ファイルを読めない、または設定が不正   |
+| 2          | 対象の指定、ファイルの読み込み、設定のいずれかに問題がある |
+
+機械で結果を処理するには `jafix check --output-format json example.md` を使います。JSONにはチェックしたファイル数、指摘、処理中に発生したエラーが入ります。[JSONの形式](https://github.com/mjun0812/jafix/blob/main/REFERENCE.md#json出力)
 
 ## 修正する {#fix}
 
@@ -90,6 +92,8 @@ jafixは全角括弧(かっこ)を半角にします。
 - `--summary` は修正したファイル数と変更のなかったファイル数を表示します。
 - `--timing` はファイルごとの処理時間を秒単位で表示します。
 - `--show-diff` はファイルを保存したあと、修正前後の差分を表示します。
+
+ファイルを保存せずに差分を確認するには `jafix fix --dry-run --show-diff example.md` を実行します。
 
 この例では、`fix` で括弧と空白が直ります。もう一度 `check` を実行すると、残った指摘を確認できます。
 
@@ -123,6 +127,19 @@ jafix check --staged
 ```
 
 どのコマンドも、ファイル名を渡すとそのファイルだけを対象にします。未追跡のファイルを差分に含めるには `git add` を実行します。
+
+## 下書きをMCPで校正する {#mcp}
+
+MCPクライアントにstdioの起動コマンド `jafix mcp` を登録します。Claude CodeまたはCodexでは次のコマンドを使えます。
+
+```sh
+claude mcp add jafix -- jafix mcp
+codex mcp add jafix -- jafix mcp
+```
+
+`check_text` と `fix_text` は `text` 引数にMarkdownの本文を受け取ります。`check_text` は指摘を返します。`fix_text` は自動修正後の本文と、その本文に残った指摘を返します。どちらもファイルを書き換えません。
+
+サーバーは共通設定と、起動ディレクトリから探したプロジェクト設定を使います。別の場所から設定を探すには `jafix mcp --project-dir /path/to/repo` を起動コマンドにします。ファイルを入力とする設定の `exclude` と `report-exclude`、リンク先を調べる `no-dead-link` はMCPの本文には適用しません。
 
 ## 次に読むページ {#next}
 
