@@ -4,6 +4,16 @@ The [Japanese documentation](../quick-start.md) is the source of truth.
 
 ## Install {#install}
 
+### Install with curl {#curl}
+
+On macOS (Apple Silicon) or Linux (x86_64 or ARM64), use this command if the latest public release includes `install.sh`.
+
+```sh
+curl -fsSL https://github.com/mjun0812/jafix/releases/latest/download/install.sh | sh
+```
+
+The installer verifies the archive's SHA-256 checksum and installs `jafix` in `~/.local/bin`. Add this directory to your `PATH` if needed.
+
 ### Download a prebuilt binary {#download}
 
 Download the archive for your platform from [GitHub Releases](https://github.com/mjun0812/jafix/releases) and extract it. If the repository is private, sign in to GitHub with an account that has access.
@@ -45,7 +55,7 @@ $ jafix --version
 jafix 0.0.2
 ```
 
-## Check a file {#check}
+## Lint a file {#check}
 
 Create `example.md` with this content.
 
@@ -56,7 +66,7 @@ jafix は全角括弧（かっこ）を半角にします。
 結果をを確認します。
 ```
 
-`jafix check` leaves the file unchanged and prints one line per fixable spot or finding.
+`jafix check` checks the prose against the enabled rules and prints one line per finding without changing the file.
 The format is `path:line:column: [rule-id] message`. Messages are in Japanese.
 
 ```console
@@ -75,7 +85,7 @@ example.md:4:4: [ja-no-successive-word] 「を」が2回続いている
 
 Use `jafix check --output-format json example.md` to get machine-readable results, including the number of files checked, findings, and execution errors. [JSON format](https://github.com/mjun0812/jafix/blob/main/REFERENCE.md#json出力)
 
-## Fix a file {#fix}
+## Apply automatic fixes {#fix}
 
 `jafix fix` applies the fix rules and rewrites the file. It is silent on success by default.
 
@@ -113,7 +123,7 @@ Each file is read as Markdown regardless of its extension.
 
 Rules that analyze Japanese words and grammar run on paragraphs and headings that may contain Japanese. You can enable both Japanese and English rules for mixed-language text.
 
-## Proofread Git changes {#git-diff}
+## Lint and fix Git changes {#git-diff}
 
 In a Git repository, `--diff` checks or fixes lines added or changed since `HEAD`. jafix reads each whole file for Markdown context.
 

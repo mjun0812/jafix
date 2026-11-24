@@ -1,6 +1,6 @@
 # ADR-0001: textlintのルールを読み込まず、規則を自前で実装する
 
-AI agentが書いた日本語の文章をglobalなhookで直すため、jafixはtextlintのルール(npm package)を動かさず、必要な規則を自分の中に書き直す。textlintは作業中のrepoから本体・ルール・設定を探す作りで、globalなhookとして1つのbinaryで動かすことにも、agentが変えた行だけを直すことにも向かなかった。
+AI agentが書いた日本語の文章をglobalなhookで直すため、jafixは必要な規則を自前で実装し、textlintのルールをnpm packageとしては実行しない。textlintは作業中のrepoから本体・ルール・設定を探すため、globalなhookとして1つのbinaryで動かすことにも、agentが変えた行だけを直すことにも向かなかった。
 
 ## Considered Options
 

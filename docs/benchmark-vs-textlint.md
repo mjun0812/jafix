@@ -23,8 +23,8 @@ jafixとtextlintで、同じ働きの5ルールを有効にしました。
 | fix   | `jafix fix`         | `textlint --fix`                   |
 | hook  | `jafix hook claude` | `textlint --fix` の後に `textlint` |
 
-jafixのhookには、Claude CodeのEditで50行目からの20行を書き換えたと仮定して、入力を作りました。
-textlintでは同じファイル全体に `--fix` を実行し、続けて指摘を出すコマンドを実行しました。この2回をhookの1回分として計測しました。
+jafixのhookには、Claude CodeのEditで50行目から20行を書き換えた場合の入力を作りました。
+textlintでは同じファイル全体に `--fix` と指摘を出すコマンドを順に実行し、2回の合計時間をhookの1回分としました。
 
 入力は次の4つのファイルです。
 
@@ -36,7 +36,7 @@ textlintでは同じファイル全体に `--fix` を実行し、続けて指摘
 | `README.md`      | 69KB   | jafixのREADME                   |
 
 繰り返し使った約350バイトの断片には、見出し、段落、リスト、強調、コードブロックがあります。5つのルールすべてが当たる内容です。
-hyperfineで3回の予備実行を済ませ、その後の20回の平均を求めました。343KBのファイルでは、予備実行後の10回を使いました。
+hyperfineで3回予備実行し、その後の20回の平均を求めました。343KBのファイルでは予備実行後の10回を使いました。
 
 ## 件数の一致 {#work-performed}
 
@@ -60,8 +60,8 @@ textlintの `ja-space-between-half-and-full-width` は、長音符の後(`サー
 | textlint  | v15.8.0 (Node.js v26.13.0)     |
 | hyperfine | 2.0.0                          |
 
-各行には、実行にかかった時間の平均と最大常駐メモリの平均を示します。
-倍率は、textlintの時間をjafixの時間で割った値です。
+各行には実行時間と最大常駐メモリの平均を示します。
+倍率はtextlintの時間をjafixの時間で割った値です。
 
 | 場面  | ファイル               |          jafix |         textlint |  倍率 |
 | ----- | ---------------------- | -------------: | ---------------: | ----: |
@@ -81,11 +81,11 @@ textlintの `ja-space-between-half-and-full-width` は、長音符の後(`サー
 ## 倍率の傾向 {#interpretation}
 
 倍率が最も大きかったのは3KBのファイルです。
-このファイルの `check` では、textlintに約152ms、jafixに約3msかかりました。
+このファイルの `check` はtextlintで約152ms、jafixで約3msでした。
 数KBから数十KBのファイルでは、Node.jsの起動やルールの読み込みにかかる時間の影響が大きいと考えられます。
 
 3KBのファイルでは、hookで最も差が開きました。
-この比較では、textlintを修正と指摘で2回起動し、そのたびにファイル全体を解析します。
+この比較ではtextlintを修正と指摘で2回起動し、そのたびにファイル全体を解析します。
 jafixは1つのプロセスで、編集した行を修正してから指摘を集めます。
 
 hookの倍率は3KBで142倍、343KBで33倍でした。
@@ -100,8 +100,8 @@ textlintはどのファイルでも120MB以上でした。
 
 ## 測り直す {#reproduce}
 
-同じ条件で測るには `scripts/bench-vs-textlint.sh` を実行します。結果の表は標準出力に表示します。
-ディレクトリを引数に渡すと、hyperfineの結果をJSON形式で保存します。
+同じ条件で測るには `scripts/bench-vs-textlint.sh` を実行します。結果の表は標準出力に表示されます。
+ディレクトリを引数に渡すと、hyperfineの結果をその場所にJSON形式で保存します。
 
 ```sh
 scripts/bench-vs-textlint.sh /tmp/bench-results

@@ -1,14 +1,13 @@
 # hookへの登録
 
-jafixをPostToolUse hookに登録すると、指定したツールで `.md` ファイルを編集したあとに校正できます。
-対象は、その編集で追加または変更した行です。指摘はagentに返します。
-hookはUTF-8のファイルを扱います。
+jafixをPostToolUse hookに登録すると、agentがUTF-8の `.md` ファイルを編集したあとに動きます。
+編集で追加・変更した行を自動修正し、その行に残った指摘をagentに返します。
 
-校正には、`jafix check` と同じ[設定ファイル](./configuration.md)を使います。
+校正には `jafix check` と同じ[設定ファイル](./configuration.md)を使います。
 
 ## Claude Code {#claude-code}
 
-`~/.claude/settings.json` か、プロジェクトの `.claude/settings.json` に書きます。
+`~/.claude/settings.json` またはプロジェクトの `.claude/settings.json` に書きます。
 
 ```json
 {

@@ -1,6 +1,6 @@
 # ADR-0003: hookで直す行を、hookの入力にある今回の編集から決める
 
-jafixのhookは、agentが今回の編集で追加・変更した行だけを直し、その行はhookの入力から決める。Claude Codeでは `tool_response.structuredPatch` の追加行を使い、Codexではapply_patchのpatchのchunkを編集後のファイルで位置づけて、位置が1つに決まるときの追加行を使う。決められないときはファイルを変えず、理由を標準エラーに書いてexit 1で終える。exit 1は、どちらのagentの作業も止めない。
+jafixのhookは、今回の編集でagentが追加・変更した行だけを直す。対象行はhookの入力から決める。Claude Codeでは `tool_response.structuredPatch` の追加行を使う。Codexでは編集後のファイルでapply_patchのpatchのchunkを探し、位置が1つに決まるときだけ追加行を使う。対象行が決まらなければファイルを変えず、理由を標準エラーに書いてexit 1で終える。exit 1はどちらのagentの作業も止めない。
 
 ## Considered Options
 

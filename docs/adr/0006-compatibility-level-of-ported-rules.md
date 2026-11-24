@@ -11,7 +11,7 @@ textlintの `preset-ja-technical-writing` から移植した23の組み込みの
 
 形態素解析を使う11ルールは、textlintと同じ結果にすることを目標にしない。jafixはlindera、textlintはkuromojiで解析する。同じIPADICでも品詞の変わる文があるので、不具合に近い挙動まで写しても同じ結果にはならない。ルールの目的を果たすことを優先し、次の点をtextlintと変える。
 
-- トークンは、linderaの結果を使う
+- トークンにはlinderaの解析結果を使う
 - 位置は、指摘する語の元のソースでの位置にする。textlintは、絵文字などの後ろや、段落の2文目以降で位置がずれる
 - 語の並びを当てる状態を、本文の範囲、文、段落、ファイルをまたいで持ち越さない。並びは、すべての位置から当てる
 - 文の単位のルールは、インラインコードの中身、リンクの宛先、リンクや強調の記号を判定に入れない。文の区切り方は、12ルールと同じにする
@@ -28,4 +28,4 @@ textlintの `preset-ja-technical-writing` から移植した23の組み込みの
 
 - 11ルールの指摘は、同じ文書でもtextlintと変わりうる。違いは、解析器の違いか、上に挙げた変える点のどちらかで説明できる
 - textlintのpresetかルールのversionが上がったら、fixtureの期待値を作り直して比べる
-- jafixとtextlintは、Markdownの解析器が違う。fixtureに無い入力では、nodeの分け方の違いで指摘の有無の変わることがある
+- jafixとtextlintはMarkdownの解析器が違う。fixtureに無い入力では、nodeの分け方によって指摘の有無が変わりうる

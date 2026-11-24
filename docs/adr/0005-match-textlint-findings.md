@@ -19,4 +19,4 @@ textlintと変えるのは、次の点だけである。
 ## Consequences
 
 - textlintのpresetかルールのversionが上がったら、fixtureの期待値を作り直して比べる必要がある
-- jafixとtextlintは、Markdownの解析器が違う。fixtureに無い入力では、nodeの分け方の違いで指摘の有無の変わることがある
+- jafixとtextlintはMarkdownの解析器が違う。fixtureに無い入力では、nodeの分け方によって指摘の有無が変わりうる

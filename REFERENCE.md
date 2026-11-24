@@ -2,10 +2,11 @@
 
 [READMEに戻る](README.md)
 
-jafixは日本語のテキストファイルを校正するCLIです。
-UTF-8とShift_JISのテキストファイルを受け付けます。拡張子を問わず、Markdownの構文に従って本文を判定します。
+jafixはtextlintから移植した日本語向けルールを中心に備えたLinterです。`jafix check` はルールに当たった箇所を表示し、`jafix fix` は修正ルールに当たった箇所を書き換えます。
 
-全角括弧や空白を直すルールに加え、textlint由来のルールも使えます。辞書やパターンを設定すると、プロジェクト固有の表記に合わせて本文を校正できます。
+UTF-8とShift_JIS (CP932を含む)のファイルを読み込めます。拡張子を問わずMarkdownの構文に従って本文を判定します。
+
+辞書やパターンを設定すると、プロジェクト固有の表記に合わせて本文を校正できます。
 
 ## 組み込みのルール
 
@@ -514,7 +515,7 @@ ruleContents = ["rules:\n  - expected: JavaScript\n"]
 checkBlockQuote = true
 ```
 
-辞書は、prh 6.1.0のYAMLです。次の例のように、`expected` に置き換え後の文字列を、`pattern` に置き換え前の正規表現を書きます。
+辞書はprh 6.1.0のYAMLです。次の例のように、`expected` に置き換え後の文字列を、`pattern` に置き換え前の正規表現を書きます。
 
 ```yaml
 imports:
@@ -545,7 +546,7 @@ rules:
 
 辞書は、`rulePaths` を書いた順に、次に `ruleContents` を書いた順に読み、1つにまとめます。各辞書は自分のルールを先に持ち、`imports` の辞書を書いた順に取り込みます。まとめるときは、`expected` が同じルールが2つの辞書(`imports` で取り込む辞書を含む)にあれば、先に読んだ辞書のルールだけを残すので、`rulePaths` の辞書のルールが `ruleContents` の同じ `expected` のルールに勝ちます。1つの辞書の中で `expected` が同じルールは、prh 6.1.0と同じく、どれも残します。`imports` の相対パスは、取り込む側の辞書のファイルのあるディレクトリから、`ruleContents` の中では設定ファイルのあるディレクトリから解決します。要素の `disableImports` が `true` なら、取り込む辞書の `imports` を読みません。`ignoreRules` は、取り込む辞書から、`expected` が等しいルールか、`pattern` の文字列が等しいルールを除きます。
 
-一致した文字列と置き換え後の文字列が同じ箇所と、長さ0の一致は直しません。指摘と箇所の文面は、`「<一致した文字列>」を「<置き換え後>」にする` で、辞書に `prh` の補足があれば `: <補足>` を続けます。
+一致した文字列と置き換え後の文字列が同じ箇所と、長さ0の一致は直しません。指摘と修正箇所の文面は `「<一致した文字列>」を「<置き換え後>」にする` です。辞書に `prh` の補足があれば `: <補足>` を続けます。
 
 ### `@textlint-rule/pattern`
 
@@ -571,7 +572,7 @@ patterns = [
 
 `jafix fix` とhookは、まず利用者の置き換えを1回だけ適用します。
 その結果を解析し直し、[組み込みの修正ルール](#修正ルール)を繰り返し適用します。
-置き換えで生じた全角括弧や日本語と英数字の間の空白も、同じ実行で直ります。
+置き換えで生じた全角括弧や日本語と英数字の間の空白も同じ実行で直ります。
 
 利用者の置き換えが重なった場合は、先に始まる箇所を選びます。
 同じ位置で始まる場合は、長い箇所を選びます。
@@ -635,6 +636,16 @@ patterns = [
 
 ## 導入
 
+### curlでインストール
+
+macOS (Apple Silicon)とLinux (x86_64、ARM64)では、公開リリースのインストーラーを使えます。
+
+```sh
+curl -fsSL https://github.com/mjun0812/jafix/releases/latest/download/install.sh | sh
+```
+
+インストーラーは配布ファイルのSHA-256が `checksums.txt` と一致することを確認してから、`jafix` を `~/.local/bin` に置きます。`JAFIX_INSTALL_DIR` を設定すると配置先を変更できます。配置先が `PATH` に含まれていなければ追加してください。
+
 ### 配布バイナリを直接ダウンロード
 
 [GitHub Releases](https://github.com/mjun0812/jafix/releases)から環境に合うファイルをダウンロードして展開します。配布対象はmacOS (Apple Silicon)、Linux (x86_64とARM64)、Windows (x64)です。展開した `jafix` または `jafix.exe` を `PATH` の通ったディレクトリに置きます。
@@ -643,7 +654,7 @@ patterns = [
 
 ### miseでインストール
 
-[mise](https://mise.jdx.dev/)は、環境に合う配布バイナリをGitHub Releasesから取得します。リポジトリが非公開の場合は、読み取り権限のあるトークンを環境変数 `MISE_GITHUB_TOKEN` に設定してから実行します。[miseの認証手順](https://mise.jdx.dev/dev-tools/github-tokens.html)
+[mise](https://mise.jdx.dev/)は環境に合う配布バイナリをGitHub Releasesから取得します。リポジトリが非公開の場合は、読み取り権限のあるトークンを環境変数 `MISE_GITHUB_TOKEN` に設定してから実行します。[miseの認証手順](https://mise.jdx.dev/dev-tools/github-tokens.html)
 
 ```sh
 mise use -g github:mjun0812/jafix
@@ -679,11 +690,11 @@ t.md:2:1: [sentence-length] 1文が100文字を超えている (101文字)
 jafix fix t.md
 ```
 
-どちらのコマンドにも、テキストファイルを複数指定できます。どの拡張子でも、jafixはMarkdownの構文に従って本文を判定します。
+どちらのコマンドにもテキストファイルを複数指定できます。jafixは拡張子を問わずMarkdownの構文に従って本文を判定します。
 
 文字コードはファイルごとに判定します。UTF-8として読めなければ、Shift_JIS (CP932を含む)かどうかを推定します。Shift_JISの推定が成立し、再変換で元のバイト列を再現できる場合に読み込みます。文字コードが分かっている場合は、`--encoding utf-8` または `--encoding shift-jis` で指定できます。指定は引数の全ファイルに適用します。
 
-`fix` は元の文字コードで保存します。Shift_JISでは、変換結果を読み直して修正後の文字列と一致することを確認します。一致しなければ、元のファイルを保ったまま終了コード2を返します。
+`fix` は元の文字コードで保存します。Shift_JISでは変換結果を読み直し、修正後の文字列と一致するか確認します。一致しなければ、元のファイルを保ったまま終了コード2を返します。
 
 NUL (U+0000)を含むファイルは、自動判定の対象外です。この文字を含むUTF-8ファイルを校正するときは、`--encoding utf-8` を指定します。
 
@@ -747,8 +758,7 @@ NUL (U+0000)を含むファイルは、自動判定の対象外です。この�
 ## hookへの登録
 
 `jafix hook claude` と `jafix hook codex` は、PostToolUse hookの入力JSONを標準入力から読みます。
-校正の対象は、今回の編集で追加または変更した `.md` ファイルの行です。
-hookはUTF-8のファイルを扱います。
+校正の対象は今回の編集で追加または変更した、UTF-8の `.md` ファイルの行です。
 修正後のファイルを調べ、対象行から始まる指摘を標準エラー出力でagentに返します。標準出力は使いません。
 
 Claude Codeでは `settings.json` の `PostToolUse` に登録します。
@@ -768,7 +778,7 @@ EditとWriteの結果にある差分の `+` 行が対象です。
 }
 ```
 
-Codexでは、`hooks.json` の `PostToolUse` に登録し、matcherを `apply_patch` にします。
+Codexでは `hooks.json` の `PostToolUse` に登録し、matcherを `apply_patch` にします。
 jafixはパッチの `+` 行に対応する位置を編集後のファイルで探し、対象行を決めます。
 `tool_name` が `apply_patch` の入力を処理します。`Bash` のコマンドにパッチが含まれていても対象外です。
 
@@ -830,11 +840,11 @@ print -r -- "$input" | jafix hook claude
 一度の実行で複数のプロジェクトを扱う場合も、各ファイルに対応する設定を使います。
 
 設定は[組み込みの既定値](#組み込みのルール)、共通設定、プロジェクト設定の順に適用します。
-`[builtin]` と `[filters]` は、ルールやfilterごとに上書きします。
+`[builtin]` と `[filters]` はルールやfilterごとに上書きします。
 オプションの表を指定すると、該当するルールやfilterの設定全体が置き換わります。新しい表で省いたオプションは既定値に戻ります。
 同じファイルの `[builtin]` では、presetを先に適用し、次に個別のルールを適用します。
-プロジェクト設定のpresetは、共通設定の個別のルールより優先されます。
-辞書ファイルなどの相対パスは、その指定を書いた設定ファイルのディレクトリを基準にします。
+プロジェクト設定のpresetは共通設定の個別のルールより優先されます。
+辞書ファイルなどの相対パスは、その指定を書いた設定ファイルがあるディレクトリを基準にします。
 
 `exclude` と `report-exclude` は、プロジェクト設定で指定した項目だけを一覧ごと置き換えます。
 共通設定の一覧を空にするには `[]` を指定します。
@@ -1192,7 +1202,7 @@ JTFスタイルガイドの37ルールも、判定の条件を `textlint-rule-pr
 
 ## ドキュメントサイト
 
-ドキュメントは `docs/` にある日本語版を基準にします。英語に翻訳したページは、同じファイル名で `docs/en/` に置きます。
+ドキュメントは `docs/` にある日本語版を基準にします。英語に翻訳したページは日本語版と同じファイル名で `docs/en/` に置きます。
 日本語版のトップページは [docs/index.md](docs/index.md)、ルール一覧は [docs/rules.md](docs/rules.md) です。
 
 ローカルでページを確認するには、Node.js 24以降を使い、リポジトリのルートで次のコマンドを実行します。
@@ -1211,11 +1221,11 @@ npm run docs:dev
 ## リリース
 
 まず `Cargo.toml` と `Cargo.lock` のバージョンをそろえたコミットを `main` にpushします。
-配布物を事前に確認する場合は、GitHub Actionsの **release** を手動で実行します。4環境向けの配布物を、対応するジョブのartifactから取得できます。
+配布物を事前に確認するには、GitHub Actionsの **release** を手動で実行します。4環境向けの配布物は、対応するジョブのartifactから取得できます。
 
 タグを作る前に、利用者向けの変更点を `release-notes.md` に書きます。
 `Cargo.toml` のバージョンの先頭に `v` を付けてタグを作り、pushするとリリースが始まります。
-次の例は、バージョン `0.0.2` をリリースする場合のコマンドです。
+バージョン `0.0.2` をリリースする場合のコマンドは次のとおりです。
 
 ```sh
 git tag -a v0.0.2 --cleanup=whitespace -F release-notes.md
@@ -1225,14 +1235,20 @@ git push origin v0.0.2
 タグに取り込んだ変更点は、リリースノートの冒頭に表示されます。その後ろにGitHubが変更履歴を追加します。
 自動生成する変更履歴の分類は [`.github/release.yml`](.github/release.yml) で設定します。
 
-テストと梱包が通ると、Actionsが `.tar.gz`、Windows向けのZIP、`checksums.txt` をGitHub Releasesに登録します。
+テストと梱包が通ると、Actionsが `.tar.gz`、Windows向けのZIP、`install.sh`、`checksums.txt` をGitHub Releasesに登録します。
 `v0.2.0-rc.1` のようなタグはプレリリースになります。
 
 ## ライセンス
 
 [MIT License](LICENSE-MIT) と [Apache License 2.0](LICENSE-APACHE) のデュアルライセンスです。
 
-組み込みのルールのうち、textlintと同じIDのものは、textlintのルールとライブラリの挙動に合わせて書き直したもので、正規表現や語の表、辞書の一部をそれらのソースから写しています。`prh` と `@textlint-rule/pattern` は、`textlint-rule-prh`・`prh`・`@textlint-rule/textlint-rule-pattern`・`@textlint/regexp-string-matcher` の判定の条件を写しています。binaryには、MIT Licenseのlinderaと、mecab-ipadicの条件で配られるIPADICの辞書と、CC BY-SAの条件で配られるJTF日本語標準スタイルガイドの4つの辞書(`textlint-rule-preset-jtf-style` の `dict/*.yml`)も入っています。Apache License 2.0で配られる `sudachi-synonyms-dictionary` 20.0.0とSudachiDictの同義語辞書から、`@textlint-ja/no-synonyms` の判定に使う項目だけを取り出したデータも入っています。`no-dead-link` が外部のURLに接続するときのTLSの証明書の検証のために、CDLA-Permissive-2.0で配られる `webpki-roots` 1.0.12の証明書の一覧も入っています。`common-misspellings` が使う誤綴りの一覧は、Wikipediaの「Wikipedia:Lists of common misspellings/For machines」のrevision 1199637275 (`https://en.wikipedia.org/w/index.php?title=Wikipedia:Lists_of_common_misspellings/For_machines&oldid=1199637275`)から作ったもので、CC BY-SA 3.0の条件で入っています。`spelling` が使うhunspellの辞書は、`dictionary-en` 4.0.0のen_USの辞書を変えずに入れたもので、SCOWLとIspellの条件(`(MIT AND BSD)`)で配られています。辞書を引く `spellbook` 0.4.2は、MPL-2.0で配られています。`terminology` の辞書と `write-good` の単語リストは、MIT Licenseのpackageから写しています。`spelling` と `common-misspellings` のtextlintのルールはGPLなので、コードを写さず、判定の条件から書き直しました。それぞれの名前・version・著作権表示と、MIT License・mecab-ipadic・CC BY-SA・Apache License 2.0・SCOWLとIspellの条件は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にあります。`webpki-roots` と `spellbook` はcrateなので、CDLA-Permissive-2.0とMPL-2.0の全文は次の段落の `CRATE_LICENSES.txt` にあります。`THIRD_PARTY_NOTICES.md` には、その2つのcrateを含める理由と、MPL-2.0が求める `spellbook` のソースの入手先を書いています。
+組み込みのルールのうち、textlintと同じIDのものはtextlintのルールとライブラリの挙動に合わせて書き直し、正規表現や語の表、辞書の一部をそれらのソースから写しています。`prh` と `@textlint-rule/pattern` は `textlint-rule-prh`・`prh`・`@textlint-rule/textlint-rule-pattern`・`@textlint/regexp-string-matcher` の判定の条件を写しています。
+
+binaryには、MIT Licenseのlinderaと、mecab-ipadicの条件で配られるIPADICの辞書と、CC BY-SAの条件で配られるJTF日本語標準スタイルガイドの4つの辞書(`textlint-rule-preset-jtf-style` の `dict/*.yml`)も入っています。Apache License 2.0で配られる `sudachi-synonyms-dictionary` 20.0.0とSudachiDictの同義語辞書から、`@textlint-ja/no-synonyms` の判定に使う項目だけを取り出したデータも入っています。`no-dead-link` が外部のURLに接続するときは、CDLA-Permissive-2.0で配られる `webpki-roots` 1.0.12の証明書一覧でTLSの証明書を検証します。この一覧もbinaryに含まれます。
+
+`common-misspellings` が使う誤綴りの一覧は、Wikipediaの「Wikipedia:Lists of common misspellings/For machines」のrevision 1199637275 (`https://en.wikipedia.org/w/index.php?title=Wikipedia:Lists_of_common_misspellings/For_machines&oldid=1199637275`)から作ったもので、CC BY-SA 3.0の条件で入っています。`spelling` が使うhunspellの辞書は、`dictionary-en` 4.0.0のen_USの辞書を変えずに入れたもので、SCOWLとIspellの条件(`(MIT AND BSD)`)で配られています。辞書を引く `spellbook` 0.4.2はMPL-2.0で配られています。`terminology` の辞書と `write-good` の単語リストはMIT Licenseのpackageから写しています。`spelling` と `common-misspellings` のtextlintのルールはGPLなので、コードを写さず、判定の条件から書き直しました。
+
+それぞれの名前・version・著作権表示と、MIT License・mecab-ipadic・CC BY-SA・Apache License 2.0・SCOWLとIspellの条件は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) にあります。`webpki-roots` と `spellbook` はcrateなので、CDLA-Permissive-2.0とMPL-2.0の全文は次の段落の `CRATE_LICENSES.txt` にあります。`THIRD_PARTY_NOTICES.md` には、その2つのcrateを含める理由と、MPL-2.0が求める `spellbook` のソースの入手先を記載しています。
 
 GitHub Releasesの配布物には `CRATE_LICENSES.txt` が入っています。
 バイナリにリンクするすべてのRustのcrateについて、名前、バージョン、ライセンスの種類と文面を記載したファイルです。

@@ -2,7 +2,7 @@
 
 初期状態で有効にするルールの組み合わせは [ADR-0018](0018-layer-project-config-over-global-config.md) で更新した。
 
-`textlint-rule-preset-ja-technical-writing` の23ルールの後に移植するルールは、設定に書かなければ無効である。利用者は、設定の `[builtin]` に、ルールのIDか、presetの名前(`"@textlint-ja/preset-ai-writing" = true` など)を書いて有効にする。今の26ルールは、これまでどおり設定に書かなくても有効である。presetの名前の値は `true` か `false` だけで、同じpresetのルールのIDのキーも書いたときは、書いた順によらずルールのIDのキーを使う。
+`textlint-rule-preset-ja-technical-writing` の23ルールの後に移植するルールは、設定に書かなければ無効である。利用者は設定の `[builtin]` にルールIDまたはpreset名(`"@textlint-ja/preset-ai-writing" = true` など)を書いて有効にする。従来の26ルールは設定に書かなくても有効である。preset名に指定できる値は `true` と `false` のみ。同じpresetのルールを個別に指定した場合は、記述順にかかわらずルールIDで指定した値を使う。
 
 設定に書かなければ無効にするのは、追加で移植するルールに、同じ書き方を重ねて見るものが多いからである。たとえば日本語と英数字の間の空白は、jafixの修正ルール、`preset-jtf-style`、`preset-ja-spacing`、`preset-smarthr` の4つが見る。全部を最初から有効にすると、同じ箇所に複数の指摘が出る。無効にしておけば、設定を書かない利用者の指摘は今と変わらず、選んだpresetの指摘だけが増える。presetの名前で有効にできないと、37ルールを持つ `preset-jtf-style` を使うのに37行を書くことになる。`preset-ja-technical-writing = false` も書けるので、別のpresetだけを使う利用者は23ルールをまとめて止められる。
 

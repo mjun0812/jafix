@@ -12,7 +12,7 @@ export default defineConfig({
     root: {
       label: '日本語',
       lang: 'ja',
-      description: '日本語の文章を校正するCLI',
+      description: '日本語に特化した高速なtextlint',
       themeConfig: {
         nav: [
           { text: 'ガイド', link: '/quick-start', activeMatch: '^/(quick-start|configuration|hooks)' },
@@ -51,7 +51,7 @@ export default defineConfig({
     en: {
       label: 'English',
       lang: 'en',
-      description: 'A command-line tool for proofreading Japanese text',
+      description: 'A fast textlint for Japanese prose',
       themeConfig: {
         nav: [
           {

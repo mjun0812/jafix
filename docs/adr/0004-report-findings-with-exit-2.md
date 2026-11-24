@@ -1,6 +1,6 @@
 # ADR-0004: hookは指摘をexit 2と標準エラーでagentへ返す
 
-jafixのhookは、今回変えた行に指摘ルールの指摘があれば、指摘を1件1行で標準エラーに書いてexit 2で終える。Claude CodeとCodexはどちらも、PostToolUseのexit 2の標準エラーをagentへ渡すので、1つの出力の形で両方に届く。同じ実行で対象行を決められなかった理由があれば、それも同じ標準エラーに書く。ADR-0003のexit 1は、指摘が無いときに限る。
+jafixのhookは今回変えた行に指摘ルールの指摘があれば、標準エラーに1件1行で書いてexit 2で終える。Claude CodeとCodexはどちらもPostToolUseがexit 2で終わったときの標準エラーをagentへ渡すので、同じ書式を使える。同じ実行で対象行を決められなかった理由があれば、それも標準エラーに書く。ADR-0003のexit 1は指摘が無いときに限る。
 
 ## Considered Options
 

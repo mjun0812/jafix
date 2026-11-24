@@ -2,7 +2,7 @@
 
 jafixで使う用語。
 
-**本文**: Markdownのうち、jafixがルールを適用する文章の部分。段落・リスト・見出し・表のセル・強調・リンクの文字列・引用などの文字列で、コード、画像、URL、定義を持つ省略形・collapsed形の参照リンクの文字列、front matter、HTMLのタグとHTMLブロックは含めない。画像のaltは、段落と文の単位で当てる指摘ルールと `1.1.5.図表のキャプション` が数え、altの語を辞書に当てる `spelling` が見るだけで、本文には含めない。altの中の入れ子のリンクと画像の宛先とtitleは、altに含めない。
+**本文**: Markdownのうち、jafixがルールを適用する文章の部分。段落・リスト・見出し・表のセル・強調・リンク・引用などの文字列を指す。コード、画像、URL、定義を持つ省略形・collapsed形の参照リンクの文字列、front matter、HTMLのタグとHTMLブロックは含めない。画像のaltも本文には含めない。段落と文の単位で当てる指摘ルールと `1.1.5.図表のキャプション` は画像のaltを数え、`spelling` はaltの語を辞書に当てる。altを扱うのはこれらのルールだけである。入れ子のリンク、画像の宛先、titleはaltに含めない。
 _Avoid_: テキスト、地の文。
 
 **修正ルール**: 本文のうち、機械的に直せる書き方の規則。当たった箇所ごとに置き換えの内容を持ち、`jafix fix` とhookがその場で直す。組み込みの修正ルールと、利用者の置き換えがある。
@@ -23,7 +23,7 @@ _Avoid_: report rule、lintルール、検出ルール。
 **filter**: 指摘を出さず、文書の中の外す範囲を求める仕組み。`[filters]` に `comments`(HTMLのコメントの無効化から有効化まで)と `allowlist`(許可したパターンに一致した範囲)を書いて有効にする。範囲の始まりと終わりがどちらも外す範囲の中か端にある指摘ルールの指摘と、組み込みの修正ルールと利用者の置き換えの箇所を、`jafix check` とhookの出力から除き、`jafix fix` とhookも直さない。
 _Avoid_: フィルタールール、除外(ファイルの単位の `exclude` と紛れるので)。
 
-**preset**: textlintで、複数のルールを1つの名前で束ねたもの。jafixの `[builtin]` には、`preset-ja-technical-writing`・`@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`・`preset-ja-spacing`・`preset-jtf-style` の名前を `true` か `false` で書き、そのpresetのルールをまとめて有効・無効にする。同じ表にそのpresetのルールのIDのキーもあれば、ルールのIDのキーの値を使う。
+**preset**: textlintで複数のルールを1つの名前で束ねたもの。jafixの `[builtin]` に `preset-ja-technical-writing`・`@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`・`preset-ja-spacing`・`preset-jtf-style` の名前をキーとして書く。値を `true` か `false` にすると、そのpresetのルールをまとめて有効・無効にする。同じ表にそのpresetのルールをIDで指定した項目もあれば、その項目の値を使う。
 _Avoid_: ルールセット、ルール集。
 
 **パターン**: 設定に書く、`/source/flags` の形の正規表現か、文字列そのもの。組み込みのルールのオプション・`prh`・`@textlint-rule/pattern`・`allowlist` のどこに書いても、JavaScriptの正規表現(`u` フラグ付き)として読む。Rustの `regex` crateだけが読む書き方は、設定の不正になる。

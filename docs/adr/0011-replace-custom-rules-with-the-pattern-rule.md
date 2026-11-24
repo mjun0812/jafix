@@ -4,7 +4,7 @@
 
 `@textlint-rule/pattern` は、`[[rules]]` の働き(パターンか文字列で、利用者の文面の指摘を出す)をすべて持ち、置き換え(`replace`)、`allows`、`allowNodeTypes` を足したものである。一本化すれば、同じ働きの仕組みを2つ持たずに済む。利用者の正規表現の方言も、prhと同じJavaScriptの1つになる(ADR-0012)。textlintとの速度の比較でも、`[[rules]]` の働きをtextlintの側では `@textlint-rule/pattern` で書いている。
 
-失うものは2つある。1つ目は表ごとの `id` で、指摘の行は `[@textlint-rule/pattern]` になる。どのパターンかは、要素の `message` で見分ける。2つ目は、`words` の「同じ位置で重なる語は長い語の1件だけを指摘する」扱いである。要素ごとに当たるので、重なる語は両方とも指摘になる。
+一本化すると表ごとの `id` がなくなり、指摘の行は `[@textlint-rule/pattern]` になる。どのパターンかは要素の `message` で見分ける。`words` の「同じ位置で重なる語は長い語の1件だけを指摘する」扱いもなくなる。要素ごとに判定するため、重なる語は両方とも指摘になる。
 
 ## Considered Options
 

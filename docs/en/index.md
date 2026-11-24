@@ -2,8 +2,8 @@
 layout: home
 hero:
   name: jafix
-  text: A CLI for proofreading Japanese text
-  tagline: Proofread text files in UTF-8 or Shift_JIS.
+  text: A fast textlint for Japanese prose
+  tagline: Lint and autofix prose with a single Rust binary.
   actions:
     - theme: brand
       text: Quick start
@@ -11,9 +11,16 @@ hero:
     - theme: alt
       text: Rules
       link: /en/rules
+benchmark:
+  title: Benchmark against textlint
+  sizeLabel: File size
+  ratioLabel: Ratio
+  ratioUnit: ×
+  link: /en/benchmark-vs-textlint
+  linkText: Details
 features:
-  - title: Fixes and reports
-    details: fix rewrites full-width parentheses and stray spaces. check also reports repeated words and unmatched brackets.
+  - title: Check and autofix
+    details: check reports findings without changing your files. fix saves the changes it can apply automatically.
     link: /en/quick-start
     linkText: Try it
   - title: Works without configuration
@@ -21,11 +28,7 @@ features:
     link: /en/configuration
     linkText: Configure
   - title: Agent hooks
-    details: Fixes the Markdown lines Claude Code or Codex just edited and returns findings to the agent.
+    details: Automatically fixes lines Claude Code or Codex just added or changed in Markdown, then reports remaining findings to the agent.
     link: /en/hooks
     linkText: Register
-  - title: Fast
-    details: Runs as a single binary and finishes 14 to 142 times faster than textlint with the same rules.
-    link: /en/benchmark-vs-textlint
-    linkText: Measurements
 ---

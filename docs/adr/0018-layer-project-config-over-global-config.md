@@ -14,4 +14,4 @@ CLIとhookは同じ探索順を使い、一度の実行で複数のプロジェ�
 
 初期状態で使うのは、表記を整え、書き間違いを指摘する[10ルール](../../REFERENCE.md#組み込みのルール)とする。
 文の長さや文体などは、利用者が書くものに合わせて選ぶ。
-`no-kangxi-radicals` と `date-weekday-mismatch` は、[ADR-0007](0007-new-ported-rules-are-off-by-default.md) の例外とする。
+`no-kangxi-radicals` と `date-weekday-mismatch` は[ADR-0007](0007-new-ported-rules-are-off-by-default.md)の例外とする。

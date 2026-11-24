@@ -1,13 +1,19 @@
 # jafix
 
-jafixは日本語のテキストファイルを校正するCLIです。
-全角括弧や余分な空白を直し、同じ語が続く箇所や括弧の閉じ忘れを指摘します。
+jafixはtextlintの日本語向けルールをRustで実装した高速なLinterです。
+バイナリ1つで文章をチェックし、直せる箇所は自動で修正できます。
 
 ## 導入
 
+macOS (Apple Silicon)とLinux (x86_64、ARM64)では、最新の公開リリースに `install.sh` がある場合に `curl` でインストールできます。
+
+```sh
+curl -fsSL https://github.com/mjun0812/jafix/releases/latest/download/install.sh | sh
+```
+
 [GitHub Releases](https://github.com/mjun0812/jafix/releases)から環境に合うバイナリをダウンロードします。展開した `jafix` または `jafix.exe` を `PATH` の通ったディレクトリに置きます。
 
-[mise](https://mise.jdx.dev/)を使う場合は、次のコマンドで配布バイナリをインストールできます。
+[mise](https://mise.jdx.dev/)でも配布バイナリをインストールできます。
 
 ```sh
 mise use -g github:mjun0812/jafix
@@ -17,23 +23,23 @@ mise use -g github:mjun0812/jafix
 
 ## 使い方
 
-校正するテキストファイルを指定します。UTF-8とShift_JIS (CP932を含む)を自動で判定します。
+チェックするテキストファイルを指定します。
 
 ```sh
 jafix check example.txt
 jafix fix example.txt
 ```
 
-`check` は修正できる箇所と指摘を表示します。ファイルの内容はそのままです。
-`fix` は修正ルールを適用してファイルを書き換えます。
-どちらもMarkdownの構文に従って本文を判定し、コードブロックなどを校正の対象から外します。
-文字コードを指定する方法は[リファレンス](REFERENCE.md#使い方)を参照してください。
+`check` はファイルを書き換えず、ルールに当たった箇所を表示します。`fix` は修正ルールを適用してファイルに保存します。
+どちらもMarkdownの構文に従って本文を判定し、コードブロックなどを対象から外します。
+
+入力はUTF-8とShift_JIS (CP932を含む)に対応します。文字コードはファイルごとに自動で判定します。[文字コードを指定する方法](REFERENCE.md#使い方)
 Gitの変更行だけを校正するには `--diff` を指定します。ステージ済みの変更を確認するには `check --staged` を使います。
 
 ## 設定ファイル
 
 共通設定は `~/.config/jafix/config.toml` に書きます。
-環境変数 `XDG_CONFIG_HOME` を設定している場合は、`$XDG_CONFIG_HOME/jafix/config.toml` を使います。
+環境変数 `XDG_CONFIG_HOME` を設定している場合の共通設定は `$XDG_CONFIG_HOME/jafix/config.toml` です。
 プロジェクト設定は `.jafix.toml` に書きます。
 同じルールを両方で指定した場合は、対象ファイルに最も近い `.jafix.toml` の設定が優先されます。
 
@@ -48,13 +54,13 @@ no-unmatched-pair = false
 common-misspellings = true
 ```
 
-設定ファイルがなくても、既定の10ルールで校正できます。
+設定ファイルがなくても10ルールが有効です。
 [初期設定のルール一覧](REFERENCE.md#組み込みのルール)
 
 ## hookへの登録
 
-Claude CodeやCodexのPostToolUse hookにjafixを登録すると、`.md` ファイルを編集したあとに校正できます。
-対象は、その編集で追加または変更した行です。指摘はagentに返します。
+Claude CodeやCodexのPostToolUse hookに登録すると、jafixは `.md` ファイルの編集後に動きます。
+編集で追加・変更した行を自動修正し、その行に残った指摘をagentに返します。
 
 | 対象        | 設定ファイル    | matcher       | コマンド            |
 | ----------- | --------------- | ------------- | ------------------- |

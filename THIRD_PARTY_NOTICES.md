@@ -1,8 +1,8 @@
 # Third-party notices
 
-この文書は、jafixのbinaryに含まれる他者の著作物のうち、Rustのcrateのライセンスの一覧では示しきれないものの出典と条件を書いたものです。binaryに埋め込んだ辞書やデータ、textlintのルールから写した部分、crateの一覧に載らない著作権表示とソースの入手先を扱います。binaryにリンクされるすべてのRustのcrateの名前・version・ライセンスと、ライセンスの文面は、GitHub Releasesの配布物に入っている `CRATE_LICENSES.txt` にあります。`CRATE_LICENSES.txt` は、`scripts/package.sh` が梱包のときに、cargo-aboutで `Cargo.lock` と梱包するtargetの依存から作ります。
+この文書には、jafixのbinaryに含まれる他者の著作物のうち、Rustのcrateのライセンス一覧では示しきれないものの出典と条件を記載しています。対象はbinaryに埋め込んだ辞書やデータ、textlintのルールから写した部分、crateの一覧に載らない著作権表示とソースの入手先です。binaryにリンクされるすべてのRustのcrateの名前・version・ライセンスと、ライセンスの文面は、GitHub Releasesの配布物に入っている `CRATE_LICENSES.txt` にあります。`scripts/package.sh` は梱包時に、`Cargo.lock` と梱包対象の依存関係からcargo-aboutでこのファイルを作ります。
 
-jafixのbinaryは、形態素解析のライブラリのlinderaと、linderaが埋め込むIPADICの辞書を含みます。linderaはMIT Licenseで、辞書の元のmecab-ipadicは「mecab-ipadic」の節の条件で公開されています。linderaのcrateのpackageはライセンスのファイルを含まないので、`CRATE_LICENSES.txt` にはMIT Licenseの標準の文面だけが載ります。linderaの著作権表示は、次の表に書いています。
+jafixのbinaryには、形態素解析ライブラリのlinderaと、linderaが埋め込むIPADICの辞書が入っています。linderaはMIT Licenseで、元の辞書のmecab-ipadicは「mecab-ipadic」の節に記載した条件で公開されています。linderaのcrateのpackageにはライセンスファイルがないため、`CRATE_LICENSES.txt` にはMIT Licenseの標準の文面だけが載ります。linderaの著作権表示は次の表にあります。
 
 | 名前         | version        | 著作権表示                                                                                      |
 | ------------ | -------------- | ----------------------------------------------------------------------------------------------- |
@@ -93,11 +93,11 @@ jafixの組み込みのルールのうち、textlintと同じIDのものは、�
 
 ## yomiyasu
 
-太字、チャット応答、執筆時の指示を確認する3ルールは、[yomiyasu 3.2.0](https://github.com/nanaism/yomiyasu/tree/v3.2.0)の `yomiyasu_lint.py` に基づきます。判定の一部と正規表現を移植しています。著作権表示は `Copyright (c) 2026 nanaism` です。許諾文は、この文書の[MIT License](#mit-license)にあります。
+太字、チャット応答、執筆時の指示を確認する3ルールは[yomiyasu 3.2.0](https://github.com/nanaism/yomiyasu/tree/v3.2.0)の `yomiyasu_lint.py` に基づきます。判定の一部と正規表現を移植しています。著作権表示は `Copyright (c) 2026 nanaism` です。許諾文はこの文書の[MIT License](#mit-license)にあります。
 
 ## webpki-rootsの証明書の一覧
 
-jafixのbinaryは、webpki-rootsの証明書の一覧を含みます。`no-dead-link` は、外部のURLへの接続でTLSの証明書を検証するのに、この一覧を使います。この一覧はCommunity Data License Agreement - Permissive - Version 2.0 (CDLA-Permissive-2.0)で公開されているデータで、改変せずに含みます。
+jafixのbinaryには、webpki-rootsの証明書一覧を改変せずに含めています。`no-dead-link` は外部のURLに接続するとき、この一覧でTLSの証明書を検証します。一覧はCommunity Data License Agreement - Permissive - Version 2.0 (CDLA-Permissive-2.0)で公開されています。
 
 | 名前         | version | ライセンス          |
 | ------------ | ------- | ------------------- |
@@ -503,7 +503,7 @@ Wordlist Command: mk-list --accents=strip en_US 60
 
 ## spellbook
 
-jafixのbinaryは、`spelling` が辞書を引くのに使うRustのcrateのspellbookを含みます。spellbookは、Mozilla Public License 2.0 (MPL-2.0)で公開されています。MPL-2.0は、実行形式で配るときに、そのソースの入手先を示すことを条件にしています。この条件は `CRATE_LICENSES.txt` の一覧と文面だけでは満たせないので、入手先をここに書きます。jafixは、spellbookのソースを変えずに使っています。
+jafixのbinaryには、`spelling` が辞書を引くときに使うRustのcrate、spellbookが入っています。spellbookのライセンスはMozilla Public License 2.0 (MPL-2.0)です。MPL-2.0は実行形式で配るときに、ソースの入手先を示すことを条件にしています。`CRATE_LICENSES.txt` の一覧と文面だけではこの条件を満たせないため、入手先をここに記載します。jafixはspellbookのソースを変えずに使っています。
 
 | 名前      | version | ライセンス | ソースの入手先                            |
 | --------- | ------- | ---------- | ----------------------------------------- |
