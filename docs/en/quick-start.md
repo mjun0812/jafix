@@ -155,6 +155,23 @@ Both `check_text` and `fix_text` accept Markdown in a `text` argument. `check_te
 
 The server uses global settings and looks for project settings from its working directory. To use a different directory, launch it with `jafix mcp --project-dir /path/to/repo`. File exclusions (`exclude` and `report-exclude`) and `no-dead-link` do not apply to MCP text input.
 
+## Install the Agent Skill {#agent-skill}
+
+With the Agent Skill installed, Claude Code and Codex proofread the lines they changed and the files they created after editing Japanese documents. Even without hooks, the agent runs the automatic fixes, rewrites the remaining findings by hand, and rechecks until none remain.
+
+```sh
+npx skills add mjun0812/jafix
+```
+
+To install it manually, copy the [`skills/jafix`](https://github.com/mjun0812/jafix/tree/main/skills/jafix) directory from the repository to one of these locations.
+
+| Agent       | Location                 |
+| ----------- | ------------------------ |
+| Claude Code | `~/.claude/skills/jafix` |
+| Codex       | `~/.agents/skills/jafix` |
+
+The skill runs the `jafix` command, so install jafix first.
+
 ## Next steps {#next}
 
 - [Configuration](./configuration.md): choose the rules to use

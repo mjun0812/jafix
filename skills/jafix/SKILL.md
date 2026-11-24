@@ -35,7 +35,7 @@ jafix --version
 
 `--diff` は、Gitの `HEAD` からの差分で追加・変更した行(対象行)だけを扱います。
 未追跡のファイルは `--diff` の対象にならず、何も出さずに終了コード0を返します。
-新規のファイルを確認済みと取り違えないように、ファイルを分けます。分けるのは、編集を終えた後です。編集の前だと、まだ存在しない新規のファイルが「既存」に分けられ、`--diff` で何も出ずに素通りします。
+新規のファイルを確認済みと取り違えないように、ファイルを分けます。分けるのは、編集を終えた後です。編集の前だと、まだ存在しない新規のファイルが「既存」に分けられ、`--diff` で何も出ずに終わります。
 
 ```sh
 git rev-parse --verify HEAD
@@ -45,9 +45,10 @@ git rev-parse --verify HEAD
 - 成功した場合: 次のコマンドに出たファイルを「新規」、出なかったファイルを「既存」とします
 
 ```sh
-git ls-files --others --exclude-standard -- <対象のファイル>...
+git ls-files --others -- <対象のファイル>...
 ```
 
+このコマンドは、未追跡のファイルを、gitignoreされたものも含めて出します。gitignoreされたファイルも `--diff` の対象にならないので、新規として扱います。
 新規のファイルは全行が今回の編集なので、`--diff` を付けずにファイルを指定して全行を対象にします。
 `git add` で未追跡のファイルを差分に入れることはしません。利用者のステージの状態が変わるからです。
 
@@ -103,4 +104,4 @@ hookを登録している環境では、編集の直後にhookが対象行を自
 hookとMCPの登録は、次のドキュメントにあります。
 
 - [hookへの登録](https://github.com/mjun0812/jafix/blob/main/docs/hooks.md)
-- [MCPの登録](https://github.com/mjun0812/jafix/blob/main/docs/quick-start.md#mcp)
+- [MCPの登録](https://github.com/mjun0812/jafix/blob/main/docs/quick-start.md#下書きをmcpで校正する-mcp)
