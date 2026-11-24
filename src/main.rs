@@ -1,28 +1,32 @@
 mod apply;
 mod config;
+mod diagnostics;
 mod filter;
 mod git_diff;
 mod hook;
 mod js_regex;
+mod mcp;
 mod morph;
 mod prose;
 mod rules;
 mod sentence;
 mod text_file;
 
+use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Instant;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
+use serde::Serialize;
 use similar::TextDiff;
 
 use crate::apply::{LineIndex, TargetLines};
-use crate::config::Configs;
-use crate::filter::{Filters, Ignored};
+use crate::config::{Config, Configs};
+use crate::diagnostics::Diagnostic;
+use crate::filter::Ignored;
 use crate::git_diff::{FileTarget, Selection};
-use crate::rules::builtin::Builtin;
 use crate::rules::general::Links;
 use crate::text_file::{InputEncoding, TextFile};
 
@@ -42,6 +46,12 @@ enum Command {
     Fix(FixArgs),
     /// agentのPostToolUse hookの入力を標準入力から読み、今回の編集の行を直して、その行の指摘を標準エラーで返す
     Hook { agent: Agent },
+    /// 標準入出力を使うMCPサーバーを起動する
+    Mcp {
+        /// プロジェクト設定を探すディレクトリ。既定値はカレントディレクトリ
+        #[arg(long, default_value = ".")]
+        project_dir: PathBuf,
+    },
 }
 
 #[derive(Args)]
@@ -51,6 +61,15 @@ struct CheckArgs {
     /// ステージ済みの内容を読み、HEADとの差分にある行だけを確認する
     #[arg(long, conflicts_with = "diff")]
     staged: bool,
+    /// 指摘の出力形式
+    #[arg(long, value_enum, default_value = "text")]
+    output_format: OutputFormat,
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+enum OutputFormat {
+    Text,
+    Json,
 }
 
 #[derive(Args)]
@@ -66,9 +85,12 @@ struct FixArgs {
     /// 各ファイルの処理時間を秒単位で標準エラーに表示する
     #[arg(long)]
     timing: bool,
-    /// ファイルを修正して保存し、修正前後の差分を標準出力に表示する
+    /// 修正前後の差分を標準出力に表示する
     #[arg(long)]
     show_diff: bool,
+    /// 修正結果を計算するだけで、ファイルには書き込まない
+    #[arg(long)]
+    dry_run: bool,
 }
 
 #[derive(Args)]
@@ -90,23 +112,24 @@ enum Agent {
 
 fn main() -> ExitCode {
     match Cli::parse().command {
-        Command::Check(args) => run_check(&args.files, args.staged),
+        Command::Check(args) => run_check(&args),
         Command::Fix(files) => run_fix(&files),
         Command::Hook { agent } => run_hook(agent),
+        Command::Mcp { project_dir } => match mcp::serve(&project_dir) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => {
+                eprintln!("jafix: {error}");
+                ExitCode::from(2)
+            }
+        },
     }
 }
 
-fn select_files(args: &Files, staged: bool) -> Option<Selection> {
+fn select_files(args: &Files, staged: bool) -> Result<Selection, String> {
     if args.diff || staged {
-        return match git_diff::select(&args.files, staged) {
-            Ok(selection) => Some(selection),
-            Err(error) => {
-                eprintln!("jafix: {error}");
-                None
-            }
-        };
+        return git_diff::select(&args.files, staged);
     }
-    Some(Selection {
+    Ok(Selection {
         root: PathBuf::new(),
         files: args
             .files
@@ -120,37 +143,105 @@ fn select_files(args: &Files, staged: bool) -> Option<Selection> {
     })
 }
 
-/// 箇所が1件以上あればexit 1、読み書きや設定の失敗があればexit 2
-fn run_check(args: &Files, staged: bool) -> ExitCode {
-    let Some(selection) = select_files(args, staged) else {
-        return ExitCode::from(2);
+#[derive(Serialize)]
+struct CheckOutput {
+    schema_version: u8,
+    checked_files: usize,
+    findings: Vec<FileDiagnostic>,
+    errors: Vec<CheckError>,
+}
+
+#[derive(Serialize)]
+struct FileDiagnostic {
+    path: String,
+    #[serde(flatten)]
+    diagnostic: Diagnostic,
+}
+
+#[derive(Serialize)]
+struct CheckError {
+    path: Option<String>,
+    message: String,
+}
+
+/// 箇所が1件以上あればexit 1、引数・読み書き・設定の失敗があればexit 2
+fn run_check(args: &CheckArgs) -> ExitCode {
+    let mut output = CheckOutput {
+        schema_version: 1,
+        checked_files: 0,
+        findings: Vec::new(),
+        errors: Vec::new(),
     };
-    let mut configs = match Configs::load() {
-        Ok(configs) => configs,
-        Err(e) => {
-            eprintln!("jafix: {e}");
-            return ExitCode::from(2);
-        }
-    };
+    if let Err(message) = check_files(args, &mut output) {
+        output.errors.push(CheckError {
+            path: None,
+            message,
+        });
+    }
     let mut stdout = std::io::stdout().lock();
-    let mut failed = false;
-    let mut found = false;
+    match args.output_format {
+        OutputFormat::Text => {
+            for FileDiagnostic {
+                path,
+                diagnostic: d,
+            } in &output.findings
+            {
+                let _ = writeln!(
+                    stdout,
+                    "{}",
+                    location_line(path, (d.line, d.column), &d.message, d.rule_id)
+                );
+            }
+            for error in &output.errors {
+                if let Some(path) = &error.path {
+                    eprintln!("jafix: {path}: {}", error.message);
+                } else {
+                    eprintln!("jafix: {}", error.message);
+                }
+            }
+        }
+        OutputFormat::Json => {
+            if let Err(error) = serde_json::to_writer(&mut stdout, &output)
+                .map_err(std::io::Error::from)
+                .and_then(|()| writeln!(stdout))
+            {
+                eprintln!("jafix: {error}");
+                return ExitCode::from(2);
+            }
+        }
+    }
+    match (output.errors.is_empty(), output.findings.is_empty()) {
+        (false, _) => ExitCode::from(2),
+        (true, false) => ExitCode::from(1),
+        (true, true) => ExitCode::SUCCESS,
+    }
+}
+
+fn check_files(args: &CheckArgs, output: &mut CheckOutput) -> Result<(), String> {
+    if args.files.files.is_empty() && !args.files.diff && !args.staged {
+        return Err("チェックするファイル、--diff、または --staged を指定してください".into());
+    }
+    let selection = select_files(&args.files, args.staged)?;
+    let mut configs = Configs::load()?;
     for target in &selection.files {
         let path = selection.root.join(&target.path);
-        let config = if staged {
+        let display_path = target.path.display().to_string();
+        let config = if args.staged {
             configs.for_staged_path(&path)
         } else {
             configs.for_path(&path)
         };
         let config = match config {
             Ok(config) => config,
-            Err(e) => {
-                eprintln!("jafix: {e}");
-                failed = true;
+            Err(message) => {
+                output.errors.push(CheckError {
+                    path: None,
+                    message,
+                });
                 continue;
             }
         };
-        let excluded = if staged {
+        let excluded = if args.staged {
             config.is_staged_path_excluded(&path)
         } else {
             config.is_excluded(&path)
@@ -160,92 +251,64 @@ fn run_check(args: &Files, staged: bool) -> ExitCode {
         }
         let file = match &target.staged_blob {
             Some(blob) => git_diff::read_blob(blob).and_then(|bytes| {
-                TextFile::decode(bytes, args.encoding).map_err(|error| error.to_string())
+                TextFile::decode(bytes, args.files.encoding).map_err(|error| error.to_string())
             }),
-            None => TextFile::read(&path, args.encoding).map_err(|error| error.to_string()),
+            None => TextFile::read(&path, args.files.encoding).map_err(|error| error.to_string()),
         };
         let file = match file {
             Ok(file) => file,
-            Err(e) => {
-                eprintln!("jafix: {}: {e}", target.path.display());
-                failed = true;
+            Err(message) => {
+                output.errors.push(CheckError {
+                    path: Some(display_path),
+                    message,
+                });
                 continue;
             }
         };
-        let src = &file.content;
-        let document = prose::parse(src);
-        let ignored = Ignored::new(src, &document, config.filters());
-        let mut findings =
-            rules::replacements(src, &document, config.builtin(), &target.lines, &ignored);
-        let fixes = rules::fix_findings(src, &document, config.builtin(), &ignored);
-        findings.extend(rules::fixable(&fixes));
-        let report_excluded = if staged {
+        let report_excluded = if args.staged {
             config.is_staged_report_excluded(&path)
         } else {
             config.is_report_excluded(&path)
         };
-        let reports = if report_excluded {
-            Vec::new()
-        } else {
-            rules::report(
-                src,
-                &document,
-                config.builtin(),
-                &target.lines,
-                &fixes,
-                &ignored,
-                &Links {
-                    file: &path,
-                    urls: config.url_checker(),
-                },
-            )
+        let links = Links {
+            file: &path,
+            urls: if report_excluded {
+                None
+            } else {
+                config.url_checker()
+            },
         };
-        let mut lines: Vec<(usize, &str, &str)> = findings
-            .iter()
-            .map(|finding| {
-                (
-                    finding.position,
-                    finding.message.as_ref(),
-                    finding.rule.name(),
-                )
-            })
-            .chain(
-                reports
-                    .iter()
-                    .map(|report| (report.range.start, report.message.as_ref(), report.rule)),
-            )
-            .collect();
-        lines.sort_by_key(|&(start, ..)| start);
-        let index = LineIndex::new(src);
-        for &(start, message, rule) in &lines {
-            let location = index.line_col(start);
-            if !target.lines.contains(location.0) {
-                continue;
-            }
-            let _ = writeln!(
-                stdout,
-                "{}",
-                location_line(&target.path, location, message, rule)
-            );
-            found = true;
-        }
+        let findings = diagnostics::check(
+            &file.content,
+            config,
+            &target.lines,
+            Some(&links),
+            report_excluded,
+        );
+        output.checked_files += 1;
+        output
+            .findings
+            .extend(findings.into_iter().map(|diagnostic| FileDiagnostic {
+                path: display_path.clone(),
+                diagnostic,
+            }));
     }
-    match (failed, found) {
-        (true, _) => ExitCode::from(2),
-        (false, true) => ExitCode::from(1),
-        (false, false) => ExitCode::SUCCESS,
-    }
+    Ok(())
 }
 
 /// `check` とhookが箇所と指摘を出す `<path>:<line>:<column>: [<rule-id>] <message>` の行
-fn location_line(path: &Path, (line, column): (usize, usize), message: &str, rule: &str) -> String {
-    format!("{}:{line}:{column}: [{rule}] {message}", path.display())
+fn location_line(path: &str, (line, column): (usize, usize), message: &str, rule: &str) -> String {
+    format!("{path}:{line}:{column}: [{rule}] {message}")
 }
 
 /// 読み書きや設定の失敗があればexit 2
 fn run_fix(args: &FixArgs) -> ExitCode {
-    let Some(selection) = select_files(&args.files, false) else {
-        return ExitCode::from(2);
+    let selection = match select_files(&args.files, false) {
+        Ok(selection) => selection,
+        Err(error) => {
+            eprintln!("jafix: {error}");
+            return ExitCode::from(2);
+        }
     };
     let mut configs = match Configs::load() {
         Ok(configs) => configs,
@@ -272,12 +335,12 @@ fn run_fix(args: &FixArgs) -> ExitCode {
             continue;
         }
         let started = args.timing.then(Instant::now);
-        let fixed = match fix_file(
+        let (fixed, original) = match fix_file(
             &path,
             args.files.encoding,
             &target.lines,
-            config.builtin(),
-            config.filters(),
+            config,
+            args.dry_run,
         ) {
             Ok(fixed) => fixed,
             Err(e) => {
@@ -293,7 +356,7 @@ fn run_fix(args: &FixArgs) -> ExitCode {
                 started.elapsed().as_secs_f64()
             );
         }
-        let Some(original) = fixed.original else {
+        let Some(original) = original else {
             unchanged += 1;
             continue;
         };
@@ -310,7 +373,12 @@ fn run_fix(args: &FixArgs) -> ExitCode {
         }
     }
     if args.summary {
-        eprintln!("修正: {changed}ファイル、変更なし: {unchanged}ファイル");
+        let label = if args.dry_run {
+            "修正予定"
+        } else {
+            "修正"
+        };
+        eprintln!("{label}: {changed}ファイル、変更なし: {unchanged}ファイル");
     }
     if failed {
         ExitCode::from(2)
@@ -357,12 +425,12 @@ fn run_hook(agent: Agent) -> ExitCode {
                 continue;
             }
         };
-        let fixed = match fix_file(
+        let (fixed, _) = match fix_file(
             &target.path,
             InputEncoding::Utf8,
             &target.lines,
-            config.builtin(),
-            config.filters(),
+            config,
+            false,
         ) {
             Ok(fixed) => fixed,
             Err(e) => {
@@ -382,10 +450,10 @@ fn run_hook(agent: Agent) -> ExitCode {
             &target.lines,
             &fixed.fixes,
             &fixed.ignored,
-            &Links {
+            Some(&Links {
                 file: &target.path,
                 urls: None,
-            },
+            }),
         );
         for report in reports_in_file {
             let (line, column) = index.line_col(report.range.start);
@@ -393,7 +461,7 @@ fn run_hook(agent: Agent) -> ExitCode {
                 continue;
             }
             reports.push(location_line(
-                &target.path,
+                &target.path.to_string_lossy(),
                 (line, column),
                 &report.message,
                 report.rule,
@@ -421,33 +489,44 @@ fn run_hook(agent: Agent) -> ExitCode {
     ExitCode::from(2)
 }
 
-/// `fix_file` が直した結果。`document`・`fixes`・`ignored` は `content` のものである
+/// `document`・`fixes`・`ignored` は修正後の `content` のものである
 struct Fixed {
     content: String,
-    /// ファイルを書き換えた場合の、修正前の内容
-    original: Option<String>,
     document: prose::Document,
     fixes: Vec<rules::FixRuleFinding>,
     ignored: Ignored,
 }
 
-/// 対象行に、利用者の置き換えを1回当て、その結果に組み込みの修正ルールを内容が変わらなくなるまで繰り返し当てた
-/// 内容を返す。`filters` の外す範囲は、その時点の内容から求め直す。変更が無ければ書き戻さない
 fn fix_file(
     path: &Path,
     encoding: InputEncoding,
     lines: &TargetLines,
-    builtin: &Builtin,
-    filters: &Filters,
-) -> std::io::Result<Fixed> {
+    config: &Config,
+    dry_run: bool,
+) -> std::io::Result<(Fixed, Option<String>)> {
     let file = TextFile::read(path, encoding)?;
-    let src = &file.content;
+    let fixed = fix_content(&file.content, lines, config);
+    if fixed.content == file.content {
+        return Ok((fixed, None));
+    }
+    let encoded = file.encode(&fixed.content)?;
+    if !dry_run {
+        fs::write(path, encoded)?;
+    }
+    Ok((fixed, Some(file.content)))
+}
+
+/// 利用者の置き換えを1回当て、組み込みの修正ルールは内容が変わらなくなるまで繰り返し当てる。
+/// filterの外す範囲はその時点の内容から求め直す。
+fn fix_content(src: &str, lines: &TargetLines, config: &Config) -> Fixed {
+    let builtin = config.builtin();
+    let filters = config.filters();
     let document = prose::parse(src);
     let ignored = Ignored::new(src, &document, filters);
     let replacements = rules::replacements(src, &document, builtin, lines, &ignored);
     let mut fixed = apply::apply(src, &replacements, lines);
     // 利用者の置き換えと組み込みの修正ルールは改行を足し引きしないので、対象行は直した後の内容でも同じ行番号である
-    let mut document = if fixed == *src {
+    let mut document = if fixed == src {
         document
     } else {
         prose::parse(&fixed)
@@ -459,19 +538,12 @@ fn fix_file(
         let fixes = rules::fix_findings(&fixed, &document, builtin, &ignored);
         let next = apply::apply(&fixed, &rules::fixable(&fixes), lines);
         if next == fixed {
-            let original = if fixed != *src {
-                file.write(path, &fixed)?;
-                Some(file.content)
-            } else {
-                None
-            };
-            return Ok(Fixed {
+            return Fixed {
                 content: fixed,
-                original,
                 document,
                 fixes,
                 ignored,
-            });
+            };
         }
         document = prose::parse(&next);
         fixed = next;

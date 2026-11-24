@@ -695,6 +695,32 @@ NUL (U+0000)を含むファイルは、自動判定の対象外です。この�
 | 1          | 修正ルールに当たる箇所か指摘が1件以上ある | -                                              |
 | 2          | ファイルを読めない、設定ファイルが不正    | ファイルを読み書きできない、設定ファイルが不正 |
 
+### JSON出力
+
+`jafix check --output-format json` は結果をJSONオブジェクト1件として標準出力に書きます。たとえば `notes.md` の1行目に `日本語 Rustです。` と書いた場合は次の結果になります。
+
+```json
+{
+  "schema_version": 1,
+  "checked_files": 1,
+  "findings": [
+    {
+      "path": "notes.md",
+      "line": 1,
+      "column": 4,
+      "rule_id": "space-between-ja-and-alnum",
+      "message": "日本語と英数字の間の空白を削除する",
+      "fixable": true
+    }
+  ],
+  "errors": []
+}
+```
+
+`checked_files` は読み込んでチェックしたファイル数です。対象ファイルの読み込みに失敗しても、残りのファイルの結果を返します。エラーは `errors` に `path` と `message` で入ります。ファイルに紐づかないエラーは `path` が `null` です。実行に失敗した場合の終了コードは2です。
+
+ファイル、`--diff`、`--staged` のいずれも指定しなかった場合は終了コード2を返します。`--diff` または `--staged` を指定して正常に処理でき、対象が見つからなかった場合は終了コード0で、`checked_files` が0になります。
+
 ### 修正結果の表示
 
 `jafix fix` は成功時に何も表示しません。保存した変更を確認するときは、次のオプションを使います。
@@ -708,6 +734,7 @@ NUL (U+0000)を含むファイルは、自動判定の対象外です。この�
 
 `--list` と `--show-diff` はどちらか一方を指定します。`--summary` と `--timing` はほかのオプションと併用できます。
 たとえば `jafix fix --diff --show-diff` は、Gitの差分にある行を修正して保存し、その修正の差分を表示します。
+ファイルを保存せずに確認するには `jafix fix --diff --dry-run --show-diff` を実行します。`--dry-run` は `--list`、`--summary`、`--timing` とも使えます。
 
 ### Gitの差分
 
@@ -786,6 +813,12 @@ input=$(cat)
 print -r -- "$input" | jafix hook claude
 # この後に他のformatterを呼ぶ
 ```
+
+## MCP
+
+`jafix mcp` はstdioで起動し、`check_text` と `fix_text` を提供します。どちらも `text` にMarkdownを受け取り、応答の `structuredContent.findings` に指摘を返します。指摘の項目は、[JSON出力](#json出力)の `findings` から `path` を省いた形です。`fix_text` は同じ応答の `text` に修正後の本文を入れます。指摘の位置はその本文を基準にします。
+
+起動コマンドと設定の探し方は[クイックスタート](docs/quick-start.md#mcp)にあります。
 
 ## 設定ファイル
 

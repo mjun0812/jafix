@@ -67,12 +67,21 @@ impl Configs {
 
     pub fn for_path(&mut self, path: &Path) -> Result<&Config, String> {
         let canonical = path.canonicalize().ok();
-        self.for_project(canonical.as_deref().and_then(project_config_path))
+        self.for_project(
+            canonical
+                .as_deref()
+                .and_then(Path::parent)
+                .and_then(project_config_path),
+        )
     }
 
     /// インデックスのファイルは、作業ツリーで削除されたりsymlinkに置き換わったりしていてもGit上のパスで探す。
     pub fn for_staged_path(&mut self, path: &Path) -> Result<&Config, String> {
-        self.for_project(project_config_path(path))
+        self.for_project(path.parent().and_then(project_config_path))
+    }
+
+    pub fn for_directory(&mut self, dir: &Path) -> Result<&Config, String> {
+        self.for_project(project_config_path(dir))
     }
 
     fn for_project(&mut self, project_config: Option<PathBuf>) -> Result<&Config, String> {
@@ -104,8 +113,8 @@ impl Configs {
     }
 }
 
-fn project_config_path(path: &Path) -> Option<PathBuf> {
-    for dir in path.ancestors().skip(1) {
+fn project_config_path(directory: &Path) -> Option<PathBuf> {
+    for dir in directory.ancestors() {
         let config = dir.join(".jafix.toml");
         match config.symlink_metadata() {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}

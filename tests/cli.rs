@@ -123,6 +123,17 @@ fn fix_keeps_shift_jis_source_when_replacement_cannot_be_read_back() {
         sandbox.write_xdg_config(&format!(
             "[[builtin.\"@textlint-rule/pattern\".patterns]]\npattern = \"校正\"\nreplace = \"{replacement}\"\nmessage = \"置き換える\"\n"
         ));
+        let preview = sandbox.run(&[
+            "fix",
+            "--encoding",
+            "shift-jis",
+            "--dry-run",
+            "--show-diff",
+            "t.txt",
+        ]);
+        assert_eq!(preview.status.code(), Some(2), "{preview:?}");
+        assert!(preview.stdout.is_empty());
+        assert_eq!(std::fs::read(&path).unwrap(), original);
         let output = sandbox.run(&["fix", "--encoding", "shift-jis", "t.txt"]);
         assert_eq!(output.status.code(), Some(2), "{output:?}");
         assert!(String::from_utf8_lossy(&output.stderr).contains("Shift_JISで保存できない"));
@@ -224,10 +235,18 @@ fn fix_lists_changed_files_and_reports_counts_and_times() {
 fn fix_shows_the_saved_diff_without_a_trailing_newline() {
     let sandbox = Sandbox::new();
     let path = sandbox.write("t.md", "文（例）です。");
+    let preview = sandbox.run(&["fix", "--dry-run", "--show-diff", "--summary", "t.md"]);
+    assert_eq!(preview.status.code(), Some(0), "{preview:?}");
+    assert_eq!(read(&path), "文（例）です。");
+    assert_eq!(
+        std::str::from_utf8(&preview.stderr).unwrap().trim_end(),
+        "修正予定: 1ファイル、変更なし: 0ファイル"
+    );
     let output = sandbox.run(&["fix", "--show-diff", "t.md"]);
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty());
     assert_eq!(read(&path), "文(例)です。");
+    assert_eq!(preview.stdout, output.stdout);
     assert_eq!(
         stdout(&output),
         "--- t.md\n+++ t.md\n@@ -1 +1 @@\n-文（例）です。\n\\ No newline at end of file\n+文(例)です。\n\\ No newline at end of file\n"
@@ -236,6 +255,45 @@ fn fix_shows_the_saved_diff_without_a_trailing_newline() {
     assert_eq!(unchanged.status.code(), Some(0), "{unchanged:?}");
     assert!(unchanged.stdout.is_empty());
     assert!(unchanged.stderr.is_empty());
+}
+
+#[test]
+fn check_json_reports_findings_and_operational_errors_separately() {
+    let sandbox = Sandbox::new();
+    let original = "日本語 Rustです。\n結果をを確認します。\n";
+    let path = sandbox.write("t.md", original);
+    let run = |files: &[&str], expected_code| {
+        let mut args = vec!["check", "--output-format", "json"];
+        args.extend_from_slice(files);
+        let output = sandbox.run(&args);
+        assert_eq!(output.status.code(), Some(expected_code), "{output:?}");
+        assert!(output.stderr.is_empty(), "{output:?}");
+        serde_json::from_slice::<serde_json::Value>(&output.stdout).unwrap()
+    };
+    let report = run(&["t.md", "missing.md"], 2);
+    assert_eq!(report["schema_version"], 1);
+    assert_eq!(report["checked_files"], 1);
+    assert_eq!(
+        report["findings"],
+        serde_json::json!([
+            {
+                "path": "t.md", "line": 1, "column": 4,
+                "rule_id": "space-between-ja-and-alnum", "message": "日本語と英数字の間の空白を削除する", "fixable": true
+            },
+            {
+                "path": "t.md", "line": 2, "column": 4,
+                "rule_id": "ja-no-successive-word", "message": "「を」が2回続いている", "fixable": false
+            }
+        ])
+    );
+    assert_eq!(report["errors"][0]["path"], "missing.md");
+    assert_eq!(run(&["t.md"], 1)["errors"], serde_json::json!([]));
+    assert_eq!(read(&path), original);
+    sandbox.write("clean.md", "本文です。\n");
+    assert_eq!(run(&["clean.md"], 0)["checked_files"], 1);
+    let missing_target = run(&[], 2);
+    assert_eq!(missing_target["checked_files"], 0);
+    assert_eq!(missing_target["errors"][0]["path"], serde_json::Value::Null);
 }
 
 #[test]

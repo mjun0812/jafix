@@ -357,7 +357,7 @@ pub fn report(
     targets: &TargetLines,
     fixes: &[FixRuleFinding],
     ignored: &Ignored,
-    links: &Links,
+    links: Option<&Links<'_>>,
 ) -> Vec<Report> {
     let (texts, alts) = target_texts(src, document, builtin, targets);
     // 英語の4ルールは、`spelling` の辞書の読み込みと候補の計算に時間がかかるので、どれかが有効なときだけ1つのthreadで、

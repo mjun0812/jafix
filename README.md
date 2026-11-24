@@ -63,6 +63,10 @@ Claude CodeやCodexのPostToolUse hookにjafixを登録すると、`.md` ファ�
 
 [登録用のJSONとhookの挙動](REFERENCE.md#hookへの登録)
 
+## MCP
+
+`jafix mcp` を登録すると、agentが下書きの文章を直接チェックし、自動修正した本文を受け取れます。[MCPの登録手順](docs/quick-start.md#mcp)
+
 ## ドキュメントサイト
 
 - [ルール一覧](docs/rules.md) ([English](docs/en/rules.md))
