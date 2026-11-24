@@ -73,6 +73,24 @@ Claude CodeやCodexのPostToolUse hookに登録すると、jafixは `.md` ファ
 
 `jafix mcp` を登録すると、agentが下書きの文章を直接チェックし、自動修正した本文を受け取れます。[MCPの登録手順](docs/quick-start.md#mcp)
 
+## Agent Skill
+
+Agent Skillを導入すると、Claude CodeやCodexが日本語の文書を編集した後に、今回変えた行と新規ファイルをjafixで校正します。
+hookを登録していない環境でも、agentが自動修正と手修正を使い分け、指摘が無くなるまで確かめます。
+
+```sh
+npx skills add mjun0812/jafix
+```
+
+手で導入する場合は、[`skills/jafix`](skills/jafix)ディレクトリを次の場所にコピーします。
+
+| 対象        | 置き場所                 |
+| ----------- | ------------------------ |
+| Claude Code | `~/.claude/skills/jafix` |
+| Codex       | `~/.agents/skills/jafix` |
+
+skillは `jafix` コマンドを使うので、先にjafixを導入します。
+
 ## ドキュメントサイト
 
 - [ルール一覧](docs/rules.md) ([English](docs/en/rules.md))
