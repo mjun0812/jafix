@@ -1,0 +1,24 @@
+# prekが実行するpre-commit hook。`prek install` で登録する。
+repos:
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt --check
+        entry: cargo fmt --check
+        language: system
+        types: [rust]
+        pass_filenames: false
+      - id: cargo-clippy
+        name: cargo clippy
+        entry: cargo clippy --locked --all-targets -- -D warnings
+        language: system
+        types: [rust]
+        pass_filenames: false
+      # ステージしたMarkdownの対象行を、作業ツリーのjafixで校正する。
+      # tests/ のMarkdownは、指摘が出ることを確かめる入力なので外す。
+      - id: jafix
+        name: jafix check --staged
+        entry: cargo run --quiet --locked -- check --staged
+        language: system
+        types: [markdown]
+        exclude: ^tests/
