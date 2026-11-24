@@ -151,6 +151,23 @@ codex mcp add jafix -- jafix mcp
 
 サーバーは共通設定と、起動ディレクトリから探したプロジェクト設定を使います。別の場所から設定を探すには `jafix mcp --project-dir /path/to/repo` を起動コマンドにします。ファイルを入力とする設定の `exclude` と `report-exclude`、リンク先を調べる `no-dead-link` はMCPの本文には適用しません。
 
+## Agent Skillを導入する {#agent-skill}
+
+Agent Skillを導入すると、Claude CodeやCodexが日本語の文書を編集した後に、今回変えた行と新規ファイルをjafixで校正します。hookを登録していない環境でも、agentが自動修正と手修正を使い分け、指摘が無くなるまで確かめます。
+
+```sh
+npx skills add mjun0812/jafix
+```
+
+手で導入する場合は、リポジトリの[`skills/jafix`](https://github.com/mjun0812/jafix/tree/main/skills/jafix)ディレクトリを次の場所にコピーします。
+
+| 対象        | 置き場所                 |
+| ----------- | ------------------------ |
+| Claude Code | `~/.claude/skills/jafix` |
+| Codex       | `~/.agents/skills/jafix` |
+
+skillは `jafix` コマンドを使うので、先にjafixをインストールします。
+
 ## 次に読むページ {#next}
 
 - [使うルールを設定する](./configuration.md)

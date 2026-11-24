@@ -828,7 +828,7 @@ print -r -- "$input" | jafix hook claude
 
 `jafix mcp` はstdioで起動し、`check_text` と `fix_text` を提供します。どちらも `text` にMarkdownを受け取り、応答の `structuredContent.findings` に指摘を返します。指摘の項目は、[JSON出力](#json出力)の `findings` から `path` を省いた形です。`fix_text` は同じ応答の `text` に修正後の本文を入れます。指摘の位置はその本文を基準にします。
 
-起動コマンドと設定の探し方は[クイックスタート](docs/quick-start.md#mcp)にあります。
+起動コマンドと設定の探し方は[クイックスタート](docs/quick-start.md#下書きをmcpで校正する-mcp)にあります。
 
 ## 設定ファイル
 
