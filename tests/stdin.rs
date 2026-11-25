@@ -323,6 +323,97 @@ fn fix_stdin_timing_covers_reading_the_input() {
 }
 
 #[test]
+fn fix_dry_run_stdin_exits_2_when_the_diff_cannot_be_written() {
+    let sandbox = Sandbox::new();
+    // 読み取り専用で開いたファイルを標準出力にすると、差分を書き込めない
+    let read_only = fs::File::open(sandbox.write("out.txt", "")).unwrap();
+    let mut child = sandbox
+        .command()
+        .args([
+            "fix",
+            "--dry-run",
+            "--show-diff",
+            "--summary",
+            "--timing",
+            "-",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(read_only)
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(PAREN_TEXT.as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    assert!(stderr(&output).starts_with("jafix: "), "{output:?}");
+    assert!(!stderr(&output).contains("修正予定: "), "{output:?}");
+    assert!(!stderr(&output).contains("<stdin>: "), "{output:?}");
+}
+
+/// 書き込み専用で開いたファイルを標準入力にして起動する。本文を読み取れない
+fn run_with_unreadable_stdin(sandbox: &Sandbox, args: &[&str]) -> Output {
+    let write_only = fs::OpenOptions::new()
+        .write(true)
+        .open(sandbox.write("in.txt", PAREN_TEXT))
+        .unwrap();
+    sandbox
+        .command()
+        .args(args)
+        .stdin(write_only)
+        .output()
+        .unwrap()
+}
+
+#[test]
+fn stdin_that_cannot_be_read_exits_2() {
+    let sandbox = Sandbox::new();
+    let check = run_with_unreadable_stdin(&sandbox, &["check", "-"]);
+    assert_rejected(&check);
+    let fix = run_with_unreadable_stdin(&sandbox, &["fix", "-"]);
+    assert_rejected(&fix);
+
+    let json = run_with_unreadable_stdin(&sandbox, &["check", "--output-format", "json", "-"]);
+    assert_eq!(json.status.code(), Some(2), "{json:?}");
+    let value: serde_json::Value = serde_json::from_str(stdout(&json)).unwrap();
+    assert_eq!(value["checked_files"], 0, "{json:?}");
+    assert_eq!(value["errors"].as_array().unwrap().len(), 1, "{json:?}");
+}
+
+#[test]
+fn empty_stdin_is_a_document_without_findings() {
+    let sandbox = Sandbox::new();
+    let check = sandbox.run_with_stdin(&["check", "-"], b"");
+    assert_eq!(check.status.code(), Some(0), "{check:?}");
+    assert_eq!(stdout(&check), "");
+    let fix = sandbox.run_with_stdin(&["fix", "-"], b"");
+    assert_eq!(fix.status.code(), Some(0), "{fix:?}");
+    assert_eq!(stdout(&fix), "");
+}
+
+#[test]
+fn fix_dry_run_stdin_exits_2_when_the_result_cannot_be_encoded() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(
+        "[[builtin.\"@textlint-rule/pattern\".patterns]]\npattern = \"校正\"\nreplace = \"😀\"\nmessage = \"置き換える\"\n",
+    );
+    // Shift_JISの「日本語の文章を校正します。」
+    let input = b"\x93\xfa\x96\x7b\x8c\xea\x82\xcc\x95\xb6\x8f\xcd\x82\xf0\x8d\x5a\x90\xb3\x82\xb5\x82\xdc\x82\xb7\x81\x42";
+    let output = sandbox.run_with_stdin(&["fix", "--dry-run", "--summary", "-"], input);
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    assert!(output.stdout.is_empty(), "{output:?}");
+    assert!(
+        stderr(&output).contains("Shift_JISで保存できない"),
+        "{output:?}"
+    );
+    assert!(!stderr(&output).contains("修正予定: "), "{output:?}");
+}
+
+#[test]
 fn stdin_uses_project_config_from_current_directory() {
     let sandbox = Sandbox::new();
     let output = sandbox.run_with_stdin(&["check", "-"], PAREN_TEXT.as_bytes());
