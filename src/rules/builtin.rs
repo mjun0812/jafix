@@ -201,6 +201,13 @@ impl Builtin {
         Ok(())
     }
 
+    /// `id` のルールが有効か。`set` が書く有効・無効を読む
+    #[expect(dead_code, reason = "skeleton: not implemented")]
+    pub fn is_enabled(&self, id: RuleId) -> bool {
+        let _ = id;
+        todo!("skeleton: not implemented")
+    }
+
     pub fn validate(&self) -> Result<(), String> {
         // 利用者の辞書を直しても組み込みのルールどうしの不正は残るので、先に出す
         self.reject_opposite_rules()?;
