@@ -485,6 +485,58 @@ fn check_stdin_keeps_the_exit_code_when_the_reader_closes_the_pipe() {
     assert_eq!(stderr(&output), "", "{output:?}");
 }
 
+// 1回の書き込みがまとまって届く大きさ (`PIPE_BUF`) は、Unixのパイプの約束である
+#[cfg(unix)]
+#[test]
+fn concurrent_checks_keep_each_finding_on_its_own_line() {
+    let sandbox = Sandbox::new();
+    // 1つのプロセスの指摘の合計が、パイプのバッファを大きく超える本文
+    let text = PAREN_TEXT.repeat(1500);
+    let (mut reader, writer) = std::io::pipe().unwrap();
+    let mut children: Vec<_> = (0..4)
+        .map(|_| {
+            sandbox
+                .command()
+                .args(["check", "-"])
+                .stdin(Stdio::piped())
+                .stdout(writer.try_clone().unwrap())
+                .stderr(Stdio::null())
+                .spawn()
+                .unwrap()
+        })
+        .collect();
+    drop(writer);
+    for child in &mut children {
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(text.as_bytes())
+            .unwrap();
+    }
+    let mut output = String::new();
+    std::io::Read::read_to_string(&mut reader, &mut output).unwrap();
+    for mut child in children {
+        assert_eq!(child.wait().unwrap().code(), Some(1));
+    }
+    let lines: Vec<&str> = output.lines().collect();
+    assert_eq!(lines.len(), 4 * 1500 * 2);
+    for line in lines {
+        let rest = line
+            .strip_prefix("<stdin>:")
+            .unwrap_or_else(|| panic!("{line:?}"));
+        let (position, finding) = rest.split_once(": ").unwrap_or_else(|| panic!("{line:?}"));
+        assert!(
+            position.split(':').all(|n| n.parse::<usize>().is_ok()),
+            "{line:?}"
+        );
+        assert_eq!(
+            finding, "[fullwidth-paren] 全角括弧を半角にする",
+            "{line:?}"
+        );
+    }
+}
+
 #[test]
 fn stdin_uses_project_config_from_current_directory() {
     let sandbox = Sandbox::new();

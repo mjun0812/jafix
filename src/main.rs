@@ -14,7 +14,7 @@ mod text_file;
 mod usage;
 
 use std::fs;
-use std::io::{IsTerminal, Read, Write};
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Instant;
@@ -286,28 +286,8 @@ fn reads_stdin(args: &Files, staged: bool) -> Result<bool, String> {
 /// 標準入力を最後まで読み、読んだバイト列と、文字コードを判定した内容を返す
 fn read_stdin(encoding: InputEncoding) -> std::io::Result<(Vec<u8>, TextFile)> {
     let mut bytes = Vec::new();
-    let stdin = std::io::stdin();
-    // Windowsのコンソールからの入力は、`Stdin` が文字をUTF-8に変換して渡す。それ以外は複製から読む。
-    // Cygwinの疑似端末のパイプも端末と判定されるが、`Stdin` はコンソールでないハンドルのバイト列をそのまま渡す
-    let windows_terminal = cfg!(windows) && stdin.is_terminal();
-    if windows_terminal {
-        stdin.lock().read_to_end(&mut bytes)?;
-    } else {
-        duplicate(&stdin)?.read_to_end(&mut bytes)?;
-    }
-    let file = TextFile::decode(bytes.clone(), encoding).map_err(|error| {
-        if windows_terminal && matches!(encoding, InputEncoding::ShiftJis) {
-            // コンソールと疑似端末を標準ライブラリでは見分けられないので、読む前には拒まず、読めなかったときに理由を足す
-            std::io::Error::new(
-                error.kind(),
-                format!(
-                    "{error}。Windowsのコンソールから入力した文字はUTF-8として届くので、その場合は --encoding を指定しない"
-                ),
-            )
-        } else {
-            error
-        }
-    })?;
+    duplicate(&std::io::stdin())?.read_to_end(&mut bytes)?;
+    let file = TextFile::decode(bytes.clone(), encoding)?;
     Ok((bytes, file))
 }
 
@@ -323,16 +303,10 @@ fn duplicate(stream: &impl std::os::windows::io::AsHandle) -> std::io::Result<fs
     Ok(fs::File::from(stream.as_handle().try_clone_to_owned()?))
 }
 
-/// 標準出力に書く。書けなければ失敗を返す
+/// 標準出力に、1回の書き込みで書く。書けなければ失敗を返す。
+/// 端末かどうかで書き方を変えない。端末の文字コードは分からないので、入力と同じバイト列をそのまま渡す
 fn write_stdout(bytes: &[u8]) -> std::io::Result<()> {
-    let stdout = std::io::stdout();
-    // Windowsのコンソールは、文字として書く `Stdout` でないと日本語を表示できない
-    #[cfg(windows)]
-    if stdout.is_terminal() {
-        let mut stdout = stdout.lock();
-        return stdout.write_all(bytes).and_then(|()| stdout.flush());
-    }
-    duplicate(&stdout)?.write_all(bytes)
+    duplicate(&std::io::stdout())?.write_all(bytes)
 }
 
 /// 標準入力の本文に使う設定。ファイルが無いので、カレントディレクトリからプロジェクト設定を探す
@@ -399,24 +373,23 @@ fn run_check(args: &CheckArgs) -> ExitCode {
     }
     match args.output_format {
         OutputFormat::Text => {
-            let mut lines = String::new();
+            // 指摘は1件ずつ、1回の書き込みで書く。並行して同じパイプへ書くほかのプロセスの出力が、行の途中に挟まらない
+            let mut written = duplicate(&std::io::stdout());
             for FileDiagnostic {
                 path,
                 diagnostic: d,
             } in &output.findings
             {
-                lines.push_str(&location_line(
-                    path,
-                    (d.line, d.column),
-                    &d.message,
-                    d.rule_id,
-                ));
-                lines.push('\n');
+                let Ok(stdout) = &mut written else { break };
+                let line = location_line(path, (d.line, d.column), &d.message, d.rule_id);
+                if let Err(error) = stdout.write_all(format!("{line}\n").as_bytes()) {
+                    written = Err(error);
+                }
             }
-            let written = match write_stdout(lines.as_bytes()) {
+            let written = match written {
                 // `| head` のように読み手が先に閉じたときは、何も出さずに、指摘の有無で終了コードを決める
                 Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
-                written => written,
+                written => written.map(drop),
             };
             for error in &output.errors {
                 if let Some(path) = &error.path {
@@ -678,10 +651,8 @@ fn fix_stdin(args: &FixArgs) -> Result<(), String> {
         read_stdin(args.files.encoding).map_err(|error| format!("{STDIN_NAME}: {error}"))?;
     let fixed = fix_content(&file.content, &TargetLines::All, config);
     let changed = fixed.content != file.content;
-    let to_terminal = std::io::stdout().is_terminal();
-    // パイプやファイルへは入力と同じ文字コードで書くので、その文字コードで表せない修正結果は `--dry-run` でも失敗にする。
-    // 端末には文字として書く。Shift_JISのバイト列は、UTF-8の端末では読めず、Windowsのコンソールでは書き込みが拒まれる
-    let encoded = if changed && !to_terminal {
+    // 入力と同じ文字コードで書くので、その文字コードで表せない修正結果は `--dry-run` でも失敗にする
+    let encoded = if changed {
         Some(
             file.encode(&fixed.content)
                 .map_err(|error| format!("{STDIN_NAME}: {error}"))?,
@@ -699,8 +670,6 @@ fn fix_stdin(args: &FixArgs) -> Result<(), String> {
         } else {
             Ok(())
         }
-    } else if to_terminal {
-        write_stdout(fixed.content.as_bytes())
     } else {
         // `--encoding shift-jis` で読んだ入力には符号化し直すと元と違うバイト列になるものがあるので、変わっていなければ読んだバイト列を書く
         write_stdout(encoded.as_deref().unwrap_or(&bytes))
