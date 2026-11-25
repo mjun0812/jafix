@@ -438,6 +438,54 @@ fn check_json_stdin_exits_2_when_stdout_cannot_be_written() {
 }
 
 #[test]
+fn check_stdin_exits_2_when_findings_cannot_be_written() {
+    let sandbox = Sandbox::new();
+    // 読み取り専用で開いたファイルを標準出力にすると、指摘を書き込めない
+    let read_only = fs::File::open(sandbox.write("out.txt", "")).unwrap();
+    let mut child = sandbox
+        .command()
+        .args(["check", "-"])
+        .stdin(Stdio::piped())
+        .stdout(read_only)
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(PAREN_TEXT.as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    assert!(stderr(&output).starts_with("jafix: "), "{output:?}");
+}
+
+#[test]
+fn check_stdin_keeps_the_exit_code_when_the_reader_closes_the_pipe() {
+    let sandbox = Sandbox::new();
+    let mut child = sandbox
+        .command()
+        .args(["check", "-"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    // `| head` のように、読み手が先にパイプを閉じた状態にする
+    drop(child.stdout.take());
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(PAREN_TEXT.as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    assert_eq!(stderr(&output), "", "{output:?}");
+}
+
+#[test]
 fn stdin_uses_project_config_from_current_directory() {
     let sandbox = Sandbox::new();
     let output = sandbox.run_with_stdin(&["check", "-"], PAREN_TEXT.as_bytes());

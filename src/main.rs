@@ -287,19 +287,27 @@ fn reads_stdin(args: &Files, staged: bool) -> Result<bool, String> {
 fn read_stdin(encoding: InputEncoding) -> std::io::Result<(Vec<u8>, TextFile)> {
     let mut bytes = Vec::new();
     let stdin = std::io::stdin();
-    // Windowsのコンソールからの入力は、`Stdin` が文字をUTF-8に変換して渡す。それ以外は複製から読む
-    if cfg!(windows) && stdin.is_terminal() {
-        if matches!(encoding, InputEncoding::ShiftJis) {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "Windowsのコンソールからの入力はUTF-8として読むので、--encoding shift-jis は指定できない",
-            ));
-        }
+    // Windowsのコンソールからの入力は、`Stdin` が文字をUTF-8に変換して渡す。それ以外は複製から読む。
+    // Cygwinの疑似端末のパイプも端末と判定されるが、`Stdin` はコンソールでないハンドルのバイト列をそのまま渡す
+    let windows_terminal = cfg!(windows) && stdin.is_terminal();
+    if windows_terminal {
         stdin.lock().read_to_end(&mut bytes)?;
     } else {
         duplicate(&stdin)?.read_to_end(&mut bytes)?;
     }
-    let file = TextFile::decode(bytes.clone(), encoding)?;
+    let file = TextFile::decode(bytes.clone(), encoding).map_err(|error| {
+        if windows_terminal && matches!(encoding, InputEncoding::ShiftJis) {
+            // コンソールと疑似端末を標準ライブラリでは見分けられないので、読む前には拒まず、読めなかったときに理由を足す
+            std::io::Error::new(
+                error.kind(),
+                format!(
+                    "{error}。Windowsのコンソールから入力した文字はUTF-8として届くので、その場合は --encoding を指定しない"
+                ),
+            )
+        } else {
+            error
+        }
+    })?;
     Ok((bytes, file))
 }
 
@@ -389,26 +397,38 @@ fn run_check(args: &CheckArgs) -> ExitCode {
             message,
         });
     }
-    let mut stdout = std::io::stdout().lock();
     match args.output_format {
         OutputFormat::Text => {
+            let mut lines = String::new();
             for FileDiagnostic {
                 path,
                 diagnostic: d,
             } in &output.findings
             {
-                let _ = writeln!(
-                    stdout,
-                    "{}",
-                    location_line(path, (d.line, d.column), &d.message, d.rule_id)
-                );
+                lines.push_str(&location_line(
+                    path,
+                    (d.line, d.column),
+                    &d.message,
+                    d.rule_id,
+                ));
+                lines.push('\n');
             }
+            let written = match write_stdout(lines.as_bytes()) {
+                // `| head` のように読み手が先に閉じたときは、何も出さずに、指摘の有無で終了コードを決める
+                Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
+                written => written,
+            };
             for error in &output.errors {
                 if let Some(path) = &error.path {
                     eprintln!("jafix: {path}: {}", error.message);
                 } else {
                     eprintln!("jafix: {}", error.message);
                 }
+            }
+            // 指摘を書き込めなかったことを、呼び出し元が終了コードで見分けられるようにする
+            if let Err(error) = written {
+                eprintln!("jafix: {error}");
+                return ExitCode::from(2);
             }
         }
         OutputFormat::Json => {
