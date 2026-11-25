@@ -225,6 +225,47 @@ fn fix_stdin_does_not_count_text_it_could_not_write() {
 }
 
 #[test]
+fn fix_stdin_does_not_count_text_a_closed_pipe_did_not_take() {
+    let sandbox = Sandbox::new();
+    let mut child = sandbox
+        .command()
+        .args(["fix", "--summary", "-"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    // 読み手が先にパイプを閉じた状態にする。読み手のいないパイプへの書き込みは、本文の長さによらず失敗する
+    drop(child.stdout.take());
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(PAREN_TEXT.as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert_eq!(stderr(&output), "", "{output:?}");
+}
+
+#[test]
+fn fix_stdin_exits_2_when_a_pipe_cannot_take_the_result_in_the_input_encoding() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(
+        "[[builtin.\"@textlint-rule/pattern\".patterns]]\npattern = \"校正\"\nreplace = \"😀\"\nmessage = \"置き換える\"\n",
+    );
+    // Shift_JISの「日本語の文章を校正します。」
+    let input = b"\x93\xfa\x96\x7b\x8c\xea\x82\xcc\x95\xb6\x8f\xcd\x82\xf0\x8d\x5a\x90\xb3\x82\xb5\x82\xdc\x82\xb7\x81\x42";
+    let output = sandbox.run_with_stdin(&["fix", "-"], input);
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    assert!(output.stdout.is_empty(), "{output:?}");
+    assert!(
+        stderr(&output).contains("Shift_JISで保存できない"),
+        "{output:?}"
+    );
+}
+
+#[test]
 fn stdin_uses_project_config_from_current_directory() {
     let sandbox = Sandbox::new();
     let output = sandbox.run_with_stdin(&["check", "-"], PAREN_TEXT.as_bytes());

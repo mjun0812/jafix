@@ -620,24 +620,23 @@ fn fix_stdin(args: &FixArgs) -> Result<(), String> {
     let started = args.timing.then(Instant::now);
     let fixed = fix_content(&file.content, &TargetLines::All, config);
     let changed = fixed.content != file.content;
-    // `--encoding shift-jis` で読んだ入力には符号化し直すと元と違うバイト列になるものがあるので、変わっていなければ読んだバイト列を書く
-    let output = if changed {
+    let mut stdout = std::io::stdout().lock();
+    // 端末には文字として書く。Shift_JISのバイト列は、UTF-8の端末では読めず、Windowsのコンソールでは書き込みが拒まれる。
+    // 符号化しないので、入力の文字コードで表せない文字を含む修正結果も表示できる
+    let output = if !args.dry_run && stdout.is_terminal() {
+        Cow::Borrowed(fixed.content.as_bytes())
+    } else if changed {
         file.encode(&fixed.content)
             .map_err(|error| format!("{STDIN_NAME}: {error}"))?
     } else {
+        // `--encoding shift-jis` で読んだ入力には符号化し直すと元と違うバイト列になるものがあるので、読んだバイト列を書く
         Cow::Borrowed(bytes.as_slice())
     };
     if let Some(started) = started {
         print_elapsed(STDIN_NAME, started);
     }
-    let mut stdout = std::io::stdout().lock();
     let written = if !args.dry_run {
-        // 端末には文字として書く。Shift_JISのバイト列は、UTF-8の端末では読めず、Windowsのコンソールでは書き込みが拒まれる
-        if stdout.is_terminal() {
-            stdout.write_all(fixed.content.as_bytes())
-        } else {
-            stdout.write_all(&output)
-        }
+        stdout.write_all(&output)
     } else if args.show_diff && changed {
         TextDiff::from_lines(file.content.as_str(), fixed.content.as_str())
             .unified_diff()
@@ -647,12 +646,12 @@ fn fix_stdin(args: &FixArgs) -> Result<(), String> {
         Ok(())
     };
     match written.and_then(|()| stdout.flush()) {
-        // `| head` のように読み手が先に閉じたときは、フィルターとして正常なので何も出さずに終える
-        Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => {}
+        // `| head` のように読み手が先に閉じたときは、フィルターとして正常なので何も出さずに終える。
+        // 全文を書き込めていないので、修正した件数にも数えない
+        Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => return Ok(()),
         Err(error) => return Err(error.to_string()),
         Ok(()) => {}
     }
-    // 本文を書き込めなかった入力を、修正した件数に数えない
     if args.summary {
         print_summary(args.dry_run, usize::from(changed), usize::from(!changed));
     }
