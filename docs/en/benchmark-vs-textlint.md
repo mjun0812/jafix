@@ -1,8 +1,8 @@
 # Performance comparison with textlint {#benchmark}
 
-Against textlint with the same rules, jafix finished 14 to 142 times faster and used at most one third of the memory.
+Against textlint with the same rules, jafix finished 5 to 49 times faster and used at most half of the memory.
 We timed three workflows (`check`, `fix`, and a hook run) on four files from 3 KB to 343 KB.
-The measurements were taken on November 15, 2026, with `scripts/bench-vs-textlint.sh`.
+The measurements were taken on November 25, 2026, with `scripts/bench-vs-textlint.sh`.
 
 ## Method {#method}
 
@@ -33,9 +33,9 @@ We used four input files.
 | File             | Size   | Content                                       |
 | ---------------- | ------ | --------------------------------------------- |
 | `blocks-10.md`   | 3 KB   | A block of about 350 bytes, repeated 10 times |
+| `README.md`      | 5 KB   | The jafix README                              |
 | `blocks-100.md`  | 34 KB  | The same block, repeated 100 times            |
 | `blocks-1000.md` | 343 KB | The same block, repeated 1,000 times          |
-| `README.md`      | 69 KB  | The jafix README                              |
 
 The block contains headings and paragraphs as well as lists, emphasis, and code blocks.
 It matches every rule.
@@ -60,8 +60,8 @@ jafix handles more spots, so this difference works against jafix in the comparis
 | Item      | Value                            |
 | --------- | -------------------------------- |
 | Machine   | Apple M5 (macOS, arm64)          |
-| jafix     | Release build of 0.1.0 (00b728a) |
-| textlint  | v15.8.0 (Node.js v26.13.0)       |
+| jafix     | Release build of 0.0.3 (608e127) |
+| textlint  | v16.1.2 (Node.js v26.13.1)       |
 | hyperfine | 2.0.0                            |
 
 Times are mean wall-clock times, and memory is mean peak resident memory.
@@ -69,37 +69,37 @@ Speedup is textlint's time divided by jafix's time.
 
 | Workflow | File                   |          jafix |         textlint | Speedup |
 | -------- | ---------------------- | -------------: | ---------------: | ------: |
-| check    | blocks-10.md (3KB)     |    2.6ms / 7MB |  151.7ms / 122MB |     59× |
-| check    | blocks-100.md (34KB)   |   9.2ms / 14MB |  249.8ms / 189MB |     27× |
-| check    | README.md (69KB)       |  18.7ms / 12MB |  267.8ms / 178MB |     14× |
-| check    | blocks-1000.md (343KB) | 120.1ms / 79MB |   2755ms / 328MB |     23× |
-| fix      | blocks-10.md (3KB)     |    2.3ms / 6MB |  167.8ms / 136MB |     73× |
-| fix      | blocks-100.md (34KB)   |   6.1ms / 13MB |  330.6ms / 203MB |     54× |
-| fix      | README.md (69KB)       |   5.7ms / 12MB |  262.5ms / 185MB |     46× |
-| fix      | blocks-1000.md (343KB) |  89.5ms / 78MB | 4464.4ms / 406MB |     50× |
-| hook     | blocks-10.md (3KB)     |    2.9ms / 7MB |  411.1ms / 135MB |    142× |
-| hook     | blocks-100.md (34KB)   |  11.2ms / 14MB |   1031ms / 202MB |     92× |
-| hook     | README.md (69KB)       |  10.5ms / 12MB |  490.7ms / 188MB |     47× |
-| hook     | blocks-1000.md (343KB) | 192.6ms / 92MB | 6319.1ms / 408MB |     33× |
+| check    | blocks-10.md (3KB)     |    3.8ms / 8MB |    97.2ms / 91MB |     26× |
+| check    | README.md (5KB)        |    3.5ms / 8MB |    78.6ms / 83MB |     22× |
+| check    | blocks-100.md (34KB)   |   9.9ms / 15MB |  119.7ms / 126MB |     12× |
+| check    | blocks-1000.md (343KB) |  98.8ms / 86MB | 1107.9ms / 179MB |     11× |
+| fix      | blocks-10.md (3KB)     |    3.8ms / 8MB |    98.7ms / 92MB |     26× |
+| fix      | README.md (5KB)        |    3.3ms / 8MB |    79.7ms / 86MB |     24× |
+| fix      | blocks-100.md (34KB)   |   8.7ms / 16MB |  124.8ms / 120MB |     14× |
+| fix      | blocks-1000.md (343KB) | 126.5ms / 93MB |  576.6ms / 223MB |      5× |
+| hook     | blocks-10.md (3KB)     |    3.8ms / 8MB |   182.1ms / 92MB |     49× |
+| hook     | README.md (5KB)        |    3.4ms / 8MB |     163ms / 86MB |     48× |
+| hook     | blocks-100.md (34KB)   |  10.2ms / 16MB |    225ms / 120MB |     22× |
+| hook     | blocks-1000.md (343KB) | 135.3ms / 93MB |  742.7ms / 223MB |      5× |
 
 ## Speedup trends {#interpretation}
 
 The gap is largest for the 3 KB file.
-On each run, textlint spends about 150 ms starting Node.js and loading its rules.
-jafix spends about 2 ms on the same part.
+On each run, textlint spends about 80 to 100 ms starting Node.js and loading its rules.
+jafix spends about 4 ms on the same part.
 For the files of a few to a few dozen kilobytes that an agent writes in one edit, this fixed time accounts for most of the runtime.
 
 For files of a few kilobytes, the hook workflow has the largest gap.
 textlint fixes and reports in separate runs, so it pays the startup time twice and parses the whole file twice.
 jafix fixes and then collects findings in one process, and it fixes only the lines changed by the edit.
 
-The hook speedup narrows as files grow, from 142× at 3 KB to 33× at 343 KB.
+The hook speedup narrows as files grow, from 49× at 3 KB to 5× at 343 KB.
 Parsing the text comes to outweigh the fixed time.
 jafix parses the whole file even when few lines changed, so its hook time grows in proportion to file size.
-For `check` and `fix`, the speedup between 34 KB and 343 KB ranges from 14× to 54× and shows no trend with size.
+For `check`, the speedup stays at 11× to 12× between 34 KB and 343 KB. For `fix`, it narrows from 14× to 5×.
 
-jafix used 6 to 7 MB for files of a few kilobytes and stayed within 92 MB at 343 KB.
-textlint used at least 120 MB for every file.
+jafix used 8 MB for files of a few kilobytes and stayed within 93 MB at 343 KB.
+textlint used at least 83 MB for every file.
 
 All values come from runs after warmup.
 textlint's first run cannot use the disk cache, so it takes longer.

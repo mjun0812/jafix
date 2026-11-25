@@ -5,7 +5,7 @@ import { checkResults } from './benchmark-results.js'
 const { frontmatter } = useData()
 const sample = checkResults[0]
 const tools = ['jafix', 'textlint']
-const axisMax = 160
+const axisMax = 120
 </script>
 
 <template>
