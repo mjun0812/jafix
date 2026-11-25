@@ -1290,8 +1290,10 @@ npm run docs:dev
 `npm run docs:build` は、公開用のHTMLを `docs/.vitepress/dist/` に生成します。
 生成したページは `npm run docs:preview` で確認できます。
 
-公開するときは、GitHubリポジトリの **Settings → Pages → Build and deployment** を開き、**Source** に **GitHub Actions** を選びます。
-その後、**Actions → Deploy documentation** で公開するブランチを選んで **Run workflow** を実行します。
+`main` に `docs/`、`package.json`、`package-lock.json`、`.github/workflows/docs.yml` のいずれかの変更をpushすると、GitHub Actionsの **Deploy documentation** がサイトをビルドして公開します。
+変更が無いときに公開し直すには、**Actions → Deploy documentation** で `main` を選んで **Run workflow** を実行します。
+
+GitHub Pagesの設定は、リポジトリの **Settings → Pages → Build and deployment** で、**Source** に **GitHub Actions** を選んであります。
 
 ## リリース
 
