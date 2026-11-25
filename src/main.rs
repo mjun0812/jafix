@@ -29,6 +29,8 @@ use crate::config::{Config, Configs};
 use crate::diagnostics::Diagnostic;
 use crate::filter::Ignored;
 use crate::git_diff::{FileTarget, Selection};
+use crate::rules::RuleId;
+use crate::rules::builtin::Preset;
 use crate::rules::general::Links;
 use crate::text_file::{InputEncoding, TextFile};
 
@@ -171,8 +173,17 @@ fn main() -> ExitCode {
 
 /// JSONを1行で標準出力に書く。書けなければexit 2
 fn print_json(value: &impl Serialize) -> ExitCode {
-    let _ = value;
-    todo!("skeleton: not implemented")
+    let mut stdout = std::io::stdout().lock();
+    match serde_json::to_writer(&mut stdout, value)
+        .map_err(std::io::Error::from)
+        .and_then(|()| writeln!(stdout))
+    {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("jafix: {error}");
+            ExitCode::from(2)
+        }
+    }
 }
 
 /// `jafix rules --output-format json` の出力
@@ -192,10 +203,64 @@ struct RuleStatus {
     presets: Vec<&'static str>,
 }
 
-/// 設定が不正ならexit 2
+/// パスが存在しないか、設定が不正ならexit 2
 fn run_rules(args: &RulesArgs) -> ExitCode {
-    let _ = args;
-    todo!("skeleton: not implemented")
+    // `for_directory` は渡されたパスの親をそのままたどるので、相対パスの `.` を先に絶対パスへ直す
+    let path = match args.path.canonicalize() {
+        Ok(path) => path,
+        Err(error) => {
+            eprintln!("jafix: {}: {error}", args.path.display());
+            return ExitCode::from(2);
+        }
+    };
+    let mut configs = match Configs::load() {
+        Ok(configs) => configs,
+        Err(error) => {
+            eprintln!("jafix: {error}");
+            return ExitCode::from(2);
+        }
+    };
+    let config = if path.is_dir() {
+        configs.for_directory(&path)
+    } else {
+        configs.for_path(&path)
+    };
+    let builtin = match config {
+        Ok(config) => config.builtin(),
+        Err(error) => {
+            eprintln!("jafix: {error}");
+            return ExitCode::from(2);
+        }
+    };
+    let output = RulesOutput {
+        schema_version: 1,
+        rules: RuleId::ALL
+            .into_iter()
+            .map(|id| RuleStatus {
+                id: id.name(),
+                enabled: builtin.is_enabled(id),
+                presets: Preset::ALL
+                    .into_iter()
+                    .filter(|preset| preset.rules().iter().any(|&(rule, _)| rule == id))
+                    .map(Preset::name)
+                    .collect(),
+            })
+            .collect(),
+    };
+    if let OutputFormat::Json = args.output_format {
+        return print_json(&output);
+    }
+    let mut stdout = std::io::stdout().lock();
+    for rule in &output.rules {
+        let enabled = if rule.enabled { "有効" } else { "無効" };
+        let presets = if rule.presets.is_empty() {
+            "-".to_string()
+        } else {
+            rule.presets.join(",")
+        };
+        let _ = writeln!(stdout, "{}\t{enabled}\t{presets}", rule.id);
+    }
+    ExitCode::SUCCESS
 }
 
 fn select_files(args: &Files, staged: bool) -> Result<Selection, String> {
@@ -274,12 +339,9 @@ fn run_check(args: &CheckArgs) -> ExitCode {
             }
         }
         OutputFormat::Json => {
-            if let Err(error) = serde_json::to_writer(&mut stdout, &output)
-                .map_err(std::io::Error::from)
-                .and_then(|()| writeln!(stdout))
-            {
-                eprintln!("jafix: {error}");
-                return ExitCode::from(2);
+            let code = print_json(&output);
+            if code != ExitCode::SUCCESS {
+                return code;
             }
         }
     }
@@ -620,5 +682,23 @@ fn fix_content(src: &str, lines: &TargetLines, config: &Config) -> Fixed {
         }
         document = prose::parse(&next);
         fixed = next;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use clap::Parser;
+
+    use super::Cli;
+    use crate::usage::GUIDES;
+
+    #[test]
+    fn every_example_parses() {
+        for example in GUIDES.iter().flat_map(|guide| guide.examples) {
+            let args = example.command.split(' ');
+            if let Err(error) = Cli::try_parse_from(args) {
+                panic!("`{}` の引数解析に失敗した: {error}", example.command);
+            }
+        }
     }
 }

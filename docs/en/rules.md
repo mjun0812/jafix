@@ -10,6 +10,14 @@ Switch them by rule ID or preset name under `[builtin]` in the [configuration](.
 
 Options and their defaults are in the [reference](https://github.com/mjun0812/jafix/blob/main/REFERENCE.md#組み込みのルール) (Japanese).
 
+Run `jafix rules` to see which rules your configuration enables.
+
+```sh
+jafix rules docs/guide.md
+```
+
+It prints one rule per line as three tab-separated fields. The first field is the rule ID. The second is `有効` (enabled) or `無効` (disabled) after applying the global and project settings. The third lists the presets that include the rule, or `-` if no preset does. This `-` differs from the `-` in the Default column above. When you pass a file or directory, jafix answers with the project settings found from that path. File exclusions (`exclude` and `report-exclude`) are not applied, so a rule enabled by the settings shows `有効` even for an excluded file.
+
 ## jafix-specific fixes {#jafix}
 
 | Rule ID                      | Action | Default | What it does                                                            |
