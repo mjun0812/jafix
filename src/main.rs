@@ -13,7 +13,6 @@ mod sentence;
 mod text_file;
 mod usage;
 
-use std::borrow::Cow;
 use std::fs;
 use std::io::{IsTerminal, Read, Write};
 use std::path::{Path, PathBuf};
@@ -615,47 +614,69 @@ fn fix_stdin(args: &FixArgs) -> Result<(), String> {
     }
     let mut configs = Configs::load()?;
     let config = current_dir_config(&mut configs)?;
+    // ファイルを渡したときの「読み込みから保存まで」に合わせて、読み始める前から書き終えた後までを計る
+    let started = args.timing.then(Instant::now);
     let (bytes, file) =
         read_stdin(args.files.encoding).map_err(|error| format!("{STDIN_NAME}: {error}"))?;
-    let started = args.timing.then(Instant::now);
     let fixed = fix_content(&file.content, &TargetLines::All, config);
     let changed = fixed.content != file.content;
-    let mut stdout = std::io::stdout().lock();
-    // 端末には文字として書く。Shift_JISのバイト列は、UTF-8の端末では読めず、Windowsのコンソールでは書き込みが拒まれる。
-    // 符号化しないので、入力の文字コードで表せない文字を含む修正結果も表示できる
-    let output = if !args.dry_run && stdout.is_terminal() {
-        Cow::Borrowed(fixed.content.as_bytes())
+    let stdout = std::io::stdout();
+    let to_terminal = stdout.is_terminal();
+    let written = if args.dry_run {
+        if args.show_diff && changed {
+            // 符号化できない修正結果は、ファイルを渡したときと同じく、差分も出さずに失敗にする
+            file.encode(&fixed.content)
+                .map_err(|error| format!("{STDIN_NAME}: {error}"))?;
+            let mut stdout = stdout.lock();
+            TextDiff::from_lines(file.content.as_str(), fixed.content.as_str())
+                .unified_diff()
+                .header(STDIN_NAME, STDIN_NAME)
+                .to_writer(&mut stdout)
+                .and_then(|()| stdout.flush())
+        } else {
+            Ok(())
+        }
+    } else if to_terminal {
+        // 端末には文字として書く。Shift_JISのバイト列は、UTF-8の端末では読めず、Windowsのコンソールでは書き込みが拒まれる。
+        // 符号化しないので、入力の文字コードで表せない文字を含む修正結果も表示できる
+        let mut stdout = stdout.lock();
+        stdout
+            .write_all(fixed.content.as_bytes())
+            .and_then(|()| stdout.flush())
     } else if changed {
-        file.encode(&fixed.content)
-            .map_err(|error| format!("{STDIN_NAME}: {error}"))?
+        let encoded = file
+            .encode(&fixed.content)
+            .map_err(|error| format!("{STDIN_NAME}: {error}"))?;
+        write_stdout_bytes(&encoded)
     } else {
         // `--encoding shift-jis` で読んだ入力には符号化し直すと元と違うバイト列になるものがあるので、読んだバイト列を書く
-        Cow::Borrowed(bytes.as_slice())
+        write_stdout_bytes(&bytes)
     };
-    if let Some(started) = started {
-        print_elapsed(STDIN_NAME, started);
-    }
-    let written = if !args.dry_run {
-        stdout.write_all(&output)
-    } else if args.show_diff && changed {
-        TextDiff::from_lines(file.content.as_str(), fixed.content.as_str())
-            .unified_diff()
-            .header(STDIN_NAME, STDIN_NAME)
-            .to_writer(&mut stdout)
-    } else {
-        Ok(())
-    };
-    match written.and_then(|()| stdout.flush()) {
+    match written {
         // `| head` のように読み手が先に閉じたときは、フィルターとして正常なので何も出さずに終える。
-        // 全文を書き込めていないので、修正した件数にも数えない
+        // 全文を書き込めていないので、時間も修正した件数も表示しない
         Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => return Ok(()),
         Err(error) => return Err(error.to_string()),
         Ok(()) => {}
+    }
+    if let Some(started) = started {
+        print_elapsed(STDIN_NAME, started);
     }
     if args.summary {
         print_summary(args.dry_run, usize::from(changed), usize::from(!changed));
     }
     Ok(())
+}
+
+/// 端末でない標準出力へ、本文のバイト列を書く。`std::io::Stdout` は、読み取り専用で開いたファイルのように
+/// 書き込めないハンドルへの書き込みを成功として扱うので、ハンドルを複製した `File` に書いて失敗を受け取る
+fn write_stdout_bytes(bytes: &[u8]) -> std::io::Result<()> {
+    #[cfg(unix)]
+    let handle = std::os::fd::AsFd::as_fd(&std::io::stdout()).try_clone_to_owned()?;
+    #[cfg(windows)]
+    let handle =
+        std::os::windows::io::AsHandle::as_handle(&std::io::stdout()).try_clone_to_owned()?;
+    fs::File::from(handle).write_all(bytes)
 }
 
 /// 標準出力には何も書かない。今回変えた行に指摘があれば、指摘と、決められなかった理由や失敗を標準エラーに書いてexit 2。

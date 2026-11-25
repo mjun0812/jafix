@@ -266,6 +266,63 @@ fn fix_stdin_exits_2_when_a_pipe_cannot_take_the_result_in_the_input_encoding() 
 }
 
 #[test]
+fn fix_stdin_exits_2_when_stdout_cannot_be_written() {
+    let sandbox = Sandbox::new();
+    // 読み取り専用で開いたファイルを標準出力にすると、本文を書き込めない
+    let read_only = fs::File::open(sandbox.write("out.txt", "")).unwrap();
+    let mut child = sandbox
+        .command()
+        .args(["fix", "--summary", "-"])
+        .stdin(Stdio::piped())
+        .stdout(read_only)
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(PAREN_TEXT.as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    assert!(stderr(&output).starts_with("jafix: "), "{output:?}");
+    assert!(!stderr(&output).contains("修正: "), "{output:?}");
+    assert_eq!(read(&sandbox.path("out.txt")), "");
+}
+
+#[test]
+fn fix_stdin_timing_covers_reading_the_input() {
+    let sandbox = Sandbox::new();
+    let mut child = sandbox
+        .command()
+        .args(["fix", "--timing", "-"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    // 本文が届くまでの待ち時間も、計測に入る
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(PAREN_TEXT.as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert_eq!(stdout(&output), PAREN_FIXED);
+    let seconds: f64 = stderr(&output)
+        .strip_prefix("<stdin>: ")
+        .and_then(|rest| rest.trim_end().strip_suffix(" s"))
+        .unwrap_or_else(|| panic!("{output:?}"))
+        .parse()
+        .unwrap();
+    assert!(seconds >= 0.4, "{output:?}");
+}
+
+#[test]
 fn stdin_uses_project_config_from_current_directory() {
     let sandbox = Sandbox::new();
     let output = sandbox.run_with_stdin(&["check", "-"], PAREN_TEXT.as_bytes());
