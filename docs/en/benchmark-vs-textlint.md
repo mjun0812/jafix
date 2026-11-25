@@ -1,6 +1,6 @@
 # Performance comparison with textlint {#benchmark}
 
-Against textlint with the same rules, jafix finished 5 to 49 times faster and used at most half of the memory.
+Against textlint with the same rules, jafix finished 5 to 48 times faster and used at most half of the memory.
 We timed three workflows (`check`, `fix`, and a hook run) on four files from 3 KB to 343 KB.
 The measurements were taken on November 25, 2026, with `scripts/bench-vs-textlint.sh`.
 
@@ -40,6 +40,7 @@ We used four input files.
 The block contains headings and paragraphs as well as lists, emphasis, and code blocks.
 It matches every rule.
 With hyperfine, we ran three warmups and then averaged 20 runs (10 for the 343 KB file).
+We repeated the whole measurement five times, and the tables show the mean of the five.
 
 ## Matching counts {#work-performed}
 
@@ -69,18 +70,18 @@ Speedup is textlint's time divided by jafix's time.
 
 | Workflow | File                   |          jafix |         textlint | Speedup |
 | -------- | ---------------------- | -------------: | ---------------: | ------: |
-| check    | blocks-10.md (3KB)     |    3.8ms / 8MB |    97.2ms / 91MB |     26× |
-| check    | README.md (5KB)        |    3.5ms / 8MB |    78.6ms / 83MB |     22× |
-| check    | blocks-100.md (34KB)   |   9.9ms / 15MB |  119.7ms / 126MB |     12× |
-| check    | blocks-1000.md (343KB) |  98.8ms / 86MB | 1107.9ms / 179MB |     11× |
-| fix      | blocks-10.md (3KB)     |    3.8ms / 8MB |    98.7ms / 92MB |     26× |
-| fix      | README.md (5KB)        |    3.3ms / 8MB |    79.7ms / 86MB |     24× |
-| fix      | blocks-100.md (34KB)   |   8.7ms / 16MB |  124.8ms / 120MB |     14× |
-| fix      | blocks-1000.md (343KB) | 126.5ms / 93MB |  576.6ms / 223MB |      5× |
-| hook     | blocks-10.md (3KB)     |    3.8ms / 8MB |   182.1ms / 92MB |     49× |
-| hook     | README.md (5KB)        |    3.4ms / 8MB |     163ms / 86MB |     48× |
-| hook     | blocks-100.md (34KB)   |  10.2ms / 16MB |    225ms / 120MB |     22× |
-| hook     | blocks-1000.md (343KB) | 135.3ms / 93MB |  742.7ms / 223MB |      5× |
+| check    | blocks-10.md (3KB)     |    3.9ms / 8MB |    96.4ms / 91MB |     25× |
+| check    | README.md (5KB)        |    3.9ms / 8MB |    81.6ms / 83MB |     21× |
+| check    | blocks-100.md (34KB)   |    10ms / 15MB |  122.1ms / 125MB |     12× |
+| check    | blocks-1000.md (343KB) |    98ms / 86MB | 1099.2ms / 179MB |     11× |
+| fix      | blocks-10.md (3KB)     |    3.8ms / 8MB |    98.6ms / 92MB |     26× |
+| fix      | README.md (5KB)        |    3.5ms / 8MB |    81.3ms / 86MB |     23× |
+| fix      | blocks-100.md (34KB)   |   9.2ms / 16MB |  126.9ms / 120MB |     14× |
+| fix      | blocks-1000.md (343KB) | 122.9ms / 93MB |  584.7ms / 223MB |      5× |
+| hook     | blocks-10.md (3KB)     |    3.8ms / 8MB |   185.1ms / 92MB |     48× |
+| hook     | README.md (5KB)        |    3.6ms / 8MB |   167.6ms / 86MB |     46× |
+| hook     | blocks-100.md (34KB)   |    10ms / 16MB |  222.7ms / 120MB |     22× |
+| hook     | blocks-1000.md (343KB) | 135.7ms / 93MB |  738.4ms / 223MB |      5× |
 
 ## Speedup trends {#interpretation}
 
@@ -93,7 +94,7 @@ For files of a few kilobytes, the hook workflow has the largest gap.
 textlint fixes and reports in separate runs, so it pays the startup time twice and parses the whole file twice.
 jafix fixes and then collects findings in one process, and it fixes only the lines changed by the edit.
 
-The hook speedup narrows as files grow, from 49× at 3 KB to 5× at 343 KB.
+The hook speedup narrows as files grow, from 48× at 3 KB to 5× at 343 KB.
 Parsing the text comes to outweigh the fixed time.
 jafix parses the whole file even when few lines changed, so its hook time grows in proportion to file size.
 For `check`, the speedup stays at 11× to 12× between 34 KB and 343 KB. For `fix`, it narrows from 14× to 5×.
