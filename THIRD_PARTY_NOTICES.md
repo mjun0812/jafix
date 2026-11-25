@@ -6,7 +6,7 @@ jafixのbinaryには、形態素解析ライブラリのlinderaと、linderaが�
 
 | 名前         | version        | 著作権表示                                                                                      |
 | ------------ | -------------- | ----------------------------------------------------------------------------------------------- |
-| lindera      | 6.2.0          | Copyright (c) 2019 by the project authors.                                                      |
+| lindera      | 7.0.0          | Copyright (c) 2019 by the project authors.                                                      |
 | mecab-ipadic | 2.7.0-20250920 | Copyright 2000, 2001, 2002, 2003 Nara Institute of Science and Technology. All Rights Reserved. |
 
 jafixの組み込みのルールのうち、textlintと同じIDのものは、次のtextlintのルールとライブラリの挙動に合わせて書き直したものです。正規表現、語の表、辞書、判定の手順の一部を、これらのソースから写しています。どれもMIT Licenseで公開されています。
