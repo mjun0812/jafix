@@ -36,7 +36,7 @@ pre-commit hookは、Rustのファイルに `cargo fmt --check` と `cargo clipp
 
 ## 構成
 
-- `src/main.rs`: CLIの定義。サブコマンドは `check`、`fix`、`hook`、`mcp` の4つである。
+- `src/main.rs`: CLIの定義。サブコマンドは `check`、`fix`、`rules`、`hook`、`mcp` の5つである。
 - `src/rules/`: 組み込みのルール。
 - `src/hook/`: Claude CodeとCodexのhookの入力から対象行を決める処理。
 - `tests/`: 実際のバイナリを起動する統合テスト。`tests/common` の `Sandbox` が `HOME` と `XDG_CONFIG_HOME` を一時ディレクトリへ向けるので、実行した人の設定ファイルを読まない。

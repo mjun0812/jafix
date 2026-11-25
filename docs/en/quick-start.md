@@ -172,6 +172,22 @@ To install it manually, copy the [`skills/jafix`](https://github.com/mjun0812/ja
 
 The skill runs the `jafix` command, so install jafix first.
 
+## Ask jafix how to use it {#usage}
+
+The `--help` of each command shows examples and the meaning of each exit code after the option descriptions.
+
+```sh
+jafix check --help
+```
+
+`jafix rules` shows whether each built-in rule is enabled by your current settings. It prints one rule per line as three tab-separated fields: the rule ID, `有効` (enabled) or `無効` (disabled), and the presets that include the rule (`-` if none). When you pass a file, jafix answers with the project settings used for that file. File exclusions (`exclude` and `report-exclude`) are not applied.
+
+```sh
+jafix rules docs/guide.md
+```
+
+Agents and scripts can run `jafix --usage` to get the commands, arguments, exit codes, and examples as JSON, and `jafix check --schema` or `jafix rules --schema` to get the JSON Schema of the `--output-format json` output. The [reference](https://github.com/mjun0812/jafix/blob/main/REFERENCE.md#コマンド体系の出力) (Japanese) describes the output.
+
 ## Next steps {#next}
 
 - [Configuration](./configuration.md): choose the rules to use
