@@ -5,7 +5,7 @@ jafixはtextlintの日本語向けルールをRustで実装した高速なLinter
 
 ## 導入
 
-macOS (Apple Silicon)とLinux (x86_64、ARM64)では、最新の公開リリースに `install.sh` がある場合に `curl` でインストールできます。
+macOS (Apple Silicon)とLinux (x86_64、ARM64)では、`curl` でインストールできます。
 
 ```sh
 curl -fsSL https://github.com/mjun0812/jafix/releases/latest/download/install.sh | sh
@@ -19,7 +19,7 @@ curl -fsSL https://github.com/mjun0812/jafix/releases/latest/download/install.sh
 mise use -g github:mjun0812/jafix
 ```
 
-配布ファイルの選び方、非公開リポジトリの認証、ソースからのビルド手順は[導入の詳細](REFERENCE.md#導入)にあります。
+配布ファイルの選び方とソースからのビルド手順は[導入の詳細](REFERENCE.md#導入)にあります。
 
 ## 使い方
 
@@ -103,6 +103,7 @@ skillは `jafix` コマンドを使うので、先にjafixを導入します。
 
 ## ドキュメントサイト
 
+- [ドキュメントサイト](https://mjunya.com/jafix/) ([English](https://mjunya.com/jafix/en/))
 - [ルール一覧](docs/rules.md) ([English](docs/en/rules.md))
 - [設定と動作のリファレンス](REFERENCE.md)
 - [textlintとの速度の比較](docs/benchmark-vs-textlint.md)

@@ -4,7 +4,7 @@
 
 ### curlでインストール {#curl}
 
-macOS (Apple Silicon)とLinux (x86_64、ARM64)では、最新の公開リリースに `install.sh` がある場合にインストーラーを使えます。
+macOS (Apple Silicon)とLinux (x86_64、ARM64)では、インストーラーを使えます。
 
 ```sh
 curl -fsSL https://github.com/mjun0812/jafix/releases/latest/download/install.sh | sh
@@ -14,7 +14,7 @@ curl -fsSL https://github.com/mjun0812/jafix/releases/latest/download/install.sh
 
 ### 配布バイナリを直接ダウンロード {#download}
 
-[GitHub Releases](https://github.com/mjun0812/jafix/releases)から環境に合うファイルをダウンロードして展開します。リポジトリが非公開の場合は、アクセス権のあるアカウントでGitHubにログインします。
+[GitHub Releases](https://github.com/mjun0812/jafix/releases)から環境に合うファイルをダウンロードして展開します。
 
 | 環境                  | 配布ファイル                            |
 | --------------------- | --------------------------------------- |
@@ -27,7 +27,7 @@ curl -fsSL https://github.com/mjun0812/jafix/releases/latest/download/install.sh
 
 ### miseでインストール {#mise}
 
-[mise](https://mise.jdx.dev/)は環境に合う配布バイナリをGitHub Releasesから取得します。リポジトリが非公開の場合は、読み取り権限のあるトークンを環境変数 `MISE_GITHUB_TOKEN` に設定してから実行します。[miseの認証手順](https://mise.jdx.dev/dev-tools/github-tokens.html)
+[mise](https://mise.jdx.dev/)は環境に合う配布バイナリをGitHub Releasesから取得します。
 
 ```sh
 mise use -g github:mjun0812/jafix
@@ -50,7 +50,7 @@ cargo install --path .
 
 ```console
 $ jafix --version
-jafix 0.0.2
+jafix 0.0.3
 ```
 
 ## 文章をチェックする {#check}
