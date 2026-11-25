@@ -84,7 +84,7 @@ pub const GUIDES: &[Guide] = &[
             },
             ExitCodeMeaning {
                 code: 2,
-                meaning: "引数が誤っている、ファイルを読めない、設定ファイルが不正",
+                meaning: "引数が誤っている、ファイルを読めない、設定ファイルが不正、Gitの実行や差分の読み取りに失敗した",
             },
         ],
     },
@@ -115,7 +115,7 @@ pub const GUIDES: &[Guide] = &[
             },
             ExitCodeMeaning {
                 code: 2,
-                meaning: "引数が誤っている、ファイルを読み書きできない、設定ファイルが不正",
+                meaning: "引数が誤っている、ファイルを読み書きできない、設定ファイルが不正、Gitの実行や差分の読み取りに失敗した",
             },
         ],
     },
@@ -173,7 +173,7 @@ pub const GUIDES: &[Guide] = &[
             },
             ExitCodeMeaning {
                 code: 2,
-                meaning: "対象行に指摘が1件以上ある",
+                meaning: "引数が誤っている、対象行に指摘が1件以上ある",
             },
         ],
     },
