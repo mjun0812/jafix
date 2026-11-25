@@ -194,6 +194,36 @@ fn fix_stdin_rejects_list_and_plain_show_diff() {
     }
 }
 
+// 書き込みが必ず容量不足で失敗する `/dev/full` はLinuxにしか無い。読み取り専用のハンドルを標準出力にする方法は、
+// Rustの標準出力が無効なハンドルへの書き込みを成功として扱うので、失敗を起こせない
+#[cfg(target_os = "linux")]
+#[test]
+fn fix_stdin_does_not_count_text_it_could_not_write() {
+    let sandbox = Sandbox::new();
+    let full = fs::OpenOptions::new()
+        .write(true)
+        .open("/dev/full")
+        .unwrap();
+    let mut child = sandbox
+        .command()
+        .args(["fix", "--summary", "-"])
+        .stdin(Stdio::piped())
+        .stdout(full)
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(PAREN_TEXT.as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    assert!(stderr(&output).starts_with("jafix: "), "{output:?}");
+    assert!(!stderr(&output).contains("修正: "), "{output:?}");
+}
+
 #[test]
 fn stdin_uses_project_config_from_current_directory() {
     let sandbox = Sandbox::new();

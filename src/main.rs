@@ -15,7 +15,7 @@ mod usage;
 
 use std::borrow::Cow;
 use std::fs;
-use std::io::{Read, Write};
+use std::io::{IsTerminal, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Instant;
@@ -630,12 +630,14 @@ fn fix_stdin(args: &FixArgs) -> Result<(), String> {
     if let Some(started) = started {
         print_elapsed(STDIN_NAME, started);
     }
-    if args.summary {
-        print_summary(args.dry_run, usize::from(changed), usize::from(!changed));
-    }
     let mut stdout = std::io::stdout().lock();
     let written = if !args.dry_run {
-        stdout.write_all(&output)
+        // 端末には文字として書く。Shift_JISのバイト列は、UTF-8の端末では読めず、Windowsのコンソールでは書き込みが拒まれる
+        if stdout.is_terminal() {
+            stdout.write_all(fixed.content.as_bytes())
+        } else {
+            stdout.write_all(&output)
+        }
     } else if args.show_diff && changed {
         TextDiff::from_lines(file.content.as_str(), fixed.content.as_str())
             .unified_diff()
@@ -646,10 +648,15 @@ fn fix_stdin(args: &FixArgs) -> Result<(), String> {
     };
     match written.and_then(|()| stdout.flush()) {
         // `| head` のように読み手が先に閉じたときは、フィルターとして正常なので何も出さずに終える
-        Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
-        Err(error) => Err(error.to_string()),
-        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => {}
+        Err(error) => return Err(error.to_string()),
+        Ok(()) => {}
     }
+    // 本文を書き込めなかった入力を、修正した件数に数えない
+    if args.summary {
+        print_summary(args.dry_run, usize::from(changed), usize::from(!changed));
+    }
+    Ok(())
 }
 
 /// 標準出力には何も書かない。今回変えた行に指摘があれば、指摘と、決められなかった理由や失敗を標準エラーに書いてexit 2。
