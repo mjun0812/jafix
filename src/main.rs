@@ -644,9 +644,12 @@ fn fix_stdin(args: &FixArgs) -> Result<(), String> {
     } else {
         Ok(())
     };
-    written
-        .and_then(|()| stdout.flush())
-        .map_err(|error| error.to_string())
+    match written.and_then(|()| stdout.flush()) {
+        // `| head` のように読み手が先に閉じたときは、フィルターとして正常なので何も出さずに終える
+        Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
+        Err(error) => Err(error.to_string()),
+        Ok(()) => Ok(()),
+    }
 }
 
 /// 標準出力には何も書かない。今回変えた行に指摘があれば、指摘と、決められなかった理由や失敗を標準エラーに書いてexit 2。
