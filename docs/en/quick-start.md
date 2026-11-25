@@ -87,7 +87,7 @@ Use `jafix check --output-format json example.md` to get machine-readable result
 
 ## Apply automatic fixes {#fix}
 
-`jafix fix` applies the fix rules and rewrites the file. It is silent on success by default.
+`jafix fix` applies the fix rules and rewrites the file. When you pass files, it is silent on success by default.
 
 ```console
 $ jafix fix example.md
@@ -141,6 +141,17 @@ jafix check --staged
 ```
 
 Pass file paths to limit the scope of any of these commands. Run `git add` to include untracked files in the diff.
+
+## Proofread text from standard input {#stdin}
+
+To proofread text before you write it to a file, pass `-` instead of a path and pipe the text to jafix.
+
+```sh
+echo "本文（補足）です。" | jafix check -
+echo "本文（補足）です。" | jafix fix -
+```
+
+`check -` reports findings with the path `<stdin>`. `fix -` prints the corrected text to standard output and does not write any file. jafix uses the global settings and the project settings found from the current directory. To pass a file named `-`, write `./-`. [Details](https://github.com/mjun0812/jafix/blob/main/REFERENCE.md#標準入力)
 
 ## Proofread drafts with MCP {#mcp}
 

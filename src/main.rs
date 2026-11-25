@@ -13,6 +13,7 @@ mod sentence;
 mod text_file;
 mod usage;
 
+use std::borrow::Cow;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -263,6 +264,41 @@ fn run_rules(args: &RulesArgs) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// 指摘のパスと差分の名前で、標準入力を表す名前
+const STDIN_NAME: &str = "<stdin>";
+
+/// ファイルの引数が `-` だけなら、標準入力を校正する。`-` をほかのファイルやGitの差分の選択と並べたら理由を返す
+fn reads_stdin(args: &Files, staged: bool) -> Result<bool, String> {
+    if !args.files.iter().any(|path| path.as_os_str() == "-") {
+        return Ok(false);
+    }
+    if args.files.len() > 1 {
+        return Err("標準入力を表す `-` は、ほかのファイルと一緒に指定できない".into());
+    }
+    if args.diff || staged {
+        let option = if args.diff { "--diff" } else { "--staged" };
+        return Err(format!("標準入力を表す `-` に {option} は指定できない"));
+    }
+    Ok(true)
+}
+
+/// 標準入力を最後まで読み、読んだバイト列と、文字コードを判定した内容を返す
+fn read_stdin(encoding: InputEncoding) -> std::io::Result<(Vec<u8>, TextFile)> {
+    let mut bytes = Vec::new();
+    std::io::stdin().read_to_end(&mut bytes)?;
+    let file = TextFile::decode(bytes.clone(), encoding)?;
+    Ok((bytes, file))
+}
+
+/// 標準入力の本文に使う設定。ファイルが無いので、カレントディレクトリからプロジェクト設定を探す
+fn current_dir_config(configs: &mut Configs) -> Result<&Config, String> {
+    // `for_directory` は渡されたパスの親をそのままたどるので、相対パスの `.` を先に絶対パスへ直す
+    let dir = Path::new(".")
+        .canonicalize()
+        .map_err(|error| format!(".: {error}"))?;
+    configs.for_directory(&dir)
+}
+
 fn select_files(args: &Files, staged: bool) -> Result<Selection, String> {
     if args.diff || staged {
         return git_diff::select(&args.files, staged);
@@ -356,6 +392,9 @@ fn check_files(args: &CheckArgs, output: &mut CheckOutput) -> Result<(), String>
     if args.files.files.is_empty() && !args.files.diff && !args.staged {
         return Err("チェックするファイル、--diff、または --staged を指定してください".into());
     }
+    if reads_stdin(&args.files, args.staged)? {
+        return check_stdin(args.files.encoding, output);
+    }
     let selection = select_files(&args.files, args.staged)?;
     let mut configs = Configs::load()?;
     for target in &selection.files {
@@ -431,6 +470,31 @@ fn check_files(args: &CheckArgs, output: &mut CheckOutput) -> Result<(), String>
     Ok(())
 }
 
+/// ファイルを入力とする `exclude`・`report-exclude` と、リンク先を調べる `no-dead-link` は当てない
+fn check_stdin(encoding: InputEncoding, output: &mut CheckOutput) -> Result<(), String> {
+    let mut configs = Configs::load()?;
+    let config = current_dir_config(&mut configs)?;
+    let file = match read_stdin(encoding) {
+        Ok((_, file)) => file,
+        Err(error) => {
+            output.errors.push(CheckError {
+                path: Some(STDIN_NAME.into()),
+                message: error.to_string(),
+            });
+            return Ok(());
+        }
+    };
+    let findings = diagnostics::check(&file.content, config, &TargetLines::All, None, false);
+    output.checked_files = 1;
+    output
+        .findings
+        .extend(findings.into_iter().map(|diagnostic| FileDiagnostic {
+            path: STDIN_NAME.into(),
+            diagnostic,
+        }));
+    Ok(())
+}
+
 /// `check` とhookが箇所と指摘を出す `<path>:<line>:<column>: [<rule-id>] <message>` の行
 fn location_line(path: &str, (line, column): (usize, usize), message: &str, rule: &str) -> String {
     format!("{path}:{line}:{column}: [{rule}] {message}")
@@ -438,6 +502,22 @@ fn location_line(path: &str, (line, column): (usize, usize), message: &str, rule
 
 /// 読み書きや設定の失敗があればexit 2
 fn run_fix(args: &FixArgs) -> ExitCode {
+    match reads_stdin(&args.files, false) {
+        Ok(false) => {}
+        Ok(true) => {
+            return match fix_stdin(args) {
+                Ok(()) => ExitCode::SUCCESS,
+                Err(error) => {
+                    eprintln!("jafix: {error}");
+                    ExitCode::from(2)
+                }
+            };
+        }
+        Err(error) => {
+            eprintln!("jafix: {error}");
+            return ExitCode::from(2);
+        }
+    }
     let selection = match select_files(&args.files, false) {
         Ok(selection) => selection,
         Err(error) => {
@@ -485,11 +565,7 @@ fn run_fix(args: &FixArgs) -> ExitCode {
             }
         };
         if let Some(started) = started {
-            eprintln!(
-                "{}: {:.3} s",
-                target.path.display(),
-                started.elapsed().as_secs_f64()
-            );
+            print_elapsed(target.path.display(), started);
         }
         let Some(original) = original else {
             unchanged += 1;
@@ -508,18 +584,69 @@ fn run_fix(args: &FixArgs) -> ExitCode {
         }
     }
     if args.summary {
-        let label = if args.dry_run {
-            "修正予定"
-        } else {
-            "修正"
-        };
-        eprintln!("{label}: {changed}ファイル、変更なし: {unchanged}ファイル");
+        print_summary(args.dry_run, changed, unchanged);
     }
     if failed {
         ExitCode::from(2)
     } else {
         ExitCode::SUCCESS
     }
+}
+
+fn print_elapsed(name: impl std::fmt::Display, started: Instant) {
+    eprintln!("{name}: {:.3} s", started.elapsed().as_secs_f64());
+}
+
+fn print_summary(dry_run: bool, changed: usize, unchanged: usize) {
+    let label = if dry_run { "修正予定" } else { "修正" };
+    eprintln!("{label}: {changed}ファイル、変更なし: {unchanged}ファイル");
+}
+
+/// 修正後の本文を標準出力に書く。`--dry-run` なら本文を書かず、`--show-diff` も付けば差分だけを書く。
+/// 標準出力に書くものを本文か差分のどちらか1つに保つため、`--list` と、`--dry-run` の無い `--show-diff` は拒む
+fn fix_stdin(args: &FixArgs) -> Result<(), String> {
+    if args.list {
+        return Err("標準入力を表す `-` に --list は指定できない".into());
+    }
+    if args.show_diff && !args.dry_run {
+        return Err(
+            "標準入力を表す `-` に --show-diff を指定するときは、--dry-run も指定する".into(),
+        );
+    }
+    let mut configs = Configs::load()?;
+    let config = current_dir_config(&mut configs)?;
+    let (bytes, file) =
+        read_stdin(args.files.encoding).map_err(|error| format!("{STDIN_NAME}: {error}"))?;
+    let started = args.timing.then(Instant::now);
+    let fixed = fix_content(&file.content, &TargetLines::All, config);
+    let changed = fixed.content != file.content;
+    // `--encoding shift-jis` で読んだ入力には符号化し直すと元と違うバイト列になるものがあるので、変わっていなければ読んだバイト列を書く
+    let output = if changed {
+        file.encode(&fixed.content)
+            .map_err(|error| format!("{STDIN_NAME}: {error}"))?
+    } else {
+        Cow::Borrowed(bytes.as_slice())
+    };
+    if let Some(started) = started {
+        print_elapsed(STDIN_NAME, started);
+    }
+    if args.summary {
+        print_summary(args.dry_run, usize::from(changed), usize::from(!changed));
+    }
+    let mut stdout = std::io::stdout().lock();
+    let written = if !args.dry_run {
+        stdout.write_all(&output)
+    } else if args.show_diff && changed {
+        TextDiff::from_lines(file.content.as_str(), fixed.content.as_str())
+            .unified_diff()
+            .header(STDIN_NAME, STDIN_NAME)
+            .to_writer(&mut stdout)
+    } else {
+        Ok(())
+    };
+    written
+        .and_then(|()| stdout.flush())
+        .map_err(|error| error.to_string())
 }
 
 /// 標準出力には何も書かない。今回変えた行に指摘があれば、指摘と、決められなかった理由や失敗を標準エラーに書いてexit 2。

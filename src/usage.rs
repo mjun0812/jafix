@@ -57,6 +57,10 @@ pub const GUIDES: &[Guide] = &[
                 description: "2つのファイルの箇所と指摘を出力する",
             },
             Example {
+                command: "jafix check -",
+                description: "パイプで標準入力に渡したテキストの箇所と指摘を、パスを `<stdin>` として出力する",
+            },
+            Example {
                 command: "jafix check --diff",
                 description: "作業ツリーのGitの差分で追加・変更した行だけを確認する",
             },
@@ -94,6 +98,10 @@ pub const GUIDES: &[Guide] = &[
             Example {
                 command: "jafix fix notes.md",
                 description: "ファイルの全行に修正ルールを適用して書き戻す",
+            },
+            Example {
+                command: "jafix fix -",
+                description: "パイプで標準入力に渡したテキストに修正ルールを適用し、修正後の本文を標準出力に書く",
             },
             Example {
                 command: "jafix fix --diff",
