@@ -6,7 +6,7 @@ The [Japanese documentation](../quick-start.md) is the source of truth.
 
 ### Install with curl {#curl}
 
-On macOS (Apple Silicon) or Linux (x86_64 or ARM64), use this command if the latest public release includes `install.sh`.
+On macOS (Apple Silicon) or Linux (x86_64 or ARM64), install jafix with this command.
 
 ```sh
 curl -fsSL https://github.com/mjun0812/jafix/releases/latest/download/install.sh | sh
@@ -16,7 +16,7 @@ The installer verifies the archive's SHA-256 checksum and installs `jafix` in `~
 
 ### Download a prebuilt binary {#download}
 
-Download the archive for your platform from [GitHub Releases](https://github.com/mjun0812/jafix/releases) and extract it. If the repository is private, sign in to GitHub with an account that has access.
+Download the archive for your platform from [GitHub Releases](https://github.com/mjun0812/jafix/releases) and extract it.
 
 | Platform              | Release asset                           |
 | --------------------- | --------------------------------------- |
@@ -29,7 +29,7 @@ Place the extracted `jafix` or `jafix.exe` in a directory on your `PATH`.
 
 ### Install with mise {#mise}
 
-[mise](https://mise.jdx.dev/) downloads the prebuilt binary for your platform from GitHub Releases. If the repository is private, set `MISE_GITHUB_TOKEN` to a token with read access to the repository before running the command. [GitHub authentication in mise](https://mise.jdx.dev/dev-tools/github-tokens.html)
+[mise](https://mise.jdx.dev/) downloads the prebuilt binary for your platform from GitHub Releases.
 
 ```sh
 mise use -g github:mjun0812/jafix
@@ -52,7 +52,7 @@ Run `jafix --version`. If mise is not activated in your shell, use `mise exec --
 
 ```console
 $ jafix --version
-jafix 0.0.2
+jafix 0.0.3
 ```
 
 ## Lint a file {#check}

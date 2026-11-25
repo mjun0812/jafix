@@ -1,6 +1,6 @@
 [package]
 name = "jafix"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2024"
 description = "Fix Japanese prose written by AI agents, from Claude Code and Codex hooks"
 license = "MIT OR Apache-2.0"

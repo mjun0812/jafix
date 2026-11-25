@@ -650,11 +650,11 @@ curl -fsSL https://github.com/mjun0812/jafix/releases/latest/download/install.sh
 
 [GitHub Releases](https://github.com/mjun0812/jafix/releases)から環境に合うファイルをダウンロードして展開します。配布対象はmacOS (Apple Silicon)、Linux (x86_64とARM64)、Windows (x64)です。展開した `jafix` または `jafix.exe` を `PATH` の通ったディレクトリに置きます。
 
-リポジトリが非公開の場合は、アクセス権のあるアカウントでGitHubにログインします。環境ごとのファイル名は[クイックスタート](docs/quick-start.md)にあります。
+環境ごとのファイル名は[クイックスタート](docs/quick-start.md)にあります。
 
 ### miseでインストール
 
-[mise](https://mise.jdx.dev/)は環境に合う配布バイナリをGitHub Releasesから取得します。リポジトリが非公開の場合は、読み取り権限のあるトークンを環境変数 `MISE_GITHUB_TOKEN` に設定してから実行します。[miseの認証手順](https://mise.jdx.dev/dev-tools/github-tokens.html)
+[mise](https://mise.jdx.dev/)は環境に合う配布バイナリをGitHub Releasesから取得します。
 
 ```sh
 mise use -g github:mjun0812/jafix
