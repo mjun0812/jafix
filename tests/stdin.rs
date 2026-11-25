@@ -414,6 +414,30 @@ fn fix_dry_run_stdin_exits_2_when_the_result_cannot_be_encoded() {
 }
 
 #[test]
+fn check_json_stdin_exits_2_when_stdout_cannot_be_written() {
+    let sandbox = Sandbox::new();
+    // 読み取り専用で開いたファイルを標準出力にすると、JSONを書き込めない
+    let read_only = fs::File::open(sandbox.write("out.txt", "")).unwrap();
+    let mut child = sandbox
+        .command()
+        .args(["check", "--output-format", "json", "-"])
+        .stdin(Stdio::piped())
+        .stdout(read_only)
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all("指摘の無い本文です。\n".as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    assert!(stderr(&output).starts_with("jafix: "), "{output:?}");
+}
+
+#[test]
 fn stdin_uses_project_config_from_current_directory() {
     let sandbox = Sandbox::new();
     let output = sandbox.run_with_stdin(&["check", "-"], PAREN_TEXT.as_bytes());

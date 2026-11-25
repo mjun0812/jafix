@@ -173,11 +173,13 @@ fn main() -> ExitCode {
 
 /// JSONを1行で標準出力に書く。書けなければexit 2
 fn print_json(value: &impl Serialize) -> ExitCode {
-    let mut stdout = std::io::stdout().lock();
-    match serde_json::to_writer(&mut stdout, value)
+    let written = serde_json::to_vec(value)
         .map_err(std::io::Error::from)
-        .and_then(|()| writeln!(stdout))
-    {
+        .and_then(|mut json| {
+            json.push(b'\n');
+            write_stdout(&json)
+        });
+    match written {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("jafix: {error}");
@@ -285,8 +287,14 @@ fn reads_stdin(args: &Files, staged: bool) -> Result<bool, String> {
 fn read_stdin(encoding: InputEncoding) -> std::io::Result<(Vec<u8>, TextFile)> {
     let mut bytes = Vec::new();
     let stdin = std::io::stdin();
-    if stdin.is_terminal() {
-        // 端末からの入力は、Windowsのコンソールで文字コードを変換する `Stdin` で読む
+    // Windowsのコンソールからの入力は、`Stdin` が文字をUTF-8に変換して渡す。それ以外は複製から読む
+    if cfg!(windows) && stdin.is_terminal() {
+        if matches!(encoding, InputEncoding::ShiftJis) {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Windowsのコンソールからの入力はUTF-8として読むので、--encoding shift-jis は指定できない",
+            ));
+        }
         stdin.lock().read_to_end(&mut bytes)?;
     } else {
         duplicate(&stdin)?.read_to_end(&mut bytes)?;
