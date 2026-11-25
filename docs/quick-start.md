@@ -168,6 +168,22 @@ npx skills add mjun0812/jafix
 
 skillは `jafix` コマンドを使うので、先にjafixをインストールします。
 
+## jafixに使い方を聞く {#usage}
+
+各コマンドの `--help` は、オプションの説明の後に、実行例と終了コードの意味を表示します。
+
+```sh
+jafix check --help
+```
+
+`jafix rules` は、組み込みのルールが今の設定で有効かどうかを出力します。1行に1ルールを、タブで区切った3つの欄で出します。1つ目はルールID、2つ目は `有効` か `無効`、3つ目はそのルールを束ねるpresetの名前(どのpresetにも属さなければ `-`)です。ファイルを渡すと、そのファイルに使うプロジェクト設定で答えます。`exclude` と `report-exclude` によるファイルの除外は反映しません。
+
+```sh
+jafix rules docs/guide.md
+```
+
+agentやスクリプトから使う場合は、`jafix --usage` でコマンド・引数・終了コード・実行例の一覧を、`jafix check --schema` と `jafix rules --schema` で `--output-format json` の出力のJSON Schemaを取得できます。出力の形は[リファレンス](https://github.com/mjun0812/jafix/blob/main/REFERENCE.md#コマンド体系の出力)にあります。
+
 ## 次に読むページ {#next}
 
 - [使うルールを設定する](./configuration.md)

@@ -11,6 +11,7 @@ mod prose;
 mod rules;
 mod sentence;
 mod text_file;
+mod usage;
 
 use std::fs;
 use std::io::{Read, Write};
@@ -18,7 +19,8 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Instant;
 
-use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap::{Args, CommandFactory, Parser, Subcommand, ValueEnum};
+use schemars::JsonSchema;
 use serde::Serialize;
 use similar::TextDiff;
 
@@ -27,26 +29,43 @@ use crate::config::{Config, Configs};
 use crate::diagnostics::Diagnostic;
 use crate::filter::Ignored;
 use crate::git_diff::{FileTarget, Selection};
+use crate::rules::RuleId;
+use crate::rules::builtin::Preset;
 use crate::rules::general::Links;
 use crate::text_file::{InputEncoding, TextFile};
 
 /// 日本語のテキストファイルを校正する
 #[derive(Parser)]
-#[command(version)]
+#[command(
+    version,
+    arg_required_else_help = true,
+    args_conflicts_with_subcommands = true,
+    after_help = usage::after_help(None)
+)]
 struct Cli {
+    /// コマンド、引数、終了コード、実行例の一覧をJSONで標準出力に書く
+    #[arg(long, exclusive = true)]
+    usage: bool,
     #[command(subcommand)]
-    command: Command,
+    command: Option<Command>,
 }
 
 #[derive(Subcommand)]
 enum Command {
     /// 修正ルールに当たる箇所と指摘ルールの指摘を、ファイルを書き換えずに出力する
+    #[command(after_help = usage::after_help(Some("check")))]
     Check(CheckArgs),
     /// 対象行に修正ルールを適用して書き戻す
+    #[command(after_help = usage::after_help(Some("fix")))]
     Fix(FixArgs),
+    /// 組み込みのルールのIDと、設定を当てた後に有効かどうかを出力する
+    #[command(after_help = usage::after_help(Some("rules")))]
+    Rules(RulesArgs),
     /// agentのPostToolUse hookの入力を標準入力から読み、今回の編集の行を直して、その行の指摘を標準エラーで返す
+    #[command(after_help = usage::after_help(Some("hook")))]
     Hook { agent: Agent },
     /// 標準入出力を使うMCPサーバーを起動する
+    #[command(after_help = usage::after_help(Some("mcp")))]
     Mcp {
         /// プロジェクト設定を探すディレクトリ。既定値はカレントディレクトリ
         #[arg(long, default_value = ".")]
@@ -64,6 +83,22 @@ struct CheckArgs {
     /// 指摘の出力形式
     #[arg(long, value_enum, default_value = "text")]
     output_format: OutputFormat,
+    /// `--output-format json` の出力のJSON Schemaを標準出力に書いて終える
+    #[arg(long, exclusive = true)]
+    schema: bool,
+}
+
+#[derive(Args)]
+struct RulesArgs {
+    /// 設定を探す起点のファイルかディレクトリ。既定値はカレントディレクトリ
+    #[arg(default_value = ".")]
+    path: PathBuf,
+    /// 一覧の出力形式
+    #[arg(long, value_enum, default_value = "text")]
+    output_format: OutputFormat,
+    /// `--output-format json` の出力のJSON Schemaを標準出力に書いて終える
+    #[arg(long, exclusive = true)]
+    schema: bool,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -111,9 +146,20 @@ enum Agent {
 }
 
 fn main() -> ExitCode {
-    match Cli::parse().command {
+    let cli = Cli::parse();
+    if cli.usage {
+        return print_json(&usage::command_tree(&Cli::command()));
+    }
+    // `arg_required_else_help` が引数なしの実行をclapの中で終えるので、ここへ来るのは `--usage` かサブコマンドのどちらかである
+    let Some(command) = cli.command else {
+        return ExitCode::from(2);
+    };
+    match command {
+        Command::Check(args) if args.schema => print_json(&schemars::schema_for!(CheckOutput)),
         Command::Check(args) => run_check(&args),
         Command::Fix(files) => run_fix(&files),
+        Command::Rules(args) if args.schema => print_json(&schemars::schema_for!(RulesOutput)),
+        Command::Rules(args) => run_rules(&args),
         Command::Hook { agent } => run_hook(agent),
         Command::Mcp { project_dir } => match mcp::serve(&project_dir) {
             Ok(()) => ExitCode::SUCCESS,
@@ -123,6 +169,98 @@ fn main() -> ExitCode {
             }
         },
     }
+}
+
+/// JSONを1行で標準出力に書く。書けなければexit 2
+fn print_json(value: &impl Serialize) -> ExitCode {
+    let mut stdout = std::io::stdout().lock();
+    match serde_json::to_writer(&mut stdout, value)
+        .map_err(std::io::Error::from)
+        .and_then(|()| writeln!(stdout))
+    {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("jafix: {error}");
+            ExitCode::from(2)
+        }
+    }
+}
+
+/// `jafix rules --output-format json` の出力
+#[derive(Serialize, JsonSchema)]
+struct RulesOutput {
+    schema_version: u8,
+    rules: Vec<RuleStatus>,
+}
+
+#[derive(Serialize, JsonSchema)]
+struct RuleStatus {
+    /// 設定の `[builtin]` のキーと、指摘の `[<rule-id>]` に使うID
+    id: &'static str,
+    /// 共通設定とプロジェクト設定を当てた後に有効か
+    enabled: bool,
+    /// このルールを束ねるpresetの名前
+    presets: Vec<&'static str>,
+}
+
+/// パスが存在しないか、設定が不正ならexit 2
+fn run_rules(args: &RulesArgs) -> ExitCode {
+    // `for_directory` は渡されたパスの親をそのままたどるので、相対パスの `.` を先に絶対パスへ直す
+    let path = match args.path.canonicalize() {
+        Ok(path) => path,
+        Err(error) => {
+            eprintln!("jafix: {}: {error}", args.path.display());
+            return ExitCode::from(2);
+        }
+    };
+    let mut configs = match Configs::load() {
+        Ok(configs) => configs,
+        Err(error) => {
+            eprintln!("jafix: {error}");
+            return ExitCode::from(2);
+        }
+    };
+    let config = if path.is_dir() {
+        configs.for_directory(&path)
+    } else {
+        configs.for_path(&path)
+    };
+    let builtin = match config {
+        Ok(config) => config.builtin(),
+        Err(error) => {
+            eprintln!("jafix: {error}");
+            return ExitCode::from(2);
+        }
+    };
+    let output = RulesOutput {
+        schema_version: 1,
+        rules: RuleId::ALL
+            .into_iter()
+            .map(|id| RuleStatus {
+                id: id.name(),
+                enabled: builtin.is_enabled(id),
+                presets: Preset::ALL
+                    .into_iter()
+                    .filter(|preset| preset.rules().iter().any(|&(rule, _)| rule == id))
+                    .map(Preset::name)
+                    .collect(),
+            })
+            .collect(),
+    };
+    if let OutputFormat::Json = args.output_format {
+        return print_json(&output);
+    }
+    let mut stdout = std::io::stdout().lock();
+    for rule in &output.rules {
+        let enabled = if rule.enabled { "有効" } else { "無効" };
+        let presets = if rule.presets.is_empty() {
+            "-".to_string()
+        } else {
+            rule.presets.join(",")
+        };
+        let _ = writeln!(stdout, "{}\t{enabled}\t{presets}", rule.id);
+    }
+    ExitCode::SUCCESS
 }
 
 fn select_files(args: &Files, staged: bool) -> Result<Selection, String> {
@@ -143,7 +281,7 @@ fn select_files(args: &Files, staged: bool) -> Result<Selection, String> {
     })
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct CheckOutput {
     schema_version: u8,
     checked_files: usize,
@@ -151,14 +289,14 @@ struct CheckOutput {
     errors: Vec<CheckError>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct FileDiagnostic {
     path: String,
     #[serde(flatten)]
     diagnostic: Diagnostic,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 struct CheckError {
     path: Option<String>,
     message: String,
@@ -201,12 +339,9 @@ fn run_check(args: &CheckArgs) -> ExitCode {
             }
         }
         OutputFormat::Json => {
-            if let Err(error) = serde_json::to_writer(&mut stdout, &output)
-                .map_err(std::io::Error::from)
-                .and_then(|()| writeln!(stdout))
-            {
-                eprintln!("jafix: {error}");
-                return ExitCode::from(2);
+            let code = print_json(&output);
+            if code != ExitCode::SUCCESS {
+                return code;
             }
         }
     }
@@ -547,5 +682,23 @@ fn fix_content(src: &str, lines: &TargetLines, config: &Config) -> Fixed {
         }
         document = prose::parse(&next);
         fixed = next;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use clap::Parser;
+
+    use super::Cli;
+    use crate::usage::GUIDES;
+
+    #[test]
+    fn every_example_parses() {
+        for example in GUIDES.iter().flat_map(|guide| guide.examples) {
+            let args = example.command.split(' ');
+            if let Err(error) = Cli::try_parse_from(args) {
+                panic!("`{}` の引数解析に失敗した: {error}", example.command);
+            }
+        }
     }
 }

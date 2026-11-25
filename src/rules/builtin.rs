@@ -201,6 +201,84 @@ impl Builtin {
         Ok(())
     }
 
+    /// `id` のルールが有効か。`set` が書く有効・無効を読む
+    pub fn is_enabled(&self, id: RuleId) -> bool {
+        match id {
+            RuleId::FullwidthParen => self.fullwidth_paren,
+            RuleId::SpaceBetweenJaAndAlnum => self.space_between_ja_and_alnum,
+            RuleId::SpaceBetweenJaAndParen => self.space_between_ja_and_paren,
+            RuleId::SentenceLength => self.sentence_length.is_some(),
+            RuleId::MaxComma => self.max_comma.is_some(),
+            RuleId::MaxKanjiContinuousLen => self.max_kanji_continuous_len.is_some(),
+            RuleId::ArabicKanjiNumbers => self.arabic_kanji_numbers,
+            RuleId::JaNoMixedPeriod => self.ja_no_mixed_period.is_some(),
+            RuleId::NoNfd => self.no_nfd,
+            RuleId::NoInvalidControlCharacter => self.no_invalid_control_character.is_some(),
+            RuleId::NoZeroWidthSpaces => self.no_zero_width_spaces,
+            RuleId::NoExclamationQuestionMark => self.no_exclamation_question_mark.is_some(),
+            RuleId::NoHankakuKana => self.no_hankaku_kana,
+            RuleId::JaUnnaturalAlphabet => self.ja_unnatural_alphabet.is_some(),
+            RuleId::NoUnmatchedPair => self.no_unmatched_pair,
+            RuleId::MaxTen => self.max_ten.is_some(),
+            RuleId::NoMixDearuDesumasu => self.no_mix_dearu_desumasu.is_some(),
+            RuleId::NoDoubledConjunction => self.no_doubled_conjunction,
+            RuleId::NoDoubledConjunctiveParticleGa => self.no_doubled_conjunctive_particle_ga,
+            RuleId::NoDoubleNegativeJa => self.no_double_negative_ja,
+            RuleId::NoDoubledJoshi => self.no_doubled_joshi.is_some(),
+            RuleId::NoDroppingTheRa => self.no_dropping_the_ra,
+            RuleId::JaNoWeakPhrase => self.ja_no_weak_phrase,
+            RuleId::JaNoSuccessiveWord => self.ja_no_successive_word.is_some(),
+            RuleId::JaNoAbusage => self.ja_no_abusage,
+            RuleId::JaNoRedundantExpression => self.ja_no_redundant_expression.is_some(),
+            RuleId::NoAiListFormatting => self.no_ai_list_formatting.is_some(),
+            RuleId::NoAiHypeExpressions => self.no_ai_hype_expressions.is_some(),
+            RuleId::NoAiEmphasisPatterns => self.no_ai_emphasis_patterns.is_some(),
+            RuleId::NoAiColonContinuation => self.no_ai_colon_continuation.is_some(),
+            RuleId::AiTechWritingGuideline => self.ai_tech_writing_guideline.is_some(),
+            RuleId::NoAiWords => self.no_ai_words.is_some(),
+            RuleId::NoShortTopicComma => self.no_short_topic_comma.is_some(),
+            RuleId::Prh => self.prh.is_some(),
+            RuleId::TextlintRulePattern => self.textlint_rule_pattern.is_some(),
+            RuleId::JaNakaguroOrHalfwidthSpaceBetweenKatakana => {
+                self.ja_nakaguro_or_halfwidth_space_between_katakana
+            }
+            RuleId::JaNoSpaceAroundParentheses => self.ja_no_space_around_parentheses,
+            RuleId::JaNoSpaceAroundSlash => self.ja_no_space_around_slash,
+            RuleId::JaNoSpaceBetweenFullWidth => self.ja_no_space_between_full_width,
+            RuleId::JaSpaceBetweenHalfAndFullWidth => {
+                self.ja_space_between_half_and_full_width.is_some()
+            }
+            RuleId::JaSpaceAfterExclamation => self.ja_space_after_exclamation,
+            RuleId::JaSpaceAfterQuestion => self.ja_space_after_question,
+            RuleId::JaSpaceAroundCode => self.ja_space_around_code.is_some(),
+            RuleId::JaSpaceAroundEmphasis => self.ja_space_around_emphasis.is_some(),
+            RuleId::JaSpaceAroundLink => self.ja_space_around_link.is_some(),
+            RuleId::JaSpaceAroundStrong => self.ja_space_around_strong.is_some(),
+            RuleId::NoMixedZenkakuAndHankakuAlphabet => {
+                self.no_mixed_zenkaku_and_hankaku_alphabet.is_some()
+            }
+            RuleId::NoKangxiRadicals => self.no_kangxi_radicals,
+            RuleId::JtfStyle(rule) => self.jtf_style.enabled(rule),
+            RuleId::JaHiraganaHojodoushi => self.ja_hiragana_hojodoushi.is_some(),
+            RuleId::JaHiraganaKeishikimeishi => self.ja_hiragana_keishikimeishi,
+            RuleId::JaKeishikimeishi => self.ja_keishikimeishi.is_some(),
+            RuleId::JaHiraganaFukushi => self.ja_hiragana_fukushi.is_some(),
+            RuleId::JaHiraganaDaimeishi => self.ja_hiragana_daimeishi,
+            RuleId::NoInsertDroppingSa => self.no_insert_dropping_sa,
+            RuleId::NoSynonyms => self.no_synonyms.is_some(),
+            RuleId::NoTodo => self.no_todo,
+            RuleId::DateWeekdayMismatch => self.date_weekday_mismatch.is_some(),
+            RuleId::NoDeadLink => self.no_dead_link.is_some(),
+            RuleId::Terminology => self.terminology.is_some(),
+            RuleId::Spelling => self.spelling.is_some(),
+            RuleId::CommonMisspellings => self.common_misspellings.is_some(),
+            RuleId::WriteGood => self.write_good.is_some(),
+            RuleId::YomiyasuBoldNotRendered => self.yomiyasu_bold_not_rendered,
+            RuleId::YomiyasuInstructionResidue => self.yomiyasu_instruction_residue,
+            RuleId::YomiyasuChatResponse => self.yomiyasu_chat_response,
+        }
+    }
+
     pub fn validate(&self) -> Result<(), String> {
         // 利用者の辞書を直しても組み込みのルールどうしの不正は残るので、先に出す
         self.reject_opposite_rules()?;

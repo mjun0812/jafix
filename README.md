@@ -36,6 +36,16 @@ jafix fix example.txt
 入力はUTF-8とShift_JIS (CP932を含む)に対応します。文字コードはファイルごとに自動で判定します。[文字コードを指定する方法](REFERENCE.md#使い方)
 Gitで追加・変更した行だけを校正するには `--diff` を指定します。ステージ済みの変更を確認するには `check --staged` を使います。
 
+組み込みのルールが今の設定で有効かどうかは、`jafix rules` で確かめられます。
+
+```sh
+jafix rules
+```
+
+1行に1ルールを、ルールID、`有効` か `無効`、属するpresetの名前(どのpresetにも属さなければ `-`)のタブ区切りで出力します。ファイルを渡すと、そのファイルに使うプロジェクト設定で答えます。`exclude` と `report-exclude` によるファイルの除外は反映しません。
+
+各コマンドの実行例と終了コードは `jafix <コマンド> --help` で表示できます。agentやスクリプトから使う場合は、`jafix --usage` でコマンド体系を、`jafix check --schema` でJSON出力の形をJSONで取得できます。[詳細](REFERENCE.md#ルールの一覧)
+
 ## 設定ファイル
 
 共通設定は `~/.config/jafix/config.toml` に書きます。
