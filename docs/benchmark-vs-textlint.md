@@ -1,7 +1,7 @@
 # textlintとの速度の比較 {#benchmark}
 
-同じ働きのルールで計測すると、textlintにかかった時間はjafixの14〜142倍でした。jafixの最大常駐メモリはtextlintの3分の1以下でした。
-2026-11-15に `scripts/bench-vs-textlint.sh` を使い、3KBから343KBまでの4ファイルで `check`、`fix`、hookを比べました。
+同じ働きのルールで計測すると、textlintにかかった時間はjafixの5〜48倍でした。jafixの最大常駐メモリはtextlintの半分以下でした。
+2026-11-25に `scripts/bench-vs-textlint.sh` を使い、3KBから343KBまでの4ファイルで `check`、`fix`、hookを比べました。
 
 ## 比べ方 {#method}
 
@@ -31,12 +31,13 @@ textlintでは同じファイル全体に `--fix` と指摘を出すコマンド
 | ファイル         | 大きさ | 内容                            |
 | ---------------- | ------ | ------------------------------- |
 | `blocks-10.md`   | 3KB    | 約350バイトの塊を10回並べたもの |
+| `README.md`      | 5KB    | jafixのREADME                   |
 | `blocks-100.md`  | 34KB   | 同じ塊を100回並べたもの         |
 | `blocks-1000.md` | 343KB  | 同じ塊を1000回並べたもの        |
-| `README.md`      | 69KB   | jafixのREADME                   |
 
 繰り返し使った約350バイトの断片には、見出し、段落、リスト、強調、コードブロックがあります。5つのルールすべてが当たる内容です。
 hyperfineで3回予備実行し、その後の20回の平均を求めました。343KBのファイルでは予備実行後の10回を使いました。
+この計測を5回繰り返し、表には5回の平均を載せています。
 
 ## 件数の一致 {#work-performed}
 
@@ -56,44 +57,44 @@ textlintの `ja-space-between-half-and-full-width` は、長音符の後(`サー
 | 項目      | 値                             |
 | --------- | ------------------------------ |
 | マシン    | Apple M5 (macOS、arm64)        |
-| jafix     | 0.1.0 (00b728a)のrelease build |
-| textlint  | v15.8.0 (Node.js v26.13.0)     |
+| jafix     | 0.0.3 (608e127)のrelease build |
+| textlint  | v16.1.2 (Node.js v26.13.1)     |
 | hyperfine | 2.0.0                          |
 
 各行には実行時間と最大常駐メモリの平均を示します。
 倍率はtextlintの時間をjafixの時間で割った値です。
 
-| 場面  | ファイル               |          jafix |         textlint |  倍率 |
-| ----- | ---------------------- | -------------: | ---------------: | ----: |
-| check | blocks-10.md (3KB)     |    2.6ms / 7MB |  151.7ms / 122MB |  59倍 |
-| check | blocks-100.md (34KB)   |   9.2ms / 14MB |  249.8ms / 189MB |  27倍 |
-| check | README.md (69KB)       |  18.7ms / 12MB |  267.8ms / 178MB |  14倍 |
-| check | blocks-1000.md (343KB) | 120.1ms / 79MB |   2755ms / 328MB |  23倍 |
-| fix   | blocks-10.md (3KB)     |    2.3ms / 6MB |  167.8ms / 136MB |  73倍 |
-| fix   | blocks-100.md (34KB)   |   6.1ms / 13MB |  330.6ms / 203MB |  54倍 |
-| fix   | README.md (69KB)       |   5.7ms / 12MB |  262.5ms / 185MB |  46倍 |
-| fix   | blocks-1000.md (343KB) |  89.5ms / 78MB | 4464.4ms / 406MB |  50倍 |
-| hook  | blocks-10.md (3KB)     |    2.9ms / 7MB |  411.1ms / 135MB | 142倍 |
-| hook  | blocks-100.md (34KB)   |  11.2ms / 14MB |   1031ms / 202MB |  92倍 |
-| hook  | README.md (69KB)       |  10.5ms / 12MB |  490.7ms / 188MB |  47倍 |
-| hook  | blocks-1000.md (343KB) | 192.6ms / 92MB | 6319.1ms / 408MB |  33倍 |
+| 場面  | ファイル               |          jafix |         textlint | 倍率 |
+| ----- | ---------------------- | -------------: | ---------------: | ---: |
+| check | blocks-10.md (3KB)     |    3.9ms / 8MB |    96.4ms / 91MB | 25倍 |
+| check | README.md (5KB)        |    3.9ms / 8MB |    81.6ms / 83MB | 21倍 |
+| check | blocks-100.md (34KB)   |    10ms / 15MB |  122.1ms / 125MB | 12倍 |
+| check | blocks-1000.md (343KB) |    98ms / 86MB | 1099.2ms / 179MB | 11倍 |
+| fix   | blocks-10.md (3KB)     |    3.8ms / 8MB |    98.6ms / 92MB | 26倍 |
+| fix   | README.md (5KB)        |    3.5ms / 8MB |    81.3ms / 86MB | 23倍 |
+| fix   | blocks-100.md (34KB)   |   9.2ms / 16MB |  126.9ms / 120MB | 14倍 |
+| fix   | blocks-1000.md (343KB) | 122.9ms / 93MB |  584.7ms / 223MB |  5倍 |
+| hook  | blocks-10.md (3KB)     |    3.8ms / 8MB |   185.1ms / 92MB | 48倍 |
+| hook  | README.md (5KB)        |    3.6ms / 8MB |   167.6ms / 86MB | 46倍 |
+| hook  | blocks-100.md (34KB)   |    10ms / 16MB |  222.7ms / 120MB | 22倍 |
+| hook  | blocks-1000.md (343KB) | 135.7ms / 93MB |  738.4ms / 223MB |  5倍 |
 
 ## 倍率の傾向 {#interpretation}
 
 倍率が最も大きかったのは3KBのファイルです。
-このファイルの `check` はtextlintで約152ms、jafixで約3msでした。
+このファイルの `check` はtextlintで約96ms、jafixで約4msでした。
 数KBから数十KBのファイルでは、Node.jsの起動やルールの読み込みにかかる時間の影響が大きいと考えられます。
 
 3KBのファイルでは、hookで最も差が開きました。
 この比較ではtextlintを修正と指摘で2回起動し、そのたびにファイル全体を解析します。
 jafixは1つのプロセスで、編集した行を修正してから指摘を集めます。
 
-hookの倍率は3KBで142倍、343KBで33倍でした。
+hookの倍率は3KBで48倍、343KBで5倍でした。
 jafixのhookもファイル全体を解析するため、ファイルが大きいほど解析時間の影響が増すと考えられます。
-`check` と `fix` の倍率は34KBから343KBの間で14〜54倍でした。この範囲では、ファイルの大きさに応じた一定の傾向は見られませんでした。
+`check` の倍率は34KBと343KBで11〜12倍でした。`fix` の倍率は34KBで14倍、343KBで5倍でした。
 
-jafixの最大常駐メモリは3KBのファイルで6〜7MB、343KBのファイルで最大92MBでした。
-textlintはどのファイルでも120MB以上でした。
+jafixの最大常駐メモリは3KBのファイルで8MB、343KBのファイルで最大93MBでした。
+textlintはどのファイルでも80MB以上でした。
 
 表の値は予備実行後の計測結果です。
 ディスクキャッシュの状態によっては、初回の実行にさらに時間がかかります。

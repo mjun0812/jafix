@@ -1,7 +1,7 @@
 // The four check rows from docs/benchmark-vs-textlint.md.
 export const checkResults = [
-  { size: '3 KB', jafix: 2.6, textlint: 151.7, ratio: 59 },
-  { size: '34 KB', jafix: 9.2, textlint: 249.8, ratio: 27 },
-  { size: '69 KB', jafix: 18.7, textlint: 267.8, ratio: 14 },
-  { size: '343 KB', jafix: 120.1, textlint: 2755, ratio: 23 },
+  { size: '3 KB', jafix: 3.9, textlint: 96.4, ratio: 25 },
+  { size: '5 KB', jafix: 3.9, textlint: 81.6, ratio: 21 },
+  { size: '34 KB', jafix: 10.0, textlint: 122.1, ratio: 12 },
+  { size: '343 KB', jafix: 98.0, textlint: 1099.2, ratio: 11 },
 ]
