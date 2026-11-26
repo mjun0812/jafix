@@ -147,6 +147,8 @@ echo "本文（補足）です。" | jafix check -
 echo "本文（補足）です。" | jafix fix -
 ```
 
+この例は、パイプへ文字をUTF-8で渡すシェル(bash、zsh、PowerShell 7以降など)を前提にしています。Windows PowerShell 5.1は、設定を変えていなければパイプで渡す文字をASCIIに変換するので、先に `$OutputEncoding = [Console]::OutputEncoding` を実行します。
+
 `check -` は、指摘のパスを `<stdin>` として表示します。`fix -` はファイルを書き換えず、修正後の本文を標準出力に書きます。設定には、共通設定と、カレントディレクトリから探したプロジェクト設定を使います。`-` という名前のファイルは `./-` と書きます。[詳細](https://github.com/mjun0812/jafix/blob/main/REFERENCE.md#標準入力)
 
 ## 下書きをMCPで校正する {#mcp}

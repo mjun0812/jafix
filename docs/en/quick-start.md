@@ -151,6 +151,8 @@ echo "本文（補足）です。" | jafix check -
 echo "本文（補足）です。" | jafix fix -
 ```
 
+These examples assume a shell that pipes text as UTF-8, such as bash, zsh, or PowerShell 7 and later. Windows PowerShell 5.1 converts piped text to ASCII by default, so run `$OutputEncoding = [Console]::OutputEncoding` first.
+
 `check -` reports findings with the path `<stdin>`. `fix -` prints the corrected text to standard output and does not write any file. jafix uses the global settings and the project settings found from the current directory. To pass a file named `-`, write `./-`. [Details](https://github.com/mjun0812/jafix/blob/main/REFERENCE.md#標準入力)
 
 ## Proofread drafts with MCP {#mcp}
