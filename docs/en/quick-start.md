@@ -52,7 +52,7 @@ Run `jafix --version`. If mise is not activated in your shell, use `mise exec --
 
 ```console
 $ jafix --version
-jafix 0.0.3
+jafix 0.0.4
 ```
 
 ## Lint a file {#check}

@@ -50,7 +50,7 @@ cargo install --path .
 
 ```console
 $ jafix --version
-jafix 0.0.3
+jafix 0.0.4
 ```
 
 ## 文章をチェックする {#check}
