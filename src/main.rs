@@ -14,7 +14,7 @@ mod text_file;
 mod usage;
 
 use std::fs;
-use std::io::{Read, Write};
+use std::io::{IsTerminal, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Instant;
@@ -286,9 +286,33 @@ fn reads_stdin(args: &Files, staged: bool) -> Result<bool, String> {
 /// 標準入力を最後まで読み、読んだバイト列と、文字コードを判定した内容を返す
 fn read_stdin(encoding: InputEncoding) -> std::io::Result<(Vec<u8>, TextFile)> {
     let mut bytes = Vec::new();
-    duplicate(&std::io::stdin())?.read_to_end(&mut bytes)?;
+    let stdin = std::io::stdin();
+    // Windowsの端末は `Stdin` で読む。コンソールの入力は、`Stdin` が文字をUTF-8へ変換して渡すので、
+    // コードページで表せない文字も失われない。Cygwinの疑似端末のパイプは、バイト列がそのまま届く
+    let windows_terminal = cfg!(windows) && stdin.is_terminal();
+    if windows_terminal {
+        stdin.lock().read_to_end(&mut bytes)?;
+    } else {
+        duplicate(&stdin)?.read_to_end(&mut bytes)?;
+    }
+    if windows_terminal
+        && matches!(encoding, InputEncoding::ShiftJis)
+        && is_converted_console_input(&bytes)
+    {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "Windowsのコンソールから入力した文字はUTF-8として届くので、--encoding shift-jis では読めない。--encoding を外して実行する",
+        ));
+    }
     let file = TextFile::decode(bytes.clone(), encoding)?;
     Ok((bytes, file))
+}
+
+/// Windowsの端末から届いた入力が、コンソールがUTF-8へ変換したものか。
+/// コンソールと疑似端末のパイプは標準ライブラリでは見分けられないので、内容で判定する。
+/// ASCIIでない文字を含むShift_JISの文章が、UTF-8としても読めることはまず無い
+fn is_converted_console_input(bytes: &[u8]) -> bool {
+    !bytes.is_ascii() && std::str::from_utf8(bytes).is_ok()
 }
 
 /// 標準入力か標準出力のハンドルを複製した `File`。`std::io::Stdin` は読めないハンドルを入力の終わりとして、
@@ -303,10 +327,21 @@ fn duplicate(stream: &impl std::os::windows::io::AsHandle) -> std::io::Result<fs
     Ok(fs::File::from(stream.as_handle().try_clone_to_owned()?))
 }
 
-/// 標準出力に、1回の書き込みで書く。書けなければ失敗を返す。
-/// 端末かどうかで書き方を変えない。端末の文字コードは分からないので、入力と同じバイト列をそのまま渡す
+/// 標準出力へ書く先。書けなければ、書き込みが失敗を返す。
+/// Windowsの端末だけは `Stdout` を使う。コンソールは、文字として書く `Stdout` でないと日本語を表示できない
+fn stdout_writer() -> std::io::Result<Box<dyn Write>> {
+    let stdout = std::io::stdout();
+    if cfg!(windows) && stdout.is_terminal() {
+        return Ok(Box::new(stdout));
+    }
+    Ok(Box::new(duplicate(&stdout)?))
+}
+
+/// 標準出力に、1回の書き込みで書く
 fn write_stdout(bytes: &[u8]) -> std::io::Result<()> {
-    duplicate(&std::io::stdout())?.write_all(bytes)
+    let mut stdout = stdout_writer()?;
+    stdout.write_all(bytes)?;
+    stdout.flush()
 }
 
 /// 標準入力の本文に使う設定。ファイルが無いので、カレントディレクトリからプロジェクト設定を探す
@@ -374,7 +409,7 @@ fn run_check(args: &CheckArgs) -> ExitCode {
     match args.output_format {
         OutputFormat::Text => {
             // 指摘は1件ずつ、1回の書き込みで書く。並行して同じパイプへ書くほかのプロセスの出力が、行の途中に挟まらない
-            let mut written = duplicate(&std::io::stdout());
+            let mut written = stdout_writer();
             for FileDiagnostic {
                 path,
                 diagnostic: d,
@@ -389,7 +424,7 @@ fn run_check(args: &CheckArgs) -> ExitCode {
             let written = match written {
                 // `| head` のように読み手が先に閉じたときは、何も出さずに、指摘の有無で終了コードを決める
                 Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
-                written => written.map(drop),
+                written => written.and_then(|mut stdout| stdout.flush()),
             };
             for error in &output.errors {
                 if let Some(path) = &error.path {
@@ -651,8 +686,10 @@ fn fix_stdin(args: &FixArgs) -> Result<(), String> {
         read_stdin(args.files.encoding).map_err(|error| format!("{STDIN_NAME}: {error}"))?;
     let fixed = fix_content(&file.content, &TargetLines::All, config);
     let changed = fixed.content != file.content;
-    // 入力と同じ文字コードで書くので、その文字コードで表せない修正結果は `--dry-run` でも失敗にする
-    let encoded = if changed {
+    let to_terminal = std::io::stdout().is_terminal();
+    // パイプやファイルへは入力と同じ文字コードで書くので、その文字コードで表せない修正結果は `--dry-run` でも失敗にする。
+    // 端末には文字として書く。Shift_JISのバイト列は、UTF-8の端末では読めず、Windowsのコンソールでは書き込みが拒まれる
+    let encoded = if changed && !to_terminal {
         Some(
             file.encode(&fixed.content)
                 .map_err(|error| format!("{STDIN_NAME}: {error}"))?,
@@ -670,6 +707,8 @@ fn fix_stdin(args: &FixArgs) -> Result<(), String> {
         } else {
             Ok(())
         }
+    } else if to_terminal {
+        write_stdout(fixed.content.as_bytes())
     } else {
         // `--encoding shift-jis` で読んだ入力には符号化し直すと元と違うバイト列になるものがあるので、変わっていなければ読んだバイト列を書く
         write_stdout(encoded.as_deref().unwrap_or(&bytes))
@@ -859,6 +898,16 @@ mod tests {
 
     use super::Cli;
     use crate::usage::GUIDES;
+
+    #[test]
+    fn input_converted_by_the_windows_console_is_told_apart_from_shift_jis() {
+        // コンソールで「日本」と入力すると、`Stdin` はUTF-8で渡す
+        assert!(super::is_converted_console_input("日本\r\n".as_bytes()));
+        // 疑似端末から届くShift_JISの「日本」は、UTF-8としては読めない
+        assert!(!super::is_converted_console_input(b"\x93\xfa\x96\x7b\r\n"));
+        // ASCIIだけの入力は、どちらの文字コードで読んでも同じである
+        assert!(!super::is_converted_console_input(b"abc\r\n"));
+    }
 
     #[test]
     fn every_example_parses() {
