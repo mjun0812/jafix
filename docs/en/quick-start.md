@@ -151,7 +151,7 @@ echo "本文（補足）です。" | jafix check -
 echo "本文（補足）です。" | jafix fix -
 ```
 
-These examples assume a shell that pipes text as UTF-8, such as bash or zsh. PowerShell may convert text that passes through a pipe or a redirection, depending on its version and settings. In PowerShell, put the text in a file and use the redirection of cmd, as in `cmd /c "jafix fix - < notes.md > result.md"`.
+These examples assume a shell that pipes text as UTF-8, such as bash or zsh. PowerShell may convert text that passes through a pipe or a redirection, depending on its version and settings. In PowerShell, pass a file name instead of using standard input, as in `jafix fix notes.md`.
 
 `check -` reports findings with the path `<stdin>`. `fix -` prints the corrected text to standard output and does not write any file. jafix uses the global settings and the project settings found from the current directory. To pass a file named `-`, write `./-`. [Details](https://github.com/mjun0812/jafix/blob/main/REFERENCE.md#標準入力)
 

@@ -772,17 +772,12 @@ $ echo "本文（補足）です。" | jafix fix -
 
 この実行例は、パイプへ文字をUTF-8で渡すシェル(bash、zshなど)を前提にしています。
 PowerShellは、版や設定によって、パイプやリダイレクトを通る文字を変換します。Windows PowerShell 5.1は、設定を変えていなければ、外部コマンドへパイプで渡す文字をASCIIに変換します。`>` で保存する出力は、UTF-16LEに変換します。日本語は `?` に置き換わってからjafixに届き、保存した結果はjafixで読み直せません。
-PowerShellでは、本文をファイルに置き、cmdのリダイレクトで渡して保存します。ファイルのバイト列がそのままjafixに届き、修正後の本文は、文字コードと改行を保ったまま保存されます。コマンドは日本語を含まないので、`.ps1` ファイルの保存形式によらず使えます。
+PowerShellでは、標準入力を使わず、本文をファイルに置いてファイル名を渡します。jafixがファイルを直接読み書きするので、PowerShellの変換を受けず、文字コードと改行が保たれます。元のファイルを残すときは、コピーを修正します。
 
 ```powershell
-cmd /c "jafix check - < notes.md"
-cmd /c "jafix fix - < notes.md > result.md"
-```
-
-cmdは、`\\server\share\project` のようなUNCパスを作業ディレクトリにできません。PowerShellの作業ディレクトリがUNCパスのままだと、cmdは別のディレクトリで動くので、相対パスの本文を開けず、共有上のプロジェクト設定も使われません。ネットワーク共有上の本文を校正するときは、cmdの `pushd` で共有に移ってから実行します。`pushd` は共有に一時的なドライブ文字を割り当てて移るので、jafixはそこからプロジェクト設定を探します。
-
-```powershell
-cmd /c "pushd \\server\share\project && jafix fix - < notes.md > result.md"
+jafix check notes.md
+Copy-Item notes.md result.md
+jafix fix result.md
 ```
 
 端末から本文を直接入力する使い方は、端末によっては入力の終わりを伝えられません。ConPTYを無効にしたCygwinのminttyでは、Ctrl+DやCtrl+Zで入力を終えられず、jafixは入力を待ち続けます。本文は、ファイルかパイプで渡してください。
