@@ -485,6 +485,30 @@ fn check_stdin_keeps_the_exit_code_when_the_reader_closes_the_pipe() {
     assert_eq!(stderr(&output), "", "{output:?}");
 }
 
+#[test]
+fn check_json_stdin_exits_2_when_the_reader_closes_the_pipe() {
+    let sandbox = Sandbox::new();
+    let mut child = sandbox
+        .command()
+        .args(["check", "--output-format", "json", "-"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    drop(child.stdout.take());
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(PAREN_TEXT.as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    // 途中までのJSONは読めないので、指摘のテキスト出力と違って失敗にする
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    assert!(stderr(&output).starts_with("jafix: "), "{output:?}");
+}
+
 // 1回の書き込みがまとまって届く大きさ (`PIPE_BUF`) は、Unixのパイプの約束である
 #[cfg(unix)]
 #[test]
