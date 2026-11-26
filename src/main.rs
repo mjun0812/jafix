@@ -301,16 +301,16 @@ fn read_stdin(encoding: InputEncoding) -> std::io::Result<(Vec<u8>, TextFile)> {
     {
         return Err(std::io::Error::new(
             std::io::ErrorKind::InvalidInput,
-            "Windowsのコンソールから入力した文字はUTF-8として届くので、--encoding shift-jis では読めない。--encoding を外して実行する",
+            "Windowsの端末から届いた入力が、コンソールの変換したUTF-8か、Shift_JISのバイト列かを判別できない。Shift_JISの本文はファイルかパイプで渡す (例: jafix fix --encoding shift-jis - < notes.txt)。コンソールから直接入力するときは --encoding を外す",
         ));
     }
     let file = TextFile::decode(bytes.clone(), encoding)?;
     Ok((bytes, file))
 }
 
-/// Windowsの端末から届いた入力が、コンソールがUTF-8へ変換したものか。
+/// Windowsの端末から届いた入力が、コンソールがUTF-8へ変換したものでありうるか。
 /// コンソールと疑似端末のパイプは標準ライブラリでは見分けられないので、内容で判定する。
-/// ASCIIでない文字を含むShift_JISの文章が、UTF-8としても読めることはまず無い
+/// 半角カナだけの並びのように、Shift_JISのバイト列がUTF-8としても読めることがあるので、当てはまる入力は判別できないものとして拒む
 fn is_converted_console_input(bytes: &[u8]) -> bool {
     !bytes.is_ascii() && std::str::from_utf8(bytes).is_ok()
 }
