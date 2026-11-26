@@ -34,6 +34,15 @@ use crate::rules::builtin::Preset;
 use crate::rules::general::Links;
 use crate::text_file::{InputEncoding, TextFile};
 
+/// 標準エラーに1行書く。書けなくても何もしない。
+/// 標準ライブラリの `eprintln!` は、書けないとパニックして終了コードを101にする。
+/// 出力先の容量が足りないときも決めた終了コードを返せるように、このファイルでは同じ名前で置き換える
+macro_rules! eprintln {
+    ($($arg:tt)*) => {{
+        let _ = writeln!(std::io::stderr(), $($arg)*);
+    }};
+}
+
 /// 日本語のテキストファイルを校正する
 #[derive(Parser)]
 #[command(

@@ -224,6 +224,42 @@ fn fix_stdin_does_not_count_text_it_could_not_write() {
     assert!(!stderr(&output).contains("修正: "), "{output:?}");
 }
 
+#[cfg(target_os = "linux")]
+#[test]
+fn stdout_failure_exits_2_even_when_stderr_cannot_be_written() {
+    let full = || {
+        fs::OpenOptions::new()
+            .write(true)
+            .open("/dev/full")
+            .unwrap()
+    };
+    let cases: [&[&str]; 3] = [
+        &["fix", "-"],
+        &["check", "-"],
+        &["check", "--output-format", "json", "-"],
+    ];
+    for args in cases {
+        let sandbox = Sandbox::new();
+        let mut child = sandbox
+            .command()
+            .args(args)
+            .stdin(Stdio::piped())
+            .stdout(full())
+            .stderr(full())
+            .spawn()
+            .unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(PAREN_TEXT.as_bytes())
+            .unwrap();
+        let status = child.wait().unwrap();
+        // 失敗の理由を標準エラーに書けなくても、パニックの終了コード101にしない
+        assert_eq!(status.code(), Some(2), "{args:?}");
+    }
+}
+
 #[test]
 fn fix_stdin_does_not_count_text_a_closed_pipe_did_not_take() {
     let sandbox = Sandbox::new();
