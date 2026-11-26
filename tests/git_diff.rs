@@ -1,38 +1,8 @@
 mod common;
 
 use std::fs;
-use std::process::Command;
 
-use common::{Sandbox, read, stdout};
-
-fn git(sandbox: &Sandbox, args: &[&str]) -> Vec<u8> {
-    let output = Command::new("git")
-        .current_dir(sandbox.path(""))
-        .env("GIT_CONFIG_NOSYSTEM", "1")
-        .env("GIT_CONFIG_GLOBAL", sandbox.path("unused-gitconfig"))
-        .args(args)
-        .output()
-        .unwrap();
-    assert!(output.status.success(), "{args:?}: {output:?}");
-    output.stdout
-}
-
-fn init(sandbox: &Sandbox) {
-    git(sandbox, &["init", "-q"]);
-    for (key, value) in [
-        ("user.name", "Test"),
-        ("user.email", "test@example.test"),
-        ("commit.gpgsign", "false"),
-        ("core.autocrlf", "false"),
-    ] {
-        git(sandbox, &["config", key, value]);
-    }
-}
-
-fn commit(sandbox: &Sandbox) {
-    git(sandbox, &["add", "--all"]);
-    git(sandbox, &["commit", "-qm", "baseline"]);
-}
+use common::{Sandbox, commit, git, init, read, stdout};
 
 #[test]
 fn worktree_diff_limits_findings_and_fixes_to_added_lines_with_markdown_context() {

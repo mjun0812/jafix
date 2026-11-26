@@ -14,7 +14,7 @@ mod text_file;
 mod usage;
 
 use std::fs;
-use std::io::{Read, Write};
+use std::io::{IsTerminal, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Instant;
@@ -33,6 +33,15 @@ use crate::rules::RuleId;
 use crate::rules::builtin::Preset;
 use crate::rules::general::Links;
 use crate::text_file::{InputEncoding, TextFile};
+
+/// 標準エラーに1行書く。書けなくても何もしない。
+/// 標準ライブラリの `eprintln!` は、書けないとパニックして終了コードを101にする。
+/// 出力先の容量が足りないときも決めた終了コードを返せるように、このファイルでは同じ名前で置き換える
+macro_rules! eprintln {
+    ($($arg:tt)*) => {{
+        let _ = writeln!(std::io::stderr(), $($arg)*);
+    }};
+}
 
 /// 日本語のテキストファイルを校正する
 #[derive(Parser)]
@@ -173,11 +182,14 @@ fn main() -> ExitCode {
 
 /// JSONを1行で標準出力に書く。書けなければexit 2
 fn print_json(value: &impl Serialize) -> ExitCode {
-    let mut stdout = std::io::stdout().lock();
-    match serde_json::to_writer(&mut stdout, value)
-        .map_err(std::io::Error::from)
-        .and_then(|()| writeln!(stdout))
-    {
+    // 指摘が多いとJSONも大きいので、全体をメモリに作らず、順に書く
+    let written = stdout_writer().and_then(|stdout| {
+        let mut stdout = std::io::BufWriter::new(stdout);
+        serde_json::to_writer(&mut stdout, value)?;
+        stdout.write_all(b"\n")?;
+        stdout.flush()
+    });
+    match written {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("jafix: {error}");
@@ -263,6 +275,94 @@ fn run_rules(args: &RulesArgs) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// 指摘のパスと差分の名前で、標準入力を表す名前
+const STDIN_NAME: &str = "<stdin>";
+
+/// ファイルの引数が `-` だけなら、標準入力を校正する。`-` をほかのファイルやGitの差分の選択と並べたら理由を返す
+fn reads_stdin(args: &Files, staged: bool) -> Result<bool, String> {
+    if !args.files.iter().any(|path| path.as_os_str() == "-") {
+        return Ok(false);
+    }
+    if args.files.len() > 1 {
+        return Err("標準入力を表す `-` は、ほかのファイルと一緒に指定できない".into());
+    }
+    if args.diff || staged {
+        let option = if args.diff { "--diff" } else { "--staged" };
+        return Err(format!("標準入力を表す `-` に {option} は指定できない"));
+    }
+    Ok(true)
+}
+
+/// 標準入力を最後まで読み、読んだバイト列と、文字コードを判定した内容を返す
+fn read_stdin(encoding: InputEncoding) -> std::io::Result<(Vec<u8>, TextFile)> {
+    let mut bytes = Vec::new();
+    let stdin = std::io::stdin();
+    // Windowsの端末は `Stdin` で読む。コンソールの入力は、`Stdin` が文字をUTF-8へ変換して渡すので、
+    // コードページで表せない文字も失われない。Cygwinの疑似端末のパイプは、バイト列がそのまま届く
+    let windows_terminal = cfg!(windows) && stdin.is_terminal();
+    if windows_terminal {
+        stdin.lock().read_to_end(&mut bytes)?;
+    } else {
+        duplicate(&stdin)?.read_to_end(&mut bytes)?;
+    }
+    if windows_terminal
+        && matches!(encoding, InputEncoding::ShiftJis)
+        && is_converted_console_input(&bytes)
+    {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "Windowsの端末から届いた入力が、コンソールの変換したUTF-8か、Shift_JISのバイト列かを判別できない。Shift_JISの本文は、ファイルに置いてファイル名を渡す (例: jafix check --encoding shift-jis notes.txt)。コンソールから直接入力するときは --encoding を外す",
+        ));
+    }
+    let file = TextFile::decode(bytes.clone(), encoding)?;
+    Ok((bytes, file))
+}
+
+/// Windowsの端末から届いた入力が、コンソールがUTF-8へ変換したものでありうるか。
+/// コンソールと疑似端末のパイプは標準ライブラリでは見分けられないので、内容で判定する。
+/// 半角カナだけの並びのように、Shift_JISのバイト列がUTF-8としても読めることがあるので、当てはまる入力は判別できないものとして拒む
+fn is_converted_console_input(bytes: &[u8]) -> bool {
+    !bytes.is_ascii() && std::str::from_utf8(bytes).is_ok()
+}
+
+/// 標準入力か標準出力のハンドルを複製した `File`。`std::io::Stdin` は読めないハンドルを入力の終わりとして、
+/// `std::io::Stdout` は書けないハンドルへの書き込みを成功として扱うので、失敗を受け取るには複製を読み書きする
+#[cfg(unix)]
+fn duplicate(stream: &impl std::os::fd::AsFd) -> std::io::Result<fs::File> {
+    Ok(fs::File::from(stream.as_fd().try_clone_to_owned()?))
+}
+
+#[cfg(windows)]
+fn duplicate(stream: &impl std::os::windows::io::AsHandle) -> std::io::Result<fs::File> {
+    Ok(fs::File::from(stream.as_handle().try_clone_to_owned()?))
+}
+
+/// 標準出力へ書く先。書けなければ、書き込みが失敗を返す。
+/// Windowsの端末だけは `Stdout` を使う。コンソールは、文字として書く `Stdout` でないと日本語を表示できない
+fn stdout_writer() -> std::io::Result<Box<dyn Write>> {
+    let stdout = std::io::stdout();
+    if cfg!(windows) && stdout.is_terminal() {
+        return Ok(Box::new(stdout));
+    }
+    Ok(Box::new(duplicate(&stdout)?))
+}
+
+/// 標準出力に、1回の書き込みで書く
+fn write_stdout(bytes: &[u8]) -> std::io::Result<()> {
+    let mut stdout = stdout_writer()?;
+    stdout.write_all(bytes)?;
+    stdout.flush()
+}
+
+/// 標準入力の本文に使う設定。ファイルが無いので、カレントディレクトリからプロジェクト設定を探す
+fn current_dir_config(configs: &mut Configs) -> Result<&Config, String> {
+    // `for_directory` は渡されたパスの親をそのままたどるので、相対パスの `.` を先に絶対パスへ直す
+    let dir = Path::new(".")
+        .canonicalize()
+        .map_err(|error| format!(".: {error}"))?;
+    configs.for_directory(&dir)
+}
+
 fn select_files(args: &Files, staged: bool) -> Result<Selection, String> {
     if args.diff || staged {
         return git_diff::select(&args.files, staged);
@@ -316,26 +416,37 @@ fn run_check(args: &CheckArgs) -> ExitCode {
             message,
         });
     }
-    let mut stdout = std::io::stdout().lock();
     match args.output_format {
         OutputFormat::Text => {
+            // 指摘は1件ずつ、1回の書き込みで書く。並行して同じパイプへ書くほかのプロセスの出力が、行の途中に挟まらない
+            let mut written = stdout_writer();
             for FileDiagnostic {
                 path,
                 diagnostic: d,
             } in &output.findings
             {
-                let _ = writeln!(
-                    stdout,
-                    "{}",
-                    location_line(path, (d.line, d.column), &d.message, d.rule_id)
-                );
+                let Ok(stdout) = &mut written else { break };
+                let line = location_line(path, (d.line, d.column), &d.message, d.rule_id);
+                if let Err(error) = stdout.write_all(format!("{line}\n").as_bytes()) {
+                    written = Err(error);
+                }
             }
+            let written = match written {
+                // `| head` のように読み手が先に閉じたときは、何も出さずに、指摘の有無で終了コードを決める
+                Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => Ok(()),
+                written => written.and_then(|mut stdout| stdout.flush()),
+            };
             for error in &output.errors {
                 if let Some(path) = &error.path {
                     eprintln!("jafix: {path}: {}", error.message);
                 } else {
                     eprintln!("jafix: {}", error.message);
                 }
+            }
+            // 指摘を書き込めなかったことを、呼び出し元が終了コードで見分けられるようにする
+            if let Err(error) = written {
+                eprintln!("jafix: {error}");
+                return ExitCode::from(2);
             }
         }
         OutputFormat::Json => {
@@ -355,6 +466,9 @@ fn run_check(args: &CheckArgs) -> ExitCode {
 fn check_files(args: &CheckArgs, output: &mut CheckOutput) -> Result<(), String> {
     if args.files.files.is_empty() && !args.files.diff && !args.staged {
         return Err("チェックするファイル、--diff、または --staged を指定してください".into());
+    }
+    if reads_stdin(&args.files, args.staged)? {
+        return check_stdin(args.files.encoding, output);
     }
     let selection = select_files(&args.files, args.staged)?;
     let mut configs = Configs::load()?;
@@ -431,6 +545,31 @@ fn check_files(args: &CheckArgs, output: &mut CheckOutput) -> Result<(), String>
     Ok(())
 }
 
+/// ファイルを入力とする `exclude`・`report-exclude` と、リンク先を調べる `no-dead-link` は当てない
+fn check_stdin(encoding: InputEncoding, output: &mut CheckOutput) -> Result<(), String> {
+    let mut configs = Configs::load()?;
+    let config = current_dir_config(&mut configs)?;
+    let file = match read_stdin(encoding) {
+        Ok((_, file)) => file,
+        Err(error) => {
+            output.errors.push(CheckError {
+                path: Some(STDIN_NAME.into()),
+                message: error.to_string(),
+            });
+            return Ok(());
+        }
+    };
+    let findings = diagnostics::check(&file.content, config, &TargetLines::All, None, false);
+    output.checked_files = 1;
+    output
+        .findings
+        .extend(findings.into_iter().map(|diagnostic| FileDiagnostic {
+            path: STDIN_NAME.into(),
+            diagnostic,
+        }));
+    Ok(())
+}
+
 /// `check` とhookが箇所と指摘を出す `<path>:<line>:<column>: [<rule-id>] <message>` の行
 fn location_line(path: &str, (line, column): (usize, usize), message: &str, rule: &str) -> String {
     format!("{path}:{line}:{column}: [{rule}] {message}")
@@ -438,6 +577,22 @@ fn location_line(path: &str, (line, column): (usize, usize), message: &str, rule
 
 /// 読み書きや設定の失敗があればexit 2
 fn run_fix(args: &FixArgs) -> ExitCode {
+    match reads_stdin(&args.files, false) {
+        Ok(false) => {}
+        Ok(true) => {
+            return match fix_stdin(args) {
+                Ok(()) => ExitCode::SUCCESS,
+                Err(error) => {
+                    eprintln!("jafix: {error}");
+                    ExitCode::from(2)
+                }
+            };
+        }
+        Err(error) => {
+            eprintln!("jafix: {error}");
+            return ExitCode::from(2);
+        }
+    }
     let selection = match select_files(&args.files, false) {
         Ok(selection) => selection,
         Err(error) => {
@@ -485,11 +640,7 @@ fn run_fix(args: &FixArgs) -> ExitCode {
             }
         };
         if let Some(started) = started {
-            eprintln!(
-                "{}: {:.3} s",
-                target.path.display(),
-                started.elapsed().as_secs_f64()
-            );
+            failed |= print_elapsed(target.path.display(), started).is_err();
         }
         let Some(original) = original else {
             unchanged += 1;
@@ -508,18 +659,94 @@ fn run_fix(args: &FixArgs) -> ExitCode {
         }
     }
     if args.summary {
-        let label = if args.dry_run {
-            "修正予定"
-        } else {
-            "修正"
-        };
-        eprintln!("{label}: {changed}ファイル、変更なし: {unchanged}ファイル");
+        failed |= print_summary(args.dry_run, changed, unchanged).is_err();
     }
     if failed {
         ExitCode::from(2)
     } else {
         ExitCode::SUCCESS
     }
+}
+
+/// 処理にかかった時間を標準エラーに書く。利用者が求めた出力なので、書けなければ失敗を返す
+fn print_elapsed(name: impl std::fmt::Display, started: Instant) -> std::io::Result<()> {
+    writeln!(
+        std::io::stderr(),
+        "{name}: {:.3} s",
+        started.elapsed().as_secs_f64()
+    )
+}
+
+/// 修正したファイル数を標準エラーに書く。利用者が求めた出力なので、書けなければ失敗を返す
+fn print_summary(dry_run: bool, changed: usize, unchanged: usize) -> std::io::Result<()> {
+    let label = if dry_run { "修正予定" } else { "修正" };
+    writeln!(
+        std::io::stderr(),
+        "{label}: {changed}ファイル、変更なし: {unchanged}ファイル"
+    )
+}
+
+/// 修正後の本文を標準出力に書く。`--dry-run` なら本文を書かず、`--show-diff` も付けば差分だけを書く。
+/// 標準出力に書くものを本文か差分のどちらか1つに保つため、`--list` と、`--dry-run` の無い `--show-diff` は拒む
+fn fix_stdin(args: &FixArgs) -> Result<(), String> {
+    if args.list {
+        return Err("標準入力を表す `-` に --list は指定できない".into());
+    }
+    if args.show_diff && !args.dry_run {
+        return Err(
+            "標準入力を表す `-` に --show-diff を指定するときは、--dry-run も指定する".into(),
+        );
+    }
+    let mut configs = Configs::load()?;
+    let config = current_dir_config(&mut configs)?;
+    // ファイルを渡したときの「読み込みから保存まで」に合わせて、読み始める前から書き終えた後までを計る
+    let started = args.timing.then(Instant::now);
+    let (bytes, file) =
+        read_stdin(args.files.encoding).map_err(|error| format!("{STDIN_NAME}: {error}"))?;
+    let fixed = fix_content(&file.content, &TargetLines::All, config);
+    let changed = fixed.content != file.content;
+    let to_terminal = std::io::stdout().is_terminal();
+    // パイプやファイルへは入力と同じ文字コードで書くので、その文字コードで表せない修正結果は `--dry-run` でも失敗にする。
+    // 端末には文字として書く。Shift_JISのバイト列は、UTF-8の端末では読めず、Windowsのコンソールでは書き込みが拒まれる
+    let encoded = if changed && !to_terminal {
+        Some(
+            file.encode(&fixed.content)
+                .map_err(|error| format!("{STDIN_NAME}: {error}"))?,
+        )
+    } else {
+        None
+    };
+    let written = if args.dry_run {
+        if args.show_diff && changed {
+            let diff = TextDiff::from_lines(file.content.as_str(), fixed.content.as_str())
+                .unified_diff()
+                .header(STDIN_NAME, STDIN_NAME)
+                .to_string();
+            write_stdout(diff.as_bytes())
+        } else {
+            Ok(())
+        }
+    } else if to_terminal {
+        write_stdout(fixed.content.as_bytes())
+    } else {
+        // `--encoding shift-jis` で読んだ入力には符号化し直すと元と違うバイト列になるものがあるので、変わっていなければ読んだバイト列を書く
+        write_stdout(encoded.as_deref().unwrap_or(&bytes))
+    };
+    match written {
+        // `| head` のように読み手が先に閉じたときは、フィルターとして正常なので何も出さずに終える。
+        // 全文を書き込めていないので、時間も修正した件数も表示しない
+        Err(error) if error.kind() == std::io::ErrorKind::BrokenPipe => return Ok(()),
+        Err(error) => return Err(error.to_string()),
+        Ok(()) => {}
+    }
+    if let Some(started) = started {
+        print_elapsed(STDIN_NAME, started).map_err(|error| error.to_string())?;
+    }
+    if args.summary {
+        print_summary(args.dry_run, usize::from(changed), usize::from(!changed))
+            .map_err(|error| error.to_string())?;
+    }
+    Ok(())
 }
 
 /// 標準出力には何も書かない。今回変えた行に指摘があれば、指摘と、決められなかった理由や失敗を標準エラーに書いてexit 2。
@@ -691,6 +918,16 @@ mod tests {
 
     use super::Cli;
     use crate::usage::GUIDES;
+
+    #[test]
+    fn input_converted_by_the_windows_console_is_told_apart_from_shift_jis() {
+        // コンソールで「日本」と入力すると、`Stdin` はUTF-8で渡す
+        assert!(super::is_converted_console_input("日本\r\n".as_bytes()));
+        // 疑似端末から届くShift_JISの「日本」は、UTF-8としては読めない
+        assert!(!super::is_converted_console_input(b"\x93\xfa\x96\x7b\r\n"));
+        // ASCIIだけの入力は、どちらの文字コードで読んでも同じである
+        assert!(!super::is_converted_console_input(b"abc\r\n"));
+    }
 
     #[test]
     fn every_example_parses() {

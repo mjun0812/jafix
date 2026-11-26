@@ -36,6 +36,15 @@ jafix fix example.txt
 入力はUTF-8とShift_JIS (CP932を含む)に対応します。文字コードはファイルごとに自動で判定します。[文字コードを指定する方法](REFERENCE.md#使い方)
 Gitで追加・変更した行だけを校正するには `--diff` を指定します。ステージ済みの変更を確認するには `check --staged` を使います。
 
+パイプで渡したテキストを校正するには、ファイルの代わりに `-` を指定します。`check` は指摘のパスを `<stdin>` として表示し、`fix` はファイルを書き換えずに修正後の本文を標準出力に書きます。[詳細](REFERENCE.md#標準入力)
+
+```sh
+echo "本文（補足）です。" | jafix check -
+echo "本文（補足）です。" | jafix fix -
+```
+
+この例は、パイプへ文字をUTF-8で渡すシェルを前提にしています。[PowerShellでの渡し方](REFERENCE.md#標準入力)
+
 組み込みのルールが今の設定で有効かどうかは、`jafix rules` で確かめられます。
 
 ```sh
@@ -51,7 +60,7 @@ jafix rules
 共通設定は `~/.config/jafix/config.toml` に書きます。
 環境変数 `XDG_CONFIG_HOME` を設定している場合の共通設定は `$XDG_CONFIG_HOME/jafix/config.toml` です。
 プロジェクト設定は `.jafix.toml` に書きます。
-同じルールを両方で指定した場合は、対象ファイルに最も近い `.jafix.toml` の設定が優先されます。
+同じルールを両方で指定した場合は、対象ファイル(標準入力ではカレントディレクトリ)に最も近い `.jafix.toml` の設定が優先されます。
 
 使うルールは `[builtin]` で選べます。
 ルールのIDに `true` を指定すると有効になり、`false` を指定すると無効になります。

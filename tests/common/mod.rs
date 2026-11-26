@@ -55,24 +55,56 @@ impl Sandbox {
         self.command().args(args).output().unwrap()
     }
 
-    /// `jafix hook <agent>` を、`input` を標準入力に渡して起動する
-    pub fn hook(&self, agent: &str, input: &str) -> Output {
+    /// `jafix <args>` を、`input` を標準入力に渡して起動する
+    pub fn run_with_stdin(&self, args: &[&str], input: &[u8]) -> Output {
         let mut child = self
             .command()
-            .args(["hook", agent])
+            .args(args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
             .unwrap();
-        child
-            .stdin
-            .take()
-            .unwrap()
-            .write_all(input.as_bytes())
-            .unwrap();
+        child.stdin.take().unwrap().write_all(input).unwrap();
         child.wait_with_output().unwrap()
     }
+
+    /// `jafix hook <agent>` を、`input` を標準入力に渡して起動する
+    pub fn hook(&self, agent: &str, input: &str) -> Output {
+        self.run_with_stdin(&["hook", agent], input.as_bytes())
+    }
+}
+
+/// 実行した人のGitの設定を読まずに、作業ディレクトリで `git <args>` を実行し、標準出力を返す
+pub fn git(sandbox: &Sandbox, args: &[&str]) -> Vec<u8> {
+    let output = Command::new("git")
+        .current_dir(sandbox.path(""))
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env("GIT_CONFIG_GLOBAL", sandbox.path("unused-gitconfig"))
+        .args(args)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{args:?}: {output:?}");
+    output.stdout
+}
+
+/// 作業ディレクトリをGitリポジトリにし、commitに要る設定を書く
+pub fn init(sandbox: &Sandbox) {
+    git(sandbox, &["init", "-q"]);
+    for (key, value) in [
+        ("user.name", "Test"),
+        ("user.email", "test@example.test"),
+        ("commit.gpgsign", "false"),
+        ("core.autocrlf", "false"),
+    ] {
+        git(sandbox, &["config", key, value]);
+    }
+}
+
+/// 作業ディレクトリのすべての変更をcommitする
+pub fn commit(sandbox: &Sandbox) {
+    git(sandbox, &["add", "--all"]);
+    git(sandbox, &["commit", "-qm", "baseline"]);
 }
 
 pub fn read(path: &Path) -> String {

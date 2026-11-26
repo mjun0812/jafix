@@ -57,6 +57,10 @@ pub const GUIDES: &[Guide] = &[
                 description: "2つのファイルの箇所と指摘を出力する",
             },
             Example {
+                command: "jafix check -",
+                description: "パイプで標準入力に渡したテキストの箇所と指摘を、パスを `<stdin>` として出力する",
+            },
+            Example {
                 command: "jafix check --diff",
                 description: "作業ツリーのGitの差分で追加・変更した行だけを確認する",
             },
@@ -84,7 +88,7 @@ pub const GUIDES: &[Guide] = &[
             },
             ExitCodeMeaning {
                 code: 2,
-                meaning: "引数が誤っている、ファイルを読めない、設定ファイルが不正、Gitの実行や差分の読み取りに失敗した",
+                meaning: "引数が誤っている、ファイルか標準入力を読めない、標準出力に書き込めない(テキスト出力の読み手が先にパイプを閉じた場合を除く)、設定ファイルが不正、Gitの実行や差分の読み取りに失敗した",
             },
         ],
     },
@@ -94,6 +98,10 @@ pub const GUIDES: &[Guide] = &[
             Example {
                 command: "jafix fix notes.md",
                 description: "ファイルの全行に修正ルールを適用して書き戻す",
+            },
+            Example {
+                command: "jafix fix -",
+                description: "パイプで標準入力に渡したテキストに修正ルールを適用し、修正後の本文を標準出力に書く",
             },
             Example {
                 command: "jafix fix --diff",
@@ -115,7 +123,7 @@ pub const GUIDES: &[Guide] = &[
             },
             ExitCodeMeaning {
                 code: 2,
-                meaning: "引数が誤っている、ファイルを読み書きできない、設定ファイルが不正、Gitの実行や差分の読み取りに失敗した",
+                meaning: "引数が誤っている、ファイルを読み書きできない、標準入力を読めない、標準入力の結果を標準出力に書き込めない(読み手が先にパイプを閉じた場合を除く)、`--summary` や `--timing` の出力を標準エラーに書き込めない、設定ファイルが不正、Gitの実行や差分の読み取りに失敗した",
             },
         ],
     },
@@ -146,7 +154,7 @@ pub const GUIDES: &[Guide] = &[
             },
             ExitCodeMeaning {
                 code: 2,
-                meaning: "引数が誤っている、パスが存在しない、設定ファイルが不正",
+                meaning: "引数が誤っている、パスが存在しない、設定ファイルが不正、JSONを標準出力に書き込めない",
             },
         ],
     },
