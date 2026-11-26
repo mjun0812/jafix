@@ -640,7 +640,7 @@ fn run_fix(args: &FixArgs) -> ExitCode {
             }
         };
         if let Some(started) = started {
-            print_elapsed(target.path.display(), started);
+            failed |= print_elapsed(target.path.display(), started).is_err();
         }
         let Some(original) = original else {
             unchanged += 1;
@@ -659,7 +659,7 @@ fn run_fix(args: &FixArgs) -> ExitCode {
         }
     }
     if args.summary {
-        print_summary(args.dry_run, changed, unchanged);
+        failed |= print_summary(args.dry_run, changed, unchanged).is_err();
     }
     if failed {
         ExitCode::from(2)
@@ -668,13 +668,22 @@ fn run_fix(args: &FixArgs) -> ExitCode {
     }
 }
 
-fn print_elapsed(name: impl std::fmt::Display, started: Instant) {
-    eprintln!("{name}: {:.3} s", started.elapsed().as_secs_f64());
+/// 処理にかかった時間を標準エラーに書く。利用者が求めた出力なので、書けなければ失敗を返す
+fn print_elapsed(name: impl std::fmt::Display, started: Instant) -> std::io::Result<()> {
+    writeln!(
+        std::io::stderr(),
+        "{name}: {:.3} s",
+        started.elapsed().as_secs_f64()
+    )
 }
 
-fn print_summary(dry_run: bool, changed: usize, unchanged: usize) {
+/// 修正したファイル数を標準エラーに書く。利用者が求めた出力なので、書けなければ失敗を返す
+fn print_summary(dry_run: bool, changed: usize, unchanged: usize) -> std::io::Result<()> {
     let label = if dry_run { "修正予定" } else { "修正" };
-    eprintln!("{label}: {changed}ファイル、変更なし: {unchanged}ファイル");
+    writeln!(
+        std::io::stderr(),
+        "{label}: {changed}ファイル、変更なし: {unchanged}ファイル"
+    )
 }
 
 /// 修正後の本文を標準出力に書く。`--dry-run` なら本文を書かず、`--show-diff` も付けば差分だけを書く。
@@ -731,10 +740,11 @@ fn fix_stdin(args: &FixArgs) -> Result<(), String> {
         Ok(()) => {}
     }
     if let Some(started) = started {
-        print_elapsed(STDIN_NAME, started);
+        print_elapsed(STDIN_NAME, started).map_err(|error| error.to_string())?;
     }
     if args.summary {
-        print_summary(args.dry_run, usize::from(changed), usize::from(!changed));
+        print_summary(args.dry_run, usize::from(changed), usize::from(!changed))
+            .map_err(|error| error.to_string())?;
     }
     Ok(())
 }

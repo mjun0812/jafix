@@ -260,6 +260,42 @@ fn stdout_failure_exits_2_even_when_stderr_cannot_be_written() {
     }
 }
 
+#[cfg(target_os = "linux")]
+#[test]
+fn fix_exits_2_when_the_summary_or_timing_cannot_be_written() {
+    let sandbox = Sandbox::new();
+    let file = sandbox.write("a.md", PAREN_TEXT);
+    let file = file.to_str().unwrap();
+    let cases: [&[&str]; 4] = [
+        &["fix", "--dry-run", "--summary", "-"],
+        &["fix", "--dry-run", "--timing", "-"],
+        &["fix", "--dry-run", "--summary", file],
+        &["fix", "--dry-run", "--timing", file],
+    ];
+    for args in cases {
+        let full = fs::OpenOptions::new()
+            .write(true)
+            .open("/dev/full")
+            .unwrap();
+        let mut child = sandbox
+            .command()
+            .args(args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(full)
+            .spawn()
+            .unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(PAREN_TEXT.as_bytes())
+            .unwrap();
+        let status = child.wait().unwrap();
+        assert_eq!(status.code(), Some(2), "{args:?}");
+    }
+}
+
 #[test]
 fn fix_stdin_does_not_count_text_a_closed_pipe_did_not_take() {
     let sandbox = Sandbox::new();
