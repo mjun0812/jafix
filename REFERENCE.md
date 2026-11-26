@@ -802,10 +802,10 @@ jafix fix result.md
 
 書き込み専用で開いたファイルや端末のように、標準入力を読めないときは、`check` も `fix` も終了コード2を返します。空の入力は、指摘の無い文書として扱います。
 Windowsのコンソールから直接入力した本文は、コードページによらずUTF-8として届きます。コンソールから入力するときは、`--encoding` を指定しません。
-Windowsの端末(コンソールとCygwinの疑似端末)から直接入力した本文に `--encoding shift-jis` を指定すると、入力がUTF-8としても読める場合は、コンソールの変換したUTF-8か、Shift_JISのバイト列かを判別できません。この場合は理由を表示して終了コード2を返します。Shift_JISの本文は、ファイルかパイプで渡すと、文字を保ったまま `--encoding` の指定どおりに読めます。
+Windowsの端末(コンソールとCygwinの疑似端末)から直接入力した本文に `--encoding shift-jis` を指定すると、入力がUTF-8としても読める場合は、コンソールの変換したUTF-8か、Shift_JISのバイト列かを判別できません。この場合は理由を表示して終了コード2を返します。Shift_JISの本文は、ファイルに置いてファイル名を渡すと、どのシェルでも、文字を保ったまま `--encoding` の指定どおりに読めます。エラーも、この方法を案内します。
 
 ```sh
-jafix fix --encoding shift-jis - < notes.txt
+jafix check --encoding shift-jis notes.txt
 ```
 
 

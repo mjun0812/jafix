@@ -311,7 +311,7 @@ fn read_stdin(encoding: InputEncoding) -> std::io::Result<(Vec<u8>, TextFile)> {
     {
         return Err(std::io::Error::new(
             std::io::ErrorKind::InvalidInput,
-            "Windowsの端末から届いた入力が、コンソールの変換したUTF-8か、Shift_JISのバイト列かを判別できない。Shift_JISの本文はファイルかパイプで渡す (例: jafix fix --encoding shift-jis - < notes.txt)。コンソールから直接入力するときは --encoding を外す",
+            "Windowsの端末から届いた入力が、コンソールの変換したUTF-8か、Shift_JISのバイト列かを判別できない。Shift_JISの本文は、ファイルに置いてファイル名を渡す (例: jafix check --encoding shift-jis notes.txt)。コンソールから直接入力するときは --encoding を外す",
         ));
     }
     let file = TextFile::decode(bytes.clone(), encoding)?;
