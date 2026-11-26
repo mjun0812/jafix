@@ -43,7 +43,7 @@ echo "本文（補足）です。" | jafix check -
 echo "本文（補足）です。" | jafix fix -
 ```
 
-この例は、パイプへ文字をUTF-8で渡すシェルを前提にしています。[Windows PowerShell 5.1での渡し方](REFERENCE.md#標準入力)
+この例は、パイプへ文字をUTF-8で渡すシェルを前提にしています。[PowerShellでの渡し方](REFERENCE.md#標準入力)
 
 組み込みのルールが今の設定で有効かどうかは、`jafix rules` で確かめられます。
 

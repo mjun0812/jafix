@@ -81,7 +81,7 @@ example.md:4:4: [ja-no-successive-word] 「を」が2回続いている
 | --------- | --------------------------------------------------------- |
 | 0         | No output                                                 |
 | 1         | One or more lines were printed                            |
-| 2         | The target selection, file read, or configuration failed |
+| 2         | The target selection, file read, configuration, or output failed |
 
 Use `jafix check --output-format json example.md` to get machine-readable results, including the number of files checked, findings, and execution errors. [JSON format](https://github.com/mjun0812/jafix/blob/main/REFERENCE.md#json出力)
 
@@ -151,7 +151,7 @@ echo "本文（補足）です。" | jafix check -
 echo "本文（補足）です。" | jafix fix -
 ```
 
-These examples assume a shell that pipes text as UTF-8, such as bash, zsh, or PowerShell 7 and later. Windows PowerShell 5.1 converts piped text to ASCII by default, so run `$OutputEncoding = [System.Text.UTF8Encoding]::new($false)` first.
+These examples assume a shell that pipes text as UTF-8, such as bash or zsh. PowerShell may convert text that passes through a pipe or a redirection, depending on its version and settings. In PowerShell, put the text in a file and use the redirection of cmd, as in `cmd /c "jafix fix - < notes.md > result.md"`.
 
 `check -` reports findings with the path `<stdin>`. `fix -` prints the corrected text to standard output and does not write any file. jafix uses the global settings and the project settings found from the current directory. To pass a file named `-`, write `./-`. [Details](https://github.com/mjun0812/jafix/blob/main/REFERENCE.md#標準入力)
 

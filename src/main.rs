@@ -182,12 +182,13 @@ fn main() -> ExitCode {
 
 /// JSONを1行で標準出力に書く。書けなければexit 2
 fn print_json(value: &impl Serialize) -> ExitCode {
-    let written = serde_json::to_vec(value)
-        .map_err(std::io::Error::from)
-        .and_then(|mut json| {
-            json.push(b'\n');
-            write_stdout(&json)
-        });
+    // 指摘が多いとJSONも大きいので、全体をメモリに作らず、順に書く
+    let written = stdout_writer().and_then(|stdout| {
+        let mut stdout = std::io::BufWriter::new(stdout);
+        serde_json::to_writer(&mut stdout, value)?;
+        stdout.write_all(b"\n")?;
+        stdout.flush()
+    });
     match written {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
