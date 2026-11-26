@@ -154,7 +154,7 @@ pub const GUIDES: &[Guide] = &[
             },
             ExitCodeMeaning {
                 code: 2,
-                meaning: "引数が誤っている、パスが存在しない、設定ファイルが不正",
+                meaning: "引数が誤っている、パスが存在しない、設定ファイルが不正、JSONを標準出力に書き込めない",
             },
         ],
     },
