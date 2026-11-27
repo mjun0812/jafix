@@ -57,7 +57,7 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
     }
     reports.extend(phrase::report(src, document, builtin));
     reports.extend(shape::report(src, document, builtin));
-    if builtin.yomiyasu_placeholder_residue {
+    if builtin.is_enabled(RuleId::YomiyasuPlaceholderResidue) {
         reports.extend(placeholder::report(src, document));
     }
     reports.extend(symbol::report(src, document, builtin));
