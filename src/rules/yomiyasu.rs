@@ -1,4 +1,8 @@
-//! yomiyasu 3.2.0の `bold_not_rendered`、`instruction_residue`、`meta_filler` のチャット応答の検査。
+//! yomiyasu 3.4.1由来の指摘ルール。太字、執筆時の指示、チャット応答はこのファイルで判定し、
+//! ほかのルールは下のファイルで判定する。文の単位のルールが使う前処理は、このファイルに置く
+
+mod phrase;
+mod placeholder;
 
 use std::borrow::Cow;
 use std::ops::Range;
@@ -53,6 +57,10 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
                 }
             }
         }
+    }
+    reports.extend(phrase::report(src, document, builtin));
+    if builtin.yomiyasu_placeholder_residue {
+        reports.extend(placeholder::report(src, document));
     }
     reports
 }
@@ -116,22 +124,9 @@ fn can_open_emphasis(before: Option<char>, after: Option<char>) -> bool {
     })
 }
 
+/// 執筆時の指示とチャット応答が見る文の文字列
 fn visible_sentence(src: &str, range: &Range<usize>, document: &Document) -> String {
-    let mut text = String::new();
-    let mut previous = range.start;
-    for part in prose_in(document, range) {
-        let start = part.range.start.max(range.start);
-        let end = part.range.end.min(range.end);
-        // 強調の記号は取り除き、コードなどの前後にある別々の語はつなげない。
-        if src[previous..start]
-            .bytes()
-            .any(|byte| !matches!(byte, b'*' | b'_' | b'~'))
-        {
-            text.push(' ');
-        }
-        text.push_str(&src[start..end]);
-        previous = end;
-    }
+    let text = visible_text(src, range, document);
     // 引用として括った文言には当てない。入れ子では外側の引用をまとめて空白にする。
     let mut quotes = Vec::new();
     let mut visible = String::new();
@@ -157,6 +152,26 @@ fn visible_sentence(src: &str, range: &Range<usize>, document: &Document) -> Str
     }
     visible.push_str(&text[cursor..]);
     visible
+}
+
+/// `range` の本文の文字列。強調の記号を除き、インラインコードなどを挟んだ本文の間には空白を1つ入れる
+fn visible_text(src: &str, range: &Range<usize>, document: &Document) -> String {
+    let mut text = String::new();
+    let mut previous = range.start;
+    for part in prose_in(document, range) {
+        let start = part.range.start.max(range.start);
+        let end = part.range.end.min(range.end);
+        // 強調の記号は取り除き、コードなどの前後にある別々の語はつなげない。
+        if src[previous..start]
+            .bytes()
+            .any(|byte| !matches!(byte, b'*' | b'_' | b'~'))
+        {
+            text.push(' ');
+        }
+        text.push_str(&src[start..end]);
+        previous = end;
+    }
+    text
 }
 
 fn prose_in<'a>(document: &'a Document, range: &Range<usize>) -> &'a [Prose] {
@@ -236,10 +251,194 @@ fn chat_response(text: &str) -> bool {
     text.starts_with("ご質問ありがとうございます") || OFFER.find(text).is_some()
 }
 
-fn finding(range: Range<usize>, rule: RuleId, message: &'static str) -> Report {
+fn finding(range: Range<usize>, rule: RuleId, message: impl Into<Cow<'static, str>>) -> Report {
     Report {
         range,
         rule: rule.name(),
-        message: Cow::Borrowed(message),
+        message: message.into(),
     }
+}
+
+/// yomiyasuの文の単位。`。` `！` `？` `!` `?` の直後で区切り、前後の空白を除く。jafixの文は括弧の中で区切らないので、
+/// 括弧の中で終わる文 (`「いかがでしたでしょうか。」と結ぶ。` の `「いかがでしたでしょうか。`) もここで分ける
+fn clauses(text: &str) -> impl Iterator<Item = &str> {
+    text.split_inclusive(['。', '！', '？', '!', '?'])
+        .map(str::trim)
+        .filter(|clause| !clause.is_empty())
+}
+
+/// 文の並びに、文末の飾りを除いた文を足す。飾りの無い文は足さない
+fn with_undecorated<'a>(
+    clauses: impl IntoIterator<Item = &'a str>,
+    closers: &str,
+) -> Vec<Cow<'a, str>> {
+    let mut all = Vec::new();
+    let mut undecorated = Vec::new();
+    for clause in clauses {
+        all.push(Cow::Borrowed(clause));
+        undecorated.extend(without_end_decoration(clause, closers).map(Cow::Owned));
+    }
+    all.extend(undecorated);
+    all
+}
+
+const END_MARKS: [char; 6] = ['。', '．', '！', '？', '!', '?'];
+const END_BRACKETS: [(char, char); 7] = [
+    ('（', '）'),
+    ('(', ')'),
+    ('【', '】'),
+    ('〔', '〕'),
+    ('〈', '〉'),
+    ('《', '》'),
+    ('［', '］'),
+];
+const END_QUOTES: [(char, char); 6] = [
+    ('「', '」'),
+    ('『', '』'),
+    ('“', '”'),
+    ('‘', '’'),
+    ('"', '"'),
+    ('\'', '\''),
+];
+
+/// 文の終わりの後ろの飾りを除いた文。飾りが無ければ `None` である。句点・感嘆符・疑問符は除かず、飾りの前へ詰める
+/// (`見ていきましょう🚀！` は `見ていきましょう！`)。飾りは、空白、絵文字と記号、キーキャップと、`closers` の字である。
+/// `closers` の閉じかっこは、対の開きかっこが文頭か、句点か述語の直後にあるときだけ除く
+fn without_end_decoration(text: &str, closers: &str) -> Option<String> {
+    let mut end = text.len();
+    let mut marks = Vec::new();
+    let mut removed = false;
+    while let Some(c) = text[..end].chars().next_back() {
+        let start = end - c.len_utf8();
+        if END_MARKS.contains(&c) {
+            marks.push(c);
+        } else if c == '\u{20E3}' {
+            let keycap = text[..start]
+                .strip_suffix('\u{FE0F}')
+                .unwrap_or(&text[..start]);
+            end = keycap
+                .strip_suffix(|c: char| c.is_ascii_digit() || c == '#' || c == '*')
+                .unwrap_or(keycap)
+                .len();
+            removed = true;
+            continue;
+        } else if c.is_whitespace()
+            || end_decoration(c)
+            || (closers.contains(c)
+                && END_BRACKETS
+                    .iter()
+                    .find(|&&(_, close)| close == c)
+                    .is_none_or(|&(open, _)| bracket_opens_sentence(&text[..start], open, c)))
+        {
+            removed = true;
+        } else {
+            break;
+        }
+        end = start;
+    }
+    removed.then(|| text[..end].chars().chain(marks.into_iter().rev()).collect())
+}
+
+/// 文末の後ろに置かれる絵文字と記号と、絵文字の並びをつなぐ字 (異体字セレクタ、ZWJ、タグ)
+fn end_decoration(c: char) -> bool {
+    static DECORATION: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(concat!(
+            r"^[[\p{Emoji}\u{2600}-\u{27BF}\u{2B05}-\u{2B07}\u{2B1B}\u{2B1C}\u{2B50}\u{2B55}\u{231A}\u{231B}",
+            r"\u{23E9}-\u{23FA}\u{2934}\u{2935}\u{3297}\u{3299}\u{1F000}-\u{1FAFF}\u{FE0E}\u{FE0F}\u{200D}",
+            r"\u{E0020}-\u{E007F}]--[0-9#*]]$"
+        ))
+        .unwrap()
+    });
+    DECORATION.is_match(c.encode_utf8(&mut [0; 4]))
+}
+
+/// `before` の直後の閉じかっこ `close` と対の開きかっこ `open` が、文頭か、句点か述語の直後にあるか。
+/// 目次の副題 (`実践編（〜）`) の閉じかっこは飾りにしない。見るのは閉じかっこの前の256字までである
+fn bracket_opens_sentence(before: &str, open: char, close: char) -> bool {
+    static PREDICATE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?:です|ます|でした|ました|ません|ない|だ|た|る)$").unwrap());
+    let floor = before.char_indices().rev().nth(255).map_or(0, |(i, _)| i);
+    let mut depth = 0;
+    for (i, c) in before[floor..].char_indices().rev() {
+        if c == close {
+            depth += 1;
+        } else if c == open {
+            if depth > 0 {
+                depth -= 1;
+                continue;
+            }
+            let head = before[floor..floor + i]
+                .trim_end_matches(|c: char| c.is_whitespace() || end_decoration(c));
+            let head = &before[..floor + head.len()];
+            if head.is_empty() {
+                return true;
+            }
+            return head.len() > floor && (head.ends_with(END_MARKS) || PREDICATE.is_match(head));
+        }
+    }
+    false
+}
+
+/// 段落の文の末尾で飾りとして除く字。閉じかっこ・矢印・波線と、段落の初めから文の終わる行までに対の開きが無い
+/// 閉じかぎと閉じ引用符である。対になった引用 (語への言及や会話) の閉じは除かない
+fn end_closers(
+    src: &str,
+    document: &Document,
+    paragraph: &Range<usize>,
+    sentence: &Range<usize>,
+) -> String {
+    let mut closers: String = END_BRACKETS
+        .iter()
+        .map(|&(_, close)| close)
+        .chain(['←', '↑', '→', '↓', '〜', '～'])
+        .collect();
+    let line_start = src[paragraph.start..sentence.end]
+        .rfind('\n')
+        .map_or(paragraph.start, |i| paragraph.start + i + 1);
+    let line_end = src[sentence.end..paragraph.end]
+        .find('\n')
+        .map_or(paragraph.end, |i| sentence.end + i);
+    let line = visible_text(src, &(line_start..line_end), document);
+    if !line.contains(|c| END_QUOTES.iter().any(|&(_, close)| close == c)) {
+        return closers;
+    }
+    let before = visible_text(src, &(paragraph.start..line_end), document);
+    for (open, close) in END_QUOTES {
+        if line.contains(close) && before.matches(open).count() == usize::from(open == close) {
+            closers.push(close);
+        }
+    }
+    closers
+}
+
+/// 対になった括弧の、開きから閉じまでの範囲。括弧の種類ごとに対を取り、入れ子の内側の対の範囲も返す
+fn paired_ranges(
+    chars: impl IntoIterator<Item = (usize, char)>,
+    pairs: &[(char, char)],
+) -> Vec<Range<usize>> {
+    let mut opens = vec![Vec::new(); pairs.len()];
+    let mut ranges = Vec::new();
+    for (i, c) in chars {
+        if let Some(kind) = pairs.iter().position(|&(open, _)| open == c) {
+            opens[kind].push(i);
+        } else if let Some(kind) = pairs.iter().position(|&(_, close)| close == c)
+            && let Some(start) = opens[kind].pop()
+        {
+            ranges.push(start..i + c.len_utf8());
+        }
+    }
+    ranges
+}
+
+/// `ranges` の中の文字を、1文字ずつ半角空白にする。字数を変えないので、字数を数える正規表現の結果は変わらない
+fn blank(text: &str, ranges: &[Range<usize>]) -> String {
+    text.char_indices()
+        .map(|(i, c)| {
+            if ranges.iter().any(|range| range.contains(&i)) {
+                ' '
+            } else {
+                c
+            }
+        })
+        .collect()
 }

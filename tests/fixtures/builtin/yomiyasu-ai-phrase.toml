@@ -1,0 +1,215 @@
+# yomiyasu-ai-phrase の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは文に1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+# note のあるcaseは、jafixがyomiyasuと意図して変えている箇所で、期待値はjafixの規則から決めた。
+
+builtin = 'yomiyasu-ai-phrase = true'
+
+[[cases]]
+name = "当たる-今回の見立てです。"
+text = "今回の見立てです。"
+findings = ["1:1"]
+messages = ["AIの文章によく出る言い回し「見立てです」を使っている"]
+
+[[cases]]
+name = "当たらない-私の見立てです。"
+text = "私の見立てです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-編集部の見立てです。"
+text = "編集部の見立てです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-医師の見立てでは問題ない。"
+text = "医師の見立てでは問題ない。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-この設計には各種のリスクが潜む。"
+text = "この設計には各種のリスクが潜む。"
+findings = ["1:1"]
+messages = ["AIの文章によく出る言い回し「潜む」を使っている"]
+
+[[cases]]
+name = "当たらない-潜む危険な動物に注意する。"
+text = "潜む危険な動物に注意する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-ここに落とし穴が潜んでいる。"
+text = "ここに落とし穴が潜んでいる。"
+findings = ["1:1"]
+messages = ["AIの文章によく出る言い回し「潜む」を使っている"]
+
+[[cases]]
+name = "当たる-油断が招く失敗は多い。"
+text = "油断が招く失敗は多い。"
+findings = ["1:1"]
+messages = ["AIの文章によく出る言い回し「が招く」を使っている"]
+
+[[cases]]
+name = "当たらない-社長が招く客は多い。"
+text = "社長が招く客は多い。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-今や欠かせない存在です。"
+text = "今や欠かせない存在です。"
+findings = ["1:1"]
+messages = ["AIの文章によく出る言い回し「欠かせない存在」を使っている"]
+
+[[cases]]
+name = "当たる-今や欠かせない存在となっています。"
+text = "今や欠かせない存在となっています。"
+findings = ["1:1"]
+messages = ["AIの文章によく出る言い回し「欠かせない存在」を使っている"]
+
+[[cases]]
+name = "当たらない-今や便利です。"
+text = "今や便利です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-という挙動を排除します。"
+text = "という挙動を排除します。"
+findings = ["1:1"]
+messages = ["AIの文章によく出る言い回し「という挙動を排除」を使っている"]
+
+[[cases]]
+name = "当たる-そうなんよ。"
+text = "そうなんよ。"
+findings = ["1:1"]
+messages = ["AIの文章によく出る言い回し「なんよ」を使っている"]
+
+[[cases]]
+name = "当たらない-この方法がいいんよね。"
+text = "この方法がいいんよね。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-見直して、速度を改善。"
+text = "見直して、速度を改善。"
+findings = ["1:1"]
+messages = ["AIの文章によく出る言い回し「て形の体言止め」を使っている"]
+
+[[cases]]
+name = "当たる-問題を見て、対応を検討。"
+text = "問題を見て、対応を検討。"
+findings = ["1:1"]
+messages = ["AIの文章によく出る言い回し「て形の体言止め」を使っている"]
+
+[[cases]]
+name = "当たらない-# 見直して、速度を改善。"
+text = "# 見直して、速度を改善。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-- 見直して、速度を改善。"
+text = "- 見直して、速度を改善。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-手順について、内容を確認。"
+text = "手順について、内容を確認。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-課題は多岐にわたります。"
+text = "課題は多岐にわたります。"
+findings = ["1:1"]
+messages = ["AIの文章によく出る言い回し「多岐にわたる」を使っている"]
+
+[[cases]]
+name = "当たる-影響は多岐に渡り、調整が必要です。"
+text = "影響は多岐に渡り、調整が必要です。"
+findings = ["1:1"]
+messages = ["AIの文章によく出る言い回し「多岐にわたる」を使っている"]
+
+[[cases]]
+name = "当たる-改善が求められています。"
+text = "改善が求められています。"
+findings = ["1:1"]
+messages = ["AIの文章によく出る言い回し「が求められている」を使っている"]
+
+[[cases]]
+name = "当たらない-結果を求められている。"
+text = "結果を求められている。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-「そうなんよ。」と言った。"
+text = "「そうなんよ。」と言った。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-「課題は多岐にわたります」と書いた。"
+text = "「課題は多岐にわたります」と書いた。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-## 課題は多岐にわたる"
+text = "## 課題は多岐にわたる"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-| 課題は多岐にわたります。 | | --- | | x |"
+text = "| 課題は多岐にわたります。 |\n| --- |\n| x |"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-- 改善が求められています。"
+text = "- 改善が求められています。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-> 改善が求められています。"
+text = "> 改善が求められています。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-## 今回の見立てです"
+text = "## 今回の見立てです"
+findings = ["1:4"]
+messages = ["AIの文章によく出る言い回し「見立てです」を使っている"]
+
+[[cases]]
+name = "当たる-| 今回の見立てです | | --- |"
+text = "| 今回の見立てです |\n| --- |"
+findings = ["1:3"]
+messages = ["AIの文章によく出る言い回し「見立てです」を使っている"]
+
+[[cases]]
+name = "当たる-この方法は`a.b`という挙動を排除します。"
+text = "この方法は`a.b`という挙動を排除します。"
+findings = ["1:1"]
+messages = ["AIの文章によく出る言い回し「という挙動を排除」を使っている"]
+
+[[cases]]
+name = "当たらない-「今回の見立てです。」"
+text = "「今回の見立てです。」"
+findings = []
+messages = []

@@ -88,6 +88,12 @@ pub struct Builtin {
     pub yomiyasu_bold_not_rendered: bool,
     pub yomiyasu_instruction_residue: bool,
     pub yomiyasu_chat_response: bool,
+    pub yomiyasu_meta_filler: bool,
+    pub yomiyasu_summary_restatement: bool,
+    pub yomiyasu_meta_intro: bool,
+    pub yomiyasu_count_declaration: bool,
+    pub yomiyasu_ai_phrase: bool,
+    pub yomiyasu_placeholder_residue: bool,
 }
 
 impl Default for Builtin {
@@ -159,6 +165,12 @@ impl Default for Builtin {
             yomiyasu_bold_not_rendered: false,
             yomiyasu_instruction_residue: false,
             yomiyasu_chat_response: false,
+            yomiyasu_meta_filler: false,
+            yomiyasu_summary_restatement: false,
+            yomiyasu_meta_intro: false,
+            yomiyasu_count_declaration: false,
+            yomiyasu_ai_phrase: false,
+            yomiyasu_placeholder_residue: false,
         }
     }
 }
@@ -276,6 +288,12 @@ impl Builtin {
             RuleId::YomiyasuBoldNotRendered => self.yomiyasu_bold_not_rendered,
             RuleId::YomiyasuInstructionResidue => self.yomiyasu_instruction_residue,
             RuleId::YomiyasuChatResponse => self.yomiyasu_chat_response,
+            RuleId::YomiyasuMetaFiller => self.yomiyasu_meta_filler,
+            RuleId::YomiyasuSummaryRestatement => self.yomiyasu_summary_restatement,
+            RuleId::YomiyasuMetaIntro => self.yomiyasu_meta_intro,
+            RuleId::YomiyasuCountDeclaration => self.yomiyasu_count_declaration,
+            RuleId::YomiyasuAiPhrase => self.yomiyasu_ai_phrase,
+            RuleId::YomiyasuPlaceholderResidue => self.yomiyasu_placeholder_residue,
         }
     }
 
@@ -558,6 +576,16 @@ impl Builtin {
                 self.yomiyasu_instruction_residue = enabled(options)?
             }
             RuleId::YomiyasuChatResponse => self.yomiyasu_chat_response = enabled(options)?,
+            RuleId::YomiyasuMetaFiller => self.yomiyasu_meta_filler = enabled(options)?,
+            RuleId::YomiyasuSummaryRestatement => {
+                self.yomiyasu_summary_restatement = enabled(options)?
+            }
+            RuleId::YomiyasuMetaIntro => self.yomiyasu_meta_intro = enabled(options)?,
+            RuleId::YomiyasuCountDeclaration => self.yomiyasu_count_declaration = enabled(options)?,
+            RuleId::YomiyasuAiPhrase => self.yomiyasu_ai_phrase = enabled(options)?,
+            RuleId::YomiyasuPlaceholderResidue => {
+                self.yomiyasu_placeholder_residue = enabled(options)?
+            }
         }
         Ok(())
     }

@@ -99,3 +99,46 @@ fn chat_response_detects_chat_formulas_without_flagging_regular_instructions() {
     );
     assert!(findings.next().is_none(), "{check:?}");
 }
+
+#[test]
+fn phrase_and_placeholder_rules_are_off_until_listed_in_builtin() {
+    const IDS: [&str; 6] = [
+        "yomiyasu-meta-filler",
+        "yomiyasu-summary-restatement",
+        "yomiyasu-meta-intro",
+        "yomiyasu-count-declaration",
+        "yomiyasu-ai-phrase",
+        "yomiyasu-placeholder-residue",
+    ];
+    let sandbox = Sandbox::new();
+    let states = |sandbox: &Sandbox| -> Vec<String> {
+        let output = sandbox.run(&["rules"]);
+        assert_eq!(output.status.code(), Some(0), "{output:?}");
+        IDS.iter()
+            .map(|id| {
+                let line = stdout(&output)
+                    .lines()
+                    .find(|line| line.split('\t').next() == Some(id))
+                    .unwrap_or_else(|| panic!("{id} is not listed"));
+                line.split_once('\t').unwrap().1.to_owned()
+            })
+            .collect()
+    };
+    assert_eq!(states(&sandbox), ["無効\t-"; 6]);
+
+    let config: String = IDS.iter().map(|id| format!("{id} = true\n")).collect();
+    sandbox.write_xdg_config(&format!("[builtin]\n{config}"));
+    assert_eq!(states(&sandbox), ["有効\t-"; 6]);
+    sandbox.write("t.md", "重要なのは、継続です。担当は〇〇です。\n");
+    let check = sandbox.run(&["check", "t.md"]);
+    assert_eq!(check.status.code(), Some(1), "{check:?}");
+    assert_eq!(
+        stdout(&check),
+        "t.md:1:1: [yomiyasu-meta-filler] 定型の前置きや結び「重要なのは」が本文に残っていないか確認する\n\
+         t.md:1:15: [yomiyasu-placeholder-residue] 仮置きの文字「〇〇」が本文に残っていないか確認する\n"
+    );
+
+    sandbox.write_xdg_config("[builtin]\nyomiyasu-ai-phrase = { strict = true }\n");
+    let invalid = sandbox.run(&["rules"]);
+    assert_eq!(invalid.status.code(), Some(2), "{invalid:?}");
+}

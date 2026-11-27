@@ -1,0 +1,35 @@
+# yomiyasu-meta-intro の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは文に1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+# note のあるcaseは、jafixがyomiyasuと意図して変えている箇所で、期待値はjafixの規則から決めた。
+
+builtin = 'yomiyasu-meta-intro = true'
+
+[[cases]]
+name = "当たる-本記事では、設定方法を説明する。"
+text = "本記事では、設定方法を説明する。"
+findings = ["1:1"]
+messages = ["「本記事では」の予告が要るか確認する"]
+
+[[cases]]
+name = "当たらない-この記事では、設定方法を説明する。"
+text = "この記事では、設定方法を説明する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-本記事の目的は設定の説明である。"
+text = "本記事の目的は設定の説明である。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-「本記事では、設定を説明する。」"
+text = "「本記事では、設定を説明する。」"
+findings = []
+messages = []

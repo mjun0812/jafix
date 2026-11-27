@@ -1,0 +1,130 @@
+# yomiyasu-placeholder-residue の例。yomiyasuのlintには無いjafix独自の判定で、yomiyasu 3.4.1 の `references/slop-catalog.md` が
+# 「仮置きの残り」に挙げる4つの形を指摘する。期待値はこの4つの形とjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+
+builtin = 'yomiyasu-placeholder-residue = true'
+
+[[cases]]
+name = "当たる-資料は〇〇に置く。"
+text = "資料は〇〇に置く。"
+findings = ["1:4"]
+messages = ["仮置きの文字「〇〇」が本文に残っていないか確認する"]
+
+[[cases]]
+name = "当たる-担当は○○さんです。"
+text = "担当は○○さんです。"
+findings = ["1:4"]
+messages = ["仮置きの文字「○○」が本文に残っていないか確認する"]
+
+[[cases]]
+name = "当たる-担当はXXXです。"
+text = "担当はXXXです。"
+findings = ["1:4"]
+messages = ["仮置きの文字「XXX」が本文に残っていないか確認する"]
+
+[[cases]]
+name = "当たる-[ここに概要を入れる]"
+text = "[ここに概要を入れる]"
+findings = ["1:1"]
+messages = ["仮置きの文字「[ここに概要を入れる]」が本文に残っていないか確認する"]
+
+[[cases]]
+name = "当たる-概要は[ここに背景を書く]とする。"
+text = "概要は[ここに背景を書く]とする。"
+findings = ["1:4"]
+messages = ["仮置きの文字「[ここに背景を書く]」が本文に残っていないか確認する"]
+
+[[cases]]
+name = "当たる-【要確認】の箇所がある。"
+text = "【要確認】の箇所がある。"
+findings = ["1:1"]
+messages = ["仮置きの文字「【要確認】」が本文に残っていないか確認する"]
+
+[[cases]]
+name = "当たる-- 〇〇を確認する。"
+text = "- 〇〇を確認する。"
+findings = ["1:3"]
+messages = ["仮置きの文字「〇〇」が本文に残っていないか確認する"]
+
+[[cases]]
+name = "当たる-## 〇〇について"
+text = "## 〇〇について"
+findings = ["1:4"]
+messages = ["仮置きの文字「〇〇」が本文に残っていないか確認する"]
+
+[[cases]]
+name = "当たる-| 項目 | 〇〇 | | --- | --- | | x | y |"
+text = "| 項目 | 〇〇 |\n| --- | --- |\n| x | y |"
+findings = ["1:8"]
+messages = ["仮置きの文字「〇〇」が本文に残っていないか確認する"]
+
+[[cases]]
+name = "当たる-期限は〇〇〇、担当はXXXXです。"
+text = "期限は〇〇〇、担当はXXXXです。"
+findings = ["1:4", "1:11"]
+messages = ["仮置きの文字「〇〇〇」が本文に残っていないか確認する", "仮置きの文字「XXXX」が本文に残っていないか確認する"]
+
+[[cases]]
+name = "当たらない-「〇〇さん」と呼ぶ。"
+text = "「〇〇さん」と呼ぶ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-サイズはXXXLです。"
+text = "サイズはXXXLです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-> 〇〇に置く。"
+text = "> 〇〇に置く。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-`XXX` を置換する。"
+text = "`XXX` を置換する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-〇を付ける。"
+text = "〇を付ける。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-XXを使う。"
+text = "XXを使う。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-[ここ](https://example.com)に置く。"
+text = "[ここ](https://example.com)に置く。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-MAXXXを使う。"
+text = "MAXXXを使う。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-要確認の箇所がある。"
+text = "要確認の箇所がある。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-『〇〇の方法』という題にする。"
+text = "『〇〇の方法』という題にする。"
+findings = []
+messages = []

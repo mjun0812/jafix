@@ -1,6 +1,6 @@
 # Rules
 
-jafix has 102 built-in rules.
+jafix has 108 built-in rules.
 Switch them by rule ID or preset name under `[builtin]` in the [configuration](./configuration.md#rules).
 
 | Column  | Meaning                                                                                                               |
@@ -75,13 +75,19 @@ Set `no-short-topic-comma = true` separately to check commas after short topics.
 
 ### Rules adapted from yomiyasu {#yomiyasu}
 
-Enable each of these rules separately. All three are off by default.
+Enable each of these rules separately. All nine are off by default.
 
-| Rule ID                        | Action | Default | What it does                                                                          |
-| ------------------------------ | ------ | ------- | ------------------------------------------------------------------------------------- |
-| `yomiyasu-bold-not-rendered`   | Report | -       | Flags pairs of `**` that appear as literal text instead of rendering as bold          |
-| `yomiyasu-instruction-residue` | Report | -       | Flags writing instructions left in the prose and scope exclusions without a reference |
-| `yomiyasu-chat-response`       | Report | -       | Flags stock chat replies left in prose, such as `ご質問ありがとうございます`          |
+| Rule ID                        | Action | Default | What it does                                                                                     |
+| ------------------------------ | ------ | ------- | ------------------------------------------------------------------------------------------------ |
+| `yomiyasu-bold-not-rendered`   | Report | -       | Flags pairs of `**` that appear as literal text instead of rendering as bold                     |
+| `yomiyasu-instruction-residue` | Report | -       | Flags writing instructions left in the prose and scope exclusions without a reference            |
+| `yomiyasu-chat-response`       | Report | -       | Flags stock chat replies left in prose, such as `ご質問ありがとうございます`                     |
+| `yomiyasu-meta-filler`         | Report | -       | Flags stock openers and closers left in prose, such as `重要なのは` and `いかがでしたでしょうか` |
+| `yomiyasu-summary-restatement` | Report | -       | Flags sentences that restate a point starting with `まとめると、` or `総じて、`                  |
+| `yomiyasu-meta-intro`          | Report | -       | Flags previews that start with `本記事では`                                                      |
+| `yomiyasu-count-declaration`   | Report | -       | Flags count announcements such as `ポイントは3つです`                                            |
+| `yomiyasu-ai-phrase`           | Report | -       | Flags phrases common in AI writing, such as `多岐にわたる` and `が求められている`                |
+| `yomiyasu-placeholder-residue` | Report | -       | Flags placeholders left in prose: `〇〇`, `XXX`, `[ここに…]`, and `【要確認】`                   |
 
 ## Spacing and character forms {#spacing}
 

@@ -10,10 +10,10 @@ UTF-8とShift_JIS (CP932を含む)のファイルを読み込めます。拡張�
 
 ## 組み込みのルール
 
-組み込みのルールは102個です。
+組み込みのルールは108個です。
 `fullwidth-paren`、`space-between-ja-and-alnum`、`space-between-ja-and-paren` の3つはjafix独自の修正ルールです。
 `prh` と `@textlint-rule/pattern` は、利用者が書いた辞書やパターンに従って置き換えや指摘をします。
-yomiyasuから移した3つの指摘ルールは、[ルール一覧](docs/rules.md#yomiyasu由来の指摘-yomiyasu)にあります。
+yomiyasu由来の9つの指摘ルールは、[ルール一覧](docs/rules.md#yomiyasu由来の指摘-yomiyasu)にあります。
 
 textlintから移した94ルールの内訳は次のとおりです。
 
@@ -30,14 +30,38 @@ textlintから移した94ルールの内訳は次のとおりです。
 textlint由来のルールでは、ルールIDとオプションの名前を揃えています。
 設定ファイルの [`[builtin]`](#builtin) で、有効にするルールとオプションを選べます。
 
-yomiyasu由来のルールは、次のように1つずつ有効にします。`yomiyasu-chat-response` は、上流の `meta_filler` のうちチャット応答の2つの型を対象にします。
+yomiyasu由来のルールは、次のように1つずつ有効にします。値は `true` か `false` で、オプションはありません。
 
 ```toml
 [builtin]
 yomiyasu-bold-not-rendered = true
 yomiyasu-instruction-residue = true
 yomiyasu-chat-response = true
+yomiyasu-meta-filler = true
+yomiyasu-summary-restatement = true
+yomiyasu-meta-intro = true
+yomiyasu-count-declaration = true
+yomiyasu-ai-phrase = true
+yomiyasu-placeholder-residue = true
 ```
+
+`yomiyasu-placeholder-residue` 以外は、判定の条件を、yomiyasu 3.4.1のlintのうち同じ名前の規則から写しています。yomiyasuの `meta_filler` の15の型のうち、チャット応答の2つの型は `yomiyasu-chat-response` が、残りの13の型は `yomiyasu-meta-filler` が見ます。yomiyasuと変えるのは次の点です。
+
+- 文書の種類による出し分けをしません。文書の種類を指定しないyomiyasuと同じ判定を、すべての文書に当てます
+- 利用者の語の一覧(`.yomiyasu-words/`)を読みません。指摘を外すには、[`[filters]`](#filters)の `allowlist` を使います
+- yomiyasuは指摘を行ごとに1件出します。jafixは、文の単位のルールでは文ごとに文の先頭へ、`yomiyasu-placeholder-residue` では当たった並びごとにその先頭へ、1件を出します
+- 本文の範囲と文の区切り方は、jafixの仕組みを使います。句点の代わりに置いた絵文字では、文を区切りません
+
+定型の前置きと結びを見る4つのルール(`yomiyasu-meta-filler`・`yomiyasu-summary-restatement`・`yomiyasu-meta-intro`・`yomiyasu-count-declaration`)は、段落とリスト項目の文に当て、見出し・表のセル・引用は見ません。文は、jafixの文をさらに `。` `！` `？` `!` `?` の直後で区切ったものです。かぎ括弧の中も見るので、`「見落とされがち」という語。` は `yomiyasu-meta-filler` に当たります。「〜と言っても過言ではありません」の型だけは、かぎ括弧と角括弧の中を見ません。「いかがでしたでしょうか」のように文末に固定した型は、文末の後ろの空白・絵文字・矢印・波線と、対の開きが文頭か述語の直後にある閉じかっこを除いた文にも当てます。
+
+`yomiyasu-ai-phrase` は、「見立てです」「潜む」「が招く」「欠かせない存在」「という挙動を排除」「なんよ」「て形の体言止め」「多岐にわたる」「が求められている」の9つの言い回しを見ます。段落・リスト項目・見出しの文と表のセルに当て、引用は見ません。ただし「なんよ」は段落とリスト項目だけに、「て形の体言止め」「多岐にわたる」「が求められている」はリスト項目の外の段落だけに当てます。かぎ括弧・角括弧・引用符の中と、英数字の識別子(`snake_case`・`camelCase`・`.` や `/` を含む語)は見ません。
+
+`yomiyasu-placeholder-residue` は、yomiyasuのlintには無い、jafix独自の判定です。yomiyasu 3.4.1の `references/slop-catalog.md` が「仮置きの残り」に挙げる次の4つの形を、見出し・段落・リスト項目・表のセルの本文で指摘します。会話や引用の中の伏せ字は残すので、かぎ括弧(`「」` `『』`)の中と引用は見ません。
+
+- `〇〇` `○○` のように、`〇` か `○` が2つ以上続く並び
+- `XXX` のように、大文字の `X` が3つ以上続く並び。前後が英数字の並び(`XXXL`・`MAXXX`)は除きます
+- `[ここに概要を入れる]` のように、角括弧の中が「ここに」で始まる並び
+- `【要確認】`
 
 設定ファイルがなくても、次の10ルールが有効です。
 
@@ -818,7 +842,7 @@ jafix check --encoding shift-jis notes.txt
 
 ### ルールの一覧
 
-`jafix rules` は、組み込みのルール102個を定義の順に、1行に1つ標準出力に書きます。各行は、タブで区切った3つの欄からなります。
+`jafix rules` は、組み込みのルール108個を定義の順で、1行に1つずつ標準出力へ書きます。各行は、タブで区切った3つの欄からなります。
 
 | 欄     | 内容                                                                                       |
 | ------ | ------------------------------------------------------------------------------------------ |

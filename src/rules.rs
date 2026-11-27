@@ -29,7 +29,7 @@ use self::builtin::Builtin;
 use self::general::Links;
 use self::jtf_style::JtfRule;
 
-/// 組み込みのルール。全角括弧と空白の3つ、およびyomiyasu由来の3つ以外は、textlintのpreset (`preset-ja-technical-writing`・
+/// 組み込みのルール。全角括弧と空白の3つ、およびyomiyasu由来のルール以外は、textlintのpreset (`preset-ja-technical-writing`・
 /// `@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`・`preset-ja-spacing`・`preset-jtf-style`) の中の名前か、
 /// textlintの設定に書くルールの名前 (textlintが `textlint-rule-` を除いてruleIdとして出す名前) と同じIDである。宣言の順は `ALL` と同じで、組み込みの修正ルールの箇所の
 /// 範囲が同じときに、前にあるルールの箇所を残すのに使う
@@ -102,11 +102,17 @@ pub enum RuleId {
     YomiyasuBoldNotRendered,
     YomiyasuInstructionResidue,
     YomiyasuChatResponse,
+    YomiyasuMetaFiller,
+    YomiyasuSummaryRestatement,
+    YomiyasuMetaIntro,
+    YomiyasuCountDeclaration,
+    YomiyasuAiPhrase,
+    YomiyasuPlaceholderResidue,
 }
 
 impl RuleId {
     /// 組み込みのルールのすべて。設定の `[builtin]` のキーをルールのIDとして読むのに使う
-    pub const ALL: [RuleId; 102] = [
+    pub const ALL: [RuleId; 108] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
         RuleId::SpaceBetweenJaAndParen,
@@ -209,6 +215,12 @@ impl RuleId {
         RuleId::YomiyasuBoldNotRendered,
         RuleId::YomiyasuInstructionResidue,
         RuleId::YomiyasuChatResponse,
+        RuleId::YomiyasuMetaFiller,
+        RuleId::YomiyasuSummaryRestatement,
+        RuleId::YomiyasuMetaIntro,
+        RuleId::YomiyasuCountDeclaration,
+        RuleId::YomiyasuAiPhrase,
+        RuleId::YomiyasuPlaceholderResidue,
     ];
 
     /// `check` の出力の `[<rule-id>]` に使う名前
@@ -282,6 +294,12 @@ impl RuleId {
             RuleId::YomiyasuBoldNotRendered => "yomiyasu-bold-not-rendered",
             RuleId::YomiyasuInstructionResidue => "yomiyasu-instruction-residue",
             RuleId::YomiyasuChatResponse => "yomiyasu-chat-response",
+            RuleId::YomiyasuMetaFiller => "yomiyasu-meta-filler",
+            RuleId::YomiyasuSummaryRestatement => "yomiyasu-summary-restatement",
+            RuleId::YomiyasuMetaIntro => "yomiyasu-meta-intro",
+            RuleId::YomiyasuCountDeclaration => "yomiyasu-count-declaration",
+            RuleId::YomiyasuAiPhrase => "yomiyasu-ai-phrase",
+            RuleId::YomiyasuPlaceholderResidue => "yomiyasu-placeholder-residue",
         }
     }
 }
