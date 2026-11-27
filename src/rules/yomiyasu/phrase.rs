@@ -28,7 +28,7 @@ pub(super) fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<R
             for sentence in sentence::split(src, paragraph, HardBreak::ListItems) {
                 let text = visible_text(src, &sentence.range, document);
                 if builtin.yomiyasu_meta_filler
-                    && let Some(name) = meta_filler(
+                    && let Some(hit) = meta_filler(
                         &text,
                         &end_closers(src, document, &paragraph.range, &sentence.range),
                     )
@@ -36,7 +36,7 @@ pub(super) fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<R
                     reports.push(finding(
                         sentence.range.clone(),
                         RuleId::YomiyasuMetaFiller,
-                        format!("定型の前置きや結び「{name}」が本文に残っていないか確認する"),
+                        format!("定型の前置きや結び「{hit}」が本文に残っていないか確認する"),
                     ));
                 }
                 for statement in &statements {
@@ -69,50 +69,42 @@ enum Target {
 }
 
 struct Filler {
-    name: &'static str,
     pattern: Regex,
     target: Target,
 }
 
 /// yomiyasuの `FILLER_PATTERNS` の順に並べる。チャット応答の2型は `yomiyasu-chat-response` が見る
 static FILLERS: LazyLock<[Filler; 13]> = LazyLock::new(|| {
-    let filler = |name, pattern, target| Filler {
-        name,
+    let filler = |pattern, target| Filler {
         pattern: Regex::new(pattern).unwrap(),
         target,
     };
     [
         filler(
-            "重要なのは",
             r"^(?:まず|ここで)?(?:重要|大切|大事)なのは",
             Target::Clauses,
         ),
         filler(
-            "結論から言うと",
             r"^結論から(?:言|い)(?:う|い|え)|^結論から申し上げ",
             Target::Clauses,
         ),
-        filler("正直に言うと", r"^正直に言うと", Target::Clauses),
-        filler("本音を言うと", r"^本音を言うと", Target::Clauses),
-        filler("避けたいのは", r"^避けたいのは", Target::Clauses),
-        filler("ポイントは、", r"^ポイントは、", Target::Clauses),
+        filler(r"^正直に言うと", Target::Clauses),
+        filler(r"^本音を言うと", Target::Clauses),
+        filler(r"^避けたいのは", Target::Clauses),
+        filler(r"^ポイントは、", Target::Clauses),
         filler(
-            "見落とされがち",
             r"見落とされがち|面白いのはここ|まさにそこがポイント",
             Target::Clauses,
         ),
         filler(
-            "いかがでしたでしょうか",
             r"いかがでした(?:でしょうか|か)?[？?。]?$",
             Target::Undecorated,
         ),
         filler(
-            "ぜひ〜してみてください",
             r"ぜひ(?:参考にして|試して|活用して)(?:みて)?ください",
             Target::Clauses,
         ),
         filler(
-            "参考になれば幸いです",
             concat!(
                 r"参考に(?:なれ|な)ば幸い|お役に立てれ?ば幸い|ぜひご(?:活用|参考に)ください|",
                 r"まずは小さく(?:始め|はじめ)(?:ましょう|てみましょう|てください|てみてください|てみませんか|",
@@ -120,22 +112,17 @@ static FILLERS: LazyLock<[Filler; 13]> = LazyLock::new(|| {
             ),
             Target::Undecorated,
         ),
+        filler(r"に(?:他|ほか)なりません", Target::Clauses),
         filler(
-            "〜に他なりません",
-            r"に(?:他|ほか)なりません",
-            Target::Clauses,
-        ),
-        filler(
-            "それでは見ていきましょう",
             r"見ていきましょう[。！!]?$|深掘りしていきます",
             Target::Undecorated,
         ),
         filler(
-            "〜と言っても過言ではありません",
+            // 文末のかっこ書きは、かぎ括弧の中を伏せた文字を含みうるので、引用に入れない
             concat!(
-                r"とも?(?:言|い)(?:い切|いき)?っても(?:過言|言い過ぎ|言いすぎ|いいすぎ)",
+                r"(?<quote>とも?(?:言|い)(?:い切|いき)?っても(?:過言|言い過ぎ|言いすぎ|いいすぎ)",
                 r"(?:では(?:ありません|ない)|じゃ(?:ありません|ない))(?:です)?",
-                r"(?:でしょう|だろう|かもしれ(?:ません|ない)|と(?:思|おも)(?:います|う)|ね|よ)?",
+                r"(?:でしょう|だろう|かもしれ(?:ません|ない)|と(?:思|おも)(?:います|う)|ね|よ)?)",
                 r"(?:[（(][^）)]*[）)])?[。！？!?]?$"
             ),
             Target::Unquoted,
@@ -143,24 +130,29 @@ static FILLERS: LazyLock<[Filler; 13]> = LazyLock::new(|| {
     ]
 });
 
-/// 文が当たる最初の型の名前。`closers` は、文末の飾りとして除く字である
-fn meta_filler(text: &str, closers: &str) -> Option<&'static str> {
+/// 文が当たる最初の型の、当たった文字。型に `quote` の組があればその文字で、末尾の読点と句点・感嘆符・疑問符は除く。
+/// `closers` は、文末の飾りとして除く字である
+fn meta_filler(text: &str, closers: &str) -> Option<String> {
     let plain: Vec<&str> = clauses(text).collect();
     let undecorated = with_undecorated(plain.iter().copied(), closers);
     let masked = blank(text, &paired_ranges(text.char_indices(), &BRACKETS));
     let unquoted = with_undecorated(clauses(&masked), closers);
-    FILLERS
-        .iter()
-        .find(|filler| match filler.target {
-            Target::Clauses => plain.iter().any(|clause| filler.pattern.is_match(clause)),
-            Target::Undecorated => undecorated
-                .iter()
-                .any(|clause| filler.pattern.is_match(clause)),
-            Target::Unquoted => unquoted
-                .iter()
-                .any(|clause| filler.pattern.is_match(clause)),
-        })
-        .map(|filler| filler.name)
+    FILLERS.iter().find_map(|filler| {
+        let hit = |clause: &str| {
+            filler.pattern.captures(clause).map(|hit| {
+                let hit = hit.name("quote").unwrap_or_else(|| hit.get(0).unwrap());
+                hit.as_str()
+                    .trim_end_matches(['、', '。', '！', '？', '!', '?'])
+                    .trim()
+                    .to_owned()
+            })
+        };
+        match filler.target {
+            Target::Clauses => plain.iter().find_map(|clause| hit(clause)),
+            Target::Undecorated => undecorated.iter().find_map(|clause| hit(clause)),
+            Target::Unquoted => unquoted.iter().find_map(|clause| hit(clause)),
+        }
+    })
 }
 
 /// yomiyasuの `meta_filler` の15型 (チャット応答の2型を含む) のどれかが、文のどこかに当たる
