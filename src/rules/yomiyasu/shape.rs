@@ -455,7 +455,7 @@ fn previous_block_text(
         Regex::new(r"^[ \t]*(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})$").unwrap()
     });
     static LIST_MARKERS: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"^[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+(?:\[[ xX]\][ \t]+)?)*[ \t]*$")
+        Regex::new(r"^[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])(?:[ \t]+(?:\[[ xX]\][ \t]+)?|$))*[ \t]*$")
             .unwrap()
     });
     let previous = document

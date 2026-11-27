@@ -12,8 +12,8 @@ use crate::rules::{Report, RuleId};
 use crate::sentence::{self, HardBreak};
 
 use super::{
-    BRACKETS, blank, chat_response, clauses, end_closers, finding, paired_ranges, prose_in,
-    visible_text, with_undecorated,
+    BRACKETS, blank, chat_response, clauses, end_closers, finding, masked_words, paired_ranges,
+    prose_in, visible_text, with_undecorated,
 };
 
 pub(super) fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> {
@@ -491,25 +491,6 @@ fn report_ai_phrase_in(
             format!("AIの文章によく出る言い回し「{}」を使っている", phrase.name),
         ));
     }
-}
-
-/// 語の規則が見る文字列。かぎ括弧・角括弧・引用符の中と、英数字の識別子 (`snake_case`、`camelCase`、`.` や `/` を含む語)
-/// を、1文字ずつ半角空白にする
-fn masked_words(text: &str) -> String {
-    static QUOTES: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new("“[^”\n]*”|\"[^\"\n]*\"|‘[^’\n]*’").unwrap());
-    static IDENTIFIER: LazyLock<regress::Regex> = LazyLock::new(|| {
-        regress::Regex::new(concat!(
-            r"(?<![A-Za-z0-9])[A-Za-z0-9]+(?:[_./\\][A-Za-z0-9]+)+[_./]?",
-            r"|(?<![a-z])[a-z]+[A-Z][A-Za-z0-9]*|[_./\\][A-Za-z0-9_]+"
-        ))
-        .unwrap()
-    });
-    let text = blank(text, &paired_ranges(text.char_indices(), &BRACKETS));
-    let quotes: Vec<_> = QUOTES.find_iter(&text).map(|hit| hit.range()).collect();
-    let text = blank(&text, &quotes);
-    let identifiers: Vec<_> = IDENTIFIER.find_iter(&text).map(|hit| hit.range()).collect();
-    blank(&text, &identifiers)
 }
 
 /// 語の規則の文の単位。`。` `．` `！` `？` `!` `?` の並びで終わり、表の区切りの `|` `｜` でも区切る

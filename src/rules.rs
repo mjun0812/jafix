@@ -114,11 +114,18 @@ pub enum RuleId {
     YomiyasuCleftListEnding,
     YomiyasuCopyCommaNoun,
     YomiyasuBareVerbChain,
+    YomiyasuDashDecoration,
+    YomiyasuDashInsertion,
+    YomiyasuDashListEnding,
+    YomiyasuEmojiProhibited,
+    YomiyasuRenyoNoun,
+    YomiyasuSlopVocabulary,
+    YomiyasuKatakanaTerm,
 }
 
 impl RuleId {
     /// 組み込みのルールのすべて。設定の `[builtin]` のキーをルールのIDとして読むのに使う
-    pub const ALL: [RuleId; 114] = [
+    pub const ALL: [RuleId; 121] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
         RuleId::SpaceBetweenJaAndParen,
@@ -233,6 +240,13 @@ impl RuleId {
         RuleId::YomiyasuCleftListEnding,
         RuleId::YomiyasuCopyCommaNoun,
         RuleId::YomiyasuBareVerbChain,
+        RuleId::YomiyasuDashDecoration,
+        RuleId::YomiyasuDashInsertion,
+        RuleId::YomiyasuDashListEnding,
+        RuleId::YomiyasuEmojiProhibited,
+        RuleId::YomiyasuRenyoNoun,
+        RuleId::YomiyasuSlopVocabulary,
+        RuleId::YomiyasuKatakanaTerm,
     ];
 
     /// `check` の出力の `[<rule-id>]` に使う名前
@@ -318,6 +332,13 @@ impl RuleId {
             RuleId::YomiyasuCleftListEnding => "yomiyasu-cleft-list-ending",
             RuleId::YomiyasuCopyCommaNoun => "yomiyasu-copy-comma-noun",
             RuleId::YomiyasuBareVerbChain => "yomiyasu-bare-verb-chain",
+            RuleId::YomiyasuDashDecoration => "yomiyasu-dash-decoration",
+            RuleId::YomiyasuDashInsertion => "yomiyasu-dash-insertion",
+            RuleId::YomiyasuDashListEnding => "yomiyasu-dash-list-ending",
+            RuleId::YomiyasuEmojiProhibited => "yomiyasu-emoji-prohibited",
+            RuleId::YomiyasuRenyoNoun => "yomiyasu-renyo-noun",
+            RuleId::YomiyasuSlopVocabulary => "yomiyasu-slop-vocabulary",
+            RuleId::YomiyasuKatakanaTerm => "yomiyasu-katakana-term",
         }
     }
 }

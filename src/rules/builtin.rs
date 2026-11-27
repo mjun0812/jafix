@@ -100,6 +100,13 @@ pub struct Builtin {
     pub yomiyasu_cleft_list_ending: bool,
     pub yomiyasu_copy_comma_noun: bool,
     pub yomiyasu_bare_verb_chain: bool,
+    pub yomiyasu_dash_decoration: bool,
+    pub yomiyasu_dash_insertion: bool,
+    pub yomiyasu_dash_list_ending: bool,
+    pub yomiyasu_emoji_prohibited: bool,
+    pub yomiyasu_renyo_noun: bool,
+    pub yomiyasu_slop_vocabulary: bool,
+    pub yomiyasu_katakana_term: bool,
 }
 
 impl Default for Builtin {
@@ -183,6 +190,13 @@ impl Default for Builtin {
             yomiyasu_cleft_list_ending: false,
             yomiyasu_copy_comma_noun: false,
             yomiyasu_bare_verb_chain: false,
+            yomiyasu_dash_decoration: false,
+            yomiyasu_dash_insertion: false,
+            yomiyasu_dash_list_ending: false,
+            yomiyasu_emoji_prohibited: false,
+            yomiyasu_renyo_noun: false,
+            yomiyasu_slop_vocabulary: false,
+            yomiyasu_katakana_term: false,
         }
     }
 }
@@ -312,6 +326,13 @@ impl Builtin {
             RuleId::YomiyasuCleftListEnding => self.yomiyasu_cleft_list_ending,
             RuleId::YomiyasuCopyCommaNoun => self.yomiyasu_copy_comma_noun,
             RuleId::YomiyasuBareVerbChain => self.yomiyasu_bare_verb_chain,
+            RuleId::YomiyasuDashDecoration => self.yomiyasu_dash_decoration,
+            RuleId::YomiyasuDashInsertion => self.yomiyasu_dash_insertion,
+            RuleId::YomiyasuDashListEnding => self.yomiyasu_dash_list_ending,
+            RuleId::YomiyasuEmojiProhibited => self.yomiyasu_emoji_prohibited,
+            RuleId::YomiyasuRenyoNoun => self.yomiyasu_renyo_noun,
+            RuleId::YomiyasuSlopVocabulary => self.yomiyasu_slop_vocabulary,
+            RuleId::YomiyasuKatakanaTerm => self.yomiyasu_katakana_term,
         }
     }
 
@@ -610,6 +631,13 @@ impl Builtin {
             RuleId::YomiyasuCleftListEnding => self.yomiyasu_cleft_list_ending = enabled(options)?,
             RuleId::YomiyasuCopyCommaNoun => self.yomiyasu_copy_comma_noun = enabled(options)?,
             RuleId::YomiyasuBareVerbChain => self.yomiyasu_bare_verb_chain = enabled(options)?,
+            RuleId::YomiyasuDashDecoration => self.yomiyasu_dash_decoration = enabled(options)?,
+            RuleId::YomiyasuDashInsertion => self.yomiyasu_dash_insertion = enabled(options)?,
+            RuleId::YomiyasuDashListEnding => self.yomiyasu_dash_list_ending = enabled(options)?,
+            RuleId::YomiyasuEmojiProhibited => self.yomiyasu_emoji_prohibited = enabled(options)?,
+            RuleId::YomiyasuRenyoNoun => self.yomiyasu_renyo_noun = enabled(options)?,
+            RuleId::YomiyasuSlopVocabulary => self.yomiyasu_slop_vocabulary = enabled(options)?,
+            RuleId::YomiyasuKatakanaTerm => self.yomiyasu_katakana_term = enabled(options)?,
         }
         Ok(())
     }

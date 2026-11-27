@@ -1,0 +1,94 @@
+# yomiyasu-katakana-term の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは語ごとに1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+
+builtin = 'yomiyasu-katakana-term = true'
+
+[[cases]]
+name = "当たる-マイルストーンを決める。"
+text = "マイルストーンを決める。"
+findings = ["1:1"]
+messages = ["意味の薄くなりやすいカタカナ語「マイルストーン」を使っている"]
+
+[[cases]]
+name = "当たる-シナジーを生む。"
+text = "シナジーを生む。"
+findings = ["1:1"]
+messages = ["意味の薄くなりやすいカタカナ語「シナジー」を使っている"]
+
+[[cases]]
+name = "当たる-ライティングソリューションを導入する。"
+text = "ライティングソリューションを導入する。"
+findings = ["1:7"]
+messages = ["意味の薄くなりやすいカタカナ語「ソリューション」を使っている"]
+
+[[cases]]
+name = "当たる-ロードマップとシナジー。"
+text = "ロードマップとシナジー。"
+findings = ["1:1", "1:8"]
+messages = ["意味の薄くなりやすいカタカナ語「ロードマップ」を使っている", "意味の薄くなりやすいカタカナ語「シナジー」を使っている"]
+
+[[cases]]
+name = "当たる-## ロードマップ"
+text = "## ロードマップ"
+findings = ["1:4"]
+messages = ["意味の薄くなりやすいカタカナ語「ロードマップ」を使っている"]
+
+[[cases]]
+name = "当たる-- ステークホルダーに伝える。"
+text = "- ステークホルダーに伝える。"
+findings = ["1:3"]
+messages = ["意味の薄くなりやすいカタカナ語「ステークホルダー」を使っている"]
+
+[[cases]]
+name = "当たる-| シナジー | | --- | | x |"
+text = "| シナジー |\n| --- |\n| x |"
+findings = ["1:3"]
+messages = ["意味の薄くなりやすいカタカナ語「シナジー」を使っている"]
+
+[[cases]]
+name = "当たらない-マイルストーン1を終えた。"
+text = "マイルストーン1を終えた。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-シナジー Bを得る。"
+text = "シナジー Bを得る。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-「シナジー」という語。"
+text = "「シナジー」という語。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-[シナジー](https://example.com)を生む。"
+text = "[シナジー](https://example.com)を生む。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-ストーンを置く。"
+text = "ストーンを置く。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-サーバーを起動する。"
+text = "サーバーを起動する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-> シナジーを生む。"
+text = "> シナジーを生む。"
+findings = []
+messages = []

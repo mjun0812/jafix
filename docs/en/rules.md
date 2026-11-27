@@ -1,6 +1,6 @@
 # Rules
 
-jafix has 114 built-in rules.
+jafix has 121 built-in rules.
 Switch them by rule ID or preset name under `[builtin]` in the [configuration](./configuration.md#rules).
 
 | Column  | Meaning                                                                                                               |
@@ -75,7 +75,7 @@ Set `no-short-topic-comma = true` separately to check commas after short topics.
 
 ### Rules adapted from yomiyasu {#yomiyasu}
 
-Enable each of these rules separately. All 15 are off by default.
+Enable each of these rules separately. All 22 are off by default.
 
 | Rule ID                        | Action | Default | What it does                                                                                             |
 | ------------------------------ | ------ | ------- | -------------------------------------------------------------------------------------------------------- |
@@ -93,7 +93,14 @@ Enable each of these rules separately. All 15 are off by default.
 | `yomiyasu-fragment-run`        | Report | -       | Flags runs of three or more very short sentences, such as `速い。軽い。安い。`                           |
 | `yomiyasu-cleft-list-ending`   | Report | -       | Flags sentences that follow `〜のは、` with a list of nouns and no predicate                             |
 | `yomiyasu-copy-comma-noun`     | Report | -       | Flags sentences that put a comma between a modifier and a short final noun, such as `軽い、美しい仕様。` |
-| `yomiyasu-bare-verb-chain`     | Report | -       | Flags sentences that list verbs with commas and no subject or object, such as `書く、試す、直す。`     |
+| `yomiyasu-bare-verb-chain`     | Report | -       | Flags sentences that list verbs with commas and no subject or object, such as `書く、試す、直す。`       |
+| `yomiyasu-dash-decoration`     | Report | -       | Flags dashes such as `——` used for asides or a trailing effect                                           |
+| `yomiyasu-dash-insertion`      | Report | -       | Flags asides set off between dashes, such as `今日——正確には昨日——`                                      |
+| `yomiyasu-dash-list-ending`    | Report | -       | Flags sentences that end a list of nouns with a dash, such as `速さ、軽さ、静けさ──。`                   |
+| `yomiyasu-emoji-prohibited`    | Report | -       | Flags emoji in prose                                                                                     |
+| `yomiyasu-renyo-noun`          | Report | -       | Flags verb stems used as nouns after `の`, such as `結果の確かめ`                                        |
+| `yomiyasu-slop-vocabulary`     | Report | -       | Flags figurative words common in AI writing, such as `解像度`, `手触り`, and `羅針盤`                    |
+| `yomiyasu-katakana-term`       | Report | -       | Flags katakana loanwords that tend to lose meaning, such as `シナジー` and `ロードマップ`                |
 
 ## Spacing and character forms {#spacing}
 

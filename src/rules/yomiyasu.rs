@@ -1,9 +1,11 @@
 //! yomiyasu 3.4.1由来の指摘ルール。太字、執筆時の指示、チャット応答はこのファイルで判定し、
-//! ほかのルールは下のファイルで判定する。文の単位のルールが使う前処理は、このファイルに置く
+//! ほかのルールは下のファイルで判定する。下のファイルのルールが共に使う前処理は、このファイルに置く
 
 mod phrase;
 mod placeholder;
 mod shape;
+mod symbol;
+mod word;
 
 use std::borrow::Cow;
 use std::ops::Range;
@@ -64,6 +66,8 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
     if builtin.yomiyasu_placeholder_residue {
         reports.extend(placeholder::report(src, document));
     }
+    reports.extend(symbol::report(src, document, builtin));
+    reports.extend(word::report(src, document, builtin));
     reports
 }
 
@@ -158,22 +162,95 @@ fn visible_sentence(src: &str, range: &Range<usize>, document: &Document) -> Str
 
 /// `range` の本文の文字列。強調の記号を除き、インラインコードなどを挟んだ本文の間には空白を1つ入れる
 fn visible_text(src: &str, range: &Range<usize>, document: &Document) -> String {
-    let mut text = String::new();
-    let mut previous = range.start;
-    for part in prose_in(document, range) {
-        let start = part.range.start.max(range.start);
-        let end = part.range.end.min(range.end);
+    visible_pieces(src, range, document)
+        .map(|(part, piece)| part.map_or(" ", |_| &src[piece]))
+        .collect()
+}
+
+/// `visible_text` の文字列を作る切れ端の、元のソース上の範囲と、それが置かれた本文の範囲の並び。本文の間に入れる空白は、
+/// 次の本文の先頭の空の範囲で、本文の範囲は `None` である
+fn visible_pieces<'a>(
+    src: &'a str,
+    range: &Range<usize>,
+    document: &'a Document,
+) -> impl Iterator<Item = (Option<&'a Prose>, Range<usize>)> {
+    let Range {
+        start: from,
+        end: to,
+    } = *range;
+    let mut previous = from;
+    prose_in(document, range).iter().flat_map(move |part| {
+        let start = part.range.start.max(from);
+        let end = part.range.end.min(to);
         // 強調の記号は取り除き、コードなどの前後にある別々の語はつなげない。
-        if src[previous..start]
+        let gap = src[previous..start]
             .bytes()
-            .any(|byte| !matches!(byte, b'*' | b'_' | b'~'))
-        {
-            text.push(' ');
-        }
-        text.push_str(&src[start..end]);
+            .any(|byte| !matches!(byte, b'*' | b'_' | b'~'));
         previous = end;
+        gap.then_some((None, start..start))
+            .into_iter()
+            .chain([(Some(part), start..end)])
+    })
+}
+
+/// 本文の文字列と、その各文字の元のソース上の位置。`text` から字数を変えずに作った文字列 (かぎ括弧の中などを伏せた
+/// 文字列) の位置も、元のソース上の位置に戻せる
+struct Visible {
+    text: String,
+    /// `text` の各文字の、元のソース上のバイト範囲。本文の間に入れた空白は、次の本文の先頭の空の範囲である
+    sources: Vec<Range<usize>>,
+    /// `text` のうち、リンクの文字列のバイト範囲。yomiyasuはリンクの文字列を角括弧ごと伏せるので、ルールによって伏せる
+    links: Vec<Range<usize>>,
+}
+
+impl Visible {
+    fn new(src: &str, range: &Range<usize>, document: &Document) -> Self {
+        let mut visible = Visible {
+            text: String::new(),
+            sources: Vec::new(),
+            links: Vec::new(),
+        };
+        for (part, piece) in visible_pieces(src, range, document) {
+            let Some(part) = part else {
+                visible.text.push(' ');
+                visible.sources.push(piece);
+                continue;
+            };
+            if part.context.link || part.context.link_reference {
+                let start = visible.text.len();
+                visible.links.push(start..start + piece.len());
+            }
+            visible.text.push_str(&src[piece.clone()]);
+            visible.sources.extend(
+                src[piece.clone()]
+                    .char_indices()
+                    .map(|(i, c)| piece.start + i..piece.start + i + c.len_utf8()),
+            );
+        }
+        visible
     }
-    text
+
+    /// `derived` (`text` から字数を変えずに作った文字列) のバイト範囲 `hit` の、元のソース上のバイト範囲
+    fn source(&self, derived: &str, hit: Range<usize>) -> Range<usize> {
+        let first = derived[..hit.start].chars().count();
+        let last = first + derived[hit].chars().count() - 1;
+        self.sources[first].start..self.sources[last].end
+    }
+
+    /// リンクの文字列を、1文字ずつ半角空白にした `text`
+    fn unlinked(&self) -> String {
+        blank(&self.text, &self.links)
+    }
+}
+
+/// `range` を行ごとに分けた範囲。yomiyasuは記号と語の検査を行ごとに当てる
+fn lines(src: &str, range: &Range<usize>) -> impl Iterator<Item = Range<usize>> {
+    let mut start = range.start;
+    src[range.clone()].split('\n').map(move |line| {
+        let line = start..start + line.len();
+        start = line.end + 1;
+        line
+    })
 }
 
 fn prose_in<'a>(document: &'a Document, range: &Range<usize>) -> &'a [Prose] {
@@ -341,16 +418,16 @@ fn without_end_decoration(text: &str, closers: &str) -> Option<String> {
     removed.then(|| text[..end].chars().chain(marks.into_iter().rev()).collect())
 }
 
-/// 文末の後ろに置かれる絵文字と記号と、絵文字の並びをつなぐ字 (異体字セレクタ、ZWJ、タグ)
+/// 文末の後ろに置かれる絵文字と記号と、絵文字の並びをつなぐ字 (異体字セレクタ、ZWJ、タグ) の文字クラス
+const END_DECORATION: &str = concat!(
+    r"[[\p{Emoji}\u{2600}-\u{27BF}\u{2B05}-\u{2B07}\u{2B1B}\u{2B1C}\u{2B50}\u{2B55}\u{231A}\u{231B}",
+    r"\u{23E9}-\u{23FA}\u{2934}\u{2935}\u{3297}\u{3299}\u{1F000}-\u{1FAFF}\u{FE0E}\u{FE0F}\u{200D}",
+    r"\u{E0020}-\u{E007F}]--[0-9#*]]"
+);
+
 fn end_decoration(c: char) -> bool {
-    static DECORATION: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(concat!(
-            r"^[[\p{Emoji}\u{2600}-\u{27BF}\u{2B05}-\u{2B07}\u{2B1B}\u{2B1C}\u{2B50}\u{2B55}\u{231A}\u{231B}",
-            r"\u{23E9}-\u{23FA}\u{2934}\u{2935}\u{3297}\u{3299}\u{1F000}-\u{1FAFF}\u{FE0E}\u{FE0F}\u{200D}",
-            r"\u{E0020}-\u{E007F}]--[0-9#*]]$"
-        ))
-        .unwrap()
-    });
+    static DECORATION: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(&format!("^{END_DECORATION}$")).unwrap());
     DECORATION.is_match(c.encode_utf8(&mut [0; 4]))
 }
 
@@ -411,6 +488,25 @@ fn end_closers(
         }
     }
     closers
+}
+
+/// 語の規則が見る文字列。かぎ括弧・角括弧・引用符の中と、英数字の識別子 (`snake_case`、`camelCase`、`.` や `/` を含む語)
+/// を、1文字ずつ半角空白にする
+fn masked_words(text: &str) -> String {
+    static QUOTES: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new("“[^”\n]*”|\"[^\"\n]*\"|‘[^’\n]*’").unwrap());
+    static IDENTIFIER: LazyLock<regress::Regex> = LazyLock::new(|| {
+        regress::Regex::new(concat!(
+            r"(?<![A-Za-z0-9])[A-Za-z0-9]+(?:[_./\\][A-Za-z0-9]+)+[_./]?",
+            r"|(?<![a-z])[a-z]+[A-Z][A-Za-z0-9]*|[_./\\][A-Za-z0-9_]+"
+        ))
+        .unwrap()
+    });
+    let text = blank(text, &paired_ranges(text.char_indices(), &BRACKETS));
+    let quotes: Vec<_> = QUOTES.find_iter(&text).map(|hit| hit.range()).collect();
+    let text = blank(&text, &quotes);
+    let identifiers: Vec<_> = IDENTIFIER.find_iter(&text).map(|hit| hit.range()).collect();
+    blank(&text, &identifiers)
 }
 
 /// 引用として中を伏せる括弧の組。yomiyasuは `[` `]` も引用として伏せる

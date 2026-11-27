@@ -188,3 +188,99 @@ fn sentence_shape_rules_are_off_until_listed_in_builtin() {
     let invalid = sandbox.run(&["rules"]);
     assert_eq!(invalid.status.code(), Some(2), "{invalid:?}");
 }
+
+/// yomiyasu由来の指摘ルールのうち、太字、執筆時の指示、チャット応答の3つを除く19個
+const PORTED: [&str; 19] = [
+    "yomiyasu-meta-filler",
+    "yomiyasu-summary-restatement",
+    "yomiyasu-meta-intro",
+    "yomiyasu-count-declaration",
+    "yomiyasu-ai-phrase",
+    "yomiyasu-placeholder-residue",
+    "yomiyasu-short-mochiron",
+    "yomiyasu-say-hedge",
+    "yomiyasu-fragment-run",
+    "yomiyasu-cleft-list-ending",
+    "yomiyasu-copy-comma-noun",
+    "yomiyasu-bare-verb-chain",
+    "yomiyasu-dash-decoration",
+    "yomiyasu-dash-insertion",
+    "yomiyasu-dash-list-ending",
+    "yomiyasu-emoji-prohibited",
+    "yomiyasu-renyo-noun",
+    "yomiyasu-slop-vocabulary",
+    "yomiyasu-katakana-term",
+];
+
+#[test]
+fn ported_rules_are_off_without_presets_until_listed_in_builtin() {
+    let sandbox = Sandbox::new();
+    let rules = |sandbox: &Sandbox| -> Vec<serde_json::Value> {
+        let output = sandbox.run(&["rules", "--output-format", "json"]);
+        assert_eq!(output.status.code(), Some(0), "{output:?}");
+        let value: serde_json::Value = serde_json::from_str(stdout(&output)).unwrap();
+        PORTED
+            .iter()
+            .map(|id| {
+                value["rules"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .find(|rule| rule["id"] == *id)
+                    .unwrap_or_else(|| panic!("{id} is not listed"))
+                    .clone()
+            })
+            .collect()
+    };
+    for rule in rules(&sandbox) {
+        assert_eq!(rule["enabled"], false, "{rule}");
+        assert_eq!(rule["presets"], serde_json::json!([]), "{rule}");
+    }
+
+    let config: String = PORTED.iter().map(|id| format!("{id} = true\n")).collect();
+    sandbox.write_xdg_config(&format!("[builtin]\n{config}"));
+    for rule in rules(&sandbox) {
+        assert_eq!(rule["enabled"], true, "{rule}");
+    }
+}
+
+#[test]
+fn symbol_and_word_rules_report_without_rewriting_once_listed_in_builtin() {
+    const IDS: [&str; 7] = [
+        "yomiyasu-dash-decoration",
+        "yomiyasu-dash-insertion",
+        "yomiyasu-dash-list-ending",
+        "yomiyasu-emoji-prohibited",
+        "yomiyasu-renyo-noun",
+        "yomiyasu-slop-vocabulary",
+        "yomiyasu-katakana-term",
+    ];
+    let sandbox = Sandbox::new();
+    let text = "これが答えだ——それだけだ。\n\n今日——正確には昨日——連絡しました。\n\n速さ、軽さ、静けさ──。\n\n\
+                完成しました🚀\n\n結果の確かめが必要です。\n\n解像度を上げる。\n\nシナジーを生む。\n";
+    let path = sandbox.write("t.md", text);
+    let quiet = sandbox.run(&["check", "t.md"]);
+    assert_eq!(quiet.status.code(), Some(0), "{quiet:?}");
+
+    let config: String = IDS.iter().map(|id| format!("{id} = true\n")).collect();
+    sandbox.write_xdg_config(&format!("[builtin]\n{config}"));
+    let check = sandbox.run(&["check", "t.md"]);
+    assert_eq!(check.status.code(), Some(1), "{check:?}");
+    assert_eq!(
+        stdout(&check),
+        "t.md:1:7: [yomiyasu-dash-decoration] ダッシュ「——」を使っている\n\
+         t.md:3:3: [yomiyasu-dash-insertion] ダッシュで挟んだ挿入句を使っている\n\
+         t.md:5:10: [yomiyasu-dash-list-ending] 名詞の並びをダッシュで終えている\n\
+         t.md:7:7: [yomiyasu-emoji-prohibited] 絵文字「🚀」を使っている\n\
+         t.md:9:3: [yomiyasu-renyo-noun] 動詞の連用形を名詞にした「の確かめ」を使っている\n\
+         t.md:11:1: [yomiyasu-slop-vocabulary] AIが多用する語「解像度」を使っている\n\
+         t.md:13:1: [yomiyasu-katakana-term] 意味の薄くなりやすいカタカナ語「シナジー」を使っている\n"
+    );
+    let fix = sandbox.run(&["fix", "t.md"]);
+    assert_eq!(fix.status.code(), Some(0), "{fix:?}");
+    assert_eq!(read(&path), text);
+
+    sandbox.write_xdg_config("[builtin]\nyomiyasu-emoji-prohibited = { strict = true }\n");
+    let invalid = sandbox.run(&["rules"]);
+    assert_eq!(invalid.status.code(), Some(2), "{invalid:?}");
+}
