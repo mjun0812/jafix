@@ -108,11 +108,17 @@ pub enum RuleId {
     YomiyasuCountDeclaration,
     YomiyasuAiPhrase,
     YomiyasuPlaceholderResidue,
+    YomiyasuShortMochiron,
+    YomiyasuSayHedge,
+    YomiyasuFragmentRun,
+    YomiyasuCleftListEnding,
+    YomiyasuCopyCommaNoun,
+    YomiyasuBareVerbChain,
 }
 
 impl RuleId {
     /// 組み込みのルールのすべて。設定の `[builtin]` のキーをルールのIDとして読むのに使う
-    pub const ALL: [RuleId; 108] = [
+    pub const ALL: [RuleId; 114] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
         RuleId::SpaceBetweenJaAndParen,
@@ -221,6 +227,12 @@ impl RuleId {
         RuleId::YomiyasuCountDeclaration,
         RuleId::YomiyasuAiPhrase,
         RuleId::YomiyasuPlaceholderResidue,
+        RuleId::YomiyasuShortMochiron,
+        RuleId::YomiyasuSayHedge,
+        RuleId::YomiyasuFragmentRun,
+        RuleId::YomiyasuCleftListEnding,
+        RuleId::YomiyasuCopyCommaNoun,
+        RuleId::YomiyasuBareVerbChain,
     ];
 
     /// `check` の出力の `[<rule-id>]` に使う名前
@@ -300,6 +312,12 @@ impl RuleId {
             RuleId::YomiyasuCountDeclaration => "yomiyasu-count-declaration",
             RuleId::YomiyasuAiPhrase => "yomiyasu-ai-phrase",
             RuleId::YomiyasuPlaceholderResidue => "yomiyasu-placeholder-residue",
+            RuleId::YomiyasuShortMochiron => "yomiyasu-short-mochiron",
+            RuleId::YomiyasuSayHedge => "yomiyasu-say-hedge",
+            RuleId::YomiyasuFragmentRun => "yomiyasu-fragment-run",
+            RuleId::YomiyasuCleftListEnding => "yomiyasu-cleft-list-ending",
+            RuleId::YomiyasuCopyCommaNoun => "yomiyasu-copy-comma-noun",
+            RuleId::YomiyasuBareVerbChain => "yomiyasu-bare-verb-chain",
         }
     }
 }

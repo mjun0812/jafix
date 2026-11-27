@@ -182,7 +182,7 @@ fn usage_rejects_other_arguments() {
 fn rules_lists_all_rules_with_defaults() {
     let sandbox = Sandbox::new();
     let output = rules_text(&sandbox, &[]);
-    assert_eq!(output.lines().count(), 108);
+    assert_eq!(output.lines().count(), 114);
     assert_eq!(rule_line(&output, "fullwidth-paren"), ("有効", "-"));
     assert_eq!(
         rule_line(&output, "sentence-length"),
@@ -251,7 +251,7 @@ fn rules_json_lists_all_rules() {
     let value = json_line(&output);
     assert_eq!(value["schema_version"], 1);
     let rules = value["rules"].as_array().unwrap();
-    assert_eq!(rules.len(), 108);
+    assert_eq!(rules.len(), 114);
     let enabled = rules.iter().filter(|rule| rule["enabled"] == true).count();
     assert_eq!(enabled, 10);
     let sentence_length = rules

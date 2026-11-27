@@ -3,6 +3,7 @@
 
 mod phrase;
 mod placeholder;
+mod shape;
 
 use std::borrow::Cow;
 use std::ops::Range;
@@ -59,6 +60,7 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
         }
     }
     reports.extend(phrase::report(src, document, builtin));
+    reports.extend(shape::report(src, document, builtin));
     if builtin.yomiyasu_placeholder_residue {
         reports.extend(placeholder::report(src, document));
     }
@@ -410,6 +412,9 @@ fn end_closers(
     }
     closers
 }
+
+/// 引用として中を伏せる括弧の組。yomiyasuは `[` `]` も引用として伏せる
+const BRACKETS: [(char, char); 3] = [('「', '」'), ('『', '』'), ('[', ']')];
 
 /// 対になった括弧の、開きから閉じまでの範囲。括弧の種類ごとに対を取り、入れ子の内側の対の範囲も返す
 fn paired_ranges(

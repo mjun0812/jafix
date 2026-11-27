@@ -10,10 +10,10 @@ UTF-8とShift_JIS (CP932を含む)のファイルを読み込めます。拡張�
 
 ## 組み込みのルール
 
-組み込みのルールは108個です。
+組み込みのルールは114個です。
 `fullwidth-paren`、`space-between-ja-and-alnum`、`space-between-ja-and-paren` の3つはjafix独自の修正ルールです。
 `prh` と `@textlint-rule/pattern` は、利用者が書いた辞書やパターンに従って置き換えや指摘をします。
-yomiyasu由来の9つの指摘ルールは、[ルール一覧](docs/rules.md#yomiyasu由来の指摘-yomiyasu)にあります。
+yomiyasu由来の15の指摘ルールは、[ルール一覧](docs/rules.md#yomiyasu由来の指摘-yomiyasu)にあります。
 
 textlintから移した94ルールの内訳は次のとおりです。
 
@@ -43,6 +43,12 @@ yomiyasu-meta-intro = true
 yomiyasu-count-declaration = true
 yomiyasu-ai-phrase = true
 yomiyasu-placeholder-residue = true
+yomiyasu-short-mochiron = true
+yomiyasu-say-hedge = true
+yomiyasu-fragment-run = true
+yomiyasu-cleft-list-ending = true
+yomiyasu-copy-comma-noun = true
+yomiyasu-bare-verb-chain = true
 ```
 
 `yomiyasu-placeholder-residue` 以外は、判定の条件を、yomiyasu 3.4.1のlintのうち同じ名前の規則から写しています。yomiyasuの `meta_filler` の15の型のうち、チャット応答の2つの型は `yomiyasu-chat-response` が、残りの13の型は `yomiyasu-meta-filler` が見ます。yomiyasuと変えるのは次の点です。
@@ -62,6 +68,17 @@ yomiyasu-placeholder-residue = true
 - `XXX` のように、大文字の `X` が3つ以上続く並び。前後が英数字の並び(`XXXL`・`MAXXX`)は除きます
 - `[ここに概要を入れる]` のように、角括弧の中が「ここに」で始まる並び
 - `【要確認】`
+
+文の形を見る6つのルールは、次の文に当てます。表のセルと引用は、どのルールも見ません。
+
+- `yomiyasu-short-mochiron` は、文頭の「もちろん、」の後に10字以内の語だけが続く文(`もちろん、失敗もする。`)を指摘します。問いや依頼への答えの定型(`もちろん、大丈夫です。`)と、はい・いいえで答える問いの直後の文は除きます
+- `yomiyasu-cleft-list-ending` は、「〜のは、」の後に名詞を並べ、述語を書かずに終える文(`今回の改修で増えたのは、画面、帳票、通知。`)を指摘します。直前の文が問いのときと、「のは」の前の動詞の語幹の漢字を直前の文が含むときは、前提を書いてあるとみて除きます。頭が `yomiyasu-meta-filler` の型の文(`重要なのは、`)も除きます。かぎ括弧と角括弧の中は見ません
+- `yomiyasu-fragment-run` は、1〜4字の短い文を3つ以上続けた並び(`効く。重い。安い。`)を、並びの最初の文の先頭に1件指摘します
+- `yomiyasu-say-hedge` は、文末の「と言えるでしょう」を指摘します。体言の後(`契約と言えるでしょう。`)と「〜に当たると言えるでしょう」は、区分に当たるかの判断なので除きます。ただし、`有効` や `重要` のような形容動詞の語幹の後は当てます
+- `yomiyasu-copy-comma-noun` は、修飾語と短い名詞の間に読点を打って名詞で終える20字以下の文(`軽い、美しい仕様。`)を指摘します
+- `yomiyasu-bare-verb-chain` は、主語と目的語の無い動詞を読点で3つ以上並べる30字以下の文(`走る、跳ぶ、投げる。`)を指摘します
+
+`yomiyasu-short-mochiron`・`yomiyasu-cleft-list-ending`・`yomiyasu-fragment-run` は、段落とリスト項目の文に当て、見出しは見ません。`yomiyasu-say-hedge`・`yomiyasu-copy-comma-noun`・`yomiyasu-bare-verb-chain` は、見出しの文も見て、かぎ括弧・角括弧・引用符の中を見ません。直前の文は、同じ段落の前の文です。段落の最初の文では、直前の段落かリスト項目の最後の文、それも無ければ直前の見出しです。間に表・コードブロック・HTML・引用を挟むときは、直前の文が無いものとして扱います。区切り線を挟むときの扱いはルールで違います。`yomiyasu-short-mochiron` は直前の文が無いものとして扱い、`yomiyasu-cleft-list-ending` は区切り線を越えて前の段落か見出しの最後の文を見ます。
 
 設定ファイルがなくても、次の10ルールが有効です。
 
@@ -842,7 +859,7 @@ jafix check --encoding shift-jis notes.txt
 
 ### ルールの一覧
 
-`jafix rules` は、組み込みのルール108個を定義の順で、1行に1つずつ標準出力へ書きます。各行は、タブで区切った3つの欄からなります。
+`jafix rules` は、組み込みのルール114個を定義の順で、1行に1つずつ標準出力へ書きます。各行は、タブで区切った3つの欄からなります。
 
 | 欄     | 内容                                                                                       |
 | ------ | ------------------------------------------------------------------------------------------ |

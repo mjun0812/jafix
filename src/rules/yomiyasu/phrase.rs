@@ -12,7 +12,8 @@ use crate::rules::{Report, RuleId};
 use crate::sentence::{self, HardBreak};
 
 use super::{
-    blank, clauses, end_closers, finding, paired_ranges, prose_in, visible_text, with_undecorated,
+    BRACKETS, blank, chat_response, clauses, end_closers, finding, paired_ranges, prose_in,
+    visible_text, with_undecorated,
 };
 
 pub(super) fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> {
@@ -162,8 +163,10 @@ fn meta_filler(text: &str, closers: &str) -> Option<&'static str> {
         .map(|filler| filler.name)
 }
 
-/// 伏せる括弧の組。yomiyasuは `[` `]` も引用として伏せる
-const BRACKETS: [(char, char); 3] = [('「', '」'), ('『', '』'), ('[', ']')];
+/// yomiyasuの `meta_filler` の15型 (チャット応答の2型を含む) のどれかが、文のどこかに当たる
+pub(super) fn is_meta_filler(text: &str) -> bool {
+    FILLERS.iter().any(|filler| filler.pattern.is_match(text)) || chat_response(text)
+}
 
 /// 文の型を1つ当てる指摘ルール
 struct Statement {

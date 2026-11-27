@@ -94,6 +94,12 @@ pub struct Builtin {
     pub yomiyasu_count_declaration: bool,
     pub yomiyasu_ai_phrase: bool,
     pub yomiyasu_placeholder_residue: bool,
+    pub yomiyasu_short_mochiron: bool,
+    pub yomiyasu_say_hedge: bool,
+    pub yomiyasu_fragment_run: bool,
+    pub yomiyasu_cleft_list_ending: bool,
+    pub yomiyasu_copy_comma_noun: bool,
+    pub yomiyasu_bare_verb_chain: bool,
 }
 
 impl Default for Builtin {
@@ -171,6 +177,12 @@ impl Default for Builtin {
             yomiyasu_count_declaration: false,
             yomiyasu_ai_phrase: false,
             yomiyasu_placeholder_residue: false,
+            yomiyasu_short_mochiron: false,
+            yomiyasu_say_hedge: false,
+            yomiyasu_fragment_run: false,
+            yomiyasu_cleft_list_ending: false,
+            yomiyasu_copy_comma_noun: false,
+            yomiyasu_bare_verb_chain: false,
         }
     }
 }
@@ -294,6 +306,12 @@ impl Builtin {
             RuleId::YomiyasuCountDeclaration => self.yomiyasu_count_declaration,
             RuleId::YomiyasuAiPhrase => self.yomiyasu_ai_phrase,
             RuleId::YomiyasuPlaceholderResidue => self.yomiyasu_placeholder_residue,
+            RuleId::YomiyasuShortMochiron => self.yomiyasu_short_mochiron,
+            RuleId::YomiyasuSayHedge => self.yomiyasu_say_hedge,
+            RuleId::YomiyasuFragmentRun => self.yomiyasu_fragment_run,
+            RuleId::YomiyasuCleftListEnding => self.yomiyasu_cleft_list_ending,
+            RuleId::YomiyasuCopyCommaNoun => self.yomiyasu_copy_comma_noun,
+            RuleId::YomiyasuBareVerbChain => self.yomiyasu_bare_verb_chain,
         }
     }
 
@@ -586,6 +604,12 @@ impl Builtin {
             RuleId::YomiyasuPlaceholderResidue => {
                 self.yomiyasu_placeholder_residue = enabled(options)?
             }
+            RuleId::YomiyasuShortMochiron => self.yomiyasu_short_mochiron = enabled(options)?,
+            RuleId::YomiyasuSayHedge => self.yomiyasu_say_hedge = enabled(options)?,
+            RuleId::YomiyasuFragmentRun => self.yomiyasu_fragment_run = enabled(options)?,
+            RuleId::YomiyasuCleftListEnding => self.yomiyasu_cleft_list_ending = enabled(options)?,
+            RuleId::YomiyasuCopyCommaNoun => self.yomiyasu_copy_comma_noun = enabled(options)?,
+            RuleId::YomiyasuBareVerbChain => self.yomiyasu_bare_verb_chain = enabled(options)?,
         }
         Ok(())
     }

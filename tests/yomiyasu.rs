@@ -142,3 +142,49 @@ fn phrase_and_placeholder_rules_are_off_until_listed_in_builtin() {
     let invalid = sandbox.run(&["rules"]);
     assert_eq!(invalid.status.code(), Some(2), "{invalid:?}");
 }
+
+#[test]
+fn sentence_shape_rules_are_off_until_listed_in_builtin() {
+    const IDS: [&str; 6] = [
+        "yomiyasu-short-mochiron",
+        "yomiyasu-say-hedge",
+        "yomiyasu-fragment-run",
+        "yomiyasu-cleft-list-ending",
+        "yomiyasu-copy-comma-noun",
+        "yomiyasu-bare-verb-chain",
+    ];
+    let sandbox = Sandbox::new();
+    let states = |sandbox: &Sandbox| -> Vec<String> {
+        let output = sandbox.run(&["rules"]);
+        assert_eq!(output.status.code(), Some(0), "{output:?}");
+        IDS.iter()
+            .map(|id| {
+                let line = stdout(&output)
+                    .lines()
+                    .find(|line| line.split('\t').next() == Some(id))
+                    .unwrap_or_else(|| panic!("{id} is not listed"));
+                line.split_once('\t').unwrap().1.to_owned()
+            })
+            .collect()
+    };
+    let text = "効く。重い。安い。\n\n品質が高いと言えるでしょう。\n";
+    sandbox.write("t.md", text);
+    assert_eq!(states(&sandbox), ["無効\t-"; 6]);
+    let quiet = sandbox.run(&["check", "t.md"]);
+    assert_eq!(quiet.status.code(), Some(0), "{quiet:?}");
+
+    let config: String = IDS.iter().map(|id| format!("{id} = true\n")).collect();
+    sandbox.write_xdg_config(&format!("[builtin]\n{config}"));
+    assert_eq!(states(&sandbox), ["有効\t-"; 6]);
+    let check = sandbox.run(&["check", "t.md"]);
+    assert_eq!(check.status.code(), Some(1), "{check:?}");
+    assert_eq!(
+        stdout(&check),
+        "t.md:1:1: [yomiyasu-fragment-run] 短い文を3つ以上続けている\n\
+         t.md:3:1: [yomiyasu-say-hedge] 文末の「と言えるでしょう」を使っている\n"
+    );
+
+    sandbox.write_xdg_config("[builtin]\nyomiyasu-say-hedge = { strict = true }\n");
+    let invalid = sandbox.run(&["rules"]);
+    assert_eq!(invalid.status.code(), Some(2), "{invalid:?}");
+}

@@ -1,6 +1,6 @@
 # Rules
 
-jafix has 108 built-in rules.
+jafix has 114 built-in rules.
 Switch them by rule ID or preset name under `[builtin]` in the [configuration](./configuration.md#rules).
 
 | Column  | Meaning                                                                                                               |
@@ -75,19 +75,25 @@ Set `no-short-topic-comma = true` separately to check commas after short topics.
 
 ### Rules adapted from yomiyasu {#yomiyasu}
 
-Enable each of these rules separately. All nine are off by default.
+Enable each of these rules separately. All 15 are off by default.
 
-| Rule ID                        | Action | Default | What it does                                                                                     |
-| ------------------------------ | ------ | ------- | ------------------------------------------------------------------------------------------------ |
-| `yomiyasu-bold-not-rendered`   | Report | -       | Flags pairs of `**` that appear as literal text instead of rendering as bold                     |
-| `yomiyasu-instruction-residue` | Report | -       | Flags writing instructions left in the prose and scope exclusions without a reference            |
-| `yomiyasu-chat-response`       | Report | -       | Flags stock chat replies left in prose, such as `ご質問ありがとうございます`                     |
-| `yomiyasu-meta-filler`         | Report | -       | Flags stock openers and closers left in prose, such as `重要なのは` and `いかがでしたでしょうか` |
-| `yomiyasu-summary-restatement` | Report | -       | Flags sentences that restate a point starting with `まとめると、` or `総じて、`                  |
-| `yomiyasu-meta-intro`          | Report | -       | Flags previews that start with `本記事では`                                                      |
-| `yomiyasu-count-declaration`   | Report | -       | Flags count announcements such as `ポイントは3つです`                                            |
-| `yomiyasu-ai-phrase`           | Report | -       | Flags phrases common in AI writing, such as `多岐にわたる` and `が求められている`                |
-| `yomiyasu-placeholder-residue` | Report | -       | Flags placeholders left in prose: `〇〇`, `XXX`, `[ここに…]`, and `【要確認】`                   |
+| Rule ID                        | Action | Default | What it does                                                                                             |
+| ------------------------------ | ------ | ------- | -------------------------------------------------------------------------------------------------------- |
+| `yomiyasu-bold-not-rendered`   | Report | -       | Flags pairs of `**` that appear as literal text instead of rendering as bold                             |
+| `yomiyasu-instruction-residue` | Report | -       | Flags writing instructions left in the prose and scope exclusions without a reference                    |
+| `yomiyasu-chat-response`       | Report | -       | Flags stock chat replies left in prose, such as `ご質問ありがとうございます`                             |
+| `yomiyasu-meta-filler`         | Report | -       | Flags stock openers and closers left in prose, such as `重要なのは` and `いかがでしたでしょうか`         |
+| `yomiyasu-summary-restatement` | Report | -       | Flags sentences that restate a point starting with `まとめると、` or `総じて、`                          |
+| `yomiyasu-meta-intro`          | Report | -       | Flags previews that start with `本記事では`                                                              |
+| `yomiyasu-count-declaration`   | Report | -       | Flags count announcements such as `ポイントは3つです`                                                    |
+| `yomiyasu-ai-phrase`           | Report | -       | Flags phrases common in AI writing, such as `多岐にわたる` and `が求められている`                        |
+| `yomiyasu-placeholder-residue` | Report | -       | Flags placeholders left in prose: `〇〇`, `XXX`, `[ここに…]`, and `【要確認】`                           |
+| `yomiyasu-short-mochiron`      | Report | -       | Flags short sentences in which only a few words follow a leading `もちろん、`                            |
+| `yomiyasu-say-hedge`           | Report | -       | Flags sentences ending in `と言えるでしょう`                                                             |
+| `yomiyasu-fragment-run`        | Report | -       | Flags runs of three or more very short sentences, such as `速い。軽い。安い。`                           |
+| `yomiyasu-cleft-list-ending`   | Report | -       | Flags sentences that follow `〜のは、` with a list of nouns and no predicate                             |
+| `yomiyasu-copy-comma-noun`     | Report | -       | Flags sentences that put a comma between a modifier and a short final noun, such as `軽い、美しい仕様。` |
+| `yomiyasu-bare-verb-chain`     | Report | -       | Flags sentences that list verbs with commas and no subject or object, such as `書く、試す、直す。`     |
 
 ## Spacing and character forms {#spacing}
 

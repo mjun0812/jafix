@@ -1,0 +1,82 @@
+# yomiyasu-say-hedge の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは文に1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+
+builtin = 'yomiyasu-say-hedge = true'
+
+[[cases]]
+name = "当たる-品質が高いと言えるでしょう。"
+text = "品質が高いと言えるでしょう。"
+findings = ["1:1"]
+messages = ["文末の「と言えるでしょう」を使っている"]
+
+[[cases]]
+name = "当たる-有効と言えるでしょう。"
+text = "有効と言えるでしょう。"
+findings = ["1:1"]
+messages = ["文末の「と言えるでしょう」を使っている"]
+
+[[cases]]
+name = "当たる-速いといえるでしょう。"
+text = "速いといえるでしょう。"
+findings = ["1:1"]
+messages = ["文末の「と言えるでしょう」を使っている"]
+
+[[cases]]
+name = "当たる-結果は良く、品質が高いと言えるでしょう。続けます。"
+text = "結果は良く、品質が高いと言えるでしょう。続けます。"
+findings = ["1:1"]
+messages = ["文末の「と言えるでしょう」を使っている"]
+
+[[cases]]
+name = "当たらない-契約と言えるでしょう。"
+text = "契約と言えるでしょう。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-例外に当たると言えるでしょう。"
+text = "例外に当たると言えるでしょう。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-十分に速いと言える。"
+text = "十分に速いと言える。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-## 品質が高いと言えるでしょう"
+text = "## 品質が高いと言えるでしょう"
+findings = ["1:4"]
+messages = ["文末の「と言えるでしょう」を使っている"]
+
+[[cases]]
+name = "当たらない-「品質が高いと言えるでしょう。」と書いた。"
+text = "「品質が高いと言えるでしょう。」と書いた。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-[品質が高いと言えるでしょう。]"
+text = "[品質が高いと言えるでしょう。]"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-品質が高いと“言えるでしょう。”"
+text = "品質が高いと“言えるでしょう。”"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-| 品質が高いと言えるでしょう。 | | --- | | x |"
+text = "| 品質が高いと言えるでしょう。 |\n| --- |\n| x |"
+findings = []
+messages = []
