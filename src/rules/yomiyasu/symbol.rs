@@ -1,5 +1,6 @@
 //! 記号。yomiyasu 3.4.1の `dash_decoration`、`dash_insertion`、`dash_list_ending`、`emoji_prohibited` の検査
 
+use std::borrow::Cow;
 use std::ops::Range;
 use std::sync::LazyLock;
 
@@ -26,7 +27,7 @@ pub(super) fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<R
             .chain(&document.headings)
             .filter(|block| !block.blockquote);
         for block in blocks {
-            for line in lines(src, &block.range) {
+            for line in lines(src, &block.range).filter(|line| src[line.clone()].contains(DASHES)) {
                 for (rule, range, message) in dashes_in(&Visible::new(src, &line, document)) {
                     if builtin.is_enabled(rule) {
                         reports.push(finding(range, rule, message));
@@ -132,9 +133,11 @@ fn masked_dashes(visible: &Visible) -> String {
             })
             .map(|run| run.range()),
     );
-    let text = blank(text, &credits);
-    let text = blank(&text, &paired_ranges(text.char_indices(), &BRACKETS));
-    blank(&text, &route_dashes(&text))
+    let text = blank(Cow::Borrowed(text.as_str()), &credits);
+    let brackets = paired_ranges(text.char_indices(), &BRACKETS);
+    let text = blank(text, &brackets);
+    let routes = route_dashes(&text);
+    blank(text, &routes).into_owned()
 }
 
 /// 出典のラベル、著者と書名、英語の著者名と書誌情報

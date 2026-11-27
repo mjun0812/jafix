@@ -44,7 +44,7 @@ pub(super) fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<R
                 continue;
             }
             // リンクの文字列、かぎ括弧と角括弧と引用符の中、英数字の識別子を伏せて見る
-            let masked = masked_words(&visible.unlinked());
+            let masked = masked_words(visible.unlinked());
             if renyo {
                 report_renyo(&visible, &masked, &mut reports);
             }

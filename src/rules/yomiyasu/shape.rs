@@ -1,6 +1,7 @@
 //! 文の形。yomiyasu 3.4.1の `short_mochiron`、`say_hedge`、`fragment_run`、`cleft_list_ending`、`copy_comma_noun`、
 //! `bare_verb_chain` の検査
 
+use std::borrow::Cow;
 use std::ops::Range;
 use std::sync::LazyLock;
 
@@ -9,11 +10,11 @@ use regex::Regex;
 use crate::prose::{Document, Paragraph};
 use crate::rules::builtin::Builtin;
 use crate::rules::{Report, RuleId};
-use crate::sentence::{self, HardBreak};
+use crate::sentence;
 
 use super::phrase::is_meta_filler;
 use super::{
-    BRACKETS, Visible, blank, clauses, end_closers, end_decoration, finding, paired_ranges,
+    BRACKETS, blank, clauses, end_closers, end_decoration, finding, paired_ranges, unlinked_text,
     visible_text, without_end_decoration,
 };
 
@@ -31,9 +32,9 @@ pub(super) fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<R
             .chain(&document.headings)
             .filter(|block| !block.blockquote);
         for block in blocks {
-            for sentence in sentence::split(src, block, HardBreak::ListItems) {
+            for sentence in sentence::list_sentences(src, block) {
                 // yomiyasuは角括弧の中を伏せるので、リンクの文字列も伏せる
-                let text = unquoted(&Visible::new(src, &sentence.range, document).unlinked());
+                let text = unquoted(Cow::Owned(unlinked_text(src, &sentence.range, document)));
                 for shape in &shapes {
                     if shape_sentences(&text).any(shape.matches) {
                         reports.push(finding(sentence.range.clone(), shape.rule, shape.message));
@@ -50,11 +51,11 @@ pub(super) fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<R
     }
     // 見出し・表のセル・引用は見ない
     for paragraph in document.paragraphs.iter().filter(|p| !p.blockquote) {
-        let sentences: Vec<_> = sentence::split(src, paragraph, HardBreak::ListItems)
-            .into_iter()
+        let sentences: Vec<_> = sentence::list_sentences(src, paragraph)
+            .iter()
             .map(|sentence| {
                 let text = visible_text(src, &sentence.range, document);
-                (sentence.range, text)
+                (sentence.range.clone(), text)
             })
             .collect();
         if fragment_run {
@@ -124,11 +125,12 @@ const SHAPES: [Shape; 3] = [
 ];
 
 /// 形の規則が見る文字列。かぎ括弧・角括弧・引用符の中を、1文字ずつ半角空白にする
-fn unquoted(text: &str) -> String {
+fn unquoted(text: Cow<'_, str>) -> Cow<'_, str> {
     static CURLY: LazyLock<Regex> = LazyLock::new(|| Regex::new("“[^“”]*”|\"[^\"]*\"").unwrap());
-    let text = blank(text, &paired_ranges(text.char_indices(), &BRACKETS));
+    let brackets = paired_ranges(text.char_indices(), &BRACKETS);
+    let text = blank(text, &brackets);
     let quotes: Vec<_> = CURLY.find_iter(&text).map(|hit| hit.range()).collect();
-    blank(&text, &quotes)
+    blank(text, &quotes)
 }
 
 /// 形の規則の文の単位。yomiyasuは行ごとに見るので、改行でも区切る
@@ -338,7 +340,10 @@ fn cleft_list_ending(
     last_sentence: bool,
     previous: impl Fn(usize) -> String,
 ) -> bool {
-    let masked = blank(text, &paired_ranges(text.char_indices(), &BRACKETS));
+    let masked = blank(
+        Cow::Borrowed(text),
+        &paired_ranges(text.char_indices(), &BRACKETS),
+    );
     let clauses: Vec<&str> = clauses(&masked).collect();
     clauses.iter().enumerate().any(|(index, &clause)| {
         if !(last_sentence && index + 1 == clauses.len()) && !clause.ends_with(['。', '！', '!'])

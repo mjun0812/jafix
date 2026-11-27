@@ -805,18 +805,19 @@ fn run_hook(agent: Agent) -> ExitCode {
         }
         // 修正ルールは改行を足し引きしないので、対象行は直した後の内容でも同じ行番号である
         let index = LineIndex::new(&fixed.content);
-        let reports_in_file = rules::report(
+        let mut reports_in_file = rules::report(
             &fixed.content,
             &fixed.document,
             config.builtin(),
             &target.lines,
-            &fixed.fixes,
+            (&fixed.fixes, None),
             &fixed.ignored,
             Some(&Links {
                 file: &target.path,
                 urls: None,
             }),
         );
+        reports_in_file.sort_by_key(|report| report.range.start);
         for report in reports_in_file {
             let (line, column) = index.line_col(report.range.start);
             if !target.lines.contains(line) {
@@ -885,7 +886,11 @@ fn fix_content(src: &str, lines: &TargetLines, config: &Config) -> Fixed {
     let filters = config.filters();
     let document = prose::parse(src);
     let ignored = Ignored::new(src, &document, filters);
-    let replacements = rules::replacements(src, &document, builtin, lines, &ignored);
+    let replacements: Vec<_> = rules::user_replacements(src, &document, builtin, lines, &ignored)
+        .into_iter()
+        .filter(|replacement| replacement.unfixable(src).is_none())
+        .map(|replacement| replacement.finding)
+        .collect();
     let mut fixed = apply::apply(src, &replacements, lines);
     // 利用者の置き換えと組み込みの修正ルールは改行を足し引きしないので、対象行は直した後の内容でも同じ行番号である
     let mut document = if fixed == src {

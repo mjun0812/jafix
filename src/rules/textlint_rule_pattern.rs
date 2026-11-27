@@ -24,7 +24,7 @@ pub(super) fn contains(node_type: PatternNodeType, context: &Context) -> bool {
     }
 }
 
-/// 対象行と重なる本文の範囲に `replace` のある要素を当て、置き換えの箇所を返す。重なりは `rules::replacements` が解く
+/// 対象行と重なる本文の範囲に `replace` のある要素を当て、置き換えの箇所を返す。重なりは `rules::user_replacements` が解く
 pub fn replacements(
     src: &str,
     texts: &[&Prose],

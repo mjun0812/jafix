@@ -31,6 +31,13 @@ pub enum HardBreak {
     Continue,
 }
 
+/// リストとラベル行を区切りにして文に分けるルールで、同じ段落の結果を共有する
+pub fn list_sentences<'a>(src: &str, paragraph: &'a Paragraph) -> &'a [Sentence] {
+    paragraph
+        .list_sentences
+        .get_or_init(|| split(src, paragraph, HardBreak::ListItems))
+}
+
 /// 段落を文に区切る。区切り文字は `.` `．` `。` `?` `!` `？` `！` で、括弧と引用符が開いている間と、
 /// 英語の略語の `.` と `!` では区切らない。`.` は、次の文字が空白か段落の終わりのときだけ区切る。
 /// ハード改行の扱いは `hard_break` で決める
@@ -39,7 +46,10 @@ pub fn split(src: &str, paragraph: &Paragraph, hard_break: HardBreak) -> Vec<Sen
         src,
         paragraph: paragraph.range.clone(),
         open_pairs: [false; PAIRS.len()],
-        abbreviations: Vec::new(),
+        abbreviation_end: 0,
+        may_have_abbreviations: src[paragraph.range.clone()]
+            .bytes()
+            .any(|byte| matches!(byte, b'.' | b'!')),
         current: None,
         sentences: Vec::new(),
     };
@@ -119,8 +129,9 @@ struct Splitter<'s> {
     /// 略語の単語と `.` の次の文字は、段落の中だけを読む
     paragraph: Range<usize>,
     open_pairs: [bool; PAIRS.len()],
-    /// 中の `.` と `!` を区切りにしない略語の範囲
-    abbreviations: Vec<Range<usize>>,
+    /// 直近の略語の終わり。文字を左から読むので、終わるまでは `.` と `!` を区切りにしない
+    abbreviation_end: usize,
+    may_have_abbreviations: bool,
     current: Option<Sentence>,
     sentences: Vec<Sentence>,
 }
@@ -158,7 +169,9 @@ impl<'s> Splitter<'s> {
                 self.open(i);
                 segment = Some(i);
             }
-            self.mark_abbreviation(i);
+            if self.may_have_abbreviations {
+                self.mark_abbreviation(i, c);
+            }
             self.mark_pair(c);
         }
         if let Some(start) = segment {
@@ -204,7 +217,7 @@ impl<'s> Splitter<'s> {
     }
 
     fn in_abbreviation(&self, i: usize) -> bool {
-        self.abbreviations.iter().any(|range| range.contains(&i))
+        i < self.abbreviation_end
     }
 
     fn mark_pair(&mut self, c: char) {
@@ -224,8 +237,9 @@ impl<'s> Splitter<'s> {
     }
 
     /// `i` から始まる単語が英語の略語なら、その範囲を区切らない範囲にする
-    fn mark_abbreviation(&mut self, i: usize) {
-        if self.in_abbreviation(i)
+    fn mark_abbreviation(&mut self, i: usize, c: char) {
+        if is_word_boundary(c)
+            || self.in_abbreviation(i)
             || self.src[self.paragraph.start..i]
                 .chars()
                 .next_back()
@@ -243,7 +257,7 @@ impl<'s> Splitter<'s> {
             || self.prev_word(i),
             || self.next_word(i + word.len()),
         ) {
-            self.abbreviations.push(i..i + word.len());
+            self.abbreviation_end = i + word.len();
         }
     }
 
@@ -281,7 +295,9 @@ fn is_abbreviation<'w>(
     next_word: impl FnOnce() -> &'w str,
 ) -> bool {
     let lowercase = word.to_lowercase();
-    let same = |abbreviation: &&str| abbreviation.to_lowercase() == lowercase;
+    let same_ascii = |abbreviation: &&str| abbreviation.eq_ignore_ascii_case(&lowercase);
+    static EXCLAMATIONS: LazyLock<Vec<String>> =
+        LazyLock::new(|| english::EXCLAMATION_WORDS.map(str::to_lowercase).into());
     // `U.S.A.` のような、1文字のアルファベットと `.` が3回以上続く単語
     let initials = word.len() >= 6
         && word
@@ -294,8 +310,8 @@ fn is_abbreviation<'w>(
         .is_some_and(|digits| !digits.is_empty() && digits.bytes().all(|b| b.is_ascii_digit()));
     if initials
         || line_index
-        || english::EXCLAMATION_WORDS.iter().any(same)
-        || english::PREPOSITIVE_ABBREVIATIONS.iter().any(same)
+        || EXCLAMATIONS.contains(&lowercase)
+        || english::PREPOSITIVE_ABBREVIATIONS.iter().any(same_ascii)
     {
         return true;
     }
@@ -309,7 +325,7 @@ fn is_abbreviation<'w>(
     {
         return true;
     }
-    english::ABBREVIATIONS.iter().any(same) && !starts_with_uppercase_letter(next_word)
+    english::ABBREVIATIONS.iter().any(same_ascii) && !starts_with_uppercase_letter(next_word)
 }
 
 fn starts_with_uppercase_letter(word: &str) -> bool {
@@ -328,7 +344,10 @@ fn is_uppercase_letter(c: char) -> bool {
 
 /// 日本語などの文は単語を空白で区切らないので、CJKの文字も単語の境目にする
 fn is_word_boundary(c: char) -> bool {
-    is_space(c) || CJK.is_match(c.encode_utf8(&mut [0; 4]))
+    is_space(c)
+        // 本文に頻出するUnicode Scriptの範囲は、1文字ずつ正規表現に渡さず判定する。
+        || matches!(c, 'ぁ'..='ゖ' | 'ァ'..='ヺ' | '\u{4E00}'..='\u{9FAF}')
+        || (!c.is_ascii() && CJK.is_match(c.encode_utf8(&mut [0; 4])))
 }
 
 /// JavaScriptの正規表現の `\s` に当たる文字。改行を含む

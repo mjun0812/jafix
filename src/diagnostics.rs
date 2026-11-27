@@ -30,16 +30,26 @@ pub fn check(
     let document = prose::parse(src);
     let builtin = config.builtin();
     let ignored = Ignored::new(src, &document, config.filters());
-    let mut replacements = rules::replacements(src, &document, builtin, targets, &ignored);
+    let replacements = rules::user_replacements(src, &document, builtin, targets, &ignored);
     let fixes = rules::fix_findings(src, &document, builtin, &ignored);
-    replacements.extend(rules::fixable(&fixes));
     let reports = if report_excluded {
         Vec::new()
     } else {
-        rules::report(src, &document, builtin, targets, &fixes, &ignored, links)
+        rules::report(
+            src,
+            &document,
+            builtin,
+            targets,
+            (&fixes, Some(&replacements)),
+            &ignored,
+            links,
+        )
     };
     let mut spots: Vec<_> = replacements
         .into_iter()
+        .filter(|replacement| replacement.unfixable(src).is_none())
+        .map(|replacement| replacement.finding)
+        .chain(rules::fixable(&fixes))
         .map(|f| (f.position, f.message, f.rule.name(), true))
         .chain(
             reports

@@ -19,28 +19,40 @@ pub fn report(src: &str, paragraphs: &[Paragraph], builtin: &Builtin) -> Vec<Rep
             reports.extend(mixed_period(src, paragraph, rule));
         }
         // textlintは、子がリンク1つだけの段落の長さを数えない
-        let only_link = matches!(
-            paragraph.children.as_slice(),
-            [Inline {
-                kind: InlineKind::Link { .. },
-                ..
-            }]
-        );
-        for sentence in sentence::split(src, paragraph, HardBreak::ListItems) {
-            if let Some(rule) = &builtin.sentence_length
-                && !paragraph.blockquote
-                && !only_link
-            {
-                reports.extend(sentence_length(&sentence, rule));
-            }
-            if let Some(rule) = &builtin.max_comma {
-                reports.extend(max_comma(src, &sentence, rule));
+        let length = builtin.sentence_length.as_ref().filter(|_| {
+            !paragraph.blockquote
+                && !matches!(
+                    paragraph.children.as_slice(),
+                    [Inline {
+                        kind: InlineKind::Link { .. },
+                        ..
+                    }]
+                )
+        });
+        let comma = builtin.max_comma.as_ref();
+        if length.is_some() || comma.is_some() {
+            for sentence in sentence::list_sentences(src, paragraph) {
+                if let Some(rule) = length {
+                    reports.extend(sentence_length(sentence, rule));
+                }
+                if let Some(rule) = comma {
+                    reports.extend(max_comma(src, sentence, rule));
+                }
             }
         }
         // ハード改行は書き手が行を分けただけなので、括弧と引用符はその行をまたいで閉じてよい
         if builtin.no_unmatched_pair {
-            for sentence in sentence::split(src, paragraph, HardBreak::Continue) {
-                reports.extend(unmatched_pairs(src, &sentence));
+            let sentences = if paragraph
+                .children
+                .iter()
+                .any(|child| child.kind == InlineKind::Break)
+            {
+                Cow::Owned(sentence::split(src, paragraph, HardBreak::Continue))
+            } else {
+                Cow::Borrowed(sentence::list_sentences(src, paragraph))
+            };
+            for sentence in sentences.iter() {
+                reports.extend(unmatched_pairs(src, sentence));
             }
         }
     }

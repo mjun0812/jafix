@@ -49,7 +49,7 @@ impl Checks {
 }
 
 /// 対象行と重なる本文の範囲のうち `rule.checks` が見るものに辞書を当て、置き換えの箇所を返す。
-/// 本文の範囲の中の重なりは辞書が解き、`@textlint-rule/pattern` の箇所との重なりは `rules::replacements` が解く
+/// 本文の範囲の中の重なりは辞書が解き、`@textlint-rule/pattern` の箇所との重なりは `rules::user_replacements` が解く
 pub fn replacements(src: &str, texts: &[&Prose], rule: &Prh) -> Vec<UserReplacement> {
     let mut replacements = Vec::new();
     for prose in texts {

@@ -37,6 +37,7 @@ pub struct Rule {
     /// ルールを読んだ出どころの、`Dictionary::load` に渡した一覧での番号。`imports` で取り込んだルールは、取り込んだ側の番号である
     pub source: usize,
     regex: Regex,
+    literal_prefix: Option<String>,
     /// 正規表現の捕捉グループの数。`expected` の `$` が参照かを決めるのに使うので、`expected` が `$` を含まなければ0にする
     groups: usize,
     /// `regexpMustEmpty` のグループの番号
@@ -349,6 +350,7 @@ fn rule(value: &Value, source: usize) -> Result<Rule, String> {
     };
     let rule = Rule {
         pattern_string: pattern_string(&shown, flags),
+        literal_prefix: literal_prefix(&compiled, flags),
         expected,
         note,
         source,
@@ -358,6 +360,60 @@ fn rule(value: &Value, source: usize) -> Result<Rule, String> {
     };
     rule.check_specs(table.get("specs"))?;
     Ok(rule)
+}
+
+/// 正規表現の先頭に必ず現れる文字列。入力に無いときに照合を省くために使う
+fn literal_prefix(source: &str, flags: Flags) -> Option<String> {
+    if flags.ignore_case {
+        return None;
+    }
+
+    let prefix_source = source.strip_prefix('^').unwrap_or(source);
+    let mut prefix_end = prefix_source
+        .char_indices()
+        .take_while(|(_, c)| {
+            !matches!(
+                c,
+                '^' | '$' | '\\' | '.' | '*' | '+' | '?' | '(' | ')' | '[' | ']' | '{' | '}' | '|'
+            )
+        })
+        .last()
+        .map_or(0, |(index, c)| index + c.len_utf8());
+    if prefix_source[prefix_end..]
+        .chars()
+        .next()
+        .is_some_and(|c| matches!(c, '?' | '*' | '{'))
+    {
+        prefix_end = prefix_source[..prefix_end]
+            .char_indices()
+            .last()
+            .map_or(0, |(index, _)| index);
+    }
+    if prefix_source[..prefix_end].chars().count() < 2 {
+        return None;
+    }
+
+    let mut groups = 0;
+    let mut escaped = false;
+    let mut in_class = false;
+    for c in source.chars() {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        match c {
+            '\\' => escaped = true,
+            '[' if !in_class => in_class = true,
+            ']' if in_class => in_class = false,
+            _ if in_class => {}
+            '(' => groups += 1,
+            ')' => groups -= 1,
+            '|' if groups == 0 => return None,
+            _ => {}
+        }
+    }
+
+    Some(prefix_source[..prefix_end].to_owned())
 }
 
 /// `pattern`・`patterns` の値から、照合に使う正規表現の元の文字列、`ignoreRules` と比べる元の文字列、フラグを作る
@@ -466,6 +522,13 @@ fn pattern_string(source: &str, flags: Flags) -> String {
 impl Rule {
     /// `text` の中の、このルールの置き換えの箇所を `replacements` に足す。`index` は `Dictionary::rules` での番号
     fn push_replacements(&self, text: &str, index: usize, replacements: &mut Vec<Replacement>) {
+        if self
+            .literal_prefix
+            .as_deref()
+            .is_some_and(|prefix| !text.contains(prefix))
+        {
+            return;
+        }
         for m in self.regex.find_iter(text) {
             if m.range.is_empty() {
                 continue;

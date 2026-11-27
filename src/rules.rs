@@ -403,19 +403,21 @@ pub struct Report {
 }
 
 /// 指摘ルール (組み込みの指摘ルール、見出しの中で直さない修正ルール、直さない利用者の置き換え、`replace` の無い
-/// `@textlint-rule/pattern` の要素) に当たる箇所を、位置の順に返す。`prh` と `@textlint-rule/pattern` と
+/// `@textlint-rule/pattern` の要素) に当たる箇所を返す。`prh` と `@textlint-rule/pattern` と
 /// `preset-jtf-style` の辞書の4ルールと `terminology` と `spelling` は、`targets` と重なる本文の範囲 (`spelling` は画像のaltも)
-/// だけに当てる。`fixes` は、同じ `src` と `document` の `fix_findings` の結果である。
+/// だけに当てる。`fixes` は、同じ `src` と `document` の `fix_findings` の結果と、検査で求めた利用者の置き換えである。
+/// 利用者の置き換えを渡さないときは、修正後の `src` に当て直す。
 /// `ignored` に含まれる指摘は除く。`links` は、`no-dead-link` が宛先を確かめる文脈である
 pub fn report(
     src: &str,
     document: &Document,
     builtin: &Builtin,
     targets: &TargetLines,
-    fixes: &[FixRuleFinding],
+    fixes: (&[FixRuleFinding], Option<&[UserReplacement]>),
     ignored: &Ignored,
     links: Option<&Links<'_>>,
 ) -> Vec<Report> {
+    let (fixes, replacements) = fixes;
     let (texts, alts) = target_texts(src, document, builtin, targets);
     // 英語の4ルールは、`spelling` の辞書の読み込みと候補の計算に時間がかかるので、どれかが有効なときだけ1つのthreadで、
     // ほかのルールと並行に当てる (threadを立てる箇所は `english::report` に書いた)。指摘は、ほかのルールの指摘の後に足すので、
@@ -431,25 +433,23 @@ pub fn report(
         if let Some(rule) = &builtin.textlint_rule_pattern {
             reports.extend(textlint_rule_pattern::report(src, &texts, rule));
         }
-        reports.extend(
-            user_replacements(src, &texts, builtin, ignored)
-                .into_iter()
-                .filter_map(|replacement| {
-                    let reason = unfixable(src, &replacement)?;
-                    let Finding {
-                        range,
-                        rule,
-                        position,
-                        message,
-                        ..
-                    } = replacement.finding;
-                    Some(Report {
-                        range: position..range.end,
-                        rule: rule.name(),
-                        message: Cow::Owned(format!("{message}。{reason}")),
-                    })
-                }),
-        );
+        let calculated;
+        let replacements = match replacements {
+            Some(replacements) => replacements,
+            None => {
+                calculated = user_replacements_in(src, &texts, builtin, ignored);
+                &calculated
+            }
+        };
+        reports.extend(replacements.iter().filter_map(|replacement| {
+            let reason = replacement.unfixable(src)?;
+            let finding = &replacement.finding;
+            Some(Report {
+                range: finding.position..finding.range.end,
+                rule: finding.rule.name(),
+                message: Cow::Owned(format!("{}。{reason}", finding.message)),
+            })
+        }));
         reports.extend(fixes.iter().filter(|fix| fix.heading).map(
             |FixRuleFinding { finding, .. }| Report {
                 range: finding.position..finding.range.end,
@@ -469,7 +469,6 @@ pub fn report(
         reports
     });
     reports.retain(|report| !ignored.covers(&report.range, report.rule));
-    reports.sort_by_key(|report| report.range.start);
     reports
 }
 
@@ -481,26 +480,39 @@ pub struct UserReplacement {
     pub heading: bool,
 }
 
-/// 利用者の置き換えのうち直すものを、重なりを解いて位置の順に返す。見出しの中の箇所と改行を含む箇所は含めない
-/// (`report` が指摘にする)。`targets` と重なる本文の範囲だけに当てる。`ignored` に含まれる箇所は、重なりを解く前に除く
-pub fn replacements(
+impl UserReplacement {
+    /// 直さずに指摘にするときの理由。見出しの中の箇所には、見出しの理由だけを返す
+    pub fn unfixable(&self, src: &str) -> Option<&'static str> {
+        if self.heading {
+            return Some("見出しのアンカーが変わるので、見出しへのリンクも直す");
+        }
+        // hookは、直した後の内容でも対象行の番号が変わらないことを前提にする
+        (src[self.finding.range.clone()].contains('\n') || self.finding.replacement.contains('\n'))
+            .then_some("改行を含むので直さない")
+    }
+}
+
+/// 利用者の置き換えを、対象行と重なる本文の範囲に当てる
+pub fn user_replacements(
     src: &str,
     document: &Document,
     builtin: &Builtin,
     targets: &TargetLines,
     ignored: &Ignored,
-) -> Vec<Finding> {
+) -> Vec<UserReplacement> {
+    if builtin.prh.is_none()
+        && builtin.textlint_rule_pattern.is_none()
+        && builtin.terminology.is_none()
+    {
+        return Vec::new();
+    }
     let (texts, _) = target_texts(src, document, builtin, targets);
-    user_replacements(src, &texts, builtin, ignored)
-        .into_iter()
-        .filter(|replacement| unfixable(src, replacement).is_none())
-        .map(|replacement| replacement.finding)
-        .collect()
+    user_replacements_in(src, &texts, builtin, ignored)
 }
 
 /// 利用者の置き換えの箇所を、`ignored` に含まれるものと、すでに置き換え後の形になっているものを除き、重なりを解いて
 /// 位置の順に返す。範囲が同じ箇所は、`prh`、`patterns` の前の要素、`terminology` の順に残す
-fn user_replacements(
+fn user_replacements_in(
     src: &str,
     texts: &[&Prose],
     builtin: &Builtin,
@@ -538,17 +550,6 @@ fn already_replaced(src: &str, finding: &Finding) -> bool {
                 .and_then(|start| src.get(start..start + replacement.len()))
                 == Some(replacement)
     })
-}
-
-/// 直さずに指摘にする利用者の置き換えなら、指摘の文面に続ける理由を返す。見出しの中の箇所は見出しの理由だけを返す
-fn unfixable(src: &str, replacement: &UserReplacement) -> Option<&'static str> {
-    if replacement.heading {
-        return Some("見出しのアンカーが変わるので、見出しへのリンクも直す");
-    }
-    let finding = &replacement.finding;
-    // hookは、直した後の内容でも対象行の番号が変わらないことを前提にする
-    (src[finding.range.clone()].contains('\n') || finding.replacement.contains('\n'))
-        .then_some("改行を含むので直さない")
 }
 
 /// 箇所を開始の位置の順に、同じ位置なら長いものを先に並べ、残した最後の箇所の終わりより前に始まる箇所を捨てる。
@@ -825,11 +826,9 @@ fn target_texts<'a>(
     }
     let index = matches!(targets, TargetLines::Lines(_)).then(|| LineIndex::new(src));
     let overlaps = |range: &Range<usize>| {
-        index.as_ref().is_none_or(|index| {
-            let (first, _) = index.line_col(range.start);
-            let (last, _) = index.line_col(range.end);
-            targets.overlaps(first..=last)
-        })
+        index
+            .as_ref()
+            .is_none_or(|index| targets.overlaps(index.line(range.start)..=index.line(range.end)))
     };
     let texts = document
         .texts
@@ -943,21 +942,25 @@ fn space_findings(
     text: &str,
     builtin: &Builtin,
 ) -> impl Iterator<Item = (Range<usize>, SpaceRule)> {
-    SPACES.find_iter(text).filter_map(move |spaces| {
-        let prev = text[..spaces.start()].chars().next_back()?;
-        let next = text[spaces.end()..].chars().next()?;
-        let rule = space_rule(prev, next).filter(|rule| rule.enabled(builtin))?;
-        Some((spaces.range(), rule))
-    })
+    (builtin.space_between_ja_and_alnum || builtin.space_between_ja_and_paren)
+        .then(|| SPACES.find_iter(text))
+        .into_iter()
+        .flatten()
+        .filter_map(move |spaces| {
+            let prev = text[..spaces.start()].chars().next_back()?;
+            let next = text[spaces.end()..].chars().next()?;
+            let rule = space_rule(prev, next).filter(|rule| rule.enabled(builtin))?;
+            Some((spaces.range(), rule))
+        })
 }
 
 /// 空白の直前の文字 `prev` と直後の文字 `next` から、空白を削除するルールを決める
 fn space_rule(prev: char, next: char) -> Option<SpaceRule> {
     let alnum = |c: char| c.is_ascii_alphanumeric();
-    if (is_japanese(prev) && alnum(next)) || (alnum(prev) && is_japanese(next)) {
+    if (alnum(next) && is_japanese(prev)) || (alnum(prev) && is_japanese(next)) {
         return Some(SpaceRule::JaAndAlnum);
     }
-    if (is_japanese(prev) && matches!(next, '(' | '（'))
+    if (matches!(next, '(' | '（') && is_japanese(prev))
         || (matches!(prev, ')' | '）') && is_japanese(next))
     {
         return Some(SpaceRule::JaAndParen);
@@ -966,7 +969,7 @@ fn space_rule(prev: char, next: char) -> Option<SpaceRule> {
 }
 
 fn is_japanese(c: char) -> bool {
-    JAPANESE.is_match(c.encode_utf8(&mut [0; 4]))
+    !c.is_ascii() && JAPANESE.is_match(c.encode_utf8(&mut [0; 4]))
 }
 
 #[cfg(test)]

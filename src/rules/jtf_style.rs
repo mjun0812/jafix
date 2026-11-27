@@ -148,6 +148,9 @@ impl JtfRule {
 /// `3.3` の空白を消す側、`4.2.4`) の箇所を返す。どれも `Context::plain` の本文の範囲だけに当てるので、
 /// 見出しの中の箇所は無い。重なりは解かない
 pub fn find(src: &str, texts: &[Prose], builtin: &Builtin) -> Vec<FixRuleFinding> {
+    if !builtin.jtf_style.any_enabled() {
+        return Vec::new();
+    }
     texts::find(src, texts, &builtin.jtf_style)
 }
 
@@ -160,6 +163,9 @@ pub fn report(
     target_texts: &[&Prose],
 ) -> Vec<Report> {
     let rules = &builtin.jtf_style;
+    if !rules.any_enabled() {
+        return Vec::new();
+    }
     let mut reports = texts::report(src, &document.texts, rules);
     reports.extend(style::report(src, document, rules));
     reports.extend(pairs::report(src, document, rules));

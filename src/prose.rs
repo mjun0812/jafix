@@ -1,7 +1,10 @@
 use std::ops::Range;
+use std::sync::OnceLock;
 
 use markdown::mdast::{Node, ReferenceKind};
 use markdown::{Constructs, ParseOptions};
+
+use crate::sentence::Sentence;
 
 /// Markdownから取り出した、ルールを当てる単位
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -137,6 +140,7 @@ pub struct Paragraph {
     /// 文書の直下の段落で、次のブロックが `BlockKind` のどれかなら、その種類
     pub next_block: Option<BlockKind>,
     pub children: Vec<Inline>,
+    pub(crate) list_sentences: OnceLock<Vec<Sentence>>,
 }
 
 /// 文書の直下の段落の次に来るブロックのうち、ルールが見る種類
@@ -598,6 +602,7 @@ fn collect_paragraphs(
         footnote: ancestors.footnote,
         list_item_index: ancestors.list_item,
         next_block,
+        list_sentences: OnceLock::new(),
         children: node
             .children()
             .into_iter()

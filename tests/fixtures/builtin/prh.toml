@@ -1619,3 +1619,41 @@ text = "abcdef"
 findings = ["1:1"]
 messages = ["「abcd」を「P」にする"]
 fixed = "Pef"
+
+[[cases]]
+name = "d-pattern-optional-quantifiers"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: 日本語
+    pattern: /日本語?/
+  - expected: 中国語
+    pattern: /中国語*/
+  - expected: 京都人
+    pattern: /京都人{0,2}/
+""",
+]
+'''
+text = "日本 中国 京都"
+findings = ["1:1", "1:4", "1:7"]
+messages = ["「日本」を「日本語」にする", "「中国」を「中国語」にする", "「京都」を「京都人」にする"]
+fixed = "日本語 中国語 京都人"
+
+[[cases]]
+name = "d-pattern-top-level-alternation-prefix"
+builtin = '''
+[builtin.prh]
+ruleContents = [
+"""
+rules:
+  - expected: 置換
+    pattern: /^日本|英語/
+""",
+]
+'''
+text = "英語"
+findings = ["1:1"]
+messages = ["「英語」を「置換」にする"]
+fixed = "置換"
