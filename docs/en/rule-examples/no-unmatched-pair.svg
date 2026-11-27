@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="156" viewBox="0 0 720 156" role="img" aria-labelledby="title desc">
+<title id="title">Example of no-unmatched-pair</title>
+<desc id="desc">Example: 「保存」を押して、「設定を開きます。</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="155" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 112.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>no-unmatched-pair</text>
+<rect x="189" y="13" width="58.9" height="22" rx="11" fill="#fff8c5"/>
+<text x="218.4" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#9a6700'>Report</text>
+<text class="l" x="24" y="83">Example</text>
+<text class="w" x="115" y="84">「</text>
+<text class="w" x="137" y="84">保</text>
+<text class="w" x="159" y="84">存</text>
+<text class="w" x="181" y="84">」</text>
+<text class="w" x="203" y="84">を</text>
+<text class="w" x="225" y="84">押</text>
+<text class="w" x="247" y="84">し</text>
+<text class="w" x="269" y="84">て</text>
+<text class="w" x="291" y="84">、</text>
+<text class="w" x="313" y="84">「</text>
+<rect x="324" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="335" y="84">設</text>
+<rect x="346" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="357" y="84">定</text>
+<rect x="368" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="379" y="84">を</text>
+<rect x="390" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="401" y="84">開</text>
+<rect x="412" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="423" y="84">き</text>
+<rect x="434" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="445" y="84">ま</text>
+<rect x="456" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="467" y="84">す</text>
+<rect x="478" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="489" y="84">。</text>
+<text class="l" x="24" y="138">Flags unmatched brackets and quotation marks</text>
+<text class="l" x="696" y="138" style="text-anchor:end">1 finding</text>
+</svg>

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="156" viewBox="0 0 720 156" role="img" aria-labelledby="title desc">
+<title id="title">ja-nakaguro-or-halfwidth-space-between-katakana の例</title>
+<desc id="desc">例文: ビルド　サーバーとビルド・サーバーを使います。</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="155" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 112.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>ja-nakaguro-or-halfwidth-space-between-katakana</text>
+<rect x="459" y="13" width="44" height="22" rx="11" fill="#fff8c5"/>
+<text x="481" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#9a6700'>指摘</text>
+<text class="l" x="24" y="83">例文</text>
+<text class="w" x="115" y="84">ビ</text>
+<text class="w" x="137" y="84">ル</text>
+<text class="w" x="159" y="84">ド</text>
+<rect x="170" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<path d="M172.5 81v5h17v-5" fill="none" stroke="#cf222e" stroke-width="1.5"/>
+<text class="w" x="203" y="84">サ</text>
+<text class="w" x="225" y="84">ー</text>
+<text class="w" x="247" y="84">バ</text>
+<text class="w" x="269" y="84">ー</text>
+<text class="w" x="291" y="84">と</text>
+<text class="w" x="313" y="84">ビ</text>
+<text class="w" x="335" y="84">ル</text>
+<text class="w" x="357" y="84">ド</text>
+<text class="w" x="379" y="84">・</text>
+<text class="w" x="401" y="84">サ</text>
+<text class="w" x="423" y="84">ー</text>
+<text class="w" x="445" y="84">バ</text>
+<text class="w" x="467" y="84">ー</text>
+<text class="w" x="489" y="84">を</text>
+<text class="w" x="511" y="84">使</text>
+<text class="w" x="533" y="84">い</text>
+<text class="w" x="555" y="84">ま</text>
+<text class="w" x="577" y="84">す</text>
+<text class="w" x="599" y="84">。</text>
+<text class="l" x="24" y="138">カタカナ語の間は、全角空白ではなく中黒か半角空白で区切る</text>
+<text class="l" x="696" y="138" style="text-anchor:end">1か所</text>
+</svg>

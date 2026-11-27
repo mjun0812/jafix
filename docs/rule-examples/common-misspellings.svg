@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="156" viewBox="0 0 720 156" role="img" aria-labelledby="title desc">
+<title id="title">common-misspellings の例</title>
+<desc id="desc">例文: Check teh config, then recieve it.</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="155" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 112.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>common-misspellings</text>
+<rect x="207" y="13" width="44" height="22" rx="11" fill="#fff8c5"/>
+<text x="229" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#9a6700'>指摘</text>
+<text class="l" x="24" y="83">例文</text>
+<text class="n" x="110.6" y="84">C</text>
+<text class="n" x="123.8" y="84">h</text>
+<text class="n" x="137" y="84">e</text>
+<text class="n" x="150.2" y="84">c</text>
+<text class="n" x="163.4" y="84">k</text>
+<path d="M172.5 81v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<rect x="183.2" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="189.8" y="84">t</text>
+<rect x="196.4" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="203" y="84">e</text>
+<rect x="209.6" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="216.2" y="84">h</text>
+<path d="M225.3 81v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<text class="n" x="242.6" y="84">c</text>
+<text class="n" x="255.8" y="84">o</text>
+<text class="n" x="269" y="84">n</text>
+<text class="n" x="282.2" y="84">f</text>
+<text class="n" x="295.4" y="84">i</text>
+<text class="n" x="308.6" y="84">g</text>
+<text class="n" x="321.8" y="84">,</text>
+<path d="M330.9 81v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<text class="n" x="348.2" y="84">t</text>
+<text class="n" x="361.4" y="84">h</text>
+<text class="n" x="374.6" y="84">e</text>
+<text class="n" x="387.8" y="84">n</text>
+<path d="M396.9 81v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<rect x="407.6" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="414.2" y="84">r</text>
+<rect x="420.8" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="427.4" y="84">e</text>
+<rect x="434" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="440.6" y="84">c</text>
+<rect x="447.2" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="453.8" y="84">i</text>
+<rect x="460.4" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="467" y="84">e</text>
+<rect x="473.6" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="480.2" y="84">v</text>
+<rect x="486.8" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="493.4" y="84">e</text>
+<path d="M502.5 81v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<text class="n" x="519.8" y="84">i</text>
+<text class="n" x="533" y="84">t</text>
+<text class="n" x="546.2" y="84">.</text>
+<text class="l" x="24" y="138">よくある綴りの誤り「teh」を使っている。正しくは「the」</text>
+<text class="l" x="696" y="138" style="text-anchor:end">2か所</text>
+</svg>

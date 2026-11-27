@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="228" viewBox="0 0 720 228" role="img" aria-labelledby="title desc">
+<title id="title">no-ai-emphasis-patterns の例</title>
+<desc id="desc">例文: ✅ **テスト**が通りました。
+
+設定は**必ず**保存します。</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="227" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 184.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>no-ai-emphasis-patterns</text>
+<rect x="243" y="13" width="44" height="22" rx="11" fill="#fff8c5"/>
+<text x="265" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#9a6700'>指摘</text>
+<text class="l" x="24" y="83">例文</text>
+<rect x="104" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="115" y="84">✅</text>
+<rect x="126" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<path d="M128.5 81v5h8.2v-5" fill="none" stroke="#cf222e" stroke-width="1.5"/>
+<rect x="139.2" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="145.8" y="84">*</text>
+<rect x="152.4" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="159" y="84">*</text>
+<rect x="165.6" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="176.6" y="84">テ</text>
+<rect x="187.6" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="198.6" y="84">ス</text>
+<rect x="209.6" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="220.6" y="84">ト</text>
+<rect x="231.6" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="238.2" y="84">*</text>
+<rect x="244.8" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="251.4" y="84">*</text>
+<text class="w" x="269" y="84">が</text>
+<text class="w" x="291" y="84">通</text>
+<text class="w" x="313" y="84">り</text>
+<text class="w" x="335" y="84">ま</text>
+<text class="w" x="357" y="84">し</text>
+<text class="w" x="379" y="84">た</text>
+<text class="w" x="401" y="84">。</text>
+<text class="w q" x="423" y="84" style="font-size:16px">↵</text>
+<text class="w q" x="115" y="120" style="font-size:16px">↵</text>
+<text class="w" x="115" y="156">設</text>
+<text class="w" x="137" y="156">定</text>
+<text class="w" x="159" y="156">は</text>
+<text class="n" x="176.6" y="156">*</text>
+<text class="n" x="189.8" y="156">*</text>
+<text class="w" x="207.4" y="156">必</text>
+<text class="w" x="229.4" y="156">ず</text>
+<text class="n" x="247" y="156">*</text>
+<text class="n" x="260.2" y="156">*</text>
+<text class="w" x="277.8" y="156">保</text>
+<text class="w" x="299.8" y="156">存</text>
+<text class="w" x="321.8" y="156">し</text>
+<text class="w" x="343.8" y="156">ま</text>
+<text class="w" x="365.8" y="156">す</text>
+<text class="w" x="387.8" y="156">。</text>
+<text class="l" x="24" y="210">絵文字と太字を組み合わせている</text>
+<text class="l" x="696" y="210" style="text-anchor:end">1か所</text>
+</svg>

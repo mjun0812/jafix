@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="204" viewBox="0 0 720 204" role="img" aria-labelledby="title desc">
+<title id="title">ja-no-space-around-parentheses の例</title>
+<desc id="desc">修正前: 設定は 「共通設定」 に書きます (任意)。 / 修正後: 設定は「共通設定」に書きます (任意)。</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="203" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 160.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>ja-no-space-around-parentheses</text>
+<rect x="306" y="13" width="44" height="22" rx="11" fill="#ddf4ff"/>
+<text x="328" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#0969da'>修正</text>
+<text class="l" x="24" y="83">修正前</text>
+<text class="w" x="115" y="84">設</text>
+<text class="w" x="137" y="84">定</text>
+<text class="w" x="159" y="84">は</text>
+<rect x="170" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<path d="M172.5 81v5h8.2v-5" fill="none" stroke="#cf222e" stroke-width="1.5"/>
+<text class="w" x="194.2" y="84">「</text>
+<text class="w" x="216.2" y="84">共</text>
+<text class="w" x="238.2" y="84">通</text>
+<text class="w" x="260.2" y="84">設</text>
+<text class="w" x="282.2" y="84">定</text>
+<text class="w" x="304.2" y="84">」</text>
+<rect x="315.2" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<path d="M317.7 81v5h8.2v-5" fill="none" stroke="#cf222e" stroke-width="1.5"/>
+<text class="w" x="339.4" y="84">に</text>
+<text class="w" x="361.4" y="84">書</text>
+<text class="w" x="383.4" y="84">き</text>
+<text class="w" x="405.4" y="84">ま</text>
+<text class="w" x="427.4" y="84">す</text>
+<path d="M440.9 81v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<text class="n" x="458.2" y="84">(</text>
+<text class="w" x="475.8" y="84">任</text>
+<text class="w" x="497.8" y="84">意</text>
+<text class="n" x="515.4" y="84">)</text>
+<text class="w" x="533" y="84">。</text>
+<text class="l" x="24" y="131">修正後</text>
+<text class="w" x="115" y="132">設</text>
+<text class="w" x="137" y="132">定</text>
+<text class="w" x="159" y="132">は</text>
+<text class="w" x="181" y="132">「</text>
+<text class="w" x="203" y="132">共</text>
+<text class="w" x="225" y="132">通</text>
+<text class="w" x="247" y="132">設</text>
+<text class="w" x="269" y="132">定</text>
+<text class="w" x="291" y="132">」</text>
+<text class="w" x="313" y="132">に</text>
+<text class="w" x="335" y="132">書</text>
+<text class="w" x="357" y="132">き</text>
+<text class="w" x="379" y="132">ま</text>
+<text class="w" x="401" y="132">す</text>
+<path d="M414.5 129v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<text class="n" x="431.8" y="132">(</text>
+<text class="w" x="449.4" y="132">任</text>
+<text class="w" x="471.4" y="132">意</text>
+<text class="n" x="489" y="132">)</text>
+<text class="w" x="506.6" y="132">。</text>
+<text class="l" x="24" y="186">括弧の外側と内側の空白を削除する</text>
+<text class="l" x="696" y="186" style="text-anchor:end">2か所</text>
+</svg>

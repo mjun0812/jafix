@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="300" viewBox="0 0 720 300" role="img" aria-labelledby="title desc">
+<title id="title">yomiyasu-count-declaration の例</title>
+<desc id="desc">例文: ポイントは3つです。
+
+- 設定を保存する
+- テストを書く
+- 小さく公開する</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="299" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 256.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>yomiyasu-count-declaration</text>
+<rect x="270" y="13" width="44" height="22" rx="11" fill="#fff8c5"/>
+<text x="292" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#9a6700'>指摘</text>
+<text class="l" x="24" y="83">例文</text>
+<rect x="104" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="115" y="84">ポ</text>
+<rect x="126" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="137" y="84">イ</text>
+<rect x="148" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="159" y="84">ン</text>
+<rect x="170" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="181" y="84">ト</text>
+<rect x="192" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="203" y="84">は</text>
+<rect x="214" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="220.6" y="84">3</text>
+<rect x="227.2" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="238.2" y="84">つ</text>
+<rect x="249.2" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="260.2" y="84">で</text>
+<rect x="271.2" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="282.2" y="84">す</text>
+<text class="w" x="304.2" y="84">。</text>
+<text class="w q" x="326.2" y="84" style="font-size:16px">↵</text>
+<text class="w q" x="115" y="120" style="font-size:16px">↵</text>
+<text class="n" x="110.6" y="156">-</text>
+<path d="M119.7 153v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<text class="w" x="141.4" y="156">設</text>
+<text class="w" x="163.4" y="156">定</text>
+<text class="w" x="185.4" y="156">を</text>
+<text class="w" x="207.4" y="156">保</text>
+<text class="w" x="229.4" y="156">存</text>
+<text class="w" x="251.4" y="156">す</text>
+<text class="w" x="273.4" y="156">る</text>
+<text class="w q" x="295.4" y="156" style="font-size:16px">↵</text>
+<text class="n" x="110.6" y="192">-</text>
+<path d="M119.7 189v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<text class="w" x="141.4" y="192">テ</text>
+<text class="w" x="163.4" y="192">ス</text>
+<text class="w" x="185.4" y="192">ト</text>
+<text class="w" x="207.4" y="192">を</text>
+<text class="w" x="229.4" y="192">書</text>
+<text class="w" x="251.4" y="192">く</text>
+<text class="w q" x="273.4" y="192" style="font-size:16px">↵</text>
+<text class="n" x="110.6" y="228">-</text>
+<path d="M119.7 225v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<text class="w" x="141.4" y="228">小</text>
+<text class="w" x="163.4" y="228">さ</text>
+<text class="w" x="185.4" y="228">く</text>
+<text class="w" x="207.4" y="228">公</text>
+<text class="w" x="229.4" y="228">開</text>
+<text class="w" x="251.4" y="228">す</text>
+<text class="w" x="273.4" y="228">る</text>
+<text class="l" x="24" y="282">「ポイントは3つです」のような数の宣言が要るか確認する</text>
+<text class="l" x="696" y="282" style="text-anchor:end">1か所</text>
+</svg>

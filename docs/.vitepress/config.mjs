@@ -5,6 +5,8 @@ const repo = 'https://github.com/mjun0812/jafix'
 export default defineConfig({
   title: 'jafix',
   srcExclude: ['adr/**'],
+  // 「ルールの例」は、ルールごとの画像を100枚以上並べる
+  markdown: { image: { lazyLoading: true } },
   themeConfig: {
     socialLinks: [{ icon: 'github', link: repo }],
   },
@@ -32,6 +34,7 @@ export default defineConfig({
             text: '資料',
             items: [
               { text: 'ルール一覧', link: '/rules' },
+              { text: 'ルールの例', link: '/rule-examples' },
               { text: 'ベンチマーク', link: '/benchmark-vs-textlint' },
               { text: 'リファレンス(GitHub)', link: `${repo}/blob/main/REFERENCE.md` },
             ],
@@ -75,6 +78,7 @@ export default defineConfig({
             text: 'Reference',
             items: [
               { text: 'Rules', link: '/en/rules' },
+              { text: 'Rule examples', link: '/en/rule-examples' },
               { text: 'Benchmark', link: '/en/benchmark-vs-textlint' },
               { text: 'Full reference (Japanese, GitHub)', link: `${repo}/blob/main/REFERENCE.md` },
             ],

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="248" viewBox="0 0 720 248" role="img" aria-labelledby="title desc">
+<title id="title">Example of ja-no-mixed-period</title>
+<desc id="desc">Example: - 設定ファイルを保存します
+
+次にテストを実行します</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="247" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 184.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>ja-no-mixed-period</text>
+<rect x="198" y="13" width="58.9" height="22" rx="11" fill="#fff8c5"/>
+<text x="227.4" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#9a6700'>Report</text>
+<text class="l" x="24" y="83">Example</text>
+<text class="n" x="110.6" y="84">-</text>
+<path d="M119.7 81v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<text class="w" x="141.4" y="84">設</text>
+<text class="w" x="163.4" y="84">定</text>
+<text class="w" x="185.4" y="84">フ</text>
+<text class="w" x="207.4" y="84">ァ</text>
+<text class="w" x="229.4" y="84">イ</text>
+<text class="w" x="251.4" y="84">ル</text>
+<text class="w" x="273.4" y="84">を</text>
+<text class="w" x="295.4" y="84">保</text>
+<text class="w" x="317.4" y="84">存</text>
+<text class="w" x="339.4" y="84">し</text>
+<text class="w" x="361.4" y="84">ま</text>
+<text class="w" x="383.4" y="84">す</text>
+<text class="w q" x="405.4" y="84" style="font-size:16px">↵</text>
+<text class="w q" x="115" y="120" style="font-size:16px">↵</text>
+<text class="w" x="115" y="156">次</text>
+<text class="w" x="137" y="156">に</text>
+<text class="w" x="159" y="156">テ</text>
+<text class="w" x="181" y="156">ス</text>
+<text class="w" x="203" y="156">ト</text>
+<text class="w" x="225" y="156">を</text>
+<text class="w" x="247" y="156">実</text>
+<text class="w" x="269" y="156">行</text>
+<text class="w" x="291" y="156">し</text>
+<text class="w" x="313" y="156">ま</text>
+<rect x="324" y="135" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="335" y="156">す</text>
+<text class="l" x="24" y="210">Flags paragraph-ending punctuation, including missing Japanese full stops where </text>
+<text class="l" x="24" y="230">required</text>
+<text class="l" x="696" y="210" style="text-anchor:end">1 finding</text>
+</svg>

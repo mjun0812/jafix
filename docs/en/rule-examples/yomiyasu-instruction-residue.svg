@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="248" viewBox="0 0 720 248" role="img" aria-labelledby="title desc">
+<title id="title">Example of yomiyasu-instruction-residue</title>
+<desc id="desc">Example: この記事ではAPIは扱いません。
+
+この記事ではUIは扱いません。[UI編](ui.md)を参照。</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="247" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 184.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>yomiyasu-instruction-residue</text>
+<rect x="288" y="13" width="58.9" height="22" rx="11" fill="#fff8c5"/>
+<text x="317.4" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#9a6700'>Report</text>
+<text class="l" x="24" y="83">Example</text>
+<rect x="104" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="115" y="84">こ</text>
+<rect x="126" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="137" y="84">の</text>
+<rect x="148" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="159" y="84">記</text>
+<rect x="170" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="181" y="84">事</text>
+<rect x="192" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="203" y="84">で</text>
+<rect x="214" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="225" y="84">は</text>
+<rect x="236" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="242.6" y="84">A</text>
+<rect x="249.2" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="255.8" y="84">P</text>
+<rect x="262.4" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="269" y="84">I</text>
+<rect x="275.6" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="286.6" y="84">は</text>
+<rect x="297.6" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="308.6" y="84">扱</text>
+<rect x="319.6" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="330.6" y="84">い</text>
+<rect x="341.6" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="352.6" y="84">ま</text>
+<rect x="363.6" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="374.6" y="84">せ</text>
+<rect x="385.6" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="396.6" y="84">ん</text>
+<rect x="407.6" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="418.6" y="84">。</text>
+<text class="w q" x="440.6" y="84" style="font-size:16px">↵</text>
+<text class="w q" x="115" y="120" style="font-size:16px">↵</text>
+<text class="w" x="115" y="156">こ</text>
+<text class="w" x="137" y="156">の</text>
+<text class="w" x="159" y="156">記</text>
+<text class="w" x="181" y="156">事</text>
+<text class="w" x="203" y="156">で</text>
+<text class="w" x="225" y="156">は</text>
+<text class="n" x="242.6" y="156">U</text>
+<text class="n" x="255.8" y="156">I</text>
+<text class="w" x="273.4" y="156">は</text>
+<text class="w" x="295.4" y="156">扱</text>
+<text class="w" x="317.4" y="156">い</text>
+<text class="w" x="339.4" y="156">ま</text>
+<text class="w" x="361.4" y="156">せ</text>
+<text class="w" x="383.4" y="156">ん</text>
+<text class="w" x="405.4" y="156">。</text>
+<text class="n" x="423" y="156">[</text>
+<text class="n" x="436.2" y="156">U</text>
+<text class="n" x="449.4" y="156">I</text>
+<text class="w" x="467" y="156">編</text>
+<text class="n" x="484.6" y="156">]</text>
+<text class="n" x="497.8" y="156">(</text>
+<text class="n" x="511" y="156">u</text>
+<text class="n" x="524.2" y="156">i</text>
+<text class="n" x="537.4" y="156">.</text>
+<text class="n" x="550.6" y="156">m</text>
+<text class="n" x="563.8" y="156">d</text>
+<text class="n" x="577" y="156">)</text>
+<text class="w" x="594.6" y="156">を</text>
+<text class="w" x="616.6" y="156">参</text>
+<text class="w" x="638.6" y="156">照</text>
+<text class="w" x="660.6" y="156">。</text>
+<text class="l" x="24" y="210">Flags writing instructions left in the prose and scope exclusions without a </text>
+<text class="l" x="24" y="230">reference</text>
+<text class="l" x="696" y="210" style="text-anchor:end">1 finding</text>
+</svg>

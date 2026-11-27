@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="156" viewBox="0 0 720 156" role="img" aria-labelledby="title desc">
+<title id="title">Example of 4.3.5.二重引用符</title>
+<desc id="desc">Example: タスク "build" と "test を実行します。</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="155" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 112.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>4.3.5.二重引用符</text>
+<rect x="165" y="13" width="58.9" height="22" rx="11" fill="#fff8c5"/>
+<text x="194.4" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#9a6700'>Report</text>
+<text class="l" x="24" y="83">Example</text>
+<text class="w" x="115" y="84">タ</text>
+<text class="w" x="137" y="84">ス</text>
+<text class="w" x="159" y="84">ク</text>
+<path d="M172.5 81v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<text class="n" x="189.8" y="84">"</text>
+<text class="n" x="203" y="84">b</text>
+<text class="n" x="216.2" y="84">u</text>
+<text class="n" x="229.4" y="84">i</text>
+<text class="n" x="242.6" y="84">l</text>
+<text class="n" x="255.8" y="84">d</text>
+<text class="n" x="269" y="84">"</text>
+<path d="M278.1 81v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<text class="w" x="299.8" y="84">と</text>
+<path d="M313.3 81v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<rect x="324" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<text class="n r" x="330.6" y="84">"</text>
+<text class="n" x="343.8" y="84">t</text>
+<text class="n" x="357" y="84">e</text>
+<text class="n" x="370.2" y="84">s</text>
+<text class="n" x="383.4" y="84">t</text>
+<path d="M392.5 81v5h8.2v-5" fill="none" stroke="#afb8c1" stroke-width="1.5"/>
+<text class="w" x="414.2" y="84">を</text>
+<text class="w" x="436.2" y="84">実</text>
+<text class="w" x="458.2" y="84">行</text>
+<text class="w" x="480.2" y="84">し</text>
+<text class="w" x="502.2" y="84">ま</text>
+<text class="w" x="524.2" y="84">す</text>
+<text class="w" x="546.2" y="84">。</text>
+<text class="l" x="24" y="138">Flags an odd number of ASCII double quotation marks in a paragraph</text>
+<text class="l" x="696" y="138" style="text-anchor:end">1 finding</text>
+</svg>
