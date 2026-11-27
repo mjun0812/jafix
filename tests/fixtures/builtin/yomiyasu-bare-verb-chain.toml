@@ -74,3 +74,9 @@ name = "当たらない-| 走る、跳ぶ、投げる。 | | --- | | x |"
 text = "| 走る、跳ぶ、投げる。 |\n| --- |\n| x |"
 findings = []
 messages = []
+
+[[cases]]
+name = "当たらない-[走る、跳ぶ、投げる。](https://example.com)"
+text = "[走る、跳ぶ、投げる。](https://example.com)"
+findings = []
+messages = []

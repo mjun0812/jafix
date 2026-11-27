@@ -1,0 +1,193 @@
+# yomiyasu-bold-not-rendered の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# 直し方の案を出した組は、その案を当てた内容を fixed にした。yomiyasuは指摘を行ごとに1件出す。jafixは組ごとに1件を
+# 開きの `**` の位置に出すので、列と文面はjafixの規則から決めた。note のあるcaseは、yomiyasuと意図して変えている箇所か、
+# 既定の修正ルールと組み合わさる箇所で、期待値は設計の規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容。ファイルの先頭に書いた分を全caseに当て、caseに書けばそちらだけを使う
+# name:     caseの名前
+# note:     yomiyasuと変える理由 (省略可)
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘と箇所の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+# fixed:    `jafix fix` の後の内容から、末尾の改行を除いたもの。2回目の `jafix fix` で変わらないことも確かめる
+
+builtin = 'yomiyasu-bold-not-rendered = true'
+
+[[cases]]
+name = "括弧-かぎ括弧"
+text = "これは**「重要」**です。"
+findings = ["1:4"]
+messages = ["太字の記号を括弧の内側に移す"]
+fixed = "これは「**重要**」です。"
+
+[[cases]]
+name = "括弧-二重かぎ括弧"
+text = "これは**『本』**です。"
+findings = ["1:4"]
+messages = ["太字の記号を括弧の内側に移す"]
+fixed = "これは『**本**』です。"
+
+[[cases]]
+name = "括弧-全角の丸括弧"
+note = "太字を直した後の全角括弧は、既定で有効な fullwidth-paren が同じ実行の中で半角にする"
+text = "これは**（重要）**です。"
+findings = ["1:4"]
+messages = ["太字の記号を括弧の内側に移す"]
+fixed = "これは(**重要**)です。"
+
+[[cases]]
+name = "括弧-2つ目の組"
+text = "これは**重要**です。次は**「注意」**です。"
+findings = ["1:15"]
+messages = ["太字の記号を括弧の内側に移す"]
+fixed = "これは**重要**です。次は「**注意**」です。"
+
+[[cases]]
+name = "括弧-インラインコードの中の記号は組にしない"
+text = "`**「x」**`と**「重要」**です"
+findings = ["1:11"]
+messages = ["太字の記号を括弧の内側に移す"]
+fixed = "`**「x」**`と「**重要**」です"
+
+[[cases]]
+name = "括弧-表のセル"
+text = "| 前**「設定」**後 |\n| --- |\n| x |"
+findings = ["1:4"]
+messages = ["太字の記号を括弧の内側に移す"]
+fixed = "| 前「**設定**」後 |\n| --- |\n| x |"
+
+[[cases]]
+name = "括弧-引用"
+text = "> これは**「重要」**です。"
+findings = ["1:6"]
+messages = ["太字の記号を括弧の内側に移す"]
+fixed = "> これは「**重要**」です。"
+
+[[cases]]
+name = "句読点-句点"
+text = "これは**重要。**次です。"
+findings = ["1:4"]
+messages = ["句読点を太字の外に出す"]
+fixed = "これは**重要**。次です。"
+
+[[cases]]
+name = "句読点-感嘆符"
+text = "これは**重要！**です。"
+findings = ["1:4"]
+messages = ["句読点を太字の外に出す"]
+fixed = "これは**重要**！です。"
+
+[[cases]]
+name = "空白-内側の先頭"
+text = "これは** 重要**です。"
+findings = ["1:4"]
+messages = ["太字の内側の空白を削除する"]
+fixed = "これは**重要**です。"
+
+[[cases]]
+name = "空白-内側の末尾"
+text = "これは**重要 **です。"
+findings = ["1:4"]
+messages = ["太字の内側の空白を削除する"]
+fixed = "これは**重要**です。"
+
+[[cases]]
+name = "空白-閉じの外側"
+text = "**注意：**ここです。"
+findings = ["1:1"]
+messages = ["太字の外側に空白を入れる"]
+fixed = "**注意：** ここです。"
+
+[[cases]]
+name = "空白-開きの外側"
+text = "日本語**：注意**です。"
+findings = ["1:4"]
+messages = ["太字の外側に空白を入れる"]
+fixed = "日本語 **：注意**です。"
+
+[[cases]]
+name = "空白-対にならない括弧で終わる"
+text = "これは**注(a)**です。"
+findings = ["1:4"]
+messages = ["太字の外側に空白を入れる"]
+fixed = "これは**注(a)** です。"
+
+[[cases]]
+name = "空白-太字の前後の空白を削除するルールと組み合わせる"
+note = "ja-space-around-strong は、消すと太字でなくなる空白を消さないので、太字の修正が入れた空白は残る"
+builtin = "yomiyasu-bold-not-rendered = true\nja-space-around-strong = true"
+text = "**注意：**ここです。"
+findings = ["1:1"]
+messages = ["太字の外側に空白を入れる"]
+fixed = "**注意：** ここです。"
+
+[[cases]]
+name = "直さない-ほかの記号と組を決められない"
+text = "これは**重要**です**「A」**と**B**です。"
+findings = ["1:12"]
+messages = ["太字の記号がそのまま表示される。記号と括弧や空白の位置を確認する"]
+fixed = "これは**重要**です**「A」**と**B**です。"
+
+[[cases]]
+name = "直さない-記号の連なりが多いブロックで空白だけが原因の組"
+text = "**a**と** b**です"
+findings = ["1:7"]
+messages = ["太字の記号がそのまま表示される。記号と括弧や空白の位置を確認する"]
+fixed = "**a**と** b**です"
+
+[[cases]]
+name = "直さない-太字の記号が3つ"
+text = "***「a」***です"
+findings = ["1:1"]
+messages = ["太字の記号がそのまま表示される。記号と括弧や空白の位置を確認する"]
+fixed = "***「a」***です"
+
+[[cases]]
+name = "直さない-内側にエスケープした記号"
+text = "これは**「a\\*b」**です"
+findings = ["1:4"]
+messages = ["太字の記号がそのまま表示される。記号と括弧や空白の位置を確認する"]
+fixed = "これは**「a\\*b」**です"
+
+[[cases]]
+name = "直さない-見出しの中"
+note = "yomiyasuは直し方の案を出す。直すと見出しのアンカーが変わるので、直さずに指摘にする"
+text = "# 見出し**「A」**です"
+findings = ["1:6"]
+messages = ["太字の記号を括弧の内側に移す。見出しのアンカーが変わるので、見出しへのリンクも直す"]
+fixed = "# 見出し**「A」**です"
+
+[[cases]]
+name = "直さない-改行を含む組"
+note = "yomiyasuは直し方の案を出す。hookで組の始まりの行だけが対象行のとき、対象行でない行まで書き換わるので直さない"
+text = "前**「複数行に\nまたがる」**後"
+findings = ["1:2"]
+messages = ["太字の記号がそのまま表示される。記号と括弧や空白の位置を確認する"]
+fixed = "前**「複数行に\nまたがる」**後"
+
+[[cases]]
+name = "当たらない-外側に空白"
+text = "これは **重要** です。"
+findings = []
+fixed = "これは **重要** です。"
+
+[[cases]]
+name = "当たらない-太字になる組"
+text = "これは**重要**です。"
+findings = []
+fixed = "これは**重要**です。"
+
+[[cases]]
+name = "当たらない-半角のコロンの後に空白"
+text = "**注意:** 次です。"
+findings = []
+
+[[cases]]
+name = "当たらない-リストの先頭の括弧"
+text = "- **「A」**: 説明"
+findings = []
+
+[[cases]]
+name = "当たらない-段落の全体"
+text = "**「A」**"
+findings = []

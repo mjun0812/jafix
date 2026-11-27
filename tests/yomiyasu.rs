@@ -5,7 +5,7 @@ use common::{Sandbox, read, stdout};
 const RULES: &str = "[builtin]\nyomiyasu-bold-not-rendered = true\nyomiyasu-instruction-residue = true\nyomiyasu-chat-response = true\n";
 
 #[test]
-fn yomiyasu_rules_are_opt_in_and_only_report() {
+fn yomiyasu_rules_are_opt_in_and_only_the_bold_rule_rewrites() {
     let sandbox = Sandbox::new();
     let text = "選択肢は**「有効」**です。\n\nこの記事では、AIっぽさが出ないように書きます 🚀\n\nご質問ありがとうございます。\n";
     let path = sandbox.write("t.md", text);
@@ -17,13 +17,80 @@ fn yomiyasu_rules_are_opt_in_and_only_report() {
     assert_eq!(check.status.code(), Some(1), "{check:?}");
     assert_eq!(
         stdout(&check),
-        "t.md:1:5: [yomiyasu-bold-not-rendered] 太字の記号がそのまま表示される。記号と括弧や空白の位置を確認する\n\
+        "t.md:1:5: [yomiyasu-bold-not-rendered] 太字の記号を括弧の内側に移す\n\
          t.md:3:1: [yomiyasu-instruction-residue] 執筆時の指示が本文に残っていないか確認する\n\
          t.md:5:1: [yomiyasu-chat-response] チャット応答の定型句が本文に残っていないか確認する\n"
     );
     let fix = sandbox.run(&["fix", "t.md"]);
     assert_eq!(fix.status.code(), Some(0), "{fix:?}");
-    assert_eq!(read(&path), text);
+    assert_eq!(
+        read(&path),
+        text.replace("**「有効」**", "「**有効**」"),
+        "{fix:?}"
+    );
+}
+
+/// `yomiyasu-bold-not-rendered` だけを足した設定 (ほかは既定) で、`input` を `jafix fix -` に渡した出力
+fn fix_bold(sandbox: &Sandbox, input: &str) -> String {
+    let output = sandbox.run_with_stdin(&["fix", "-"], input.as_bytes());
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    stdout(&output).to_owned()
+}
+
+#[test]
+fn bold_fix_lets_the_default_fix_rules_fix_the_brackets_it_moved() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nyomiyasu-bold-not-rendered = true\n");
+    assert_eq!(
+        fix_bold(&sandbox, "これは**（重要）**です。\n"),
+        "これは(**重要**)です。\n"
+    );
+}
+
+#[test]
+fn bold_findings_are_fixable_only_when_a_repair_is_confirmed() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config("[builtin]\nyomiyasu-bold-not-rendered = true\n");
+    sandbox.write(
+        "t.md",
+        "これは**「重要」**です。\n\nこれは**重要**です**「A」**と**B**です。\n",
+    );
+    let check = sandbox.run(&["check", "--output-format", "json", "t.md"]);
+    assert_eq!(check.status.code(), Some(1), "{check:?}");
+    let value: serde_json::Value = serde_json::from_str(stdout(&check)).unwrap();
+    let findings: Vec<_> = value["findings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|finding| {
+            (
+                finding["line"].clone(),
+                finding["rule_id"].clone(),
+                finding["fixable"].clone(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        findings,
+        [
+            (1.into(), "yomiyasu-bold-not-rendered".into(), true.into()),
+            (3.into(), "yomiyasu-bold-not-rendered".into(), false.into()),
+        ]
+    );
+}
+
+#[test]
+fn bold_fix_and_space_around_strong_do_not_undo_each_other() {
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(concat!(
+        "[builtin]\nyomiyasu-bold-not-rendered = true\nja-space-around-strong = true\n",
+        "fullwidth-paren = false\nspace-between-ja-and-alnum = false\nspace-between-ja-and-paren = false\n",
+        "no-nfd = false\nno-invalid-control-character = false\nno-zero-width-spaces = false\n",
+        "no-kangxi-radicals = false\n",
+    ));
+    let fixed = fix_bold(&sandbox, "**注意：**ここです。\n");
+    assert_eq!(fixed, "**注意：** ここです。\n");
+    assert_eq!(fix_bold(&sandbox, &fixed), fixed);
 }
 
 #[test]

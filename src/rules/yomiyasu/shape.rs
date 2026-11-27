@@ -13,8 +13,8 @@ use crate::sentence::{self, HardBreak};
 
 use super::phrase::is_meta_filler;
 use super::{
-    BRACKETS, blank, clauses, end_closers, end_decoration, finding, paired_ranges, visible_text,
-    without_end_decoration,
+    BRACKETS, Visible, blank, clauses, end_closers, end_decoration, finding, paired_ranges,
+    visible_text, without_end_decoration,
 };
 
 pub(super) fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> {
@@ -32,7 +32,8 @@ pub(super) fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<R
             .filter(|block| !block.blockquote);
         for block in blocks {
             for sentence in sentence::split(src, block, HardBreak::ListItems) {
-                let text = unquoted(&visible_text(src, &sentence.range, document));
+                // yomiyasuは角括弧の中を伏せるので、リンクの文字列も伏せる
+                let text = unquoted(&Visible::new(src, &sentence.range, document).unlinked());
                 for shape in &shapes {
                     if shape_sentences(&text).any(shape.matches) {
                         reports.push(finding(sentence.range.clone(), shape.rule, shape.message));

@@ -1,6 +1,7 @@
-//! yomiyasu 3.4.1由来の指摘ルール。太字、執筆時の指示、チャット応答はこのファイルで判定し、
-//! ほかのルールは下のファイルで判定する。下のファイルのルールが共に使う前処理は、このファイルに置く
+//! yomiyasu 3.4.1由来のルール。執筆時の指示とチャット応答はこのファイルで判定し、ほかのルールは下のファイルで
+//! 判定する。下のファイルのルールが共に使う前処理は、このファイルに置く
 
+mod bold;
 mod phrase;
 mod placeholder;
 mod shape;
@@ -17,20 +18,13 @@ use crate::prose::{Document, Prose};
 use crate::sentence::{self, HardBreak};
 
 use super::builtin::Builtin;
-use super::{Report, RuleId};
+use super::{FixRuleFinding, Report, RuleId};
 
+/// 指摘ルールの指摘と、`yomiyasu-bold-not-rendered` の直せない組の指摘
 pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> {
     let mut reports = Vec::new();
-    if builtin.yomiyasu_bold_not_rendered && src.contains("**") {
-        let blocks = document
-            .paragraphs
-            .iter()
-            .chain(&document.headings)
-            .map(|paragraph| &paragraph.range)
-            .chain(&document.table_cells);
-        for block in blocks {
-            report_bold(src, block, prose_in(document, block), &mut reports);
-        }
+    if builtin.yomiyasu_bold_not_rendered {
+        reports.extend(bold::report(src, document));
     }
     if builtin.yomiyasu_instruction_residue || builtin.yomiyasu_chat_response {
         for paragraph in document.paragraphs.iter().filter(|p| !p.blockquote) {
@@ -71,63 +65,12 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
     reports
 }
 
-fn report_bold(src: &str, block: &Range<usize>, prose: &[Prose], reports: &mut Vec<Report>) {
-    static STARS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\*{2,}").unwrap());
-    let mut runs = prose.iter().flat_map(|part| {
-        STARS
-            .find_iter(&src[part.range.clone()])
-            .filter_map(|star| {
-                let start = part.range.start + star.start();
-                let end = part.range.start + star.end();
-                let bytes = src.as_bytes();
-                let escaped = bytes[..start]
-                    .iter()
-                    .rev()
-                    .take_while(|&&b| b == b'\\')
-                    .count()
-                    % 2
-                    == 1;
-                // 本文のTextノードに残った記号だけを見る。既存の強調やエスケープに属する記号の残りは組にしない。
-                (!escaped && !bytes[..start].ends_with(b"*") && !bytes[end..].starts_with(b"*"))
-                    .then_some(start..end)
-            })
-    });
-    let Some(mut open) = runs.next() else {
-        return;
-    };
-    while let Some(close) = runs.next() {
-        let middle = &src[open.end..close.start];
-        let can_open = can_open_emphasis(
-            src[block.start..open.start].chars().next_back(),
-            middle.chars().next(),
-        );
-        let can_close = can_open_emphasis(
-            src[close.end..block.end].chars().next(),
-            middle.chars().next_back(),
-        );
-        if !middle.trim().is_empty() && (!can_open || !can_close) {
-            reports.push(finding(
-                open.start..close.end,
-                RuleId::YomiyasuBoldNotRendered,
-                "太字の記号がそのまま表示される。記号と括弧や空白の位置を確認する",
-            ));
-            let Some(next) = runs.next() else {
-                break;
-            };
-            open = next;
-        } else {
-            open = close;
-        }
+/// `yomiyasu-bold-not-rendered` の直せる組の修正の箇所
+pub fn find(src: &str, document: &Document, builtin: &Builtin) -> Vec<FixRuleFinding> {
+    if !builtin.yomiyasu_bold_not_rendered {
+        return Vec::new();
     }
-}
-
-fn can_open_emphasis(before: Option<char>, after: Option<char>) -> bool {
-    static PUNCTUATION: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[\p{P}\p{S}]").unwrap());
-    let punctuation = |c: char| PUNCTUATION.is_match(c.encode_utf8(&mut [0; 4]));
-    after.is_some_and(|after| {
-        !after.is_whitespace()
-            && (!punctuation(after) || before.is_none_or(|c| c.is_whitespace() || punctuation(c)))
-    })
+    bold::find(src, document)
 }
 
 /// 執筆時の指示とチャット応答が見る文の文字列

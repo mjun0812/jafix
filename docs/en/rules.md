@@ -75,32 +75,32 @@ Set `no-short-topic-comma = true` separately to check commas after short topics.
 
 ### Rules adapted from yomiyasu {#yomiyasu}
 
-Enable each of these rules separately. All 22 are off by default.
+Enable each of these rules separately. All 22 are off by default. `yomiyasu-bold-not-rendered` fixes the pairs it can confirm a repair for and flags the rest. The other 21 rules only report.
 
-| Rule ID                        | Action | Default | What it does                                                                                             |
-| ------------------------------ | ------ | ------- | -------------------------------------------------------------------------------------------------------- |
-| `yomiyasu-bold-not-rendered`   | Report | -       | Flags pairs of `**` that appear as literal text instead of rendering as bold                             |
-| `yomiyasu-instruction-residue` | Report | -       | Flags writing instructions left in the prose and scope exclusions without a reference                    |
-| `yomiyasu-chat-response`       | Report | -       | Flags stock chat replies left in prose, such as `ご質問ありがとうございます`                             |
-| `yomiyasu-meta-filler`         | Report | -       | Flags stock openers and closers left in prose, such as `重要なのは` and `いかがでしたでしょうか`         |
-| `yomiyasu-summary-restatement` | Report | -       | Flags sentences that restate a point starting with `まとめると、` or `総じて、`                          |
-| `yomiyasu-meta-intro`          | Report | -       | Flags previews that start with `本記事では`                                                              |
-| `yomiyasu-count-declaration`   | Report | -       | Flags count announcements such as `ポイントは3つです`                                                    |
-| `yomiyasu-ai-phrase`           | Report | -       | Flags phrases common in AI writing, such as `多岐にわたる` and `が求められている`                        |
-| `yomiyasu-placeholder-residue` | Report | -       | Flags placeholders left in prose: `〇〇`, `XXX`, `[ここに…]`, and `【要確認】`                           |
-| `yomiyasu-short-mochiron`      | Report | -       | Flags short sentences in which only a few words follow a leading `もちろん、`                            |
-| `yomiyasu-say-hedge`           | Report | -       | Flags sentences ending in `と言えるでしょう`                                                             |
-| `yomiyasu-fragment-run`        | Report | -       | Flags runs of three or more very short sentences, such as `速い。軽い。安い。`                           |
-| `yomiyasu-cleft-list-ending`   | Report | -       | Flags sentences that follow `〜のは、` with a list of nouns and no predicate                             |
-| `yomiyasu-copy-comma-noun`     | Report | -       | Flags sentences that put a comma between a modifier and a short final noun, such as `軽い、美しい仕様。` |
-| `yomiyasu-bare-verb-chain`     | Report | -       | Flags sentences that list verbs with commas and no subject or object, such as `書く、試す、直す。`       |
-| `yomiyasu-dash-decoration`     | Report | -       | Flags dashes such as `——` used for asides or a trailing effect                                           |
-| `yomiyasu-dash-insertion`      | Report | -       | Flags asides set off between dashes, such as `今日——正確には昨日——`                                      |
-| `yomiyasu-dash-list-ending`    | Report | -       | Flags sentences that end a list of nouns with a dash, such as `速さ、軽さ、静けさ──。`                   |
-| `yomiyasu-emoji-prohibited`    | Report | -       | Flags emoji in prose                                                                                     |
-| `yomiyasu-renyo-noun`          | Report | -       | Flags verb stems used as nouns after `の`, such as `結果の確かめ`                                        |
-| `yomiyasu-slop-vocabulary`     | Report | -       | Flags figurative words common in AI writing, such as `解像度`, `手触り`, and `羅針盤`                    |
-| `yomiyasu-katakana-term`       | Report | -       | Flags katakana loanwords that tend to lose meaning, such as `シナジー` and `ロードマップ`                |
+| Rule ID                        | Action         | Default | What it does                                                                                                    |
+| ------------------------------ | -------------- | ------- | --------------------------------------------------------------------------------------------------------------- |
+| `yomiyasu-bold-not-rendered`   | Fix and report | -       | Fixes pairs of `**` that appear as literal text instead of rendering as bold, and flags the pairs it cannot fix |
+| `yomiyasu-instruction-residue` | Report         | -       | Flags writing instructions left in the prose and scope exclusions without a reference                           |
+| `yomiyasu-chat-response`       | Report         | -       | Flags stock chat replies left in prose, such as `ご質問ありがとうございます`                                    |
+| `yomiyasu-meta-filler`         | Report         | -       | Flags stock openers and closers left in prose, such as `重要なのは` and `いかがでしたでしょうか`                |
+| `yomiyasu-summary-restatement` | Report         | -       | Flags sentences that restate a point starting with `まとめると、` or `総じて、`                                 |
+| `yomiyasu-meta-intro`          | Report         | -       | Flags previews that start with `本記事では`                                                                     |
+| `yomiyasu-count-declaration`   | Report         | -       | Flags count announcements such as `ポイントは3つです`                                                           |
+| `yomiyasu-ai-phrase`           | Report         | -       | Flags phrases common in AI writing, such as `多岐にわたる` and `が求められている`                               |
+| `yomiyasu-placeholder-residue` | Report         | -       | Flags placeholders left in prose: `〇〇`, `XXX`, `[ここに…]`, and `【要確認】`                                  |
+| `yomiyasu-short-mochiron`      | Report         | -       | Flags short sentences in which only a few words follow a leading `もちろん、`                                   |
+| `yomiyasu-say-hedge`           | Report         | -       | Flags sentences ending in `と言えるでしょう`                                                                    |
+| `yomiyasu-fragment-run`        | Report         | -       | Flags runs of three or more very short sentences, such as `速い。軽い。安い。`                                  |
+| `yomiyasu-cleft-list-ending`   | Report         | -       | Flags sentences that follow `〜のは、` with a list of nouns and no predicate                                    |
+| `yomiyasu-copy-comma-noun`     | Report         | -       | Flags sentences that put a comma between a modifier and a short final noun, such as `軽い、美しい仕様。`        |
+| `yomiyasu-bare-verb-chain`     | Report         | -       | Flags sentences that list verbs with commas and no subject or object, such as `書く、試す、直す。`              |
+| `yomiyasu-dash-decoration`     | Report         | -       | Flags dashes such as `——` used for asides or a trailing effect                                                  |
+| `yomiyasu-dash-insertion`      | Report         | -       | Flags asides set off between dashes, such as `今日——正確には昨日——`                                             |
+| `yomiyasu-dash-list-ending`    | Report         | -       | Flags sentences that end a list of nouns with a dash, such as `速さ、軽さ、静けさ──。`                          |
+| `yomiyasu-emoji-prohibited`    | Report         | -       | Flags emoji in prose                                                                                            |
+| `yomiyasu-renyo-noun`          | Report         | -       | Flags verb stems used as nouns after `の`, such as `結果の確かめ`                                               |
+| `yomiyasu-slop-vocabulary`     | Report         | -       | Flags figurative words common in AI writing, such as `解像度`, `手触り`, and `羅針盤`                           |
+| `yomiyasu-katakana-term`       | Report         | -       | Flags katakana loanwords that tend to lose meaning, such as `シナジー` and `ロードマップ`                       |
 
 ## Spacing and character forms {#spacing}
 

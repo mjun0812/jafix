@@ -1996,6 +1996,28 @@ fn prh_rejects_a_replacement_opposite_to_a_ported_fix_rule() {
     );
 }
 
+#[test]
+fn prh_rejects_a_replacement_that_the_bold_fix_rewrites() {
+    // 置き換えの結果の `**「注意」**` は、日本語の文の中では太字にならず、太字の修正が `「**注意**」` に直す。
+    // 直した後の `注意` にまた辞書が当たり、直すたびに記号が増える
+    assert_check_rejects_builtin(
+        &format!(
+            "yomiyasu-bold-not-rendered = true\n{}",
+            prh_rule("'**「注意」**'", "注意")
+        ),
+        &["**「注意」**", "yomiyasu-bold-not-rendered"],
+    );
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(&format!(
+        "[builtin]\nyomiyasu-bold-not-rendered = true\n{}",
+        prh_rule("'「**注意**」'", "注意")
+    ));
+    assert_eq!(
+        fix_with_config(&sandbox, "この注意を読む。\n"),
+        "この「**注意**」を読む。\n"
+    );
+}
+
 const JTF_PARENTHESES: &str = "3.3.かっこ類と隣接する文字の間のスペースの有無";
 
 #[test]

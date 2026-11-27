@@ -21,7 +21,7 @@ use regex::Regex;
 use crate::apply::{LineIndex, TargetLines};
 use crate::filter::Ignored;
 use crate::js_regex::FixedPart;
-use crate::prose::{Context, Document, InlineNodeKind, Prose};
+use crate::prose::{self, Context, Document, InlineNodeKind, Prose};
 
 pub(crate) use self::prh::dictionary::parse_yaml;
 
@@ -571,7 +571,8 @@ fn drop_overlaps<T>(items: &mut Vec<T>, range: impl Fn(&T) -> &Range<usize>) {
 
 /// 利用者の置き換えの固定の部分 `part` を、段落の直下にある本文の範囲1つだけの文書とみなして、
 /// 有効な組み込みの修正ルールのうち当たるものを `RuleId` の順に返す。当たれば、置き換えは組み込みの修正ルールと
-/// 逆である。参照に接する端の空白の修正は、字下げかどうかが決まらないので除く。同じ箇所の重なりは解かない
+/// 逆である。参照に接する端の空白の修正は、字下げかどうかが決まらないので除く。`yomiyasu-bold-not-rendered` は、
+/// 前後に日本語の文字を置いた段落として当て、参照に接する端に触れる組を除く。同じ箇所の重なりは解かない
 pub fn fix_rules_hitting(part: &FixedPart, builtin: &Builtin) -> Vec<RuleId> {
     let text = &part.text;
     let document = Document {
@@ -611,6 +612,21 @@ pub fn fix_rules_hitting(part: &FixedPart, builtin: &Builtin) -> Vec<RuleId> {
         })
         .map(|fix| fix.finding.rule)
         .collect();
+    if builtin.yomiyasu_bold_not_rendered && text.contains("**") {
+        // 太字になるかは `**` の外側の文字で決まる。置き換えの結果は日本語の文の中に入るので、捕捉参照に接しない端の
+        // 外側には日本語の文字があるとみなし、段落として解析して太字の修正を当てる
+        const NEIGHBOR: &str = "あ";
+        let padded = format!("{NEIGHBOR}{text}{NEIGHBOR}");
+        rules.extend(
+            yomiyasu::find(&padded, &prose::parse(&padded), builtin)
+                .into_iter()
+                .map(|fix| fix.finding.range)
+                .filter(|range| {
+                    part.contains(&(range.start - NEIGHBOR.len()..range.end - NEIGHBOR.len()))
+                })
+                .map(|_| RuleId::YomiyasuBoldNotRendered),
+        );
+    }
     rules.dedup();
     rules
 }
@@ -877,6 +893,7 @@ fn fix_rule_findings(src: &str, document: &Document, builtin: &Builtin) -> Vec<F
     }
     findings.extend(spacing::find(src, document, builtin));
     findings.extend(jtf_style::find(src, &document.texts, builtin));
+    findings.extend(yomiyasu::find(src, document, builtin));
     findings.sort_by_key(|fix| fix.finding.rule);
     findings
 }

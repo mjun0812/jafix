@@ -894,7 +894,8 @@ fn fix_content(src: &str, lines: &TargetLines, config: &Config) -> Fixed {
         prose::parse(&fixed)
     };
     // ある修正ルールの結果に別の修正ルールが当たることがある (全角英字を半角にした後の `日本語 Rust` の空白)。
-    // 組み込みの修正ルールは文字を消すか字種を一方向に変え、逆向きの組は設定の不正になるので、繰り返しは止まる
+    // 組み込みの修正ルールは文字を消すか字種を一方向に変え、太字の修正は直した組を太字にして同じ組に二度は当たらず、
+    // 逆向きの組は設定の不正になるので、繰り返しは止まる
     loop {
         let ignored = Ignored::new(&fixed, &document, filters);
         let fixes = rules::fix_findings(&fixed, &document, builtin, &ignored);

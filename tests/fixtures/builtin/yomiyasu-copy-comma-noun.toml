@@ -74,3 +74,9 @@ name = "当たらない-「軽い、美しい仕様。」"
 text = "「軽い、美しい仕様。」"
 findings = []
 messages = []
+
+[[cases]]
+name = "当たらない-[軽い、美しい仕様。](https://example.com)"
+text = "[軽い、美しい仕様。](https://example.com)"
+findings = []
+messages = []

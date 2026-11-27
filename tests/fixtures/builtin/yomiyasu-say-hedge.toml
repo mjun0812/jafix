@@ -80,3 +80,9 @@ name = "当たらない-| 品質が高いと言えるでしょう。 | | --- | |
 text = "| 品質が高いと言えるでしょう。 |\n| --- |\n| x |"
 findings = []
 messages = []
+
+[[cases]]
+name = "当たらない-[品質が高いと言えるでしょう。](https://example.com)"
+text = "[品質が高いと言えるでしょう。](https://example.com)"
+findings = []
+messages = []

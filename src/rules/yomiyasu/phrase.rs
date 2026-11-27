@@ -12,8 +12,8 @@ use crate::rules::{Report, RuleId};
 use crate::sentence::{self, HardBreak};
 
 use super::{
-    BRACKETS, blank, chat_response, clauses, end_closers, finding, masked_words, paired_ranges,
-    prose_in, visible_text, with_undecorated,
+    BRACKETS, Visible, blank, chat_response, clauses, end_closers, finding, masked_words,
+    paired_ranges, prose_in, visible_text, with_undecorated,
 };
 
 pub(super) fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> {
@@ -474,7 +474,8 @@ fn report_ai_phrase_in(
     block: Block,
     reports: &mut Vec<Report>,
 ) {
-    let text = masked_words(&visible_text(src, &range, document));
+    // yomiyasuは角括弧の中を伏せるので、リンクの文字列も伏せる
+    let text = masked_words(&Visible::new(src, &range, document).unlinked());
     let hit = word_clauses(&text).find_map(|clause| {
         AI_PHRASES.iter().find(|phrase| {
             phrase.blocks.contains(&block)

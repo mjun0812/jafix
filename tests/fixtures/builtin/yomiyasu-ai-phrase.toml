@@ -213,3 +213,9 @@ name = "当たらない-「今回の見立てです。」"
 text = "「今回の見立てです。」"
 findings = []
 messages = []
+
+[[cases]]
+name = "当たらない-[今回の見立てです。](https://example.com)"
+text = "[今回の見立てです。](https://example.com)"
+findings = []
+messages = []

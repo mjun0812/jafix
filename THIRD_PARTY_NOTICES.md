@@ -93,7 +93,7 @@ jafixの組み込みのルールのうち、textlintと同じIDのものは、�
 
 ## yomiyasu
 
-yomiyasu由来の22の指摘ルールは[yomiyasu 3.4.1](https://github.com/nanaism/yomiyasu/tree/v3.4.1)に基づきます。太字、執筆時の指示、チャット応答、定型の前置きと結び、AIの言い回し、文の形、ダッシュ、絵文字、連用形名詞、語彙を確認する21ルールは、`yomiyasu_lint.py` の判定の一部と正規表現、語の一覧を移植しています。仮置きの文字を確認する `yomiyasu-placeholder-residue` は、`references/slop-catalog.md` が「仮置きの残り」に挙げる形を判定に使っています。著作権表示は `Copyright (c) 2026 nanaism` です。許諾文はこの文書の[MIT License](#mit-license)にあります。
+yomiyasu由来の22のルールは[yomiyasu 3.4.1](https://github.com/nanaism/yomiyasu/tree/v3.4.1)に基づきます。太字、執筆時の指示、チャット応答、定型の前置きと結び、AIの言い回し、文の形、ダッシュ、絵文字、連用形名詞、語彙を確認する21ルールは、`yomiyasu_lint.py` の判定の一部と正規表現、語の一覧を移植しています。`yomiyasu-bold-not-rendered` の3通りの直し方も、`yomiyasu_lint.py` の直し方の案を移植しています。仮置きの文字を確認する `yomiyasu-placeholder-residue` は、`references/slop-catalog.md` が「仮置きの残り」に挙げる形を判定に使っています。著作権表示は `Copyright (c) 2026 nanaism` です。許諾文はこの文書の[MIT License](#mit-license)にあります。
 
 ## webpki-rootsの証明書の一覧
 
