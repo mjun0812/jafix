@@ -1,0 +1,166 @@
+# yomiyasu-emoji-prohibited の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは間に何も挟まずに続く絵文字ごとに1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+
+builtin = 'yomiyasu-emoji-prohibited = true'
+
+[[cases]]
+name = "当たる-完成しました🚀"
+text = "完成しました🚀"
+findings = ["1:7"]
+messages = ["絵文字「🚀」を使っている"]
+
+[[cases]]
+name = "当たる-✅ 完了"
+text = "✅ 完了"
+findings = ["1:1"]
+messages = ["絵文字「✅」を使っている"]
+
+[[cases]]
+name = "当たる-⚠️ 注意"
+text = "⚠️ 注意"
+findings = ["1:1"]
+messages = ["絵文字「⚠️」を使っている"]
+
+[[cases]]
+name = "当たる-⚠ 注意"
+text = "⚠ 注意"
+findings = ["1:1"]
+messages = ["絵文字「⚠」を使っている"]
+
+[[cases]]
+name = "当たる-1️⃣ 最初"
+text = "1️⃣ 最初"
+findings = ["1:1"]
+messages = ["絵文字「1️⃣」を使っている"]
+
+[[cases]]
+name = "当たる-🇯🇵 日本"
+text = "🇯🇵 日本"
+findings = ["1:1"]
+messages = ["絵文字「🇯🇵」を使っている"]
+
+[[cases]]
+name = "当たる-❤ 感謝"
+text = "❤ 感謝"
+findings = ["1:1"]
+messages = ["絵文字「❤」を使っている"]
+
+[[cases]]
+name = "当たる-⭐ 星"
+text = "⭐ 星"
+findings = ["1:1"]
+messages = ["絵文字「⭐」を使っている"]
+
+[[cases]]
+name = "当たる-©️ 2026"
+text = "©️ 2026"
+findings = ["1:1"]
+messages = ["絵文字「©️」を使っている"]
+
+[[cases]]
+name = "当たる-| 状態 | | --- | | ✅ |"
+text = "| 状態 |\n| --- |\n| ✅ |"
+findings = ["3:3"]
+messages = ["絵文字「✅」を使っている"]
+
+[[cases]]
+name = "当たる-> 完成しました🚀"
+text = "> 完成しました🚀"
+findings = ["1:9"]
+messages = ["絵文字「🚀」を使っている"]
+
+[[cases]]
+name = "当たる-## 完成🚀"
+text = "## 完成🚀"
+findings = ["1:6"]
+messages = ["絵文字「🚀」を使っている"]
+
+[[cases]]
+name = "当たる-👨‍👩‍👧 家族"
+text = "👨‍👩‍👧 家族"
+findings = ["1:1"]
+messages = ["絵文字「👨‍👩‍👧」を使っている"]
+
+[[cases]]
+name = "当たる-👍🏽 よい"
+text = "👍🏽 よい"
+findings = ["1:1"]
+messages = ["絵文字「👍🏽」を使っている"]
+
+[[cases]]
+name = "当たる-😀"
+text = "😀"
+findings = ["1:1"]
+messages = ["絵文字「😀」を使っている"]
+
+[[cases]]
+name = "当たる-😀 と 😀"
+text = "😀 と 😀"
+findings = ["1:1", "1:5"]
+messages = ["絵文字「😀」を使っている", "絵文字「😀」を使っている"]
+
+[[cases]]
+name = "当たらない-✓ 完了"
+text = "✓ 完了"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-☆ 星"
+text = "☆ 星"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-© 2026"
+text = "© 2026"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-▶ 再生"
+text = "▶ 再生"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-™ 商標"
+text = "™ 商標"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-⚠︎ 注意"
+text = "⚠︎ 注意"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-→ 次へ"
+text = "→ 次へ"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-♪ 音"
+text = "♪ 音"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-`🚀` はコード"
+text = "`🚀` はコード"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-![🚀](a.png) です"
+text = "![🚀](a.png) です"
+findings = []
+messages = []

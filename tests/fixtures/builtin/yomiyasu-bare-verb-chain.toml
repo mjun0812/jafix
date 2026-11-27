@@ -1,0 +1,82 @@
+# yomiyasu-bare-verb-chain の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは文に1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+
+builtin = 'yomiyasu-bare-verb-chain = true'
+
+[[cases]]
+name = "当たる-走る、跳ぶ、投げる。"
+text = "走る、跳ぶ、投げる。"
+findings = ["1:1"]
+messages = ["主語も目的語もない動詞を読点で並べている"]
+
+[[cases]]
+name = "当たる-書く、試す、直す。"
+text = "書く、試す、直す。"
+findings = ["1:1"]
+messages = ["主語も目的語もない動詞を読点で並べている"]
+
+[[cases]]
+name = "当たる-走るか、跳ぶか、投げる。"
+text = "走るか、跳ぶか、投げる。"
+findings = ["1:1"]
+messages = ["主語も目的語もない動詞を読点で並べている"]
+
+[[cases]]
+name = "当たらない-開き、閉じ、止める。"
+text = "開き、閉じ、止める。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-一つ、二つ、三つ。"
+text = "一つ、二つ、三つ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-彼が書く、試す、直す。"
+text = "彼が書く、試す、直す。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-書きます、試します、直します。"
+text = "書きます、試します、直します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-## 走る、跳ぶ、投げる。"
+text = "## 走る、跳ぶ、投げる。"
+findings = ["1:4"]
+messages = ["主語も目的語もない動詞を読点で並べている"]
+
+[[cases]]
+name = "当たらない-「走る、跳ぶ、投げる。」"
+text = "「走る、跳ぶ、投げる。」"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-> 走る、跳ぶ、投げる。"
+text = "> 走る、跳ぶ、投げる。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-| 走る、跳ぶ、投げる。 | | --- | | x |"
+text = "| 走る、跳ぶ、投げる。 |\n| --- |\n| x |"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-[走る、跳ぶ、投げる。](https://example.com)"
+text = "[走る、跳ぶ、投げる。](https://example.com)"
+findings = []
+messages = []

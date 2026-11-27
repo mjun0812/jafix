@@ -1,0 +1,82 @@
+# yomiyasu-copy-comma-noun の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは文に1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+
+builtin = 'yomiyasu-copy-comma-noun = true'
+
+[[cases]]
+name = "当たる-軽い、美しい仕様。"
+text = "軽い、美しい仕様。"
+findings = ["1:1"]
+messages = ["修飾語と短い名詞の間に読点を打って、名詞で終えている"]
+
+[[cases]]
+name = "当たる-速くて、軽い、美しい仕様。"
+text = "速くて、軽い、美しい仕様。"
+findings = ["1:1"]
+messages = ["修飾語と短い名詞の間に読点を打って、名詞で終えている"]
+
+[[cases]]
+name = "当たる-静かな、朝。"
+text = "静かな、朝。"
+findings = ["1:1"]
+messages = ["修飾語と短い名詞の間に読点を打って、名詞で終えている"]
+
+[[cases]]
+name = "当たる-静かな、思い。"
+text = "静かな、思い。"
+findings = ["1:1"]
+messages = ["修飾語と短い名詞の間に読点を打って、名詞で終えている"]
+
+[[cases]]
+name = "当たらない-はい、了解。"
+text = "はい、了解。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-その、件名。"
+text = "その、件名。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-新しい、設計の方針を決めた。"
+text = "新しい、設計の方針を決めた。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-条件を残した、やや長い出力。"
+text = "条件を残した、やや長い出力。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-暑い、暑い。"
+text = "暑い、暑い。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-## 軽い、美しい仕様。"
+text = "## 軽い、美しい仕様。"
+findings = ["1:4"]
+messages = ["修飾語と短い名詞の間に読点を打って、名詞で終えている"]
+
+[[cases]]
+name = "当たらない-「軽い、美しい仕様。」"
+text = "「軽い、美しい仕様。」"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-[軽い、美しい仕様。](https://example.com)"
+text = "[軽い、美しい仕様。](https://example.com)"
+findings = []
+messages = []

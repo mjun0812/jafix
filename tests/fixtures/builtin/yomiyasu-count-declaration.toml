@@ -1,0 +1,53 @@
+# yomiyasu-count-declaration の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは文に1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+# note のあるcaseは、jafixがyomiyasuと意図して変えている箇所で、期待値はjafixの規則から決めた。
+
+builtin = 'yomiyasu-count-declaration = true'
+
+[[cases]]
+name = "当たる-ポイントは3つです。"
+text = "ポイントは3つです。"
+findings = ["1:1"]
+messages = ["「ポイントは3つです」のような数の宣言が要るか確認する"]
+
+[[cases]]
+name = "当たる-理由は三つあります。"
+text = "理由は三つあります。"
+findings = ["1:1"]
+messages = ["「ポイントは3つです」のような数の宣言が要るか確認する"]
+
+[[cases]]
+name = "当たる-以下の3つの観点で見る。"
+text = "以下の3つの観点で見る。"
+findings = ["1:1"]
+messages = ["「ポイントは3つです」のような数の宣言が要るか確認する"]
+
+[[cases]]
+name = "当たる-コツは３つあります。"
+text = "コツは３つあります。"
+findings = ["1:1"]
+messages = ["「ポイントは3つです」のような数の宣言が要るか確認する"]
+
+[[cases]]
+name = "当たらない-ポイントは4つです。"
+text = "ポイントは4つです。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-理由は2つあります。"
+text = "理由は2つあります。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-「ポイントは3つです」と書かない。"
+text = "「ポイントは3つです」と書かない。"
+findings = ["1:1"]
+messages = ["「ポイントは3つです」のような数の宣言が要るか確認する"]

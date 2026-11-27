@@ -1,0 +1,47 @@
+# yomiyasu-summary-restatement の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは文に1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+# note のあるcaseは、jafixがyomiyasuと意図して変えている箇所で、期待値はjafixの規則から決めた。
+
+builtin = 'yomiyasu-summary-restatement = true'
+
+[[cases]]
+name = "当たる-まとめると、速い。"
+text = "まとめると、速い。"
+findings = ["1:1"]
+messages = ["「まとめると、」「総じて、」で言い直していないか確認する"]
+
+[[cases]]
+name = "当たる-総じて、良い結果だった。"
+text = "総じて、良い結果だった。"
+findings = ["1:1"]
+messages = ["「まとめると、」「総じて、」で言い直していないか確認する"]
+
+[[cases]]
+name = "当たらない-まとめると速い。"
+text = "まとめると速い。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-まとめとして、速い。"
+text = "まとめとして、速い。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-「まとめると、速い。」"
+text = "「まとめると、速い。」"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-## まとめると、速い"
+text = "## まとめると、速い"
+findings = []
+messages = []

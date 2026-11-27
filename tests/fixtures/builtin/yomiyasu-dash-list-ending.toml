@@ -1,0 +1,72 @@
+# yomiyasu-dash-list-ending の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは名詞の並びを閉じるダッシュごとに1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# note:     yomiyasuと意図して変えている理由。検査には使わない
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+
+builtin = "yomiyasu-dash-decoration = true\nyomiyasu-dash-insertion = true\nyomiyasu-dash-list-ending = true"
+
+[[cases]]
+name = "当たる-速さ、軽さ、静けさ──。"
+text = "速さ、軽さ、静けさ──。"
+findings = ["1:10"]
+messages = ["名詞の並びをダッシュで終えている"]
+
+[[cases]]
+name = "当たる-- 速さ、軽さ、静けさ——。"
+text = "- 速さ、軽さ、静けさ——。"
+findings = ["1:12"]
+messages = ["名詞の並びをダッシュで終えている"]
+
+[[cases]]
+name = "当たる-前置き。速さ、軽さ、静けさ──。"
+text = "前置き。速さ、軽さ、静けさ──。"
+findings = ["1:14"]
+messages = ["名詞の並びをダッシュで終えている"]
+
+[[cases]]
+name = "当たる-速さ、軽さ、静けさ──🚀。"
+text = "速さ、軽さ、静けさ──🚀。"
+findings = ["1:10"]
+messages = ["名詞の並びをダッシュで終えている"]
+
+[[cases]]
+name = "当たる-速さ、軽さ、静けさ──。これが答えだ——それだけだ。"
+text = "速さ、軽さ、静けさ──。これが答えだ——それだけだ。"
+findings = ["1:10"]
+messages = ["名詞の並びをダッシュで終えている"]
+
+[[cases]]
+name = "当たる-## 前置き。速さ、軽さ、静けさ──。"
+text = "## 前置き。速さ、軽さ、静けさ──。"
+findings = ["1:17"]
+messages = ["名詞の並びをダッシュで終えている"]
+
+[[cases]]
+name = "当たる-## 速さ、軽さ、静けさ──。"
+note = "yomiyasuは見出しの記号 `## ` も行の文字として読むので、見出しの最初の文を名詞の並びの終わりとみず、飾りのダッシュとして指摘する。jafixの本文は見出しの記号を含まないので、名詞の並びの終わりとして指摘する"
+text = "## 速さ、軽さ、静けさ──。"
+findings = ["1:13"]
+messages = ["名詞の並びをダッシュで終えている"]
+
+[[cases]]
+name = "当たらない-速さ、軽さ、静けさ──！"
+text = "速さ、軽さ、静けさ──！"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-速さ、軽さ──。"
+text = "速さ、軽さ──。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-| 速さ、軽さ、静けさ──。 | | --- | | x |"
+text = "| 速さ、軽さ、静けさ──。 |\n| --- |\n| x |"
+findings = []
+messages = []

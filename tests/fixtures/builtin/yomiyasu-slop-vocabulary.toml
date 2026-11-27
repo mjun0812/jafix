@@ -1,0 +1,202 @@
+# yomiyasu-slop-vocabulary の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは語ごとに1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+
+builtin = 'yomiyasu-slop-vocabulary = true'
+
+[[cases]]
+name = "当たる-手触りのある設計です。"
+text = "手触りのある設計です。"
+findings = ["1:1"]
+messages = ["AIが多用する語「手触り」を使っている"]
+
+[[cases]]
+name = "当たる-解像度を上げる。"
+text = "解像度を上げる。"
+findings = ["1:1"]
+messages = ["AIが多用する語「解像度」を使っている"]
+
+[[cases]]
+name = "当たる-メンタルモデルを作る。"
+text = "メンタルモデルを作る。"
+findings = ["1:1"]
+messages = ["AIが多用する語「メンタルモデル」を使っている"]
+
+[[cases]]
+name = "当たる-レビューゲートを通す。"
+text = "レビューゲートを通す。"
+findings = ["1:5"]
+messages = ["AIが多用する語「ゲート」を使っている"]
+
+[[cases]]
+name = "当たる-閉包に注意する。"
+text = "閉包に注意する。"
+findings = ["1:1"]
+messages = ["AIが多用する語「閉包」を使っている"]
+
+[[cases]]
+name = "当たる-台帳を見直す。"
+text = "台帳を見直す。"
+findings = ["1:1"]
+messages = ["AIが多用する語「台帳」を使っている"]
+
+[[cases]]
+name = "当たる-思考のOSを更新する。"
+text = "思考のOSを更新する。"
+findings = ["1:1"]
+messages = ["AIが多用する語「〜のOS」を使っている"]
+
+[[cases]]
+name = "当たる-人生の真理に気づく。"
+text = "人生の真理に気づく。"
+findings = ["1:4"]
+messages = ["AIが多用する語「真理」を使っている"]
+
+[[cases]]
+name = "当たる-増幅装置になる。"
+text = "増幅装置になる。"
+findings = ["1:3"]
+messages = ["AIが多用する語「装置」を使っている"]
+
+[[cases]]
+name = "当たる-本質を突く指摘です。"
+text = "本質を突く指摘です。"
+findings = ["1:1"]
+messages = ["AIが多用する語「本質を突く」を使っている"]
+
+[[cases]]
+name = "当たる-本質的な改善です。"
+text = "本質的な改善です。"
+findings = ["1:1"]
+messages = ["AIが多用する語「本質的」を使っている"]
+
+[[cases]]
+name = "当たる-土台を作る。"
+text = "土台を作る。"
+findings = ["1:1"]
+messages = ["AIが多用する語「土台」を使っている"]
+
+[[cases]]
+name = "当たる-正本を更新する。"
+text = "正本を更新する。"
+findings = ["1:1"]
+messages = ["AIが多用する語「正本」を使っている"]
+
+[[cases]]
+name = "当たる-羅針盤になる。"
+text = "羅針盤になる。"
+findings = ["1:1"]
+messages = ["AIが多用する語「羅針盤」を使っている"]
+
+[[cases]]
+name = "当たる-体温計で測る。"
+text = "体温計で測る。"
+findings = ["1:1"]
+messages = ["AIが多用する語「体温」を使っている"]
+
+[[cases]]
+name = "当たる-画像の解像度は1080pです。"
+text = "画像の解像度は1080pです。"
+findings = ["1:4"]
+messages = ["AIが多用する語「解像度」を使っている"]
+
+[[cases]]
+name = "当たる-肌感覚が大事。"
+text = "肌感覚が大事。"
+findings = ["1:1"]
+messages = ["AIが多用する語「肌感覚」を使っている"]
+
+[[cases]]
+name = "当たる-## 土台を作る"
+text = "## 土台を作る"
+findings = ["1:4"]
+messages = ["AIが多用する語「土台」を使っている"]
+
+[[cases]]
+name = "当たる-「土台」という語を使う。"
+text = "「土台」という語を使う。"
+findings = ["1:2"]
+messages = ["AIが多用する語「土台」を使っている"]
+
+[[cases]]
+name = "当たる-[土台](https://example.com)を作る。"
+text = "[土台](https://example.com)を作る。"
+findings = ["1:2"]
+messages = ["AIが多用する語「土台」を使っている"]
+
+[[cases]]
+name = "当たる-- 解像度を上げる。"
+text = "- 解像度を上げる。"
+findings = ["1:3"]
+messages = ["AIが多用する語「解像度」を使っている"]
+
+[[cases]]
+name = "当たらない-ナビゲートする。"
+text = "ナビゲートする。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-搭乗ゲートへ進む。"
+text = "搭乗ゲートへ進む。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-推移閉包を求める。"
+text = "推移閉包を求める。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-資産台帳を更新する。"
+text = "資産台帳を更新する。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-OSの更新を行う。"
+text = "OSの更新を行う。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-真理値表を書く。"
+text = "真理値表を書く。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-安全装置を付ける。"
+text = "安全装置を付ける。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-この装置は、毎朝自動で起動します。"
+text = "この装置は、毎朝自動で起動します。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-`土台` はコード"
+text = "`土台` はコード"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-> 土台を作る。"
+text = "> 土台を作る。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-| 解像度 | | --- | | x |"
+text = "| 解像度 |\n| --- |\n| x |"
+findings = []
+messages = []

@@ -1,0 +1,162 @@
+# yomiyasu-dash-decoration の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは連続するダッシュごとに1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# note:     yomiyasuと意図して変えている理由。検査には使わない
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+
+builtin = "yomiyasu-dash-decoration = true\nyomiyasu-dash-insertion = true\nyomiyasu-dash-list-ending = true"
+
+[[cases]]
+name = "当たる-これが答えだ——それだけだ。"
+text = "これが答えだ——それだけだ。"
+findings = ["1:7"]
+messages = ["ダッシュ「——」を使っている"]
+
+[[cases]]
+name = "当たる-ダッシュ—"
+text = "ダッシュ—"
+findings = ["1:5"]
+messages = ["ダッシュ「—」を使っている"]
+
+[[cases]]
+name = "当たる-## 結論——それだけだ"
+text = "## 結論——それだけだ"
+findings = ["1:6"]
+messages = ["ダッシュ「——」を使っている"]
+
+[[cases]]
+name = "当たる-人間―機械の境界です。"
+text = "人間―機械の境界です。"
+findings = ["1:3"]
+messages = ["ダッシュ「―」を使っている"]
+
+[[cases]]
+name = "当たる-速さ、軽さ、静けさ──！"
+text = "速さ、軽さ、静けさ──！"
+findings = ["1:10"]
+messages = ["ダッシュ「──」を使っている"]
+
+[[cases]]
+name = "当たる-行1は普通。 行2——補足。"
+text = "行1は普通。\n行2——補足。"
+findings = ["2:3"]
+messages = ["ダッシュ「——」を使っている"]
+
+[[cases]]
+name = "当たらない-## 速さ、軽さ、静けさ──。"
+note = "yomiyasuは見出しの記号 `## ` も行の文字として読むので、見出しの最初の文を名詞の並びの終わりとみず、飾りのダッシュとして指摘する。jafixの本文は見出しの記号を含まないので、名詞の並びの終わりとして指摘する"
+text = "## 速さ、軽さ、静けさ──。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-A——B——C——D。"
+text = "A——B——C——D。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-速さ、軽さ、静けさ──。これが答えだ——それだけだ。"
+text = "速さ、軽さ、静けさ──。これが答えだ——それだけだ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-今日——正確には昨日——連絡した。これが答えだ——それだけだ。"
+text = "今日——正確には昨日——連絡した。これが答えだ——それだけだ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-速さ、軽さ、静けさ──。"
+text = "速さ、軽さ、静けさ──。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-今日——正確には昨日——連絡しました。"
+text = "今日——正確には昨日——連絡しました。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-— 出典: 山田太郎"
+text = "— 出典: 山田太郎"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-[記事](https://example.com) — 著者"
+text = "[記事](https://example.com) — 著者"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-彼は「そうだ——違う」と言った。"
+text = "彼は「そうだ——違う」と言った。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-[今日——昨日](https://example.com)です。"
+text = "[今日——昨日](https://example.com)です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-テキスト[注——意]です。"
+text = "テキスト[注——意]です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-東京―大阪間の新幹線です。"
+text = "東京―大阪間の新幹線です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-――◆――"
+text = "――◆――"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-├── src ──"
+text = "├── src ──"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-| 項目 | 値 | | --- | --- | | A | — |"
+text = "| 項目 | 値 |\n| --- | --- |\n| A | — |"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-> これが答えだ——それだけだ。"
+text = "> これが答えだ——それだけだ。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-範囲は1–3です。"
+text = "範囲は1–3です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-コーヒーを飲む。"
+text = "コーヒーを飲む。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-約10〜20件です。"
+text = "約10〜20件です。"
+findings = []
+messages = []

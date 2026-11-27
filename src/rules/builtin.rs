@@ -88,6 +88,25 @@ pub struct Builtin {
     pub yomiyasu_bold_not_rendered: bool,
     pub yomiyasu_instruction_residue: bool,
     pub yomiyasu_chat_response: bool,
+    pub yomiyasu_meta_filler: bool,
+    pub yomiyasu_summary_restatement: bool,
+    pub yomiyasu_meta_intro: bool,
+    pub yomiyasu_count_declaration: bool,
+    pub yomiyasu_ai_phrase: bool,
+    pub yomiyasu_placeholder_residue: bool,
+    pub yomiyasu_short_mochiron: bool,
+    pub yomiyasu_say_hedge: bool,
+    pub yomiyasu_fragment_run: bool,
+    pub yomiyasu_cleft_list_ending: bool,
+    pub yomiyasu_copy_comma_noun: bool,
+    pub yomiyasu_bare_verb_chain: bool,
+    pub yomiyasu_dash_decoration: bool,
+    pub yomiyasu_dash_insertion: bool,
+    pub yomiyasu_dash_list_ending: bool,
+    pub yomiyasu_emoji_prohibited: bool,
+    pub yomiyasu_renyo_noun: bool,
+    pub yomiyasu_slop_vocabulary: bool,
+    pub yomiyasu_katakana_term: bool,
 }
 
 impl Default for Builtin {
@@ -159,6 +178,25 @@ impl Default for Builtin {
             yomiyasu_bold_not_rendered: false,
             yomiyasu_instruction_residue: false,
             yomiyasu_chat_response: false,
+            yomiyasu_meta_filler: false,
+            yomiyasu_summary_restatement: false,
+            yomiyasu_meta_intro: false,
+            yomiyasu_count_declaration: false,
+            yomiyasu_ai_phrase: false,
+            yomiyasu_placeholder_residue: false,
+            yomiyasu_short_mochiron: false,
+            yomiyasu_say_hedge: false,
+            yomiyasu_fragment_run: false,
+            yomiyasu_cleft_list_ending: false,
+            yomiyasu_copy_comma_noun: false,
+            yomiyasu_bare_verb_chain: false,
+            yomiyasu_dash_decoration: false,
+            yomiyasu_dash_insertion: false,
+            yomiyasu_dash_list_ending: false,
+            yomiyasu_emoji_prohibited: false,
+            yomiyasu_renyo_noun: false,
+            yomiyasu_slop_vocabulary: false,
+            yomiyasu_katakana_term: false,
         }
     }
 }
@@ -276,6 +314,25 @@ impl Builtin {
             RuleId::YomiyasuBoldNotRendered => self.yomiyasu_bold_not_rendered,
             RuleId::YomiyasuInstructionResidue => self.yomiyasu_instruction_residue,
             RuleId::YomiyasuChatResponse => self.yomiyasu_chat_response,
+            RuleId::YomiyasuMetaFiller => self.yomiyasu_meta_filler,
+            RuleId::YomiyasuSummaryRestatement => self.yomiyasu_summary_restatement,
+            RuleId::YomiyasuMetaIntro => self.yomiyasu_meta_intro,
+            RuleId::YomiyasuCountDeclaration => self.yomiyasu_count_declaration,
+            RuleId::YomiyasuAiPhrase => self.yomiyasu_ai_phrase,
+            RuleId::YomiyasuPlaceholderResidue => self.yomiyasu_placeholder_residue,
+            RuleId::YomiyasuShortMochiron => self.yomiyasu_short_mochiron,
+            RuleId::YomiyasuSayHedge => self.yomiyasu_say_hedge,
+            RuleId::YomiyasuFragmentRun => self.yomiyasu_fragment_run,
+            RuleId::YomiyasuCleftListEnding => self.yomiyasu_cleft_list_ending,
+            RuleId::YomiyasuCopyCommaNoun => self.yomiyasu_copy_comma_noun,
+            RuleId::YomiyasuBareVerbChain => self.yomiyasu_bare_verb_chain,
+            RuleId::YomiyasuDashDecoration => self.yomiyasu_dash_decoration,
+            RuleId::YomiyasuDashInsertion => self.yomiyasu_dash_insertion,
+            RuleId::YomiyasuDashListEnding => self.yomiyasu_dash_list_ending,
+            RuleId::YomiyasuEmojiProhibited => self.yomiyasu_emoji_prohibited,
+            RuleId::YomiyasuRenyoNoun => self.yomiyasu_renyo_noun,
+            RuleId::YomiyasuSlopVocabulary => self.yomiyasu_slop_vocabulary,
+            RuleId::YomiyasuKatakanaTerm => self.yomiyasu_katakana_term,
         }
     }
 
@@ -326,11 +383,7 @@ impl Builtin {
             .collect();
         let mut reported = dictionary_rules_reporting(&parts, self).into_iter();
         for replacement in &replacements {
-            let fixes: Vec<RuleId> = replacement
-                .parts
-                .iter()
-                .flat_map(|part| fix_rules_hitting(part, self))
-                .collect();
+            let fixes = fix_rules_hitting(&replacement.parts, self);
             let reports: Vec<RuleId> = reported
                 .by_ref()
                 .take(replacement.parts.len())
@@ -558,6 +611,29 @@ impl Builtin {
                 self.yomiyasu_instruction_residue = enabled(options)?
             }
             RuleId::YomiyasuChatResponse => self.yomiyasu_chat_response = enabled(options)?,
+            RuleId::YomiyasuMetaFiller => self.yomiyasu_meta_filler = enabled(options)?,
+            RuleId::YomiyasuSummaryRestatement => {
+                self.yomiyasu_summary_restatement = enabled(options)?
+            }
+            RuleId::YomiyasuMetaIntro => self.yomiyasu_meta_intro = enabled(options)?,
+            RuleId::YomiyasuCountDeclaration => self.yomiyasu_count_declaration = enabled(options)?,
+            RuleId::YomiyasuAiPhrase => self.yomiyasu_ai_phrase = enabled(options)?,
+            RuleId::YomiyasuPlaceholderResidue => {
+                self.yomiyasu_placeholder_residue = enabled(options)?
+            }
+            RuleId::YomiyasuShortMochiron => self.yomiyasu_short_mochiron = enabled(options)?,
+            RuleId::YomiyasuSayHedge => self.yomiyasu_say_hedge = enabled(options)?,
+            RuleId::YomiyasuFragmentRun => self.yomiyasu_fragment_run = enabled(options)?,
+            RuleId::YomiyasuCleftListEnding => self.yomiyasu_cleft_list_ending = enabled(options)?,
+            RuleId::YomiyasuCopyCommaNoun => self.yomiyasu_copy_comma_noun = enabled(options)?,
+            RuleId::YomiyasuBareVerbChain => self.yomiyasu_bare_verb_chain = enabled(options)?,
+            RuleId::YomiyasuDashDecoration => self.yomiyasu_dash_decoration = enabled(options)?,
+            RuleId::YomiyasuDashInsertion => self.yomiyasu_dash_insertion = enabled(options)?,
+            RuleId::YomiyasuDashListEnding => self.yomiyasu_dash_list_ending = enabled(options)?,
+            RuleId::YomiyasuEmojiProhibited => self.yomiyasu_emoji_prohibited = enabled(options)?,
+            RuleId::YomiyasuRenyoNoun => self.yomiyasu_renyo_noun = enabled(options)?,
+            RuleId::YomiyasuSlopVocabulary => self.yomiyasu_slop_vocabulary = enabled(options)?,
+            RuleId::YomiyasuKatakanaTerm => self.yomiyasu_katakana_term = enabled(options)?,
         }
         Ok(())
     }

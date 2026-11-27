@@ -1,0 +1,136 @@
+# yomiyasu-short-mochiron の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは文に1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+
+builtin = 'yomiyasu-short-mochiron = true'
+
+[[cases]]
+name = "当たる-前提を述べる。もちろん、見ました。"
+text = "前提を述べる。もちろん、見ました。"
+findings = ["1:8"]
+messages = ["文頭の「もちろん、」が要るか確認する"]
+
+[[cases]]
+name = "当たる-もちろん、失敗もする。"
+text = "もちろん、失敗もする。"
+findings = ["1:1"]
+messages = ["文頭の「もちろん、」が要るか確認する"]
+
+[[cases]]
+name = "当たる-勿論、例外もある。"
+text = "勿論、例外もある。"
+findings = ["1:1"]
+messages = ["文頭の「もちろん、」が要るか確認する"]
+
+[[cases]]
+name = "当たる-もちろん、失敗もする。🚀"
+text = "もちろん、失敗もする。🚀"
+findings = ["1:1"]
+messages = ["文頭の「もちろん、」が要るか確認する"]
+
+[[cases]]
+name = "当たらない-もちろん、大丈夫です。"
+text = "もちろん、大丈夫です。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-確認しましたか。もちろん、見ました。"
+text = "確認しましたか。もちろん、見ました。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-バックアップは取れますか。もちろん、できます。"
+text = "バックアップは取れますか。もちろん、できます。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-なぜ使えますか？もちろん、使えます。"
+text = "なぜ使えますか？もちろん、使えます。"
+findings = ["1:9"]
+messages = ["文頭の「もちろん、」が要るか確認する"]
+
+[[cases]]
+name = "当たらない-もちろん、すべての場合に当てはまるわけではないので、条件を確かめます。"
+text = "もちろん、すべての場合に当てはまるわけではないので、条件を確かめます。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-もちろん、失敗もする🚀"
+text = "もちろん、失敗もする🚀"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-## 使えますか？ もちろん、使えます。"
+text = "## 使えますか？\n\nもちろん、使えます。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-## 前提 もちろん、失敗もする。"
+text = "## 前提\n\nもちろん、失敗もする。"
+findings = ["3:1"]
+messages = ["文頭の「もちろん、」が要るか確認する"]
+
+[[cases]]
+name = "当たらない-- 使えますか？ - もちろん、使えます。"
+text = "- 使えますか？\n- もちろん、使えます。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-使えますか？ もちろん、使えます。"
+text = "使えますか？\n\nもちろん、使えます。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-使えますか？ ``` code ``` もちろん、使えます。"
+text = "使えますか？\n\n```\ncode\n```\n\nもちろん、使えます。"
+findings = ["7:1"]
+messages = ["文頭の「もちろん、」が要るか確認する"]
+
+[[cases]]
+name = "当たる-| a | | --- | | 使えますか？ | もちろん、使えます。"
+text = "| a |\n| --- |\n| 使えますか？ |\n\nもちろん、使えます。"
+findings = ["5:1"]
+messages = ["文頭の「もちろん、」が要るか確認する"]
+
+[[cases]]
+name = "当たらない-使えますか？ - もちろん、使えます。"
+text = "使えますか？\n\n-\n\nもちろん、使えます。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たる-使えますか？ --- もちろん、使えます。"
+text = "使えますか？\n\n---\n\nもちろん、使えます。"
+findings = ["5:1"]
+messages = ["文頭の「もちろん、」が要るか確認する"]
+
+[[cases]]
+name = "当たる-使えますか？ * * * もちろん、使えます。"
+text = "使えますか？\n\n* * * \n\nもちろん、使えます。"
+findings = ["5:1"]
+messages = ["文頭の「もちろん、」が要るか確認する"]
+
+[[cases]]
+name = "当たる-使えますか？ ___ もちろん、使えます。"
+text = "使えますか？\n\n___\n\nもちろん、使えます。"
+findings = ["5:1"]
+messages = ["文頭の「もちろん、」が要るか確認する"]
+
+[[cases]]
+name = "当たらない-「もちろん、失敗もする。」"
+text = "「もちろん、失敗もする。」"
+findings = []
+messages = []

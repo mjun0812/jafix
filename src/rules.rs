@@ -21,7 +21,7 @@ use regex::Regex;
 use crate::apply::{LineIndex, TargetLines};
 use crate::filter::Ignored;
 use crate::js_regex::FixedPart;
-use crate::prose::{Context, Document, InlineNodeKind, Prose};
+use crate::prose::{self, Context, Document, InlineNodeKind, Prose};
 
 pub(crate) use self::prh::dictionary::parse_yaml;
 
@@ -29,7 +29,7 @@ use self::builtin::Builtin;
 use self::general::Links;
 use self::jtf_style::JtfRule;
 
-/// 組み込みのルール。全角括弧と空白の3つ、およびyomiyasu由来の3つ以外は、textlintのpreset (`preset-ja-technical-writing`・
+/// 組み込みのルール。全角括弧と空白の3つ、およびyomiyasu由来のルール以外は、textlintのpreset (`preset-ja-technical-writing`・
 /// `@textlint-ja/preset-ai-writing`・`preset-ai-words-ja`・`preset-ja-spacing`・`preset-jtf-style`) の中の名前か、
 /// textlintの設定に書くルールの名前 (textlintが `textlint-rule-` を除いてruleIdとして出す名前) と同じIDである。宣言の順は `ALL` と同じで、組み込みの修正ルールの箇所の
 /// 範囲が同じときに、前にあるルールの箇所を残すのに使う
@@ -102,11 +102,30 @@ pub enum RuleId {
     YomiyasuBoldNotRendered,
     YomiyasuInstructionResidue,
     YomiyasuChatResponse,
+    YomiyasuMetaFiller,
+    YomiyasuSummaryRestatement,
+    YomiyasuMetaIntro,
+    YomiyasuCountDeclaration,
+    YomiyasuAiPhrase,
+    YomiyasuPlaceholderResidue,
+    YomiyasuShortMochiron,
+    YomiyasuSayHedge,
+    YomiyasuFragmentRun,
+    YomiyasuCleftListEnding,
+    YomiyasuCopyCommaNoun,
+    YomiyasuBareVerbChain,
+    YomiyasuDashDecoration,
+    YomiyasuDashInsertion,
+    YomiyasuDashListEnding,
+    YomiyasuEmojiProhibited,
+    YomiyasuRenyoNoun,
+    YomiyasuSlopVocabulary,
+    YomiyasuKatakanaTerm,
 }
 
 impl RuleId {
     /// 組み込みのルールのすべて。設定の `[builtin]` のキーをルールのIDとして読むのに使う
-    pub const ALL: [RuleId; 102] = [
+    pub const ALL: [RuleId; 121] = [
         RuleId::FullwidthParen,
         RuleId::SpaceBetweenJaAndAlnum,
         RuleId::SpaceBetweenJaAndParen,
@@ -209,6 +228,25 @@ impl RuleId {
         RuleId::YomiyasuBoldNotRendered,
         RuleId::YomiyasuInstructionResidue,
         RuleId::YomiyasuChatResponse,
+        RuleId::YomiyasuMetaFiller,
+        RuleId::YomiyasuSummaryRestatement,
+        RuleId::YomiyasuMetaIntro,
+        RuleId::YomiyasuCountDeclaration,
+        RuleId::YomiyasuAiPhrase,
+        RuleId::YomiyasuPlaceholderResidue,
+        RuleId::YomiyasuShortMochiron,
+        RuleId::YomiyasuSayHedge,
+        RuleId::YomiyasuFragmentRun,
+        RuleId::YomiyasuCleftListEnding,
+        RuleId::YomiyasuCopyCommaNoun,
+        RuleId::YomiyasuBareVerbChain,
+        RuleId::YomiyasuDashDecoration,
+        RuleId::YomiyasuDashInsertion,
+        RuleId::YomiyasuDashListEnding,
+        RuleId::YomiyasuEmojiProhibited,
+        RuleId::YomiyasuRenyoNoun,
+        RuleId::YomiyasuSlopVocabulary,
+        RuleId::YomiyasuKatakanaTerm,
     ];
 
     /// `check` の出力の `[<rule-id>]` に使う名前
@@ -282,6 +320,25 @@ impl RuleId {
             RuleId::YomiyasuBoldNotRendered => "yomiyasu-bold-not-rendered",
             RuleId::YomiyasuInstructionResidue => "yomiyasu-instruction-residue",
             RuleId::YomiyasuChatResponse => "yomiyasu-chat-response",
+            RuleId::YomiyasuMetaFiller => "yomiyasu-meta-filler",
+            RuleId::YomiyasuSummaryRestatement => "yomiyasu-summary-restatement",
+            RuleId::YomiyasuMetaIntro => "yomiyasu-meta-intro",
+            RuleId::YomiyasuCountDeclaration => "yomiyasu-count-declaration",
+            RuleId::YomiyasuAiPhrase => "yomiyasu-ai-phrase",
+            RuleId::YomiyasuPlaceholderResidue => "yomiyasu-placeholder-residue",
+            RuleId::YomiyasuShortMochiron => "yomiyasu-short-mochiron",
+            RuleId::YomiyasuSayHedge => "yomiyasu-say-hedge",
+            RuleId::YomiyasuFragmentRun => "yomiyasu-fragment-run",
+            RuleId::YomiyasuCleftListEnding => "yomiyasu-cleft-list-ending",
+            RuleId::YomiyasuCopyCommaNoun => "yomiyasu-copy-comma-noun",
+            RuleId::YomiyasuBareVerbChain => "yomiyasu-bare-verb-chain",
+            RuleId::YomiyasuDashDecoration => "yomiyasu-dash-decoration",
+            RuleId::YomiyasuDashInsertion => "yomiyasu-dash-insertion",
+            RuleId::YomiyasuDashListEnding => "yomiyasu-dash-list-ending",
+            RuleId::YomiyasuEmojiProhibited => "yomiyasu-emoji-prohibited",
+            RuleId::YomiyasuRenyoNoun => "yomiyasu-renyo-noun",
+            RuleId::YomiyasuSlopVocabulary => "yomiyasu-slop-vocabulary",
+            RuleId::YomiyasuKatakanaTerm => "yomiyasu-katakana-term",
         }
     }
 }
@@ -512,10 +569,23 @@ fn drop_overlaps<T>(items: &mut Vec<T>, range: impl Fn(&T) -> &Range<usize>) {
     });
 }
 
-/// 利用者の置き換えの固定の部分 `part` を、段落の直下にある本文の範囲1つだけの文書とみなして、
-/// 有効な組み込みの修正ルールのうち当たるものを `RuleId` の順に返す。当たれば、置き換えは組み込みの修正ルールと
-/// 逆である。参照に接する端の空白の修正は、字下げかどうかが決まらないので除く。同じ箇所の重なりは解かない
-pub fn fix_rules_hitting(part: &FixedPart, builtin: &Builtin) -> Vec<RuleId> {
+/// 1つの利用者の置き換えの固定の部分 `parts` に当たる、有効な組み込みの修正ルールを返す。当たれば、置き換えは
+/// 組み込みの修正ルールと逆である。`yomiyasu-bold-not-rendered` は置き換えの結果の全体に当てる (`bold_fix_hits`)
+pub fn fix_rules_hitting(parts: &[FixedPart], builtin: &Builtin) -> Vec<RuleId> {
+    let mut rules: Vec<RuleId> = parts
+        .iter()
+        .flat_map(|part| fix_rules_hitting_part(part, builtin))
+        .collect();
+    if bold_fix_hits(parts, builtin) {
+        rules.push(RuleId::YomiyasuBoldNotRendered);
+    }
+    rules
+}
+
+/// 固定の部分 `part` を、段落の直下にある本文の範囲1つだけの文書とみなして、有効な組み込みの修正ルールのうち当たる
+/// ものを `RuleId` の順に返す。段落の範囲を持たない文書なので、太字の修正は当たらない。参照に接する端の空白の修正は、
+/// 字下げかどうかが決まらないので除く。同じ箇所の重なりは解かない
+fn fix_rules_hitting_part(part: &FixedPart, builtin: &Builtin) -> Vec<RuleId> {
     let text = &part.text;
     let document = Document {
         texts: vec![Prose {
@@ -556,6 +626,49 @@ pub fn fix_rules_hitting(part: &FixedPart, builtin: &Builtin) -> Vec<RuleId> {
         .collect();
     rules.dedup();
     rules
+}
+
+/// 固定の部分 `parts` と捕捉参照をつないだ置き換えの結果に、`yomiyasu-bold-not-rendered` が当たるか。参照には、
+/// 太字になるかの判定でいちばん有利な中身を入れて当てるので、当たる組は参照の中身によらず太字にならない。
+/// 組の内側 (前に閉じていない `**` があり、後ろに `**` がある位置) の参照は日本語の文字、組の外側で `**` に接する
+/// 参照は空白とみなす。空白の後の `**` は次が空白でなければ開きに、空白の前の `**` は前が空白でなければ閉じに
+/// なれる。置き換えの結果は日本語の文の中に入るので、参照に接しない端の外側には日本語の文字があるとみなす
+fn bold_fix_hits(parts: &[FixedPart], builtin: &Builtin) -> bool {
+    const NEIGHBOR: &str = "あ";
+    if !builtin.yomiyasu_bold_not_rendered || !parts.iter().any(|part| part.text.contains("**")) {
+        return false;
+    }
+    // `before` は参照より前の結果、`rest` は参照より後の固定の部分である
+    let stand_in = |before: &str, rest: &[FixedPart]| {
+        let touches =
+            before.ends_with("**") || rest.first().is_some_and(|part| part.text.starts_with("**"));
+        // `*` が2つ以上続く並びを1つの記号と数え、前の記号が奇数個なら、開いたまま閉じていない組がある
+        let opened = before
+            .split(|c| c != '*')
+            .filter(|run| run.len() >= 2)
+            .count()
+            % 2
+            == 1;
+        let inside = opened && rest.iter().any(|part| part.text.contains("**"));
+        if touches && !inside { " " } else { NEIGHBOR }
+    };
+    // 隣り合う固定の部分の間には参照が1つ以上あり、後の部分の `leading_reference` が立つ。続いた参照は1つにまとめる
+    let mut text = String::new();
+    if !parts[0].leading_reference {
+        text.push_str(NEIGHBOR);
+    }
+    for (i, part) in parts.iter().enumerate() {
+        if part.leading_reference {
+            text.push_str(stand_in(&text, &parts[i..]));
+        }
+        text.push_str(&part.text);
+    }
+    text.push_str(if parts.last().unwrap().trailing_reference {
+        stand_in(&text, &[])
+    } else {
+        NEIGHBOR
+    });
+    !yomiyasu::find(&text, &prose::parse(&text), builtin).is_empty()
 }
 
 /// 辞書で語を別の書き方にするよう求める組み込みの指摘ルール。利用者の置き換えの結果をこれらが指摘すると、hookが直した語を
@@ -820,6 +933,7 @@ fn fix_rule_findings(src: &str, document: &Document, builtin: &Builtin) -> Vec<F
     }
     findings.extend(spacing::find(src, document, builtin));
     findings.extend(jtf_style::find(src, &document.texts, builtin));
+    findings.extend(yomiyasu::find(src, document, builtin));
     findings.sort_by_key(|fix| fix.finding.rule);
     findings
 }

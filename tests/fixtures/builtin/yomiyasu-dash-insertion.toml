@@ -1,0 +1,52 @@
+# yomiyasu-dash-insertion の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは挿入句ごとに1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+
+builtin = "yomiyasu-dash-decoration = true\nyomiyasu-dash-insertion = true\nyomiyasu-dash-list-ending = true"
+
+[[cases]]
+name = "当たる-今日——正確には昨日——連絡しました。"
+text = "今日——正確には昨日——連絡しました。"
+findings = ["1:3"]
+messages = ["ダッシュで挟んだ挿入句を使っている"]
+
+[[cases]]
+name = "当たる-A——B——C——D。"
+text = "A——B——C——D。"
+findings = ["1:2"]
+messages = ["ダッシュで挟んだ挿入句を使っている"]
+
+[[cases]]
+name = "当たる-今日——正確には昨日——連絡した。これが答えだ——それだけだ。"
+text = "今日——正確には昨日——連絡した。これが答えだ——それだけだ。"
+findings = ["1:3"]
+messages = ["ダッシュで挟んだ挿入句を使っている"]
+
+[[cases]]
+name = "当たらない-今日——昨日——。速さ、軽さ、静けさ──。"
+text = "今日——昨日——。速さ、軽さ、静けさ──。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-彼は「そうだ——違う」と言った。"
+text = "彼は「そうだ——違う」と言った。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-> 今日——正確には昨日——連絡しました。"
+text = "> 今日——正確には昨日——連絡しました。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-これが答えだ——それだけだ。"
+text = "これが答えだ——それだけだ。"
+findings = []
+messages = []

@@ -1996,6 +1996,101 @@ fn prh_rejects_a_replacement_opposite_to_a_ported_fix_rule() {
     );
 }
 
+#[test]
+fn prh_rejects_a_replacement_that_the_bold_fix_rewrites() {
+    // 置き換えの結果の `**「注意」**` は、日本語の文の中では太字にならず、太字の修正が `「**注意**」` に直す。
+    // 直した後の `注意` にまた辞書が当たり、直すたびに記号が増える
+    assert_check_rejects_builtin(
+        &format!(
+            "yomiyasu-bold-not-rendered = true\n{}",
+            prh_rule("'**「注意」**'", "注意")
+        ),
+        &["**「注意」**", "yomiyasu-bold-not-rendered"],
+    );
+    let sandbox = Sandbox::new();
+    sandbox.write_xdg_config(&format!(
+        "[builtin]\nyomiyasu-bold-not-rendered = true\n{}",
+        prh_rule("'「**注意**」'", "注意")
+    ));
+    assert_eq!(
+        fix_with_config(&sandbox, "この注意を読む。\n"),
+        "この「**注意**」を読む。\n"
+    );
+}
+
+#[test]
+fn replacements_reject_a_bold_pair_that_no_reference_content_renders() {
+    // 組の内側の参照がどんな文字でも、かぎ括弧・句点・内側の端の空白に接する `**` は太字にならない。組の外側の参照が
+    // どんな文字でも、参照に接しない側のかぎ括弧に接する `**` は太字にならない。太字の修正が置き換えの結果を
+    // 書き換え、その中の語にまた置き換えが当たるので、直すたびに記号が増える
+    for (user, shown) in [
+        (prh_rule("'**「$1」**'", "/(注意)/"), "**「$1」**"),
+        (prh_rule("'**$1。**'", "/(注意)/"), "**$1。**"),
+        (prh_rule("'** $1**'", "/(注意)/"), "** $1**"),
+        (prh_rule("'$1**「注意」**'", "/(注意)/"), "$1**「注意」**"),
+        (prh_rule("'**「注意」**$1'", "/(注意)/"), "**「注意」**$1"),
+        (
+            prh_rule("'**「注意」**$1**「要点」**$2'", "/注意(\\s?)(\\s?)/"),
+            "**「注意」**$1**「要点」**$2",
+        ),
+        (
+            r#""@textlint-rule/pattern" = { patterns = [{ message = "m", pattern = "/(注意)/", replace = "**「$1」**" }] }"#.to_owned(),
+            "**「$1」**",
+        ),
+        (
+            r#"terminology = { terms = [["注意(?=)", "**「$&」**"]] }"#.to_owned(),
+            "**「$&」**",
+        ),
+    ] {
+        assert_check_rejects_builtin(
+            &format!("yomiyasu-bold-not-rendered = true\n{user}"),
+            &[shown, "yomiyasu-bold-not-rendered"],
+        );
+    }
+}
+
+#[test]
+fn replacements_load_when_a_reference_decides_whether_the_bold_pair_renders() {
+    // 組の内側の参照が文字なら、`**$1**` は太字になる。組の外側の参照が空白なら、`$1**「注意」**$2` は太字になる。
+    // `**要点** $1**「注意」**$2` の `$1` は、閉じた組の後にあるので組の外側である
+    const INPUT: &str = "この注意を読む。\n";
+    for (expected, pattern, input, fixed) in [
+        ("'**$1**'", "/(注意)/", INPUT, "この**注意**を読む。\n"),
+        (
+            "'「**$1**」'",
+            "/(注意)/",
+            INPUT,
+            "この「**注意**」を読む。\n",
+        ),
+        (
+            "'$1**「注意」**$2'",
+            "/(こ)の注意(を)/",
+            INPUT,
+            "こ「**注意**」を読む。\n",
+        ),
+        (
+            "'$1**注意**'",
+            "/(この)注意/",
+            INPUT,
+            "この**注意**を読む。\n",
+        ),
+        (
+            "'**要点** $1**「注意」**$2'",
+            "/注意(\\s)(\\s)/",
+            "これは注意  です。\n",
+            "これは**要点**  **「注意」** です。\n",
+        ),
+    ] {
+        let sandbox = Sandbox::new();
+        sandbox.write_xdg_config(&format!(
+            "[builtin]\nyomiyasu-bold-not-rendered = true\n{}",
+            prh_rule(expected, pattern)
+        ));
+        assert_eq!(fix_with_config(&sandbox, input), fixed, "{expected}");
+        assert_eq!(fix_with_config(&sandbox, fixed), fixed, "{expected}");
+    }
+}
+
 const JTF_PARENTHESES: &str = "3.3.かっこ類と隣接する文字の間のスペースの有無";
 
 #[test]

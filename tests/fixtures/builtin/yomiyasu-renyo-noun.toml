@@ -1,0 +1,106 @@
+# yomiyasu-renyo-noun の例。期待値は、yomiyasu 3.4.1 の `yomiyasu_lint.py` を文書の種類を指定せずに実行した結果から作った。
+# yomiyasuは指摘を行ごとに1件出す。jafixは「の」と語ごとに1件を出すので、列と文面はjafixの規則から決めた。
+#
+# builtin:  設定ファイルの [builtin] の表に書く内容
+# name:     caseの名前
+# text:     入力。末尾に改行を1つ足したものを検査する
+# findings: `jafix check` の出力のうち、このルールの指摘の位置 (行:列) を出力の順に並べたもの
+# messages: findings と同じ順の文面
+
+builtin = 'yomiyasu-renyo-noun = true'
+
+[[cases]]
+name = "当たる-結果の確かめが必要です。"
+text = "結果の確かめが必要です。"
+findings = ["1:3"]
+messages = ["動詞の連用形を名詞にした「の確かめ」を使っている"]
+
+[[cases]]
+name = "当たる-案の比べを行う。"
+text = "案の比べを行う。"
+findings = ["1:2"]
+messages = ["動詞の連用形を名詞にした「の比べ」を使っている"]
+
+[[cases]]
+name = "当たる-設定の直しを頼む。"
+text = "設定の直しを頼む。"
+findings = ["1:3"]
+messages = ["動詞の連用形を名詞にした「の直し」を使っている"]
+
+[[cases]]
+name = "当たる-## 結果の確かめ"
+text = "## 結果の確かめ"
+findings = ["1:6"]
+messages = ["動詞の連用形を名詞にした「の確かめ」を使っている"]
+
+[[cases]]
+name = "当たる-- 値の測りを行う。"
+text = "- 値の測りを行う。"
+findings = ["1:4"]
+messages = ["動詞の連用形を名詞にした「の測り」を使っている"]
+
+[[cases]]
+name = "当たる-| 結果の確かめ | | --- | | x |"
+text = "| 結果の確かめ |\n| --- |\n| x |"
+findings = ["1:5"]
+messages = ["動詞の連用形を名詞にした「の確かめ」を使っている"]
+
+[[cases]]
+name = "当たる-「結果」の確かめ"
+text = "「結果」の確かめ"
+findings = ["1:5"]
+messages = ["動詞の連用形を名詞にした「の確かめ」を使っている"]
+
+[[cases]]
+name = "当たらない-生活の足しになる。"
+text = "生活の足しになる。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-育ての親が来た。"
+text = "育ての親が来た。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-お選びください。"
+text = "お選びください。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-資金集めを始める。"
+text = "資金集めを始める。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-手順の見直しを行う。"
+text = "手順の見直しを行う。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-結果の確かめやすさ"
+text = "結果の確かめやすさ"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-「結果の確かめ」と書いた。"
+text = "「結果の確かめ」と書いた。"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-[結果の確かめ](https://example.com)"
+text = "[結果の確かめ](https://example.com)"
+findings = []
+messages = []
+
+[[cases]]
+name = "当たらない-> 結果の確かめが必要です。"
+text = "> 結果の確かめが必要です。"
+findings = []
+messages = []
