@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="204" viewBox="0 0 720 204" role="img" aria-labelledby="title desc">
+<title id="title">yomiyasu-bold-not-rendered の例</title>
+<desc id="desc">修正前: この値は**「必須」**です。 / 修正後: この値は「**必須**」です。</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="203" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 160.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>yomiyasu-bold-not-rendered</text>
+<rect x="270" y="13" width="44" height="22" rx="11" fill="#ddf4ff"/>
+<text x="292" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#0969da'>修正</text>
+<text class="l" x="24" y="83">修正前</text>
+<text class="w" x="115" y="84">こ</text>
+<text class="w" x="137" y="84">の</text>
+<text class="w" x="159" y="84">値</text>
+<text class="w" x="181" y="84">は</text>
+<text class="n" x="198.6" y="84">*</text>
+<text class="n" x="211.8" y="84">*</text>
+<rect x="218.4" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="229.4" y="84">「</text>
+<text class="w" x="251.4" y="84">必</text>
+<text class="w" x="273.4" y="84">須</text>
+<rect x="284.4" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="295.4" y="84">」</text>
+<text class="n" x="313" y="84">*</text>
+<text class="n" x="326.2" y="84">*</text>
+<text class="w" x="343.8" y="84">で</text>
+<text class="w" x="365.8" y="84">す</text>
+<text class="w" x="387.8" y="84">。</text>
+<text class="l" x="24" y="131">修正後</text>
+<text class="w" x="115" y="132">こ</text>
+<text class="w" x="137" y="132">の</text>
+<text class="w" x="159" y="132">値</text>
+<text class="w" x="181" y="132">は</text>
+<rect x="192" y="111" width="22" height="29" rx="3" fill="#aceebb"/>
+<text class="w g" x="203" y="132">「</text>
+<text class="n" x="220.6" y="132">*</text>
+<text class="n" x="233.8" y="132">*</text>
+<text class="w" x="251.4" y="132">必</text>
+<text class="w" x="273.4" y="132">須</text>
+<text class="n" x="291" y="132">*</text>
+<text class="n" x="304.2" y="132">*</text>
+<rect x="310.8" y="111" width="22" height="29" rx="3" fill="#aceebb"/>
+<text class="w g" x="321.8" y="132">」</text>
+<text class="w" x="343.8" y="132">で</text>
+<text class="w" x="365.8" y="132">す</text>
+<text class="w" x="387.8" y="132">。</text>
+<text class="l" x="24" y="186">太字の記号を括弧の内側に移す</text>
+<text class="l" x="696" y="186" style="text-anchor:end">1か所</text>
+</svg>

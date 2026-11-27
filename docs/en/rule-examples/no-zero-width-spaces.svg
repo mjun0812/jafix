@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="204" viewBox="0 0 720 204" role="img" aria-labelledby="title desc">
+<title id="title">Example of no-zero-width-spaces</title>
+<desc id="desc">Before: コピーした設定U+200Bファイルを読み込みます。 / After: コピーした設定ファイルを読み込みます。</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="203" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 160.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>no-zero-width-spaces</text>
+<rect x="216" y="13" width="39.4" height="22" rx="11" fill="#ddf4ff"/>
+<text x="235.7" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#0969da'>Fix</text>
+<text class="l" x="24" y="83">Before</text>
+<text class="w" x="115" y="84">コ</text>
+<text class="w" x="137" y="84">ピ</text>
+<text class="w" x="159" y="84">ー</text>
+<text class="w" x="181" y="84">し</text>
+<text class="w" x="203" y="84">た</text>
+<text class="w" x="225" y="84">設</text>
+<text class="w" x="247" y="84">定</text>
+<rect x="258" y="63" width="50.8" height="29" rx="3" fill="#ffcecb"/>
+<rect x="260" y="69" width="46.8" height="18" rx="3" fill="none" stroke="#cf222e"/>
+<text class="c r" x="283.4" y="82">U+200B</text>
+<text class="w" x="319.8" y="84">フ</text>
+<text class="w" x="341.8" y="84">ァ</text>
+<text class="w" x="363.8" y="84">イ</text>
+<text class="w" x="385.8" y="84">ル</text>
+<text class="w" x="407.8" y="84">を</text>
+<text class="w" x="429.8" y="84">読</text>
+<text class="w" x="451.8" y="84">み</text>
+<text class="w" x="473.8" y="84">込</text>
+<text class="w" x="495.8" y="84">み</text>
+<text class="w" x="517.8" y="84">ま</text>
+<text class="w" x="539.8" y="84">す</text>
+<text class="w" x="561.8" y="84">。</text>
+<text class="l" x="24" y="131">After</text>
+<text class="w" x="115" y="132">コ</text>
+<text class="w" x="137" y="132">ピ</text>
+<text class="w" x="159" y="132">ー</text>
+<text class="w" x="181" y="132">し</text>
+<text class="w" x="203" y="132">た</text>
+<text class="w" x="225" y="132">設</text>
+<text class="w" x="247" y="132">定</text>
+<text class="w" x="269" y="132">フ</text>
+<text class="w" x="291" y="132">ァ</text>
+<text class="w" x="313" y="132">イ</text>
+<text class="w" x="335" y="132">ル</text>
+<text class="w" x="357" y="132">を</text>
+<text class="w" x="379" y="132">読</text>
+<text class="w" x="401" y="132">み</text>
+<text class="w" x="423" y="132">込</text>
+<text class="w" x="445" y="132">み</text>
+<text class="w" x="467" y="132">ま</text>
+<text class="w" x="489" y="132">す</text>
+<text class="w" x="511" y="132">。</text>
+<text class="l" x="24" y="186">Removes zero-width spaces</text>
+<text class="l" x="696" y="186" style="text-anchor:end">1 finding</text>
+</svg>

@@ -25,6 +25,9 @@ jobs:
       - if: runner.os == 'Linux'
         run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked --no-fail-fast
+      # 「ルールの例」の画像とページが、今のバイナリの結果から作ったものと合うことを確かめる
+      - if: runner.os == 'Linux'
+        run: node scripts/rule-examples.mjs --check
 
   docs:
     runs-on: ubuntu-latest

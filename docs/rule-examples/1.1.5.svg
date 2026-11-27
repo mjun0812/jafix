@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="228" viewBox="0 0 720 228" role="img" aria-labelledby="title desc">
+<title id="title">1.1.5.図表のキャプション の例</title>
+<desc id="desc">例文: ![ビルドの流れです。](build.png)
+![テストの結果です。](test.png)
+![配布の手順だ。](release.png)</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="227" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 184.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>1.1.5.図表のキャプション</text>
+<rect x="225" y="13" width="44" height="22" rx="11" fill="#fff8c5"/>
+<text x="247" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#9a6700'>指摘</text>
+<text class="l" x="24" y="83">例文</text>
+<text class="n" x="110.6" y="84">!</text>
+<text class="n" x="123.8" y="84">[</text>
+<text class="w" x="141.4" y="84">ビ</text>
+<text class="w" x="163.4" y="84">ル</text>
+<text class="w" x="185.4" y="84">ド</text>
+<text class="w" x="207.4" y="84">の</text>
+<text class="w" x="229.4" y="84">流</text>
+<text class="w" x="251.4" y="84">れ</text>
+<text class="w" x="273.4" y="84">で</text>
+<text class="w" x="295.4" y="84">す</text>
+<text class="w" x="317.4" y="84">。</text>
+<text class="n" x="335" y="84">]</text>
+<text class="n" x="348.2" y="84">(</text>
+<text class="n" x="361.4" y="84">b</text>
+<text class="n" x="374.6" y="84">u</text>
+<text class="n" x="387.8" y="84">i</text>
+<text class="n" x="401" y="84">l</text>
+<text class="n" x="414.2" y="84">d</text>
+<text class="n" x="427.4" y="84">.</text>
+<text class="n" x="440.6" y="84">p</text>
+<text class="n" x="453.8" y="84">n</text>
+<text class="n" x="467" y="84">g</text>
+<text class="n" x="480.2" y="84">)</text>
+<text class="w q" x="497.8" y="84" style="font-size:16px">↵</text>
+<text class="n" x="110.6" y="120">!</text>
+<text class="n" x="123.8" y="120">[</text>
+<text class="w" x="141.4" y="120">テ</text>
+<text class="w" x="163.4" y="120">ス</text>
+<text class="w" x="185.4" y="120">ト</text>
+<text class="w" x="207.4" y="120">の</text>
+<text class="w" x="229.4" y="120">結</text>
+<text class="w" x="251.4" y="120">果</text>
+<text class="w" x="273.4" y="120">で</text>
+<text class="w" x="295.4" y="120">す</text>
+<text class="w" x="317.4" y="120">。</text>
+<text class="n" x="335" y="120">]</text>
+<text class="n" x="348.2" y="120">(</text>
+<text class="n" x="361.4" y="120">t</text>
+<text class="n" x="374.6" y="120">e</text>
+<text class="n" x="387.8" y="120">s</text>
+<text class="n" x="401" y="120">t</text>
+<text class="n" x="414.2" y="120">.</text>
+<text class="n" x="427.4" y="120">p</text>
+<text class="n" x="440.6" y="120">n</text>
+<text class="n" x="453.8" y="120">g</text>
+<text class="n" x="467" y="120">)</text>
+<text class="w q" x="484.6" y="120" style="font-size:16px">↵</text>
+<text class="n" x="110.6" y="156">!</text>
+<text class="n" x="123.8" y="156">[</text>
+<text class="w" x="141.4" y="156">配</text>
+<text class="w" x="163.4" y="156">布</text>
+<text class="w" x="185.4" y="156">の</text>
+<text class="w" x="207.4" y="156">手</text>
+<text class="w" x="229.4" y="156">順</text>
+<rect x="240.4" y="135" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="251.4" y="156">だ</text>
+<rect x="262.4" y="135" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="273.4" y="156">。</text>
+<text class="n" x="291" y="156">]</text>
+<text class="n" x="304.2" y="156">(</text>
+<text class="n" x="317.4" y="156">r</text>
+<text class="n" x="330.6" y="156">e</text>
+<text class="n" x="343.8" y="156">l</text>
+<text class="n" x="357" y="156">e</text>
+<text class="n" x="370.2" y="156">a</text>
+<text class="n" x="383.4" y="156">s</text>
+<text class="n" x="396.6" y="156">e</text>
+<text class="n" x="409.8" y="156">.</text>
+<text class="n" x="423" y="156">p</text>
+<text class="n" x="436.2" y="156">n</text>
+<text class="n" x="449.4" y="156">g</text>
+<text class="n" x="462.6" y="156">)</text>
+<text class="l" x="24" y="210">図表のキャプションを敬体(ですます調)に揃える: 「だ。」は常体</text>
+<text class="l" x="696" y="210" style="text-anchor:end">1か所</text>
+</svg>

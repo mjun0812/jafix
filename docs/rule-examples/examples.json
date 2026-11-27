@@ -1,0 +1,789 @@
+{
+  "sections": [
+    {
+      "id": "jafix",
+      "title": "jafix独自の修正",
+      "title_en": "jafix-specific fixes",
+      "rules": [
+        {
+          "rule": "fullwidth-paren",
+          "text": "共通設定（すべてのプロジェクトで使う）に書きます。"
+        },
+        {
+          "rule": "space-between-ja-and-alnum",
+          "text": "jafix は Claude Code の hook から動かせます。",
+          "note": "英単語の間の空白は残します。",
+          "note_en": "Spaces between English words stay."
+        },
+        {
+          "rule": "space-between-ja-and-paren",
+          "text": "共通設定 (すべてのプロジェクトで使う) に書きます。"
+        }
+      ]
+    },
+    {
+      "id": "technical-writing",
+      "title": "日本語の技術文書",
+      "title_en": "Japanese technical writing",
+      "rules": [
+        {
+          "rule": "sentence-length",
+          "value": "{ max = 30 }",
+          "text": "設定を変更します。この値は次回のビルドから、すべてのテストとキャッシュに反映されます。",
+          "mark": "この値は次回のビルドから、すべてのテストとキャッシュに反映されます。"
+        },
+        {
+          "rule": "max-comma",
+          "text": "対応する拡張子は md,txt,rst,adoc,org です。",
+          "mark": ","
+        },
+        {
+          "rule": "max-kanji-continuous-len",
+          "text": "形態素解析辞書を読み込み、文字列変換を行います。",
+          "mark": "形態素解析辞書"
+        },
+        {
+          "rule": "arabic-kanji-numbers",
+          "text": "テストを二回実行し、結果を3件記録します。",
+          "mark": "二回"
+        },
+        {
+          "rule": "ja-no-mixed-period",
+          "text": "- 設定ファイルを保存します\n\n次にテストを実行します",
+          "mark": "す",
+          "note": "箇条書きの項目は、句点がなくても指摘しません。",
+          "note_en": "List items are not reported even without a period."
+        },
+        {
+          "rule": "no-nfd",
+          "text": "パッケージを更新します。"
+        },
+        {
+          "rule": "no-invalid-control-character",
+          "text": "貼り付けたコマンドを実行します。"
+        },
+        {
+          "rule": "no-zero-width-spaces",
+          "text": "コピーした設定​ファイルを読み込みます。"
+        },
+        {
+          "rule": "no-exclamation-question-mark",
+          "text": "詳細は https://example.com/?id=1 にあります。ビルドが通りました！",
+          "mark": "！",
+          "note": "URLの中の疑問符は指摘しません。",
+          "note_en": "A question mark inside a URL is not reported."
+        },
+        {
+          "rule": "no-hankaku-kana",
+          "text": "ｻｰﾊﾞｰの設定ﾌｧｲﾙを更新します。"
+        },
+        {
+          "rule": "ja-unnatural-alphabet",
+          "text": "C言語のプロジェクトをgビルドします。",
+          "mark": "g"
+        },
+        {
+          "rule": "no-unmatched-pair",
+          "text": "「保存」を押して、「設定を開きます。",
+          "mark": "設定を開きます。"
+        },
+        {
+          "rule": "max-ten",
+          "text": "対象はビルド、テスト、配布、監視、運用です。設定を読み込み、検証し、変換し、保存して、出力します。",
+          "mark": "、",
+          "note": "名詞を並べる読点は数えません。",
+          "note_en": "Commas that separate a list of nouns are not counted."
+        },
+        {
+          "rule": "no-doubled-joshi",
+          "text": "この関数は引数は受け取りません。この関数は、戻り値は返しません。",
+          "mark": "は"
+        },
+        {
+          "rule": "no-doubled-conjunctive-particle-ga",
+          "text": "テストが通ったが、ビルドが遅いが、公開します。",
+          "mark": "が"
+        },
+        {
+          "rule": "no-doubled-conjunction",
+          "text": "ビルド自体は通りました。しかし、テストは失敗しました。しかし、原因は不明です。",
+          "mark": "しかし"
+        },
+        {
+          "rule": "no-mix-dearu-desumasu",
+          "text": "設定ファイルは不要です。キャッシュは任意である。",
+          "mark": "である"
+        },
+        {
+          "rule": "no-double-negative-ja",
+          "text": "この関数は非推奨だが、使えないこともない。",
+          "mark": "ない"
+        },
+        {
+          "rule": "no-dropping-the-ra",
+          "text": "ログは画面で見られます。履歴もここから見れます。",
+          "mark": "れ"
+        },
+        {
+          "rule": "ja-no-weak-phrase",
+          "text": "この修正で直ると思います。別の原因かもしれません。",
+          "mark": [
+            "思います",
+            "かも"
+          ]
+        },
+        {
+          "rule": "ja-no-successive-word",
+          "text": "設定ファイルをを読み込みます。",
+          "mark": "を"
+        },
+        {
+          "rule": "ja-no-abusage",
+          "text": "例外を補足して、メソッドの返却値を確認します。",
+          "mark": [
+            "例外を補足",
+            "メソッドの返却値"
+          ]
+        },
+        {
+          "rule": "ja-no-redundant-expression",
+          "text": "設定は変更することができます。値はコマンドからも指定できます。",
+          "mark": "することができます"
+        }
+      ]
+    },
+    {
+      "id": "ai-writing",
+      "title": "AIが多用する書き方",
+      "title_en": "Patterns common in AI writing",
+      "rules": [
+        {
+          "rule": "no-ai-list-formatting",
+          "text": "- **ビルド**: `cargo build` を実行します。\n- **テスト**を実行します。",
+          "mark": "- **ビルド**:",
+          "note": "太字だけで、コロンの付かない項目は指摘しません。",
+          "note_en": "A bold item with no colon after it is not reported."
+        },
+        {
+          "rule": "no-ai-hype-expressions",
+          "text": "jafixは革命的な速さで動きます。",
+          "mark": "革命的な"
+        },
+        {
+          "rule": "no-ai-emphasis-patterns",
+          "text": "✅ **テスト**が通りました。\n\n設定は**必ず**保存します。",
+          "mark": "✅ **テスト**",
+          "note": "絵文字の付かない太字は指摘しません。",
+          "note_en": "Bold text without an emoji is not reported."
+        },
+        {
+          "rule": "no-ai-colon-continuation",
+          "text": "次のコマンドを実行します:\n\n```sh\ncargo test\n```",
+          "mark": ":"
+        },
+        {
+          "rule": "ai-tech-writing-guideline",
+          "text": "まず最初に設定を変更することができます。",
+          "mark": [
+            "まず最初に",
+            "することができます"
+          ]
+        },
+        {
+          "rule": "no-ai-words",
+          "text": "死活監視で通信経路を確認します。",
+          "mark": [
+            "死活",
+            "経路"
+          ]
+        },
+        {
+          "rule": "no-short-topic-comma",
+          "text": "この設定は、既定で有効です。\nビルド設定の変更は、再起動後に反映されます。",
+          "mark": "、",
+          "note": "主題が6文字以上のときは指摘しません。",
+          "note_en": "A topic of six characters or more is not reported."
+        }
+      ]
+    },
+    {
+      "id": "yomiyasu",
+      "title": "yomiyasu由来のルール",
+      "title_en": "Rules adapted from yomiyasu",
+      "rules": [
+        {
+          "rule": "yomiyasu-bold-not-rendered",
+          "text": "この値は**「必須」**です。"
+        },
+        {
+          "rule": "yomiyasu-instruction-residue",
+          "text": "この記事ではAPIは扱いません。\n\nこの記事ではUIは扱いません。[UI編](ui.md)を参照。",
+          "mark": "この記事ではAPIは扱いません。",
+          "note": "参照先のリンクが続く除外は指摘しません。",
+          "note_en": "An exclusion followed by a link to where the topic is covered is not reported."
+        },
+        {
+          "rule": "yomiyasu-chat-response",
+          "text": "ご質問ありがとうございます。\n設定は `config.toml` に書きます。",
+          "mark": "ご質問ありがとうございます。"
+        },
+        {
+          "rule": "yomiyasu-meta-filler",
+          "text": "重要なのは、設定を保存することです。\nいかがでしたでしょうか。",
+          "mark": [
+            "重要なのは",
+            "いかがでしたでしょうか"
+          ]
+        },
+        {
+          "rule": "yomiyasu-summary-restatement",
+          "text": "ビルドは30秒から10秒になりました。\nまとめると、ビルドが速くなりました。",
+          "mark": "まとめると、"
+        },
+        {
+          "rule": "yomiyasu-meta-intro",
+          "text": "本記事では、設定ファイルの書き方を説明します。",
+          "mark": "本記事では"
+        },
+        {
+          "rule": "yomiyasu-count-declaration",
+          "text": "ポイントは3つです。\n\n- 設定を保存する\n- テストを書く\n- 小さく公開する",
+          "mark": "ポイントは3つです"
+        },
+        {
+          "rule": "yomiyasu-ai-phrase",
+          "text": "多岐にわたる設定項目を表にまとめます。",
+          "mark": "多岐にわたる"
+        },
+        {
+          "rule": "yomiyasu-placeholder-residue",
+          "text": "APIの上限は【要確認】件です。\n接続先は〇〇サーバーです。",
+          "mark": [
+            "【要確認】",
+            "〇〇"
+          ]
+        },
+        {
+          "rule": "yomiyasu-short-mochiron",
+          "text": "もちろん、テストも書きます。",
+          "mark": "もちろん、"
+        },
+        {
+          "rule": "yomiyasu-say-hedge",
+          "text": "この設定は有効と言えるでしょう。",
+          "mark": "この設定は有効と言えるでしょう。"
+        },
+        {
+          "rule": "yomiyasu-fragment-run",
+          "text": "テストが通りました。速い。軽い。安い。",
+          "mark": "速い。軽い。安い。"
+        },
+        {
+          "rule": "yomiyasu-cleft-list-ending",
+          "text": "今回の更新で追加したのは、設定、ログ、通知。",
+          "mark": "今回の更新で追加したのは、設定、ログ、通知。"
+        },
+        {
+          "rule": "yomiyasu-copy-comma-noun",
+          "text": "軽い、小さな設計。",
+          "mark": "軽い、小さな設計。"
+        },
+        {
+          "rule": "yomiyasu-bare-verb-chain",
+          "text": "設計する、実装する、検証する。",
+          "mark": "設計する、実装する、検証する。"
+        },
+        {
+          "rule": "yomiyasu-dash-decoration",
+          "text": "原因は設定ミスだった——単純な話だ。",
+          "mark": "——"
+        },
+        {
+          "rule": "yomiyasu-dash-insertion",
+          "text": "リリースは今日——正確には昨日——行いました。",
+          "mark": "——正確には昨日——"
+        },
+        {
+          "rule": "yomiyasu-dash-list-ending",
+          "text": "速さ、軽さ、単純さ──。",
+          "mark": "──"
+        },
+        {
+          "rule": "yomiyasu-emoji-prohibited",
+          "text": "ビルドが通りました🚀\nテストも通りました✅",
+          "mark": [
+            "🚀",
+            "✅"
+          ]
+        },
+        {
+          "rule": "yomiyasu-renyo-noun",
+          "text": "ビルド結果の確かめを行います。",
+          "mark": "の確かめ"
+        },
+        {
+          "rule": "yomiyasu-slop-vocabulary",
+          "text": "このログがデバッグの土台になります。\n設計の解像度を上げます。",
+          "mark": [
+            "土台",
+            "解像度"
+          ]
+        },
+        {
+          "rule": "yomiyasu-katakana-term",
+          "text": "今後のロードマップを公開します。",
+          "mark": "ロードマップ"
+        }
+      ]
+    },
+    {
+      "id": "spacing",
+      "title": "空白と字種",
+      "title_en": "Spacing and character forms",
+      "rules": [
+        {
+          "rule": "ja-nakaguro-or-halfwidth-space-between-katakana",
+          "text": "ビルド　サーバーとビルド・サーバーを使います。",
+          "mark": "　"
+        },
+        {
+          "rule": "ja-no-space-around-parentheses",
+          "text": "設定は 「共通設定」 に書きます (任意)。",
+          "note": "半角の丸括弧は対象にしません。",
+          "note_en": "Half-width round brackets are not checked."
+        },
+        {
+          "rule": "ja-no-space-around-slash",
+          "text": "読み込み / 書き込みの設定です。"
+        },
+        {
+          "rule": "ja-no-space-between-full-width",
+          "text": "設定を 読み込み、Rust で 実行します。"
+        },
+        {
+          "rule": "ja-space-between-half-and-full-width",
+          "text": "Claude Code の hook を使います。",
+          "note": "英単語の間の空白は残します。",
+          "note_en": "Spaces between English words stay."
+        },
+        {
+          "rule": "ja-space-after-exclamation",
+          "text": "ビルドに成功しました！ 次はテストです。",
+          "mark": " "
+        },
+        {
+          "rule": "ja-space-after-question",
+          "text": "この設定は有効ですか？ 無効でも動きます。",
+          "mark": " "
+        },
+        {
+          "rule": "ja-space-around-code",
+          "text": "設定は `config.toml` に書きます。"
+        },
+        {
+          "rule": "ja-space-around-emphasis",
+          "text": "設定は *必ず* 確認します。"
+        },
+        {
+          "rule": "ja-space-around-link",
+          "text": "詳細は [リファレンス](REFERENCE.md) を見てください。"
+        },
+        {
+          "rule": "ja-space-around-strong",
+          "text": "設定を **必ず** 確認します。"
+        },
+        {
+          "rule": "no-mixed-zenkaku-and-hankaku-alphabet",
+          "text": "ビルドはＲｕｓｔ製のCLIで行います。"
+        },
+        {
+          "rule": "no-kangxi-radicals",
+          "text": "⽂字コードはUTF-8にそろえます。",
+          "note": "見た目は同じでも、文字のコードは別です。",
+          "note_en": "The two characters look the same but have different code points."
+        }
+      ]
+    },
+    {
+      "id": "jtf-prose",
+      "title": "日本語標準スタイルガイド: 文体と句読点",
+      "title_en": "Japanese translation style guide: prose style and punctuation",
+      "rules": [
+        {
+          "rule": "1.1.1.本文",
+          "text": "設定は不要です。起動も速いです。結果は標準出力である。",
+          "mark": "である。",
+          "note": "少ないほうの文体を指摘します。",
+          "note_en": "The less common style is the one reported."
+        },
+        {
+          "rule": "1.1.2.見出し",
+          "text": "# 設定の書き方。\n\n設定は共通設定に書きます。",
+          "mark": "。"
+        },
+        {
+          "rule": "1.1.3.箇条書き",
+          "text": "- ビルドを実行します。\n- テストを実行します。\n- 結果を確認します",
+          "mark": "- 結果を確認します"
+        },
+        {
+          "rule": "1.1.5.図表のキャプション",
+          "text": "![ビルドの流れです。](build.png)\n![テストの結果です。](test.png)\n![配布の手順だ。](release.png)",
+          "mark": "だ。"
+        },
+        {
+          "rule": "1.2.1.句点(。)と読点(、)",
+          "text": "config.toml を読み込み,ビルドします。",
+          "mark": ","
+        },
+        {
+          "rule": "1.2.2.ピリオド(.)とカンマ(,)",
+          "text": "設定を読み込み，3．5秒で終わります。",
+          "mark": [
+            "，",
+            "．"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jtf-characters",
+      "title": "日本語標準スタイルガイド: 文字と用語の表記",
+      "title_en": "Japanese translation style guide: characters and terms",
+      "rules": [
+        {
+          "rule": "2.1.2.漢字",
+          "text": "処理の顛末をログに残します。",
+          "mark": "顛"
+        },
+        {
+          "rule": "2.1.5.カタカナ",
+          "text": "ﾌｧｲﾙを読み込み、テストを実行します。"
+        },
+        {
+          "rule": "2.1.6.カタカナの長音",
+          "text": "サーバーのユーザ名を入力します。",
+          "mark": "ユーザ"
+        },
+        {
+          "rule": "2.1.8.算用数字",
+          "text": "タイムアウトは３０秒で、再試行は3回です。"
+        },
+        {
+          "rule": "2.1.9.アルファベット",
+          "text": "ＣＬＩで設定を確認します。"
+        },
+        {
+          "rule": "2.1.10.算用数字の位取りの表記",
+          "text": "処理時間は0,5秒で、上限は10,000件です。",
+          "mark": ",",
+          "note": "千の位の区切りのカンマは指摘しません。",
+          "note_en": "A comma that separates thousands is not reported."
+        },
+        {
+          "rule": "2.2.1.ひらがなと漢字の使い分け",
+          "text": "予め設定を確認します。",
+          "mark": "予め"
+        },
+        {
+          "rule": "2.2.2.算用数字と漢数字の使い分け",
+          "text": "テストを三回実行します。",
+          "mark": "三回"
+        },
+        {
+          "rule": "2.2.3.一部の助数詞の表記",
+          "text": "3ヶ月ごとに更新し、6か月で廃止します。",
+          "mark": "3ヶ月"
+        }
+      ]
+    },
+    {
+      "id": "jtf-spacing",
+      "title": "日本語標準スタイルガイド: 空白",
+      "title_en": "Japanese translation style guide: spacing",
+      "rules": [
+        {
+          "rule": "3.1.1.全角文字と半角文字の間",
+          "text": "cargo build は 3 秒で終わります。",
+          "note": "英単語の間の空白は残します。",
+          "note_en": "Spaces between English words stay."
+        },
+        {
+          "rule": "3.1.2.全角文字どうし",
+          "text": "テストが 失敗したら、Rust の ログを確認します。"
+        },
+        {
+          "rule": "3.2.カタカナ語間のスペースの有無",
+          "text": "ユニット　テストとビルド・テストを実行します。",
+          "mark": "　"
+        },
+        {
+          "rule": "3.3.かっこ類と隣接する文字の間のスペースの有無",
+          "text": "ビルド (任意) の前に 「準備」 を行います。",
+          "note": "設定を変えなければ、半角の丸括弧の外側の空白は残します。",
+          "note_en": "Unless the setting is changed, spaces outside half-width round brackets stay."
+        }
+      ]
+    },
+    {
+      "id": "jtf-punctuation",
+      "title": "日本語標準スタイルガイド: 記号と括弧",
+      "title_en": "Japanese translation style guide: symbols and brackets",
+      "rules": [
+        {
+          "rule": "4.1.1.句点(。)",
+          "text": "「保存しました。」と表示されます。",
+          "mark": "。",
+          "note": "括弧の外の句点は指摘しません。",
+          "note_en": "A period outside the brackets is not reported."
+        },
+        {
+          "rule": "4.1.3.ピリオド(.)、カンマ(,)",
+          "text": "設定を保存しました. 次はビルドです。",
+          "mark": "."
+        },
+        {
+          "rule": "4.2.1.感嘆符(！)",
+          "text": "「Done!」と出れば成功です!",
+          "mark": "!",
+          "note": "英語の直後の感嘆符は指摘しません。",
+          "note_en": "An exclamation mark right after English is not reported."
+        },
+        {
+          "rule": "4.2.2.疑問符(？)",
+          "text": "「Ready?」と出ましたか?",
+          "mark": "?",
+          "note": "英語の直後の疑問符は指摘しません。",
+          "note_en": "A question mark right after English is not reported."
+        },
+        {
+          "rule": "4.2.4.中黒(・)",
+          "text": "サーバ･クライアント間の通信を確かめます。"
+        },
+        {
+          "rule": "4.2.5.波線(〜)",
+          "text": "対応するバージョンは18~22です。",
+          "mark": "~"
+        },
+        {
+          "rule": "4.2.6.ハイフン(-)",
+          "text": "サーバ-クライアント間で、Ctrl-C を押します。",
+          "mark": "-",
+          "note": "英数字どうしをつなぐハイフンは指摘しません。",
+          "note_en": "A hyphen that joins alphanumeric characters is not reported."
+        },
+        {
+          "rule": "4.2.7.コロン(：)",
+          "text": "注意: http://localhost:3000 を開きます。",
+          "mark": ":",
+          "note": "URLの中のコロンは指摘しません。",
+          "note_en": "A colon inside a URL is not reported."
+        },
+        {
+          "rule": "4.2.8.セミコロン(;)",
+          "text": "設定を保存する;次にビルドします。",
+          "mark": ";"
+        },
+        {
+          "rule": "4.2.9.ダッシュ(-)",
+          "text": "設定を保存する―次にビルドします。",
+          "mark": "―"
+        },
+        {
+          "rule": "4.3.1.丸かっこ（）",
+          "text": "設定は共通設定(全体用)に書きます。",
+          "mark": [
+            "(",
+            ")"
+          ]
+        },
+        {
+          "rule": "4.3.2.大かっこ［］",
+          "text": "設定に[任意の値]を指定します。",
+          "mark": [
+            "[",
+            "]"
+          ]
+        },
+        {
+          "rule": "4.3.3.かぎかっこ「」",
+          "text": "「保存しました」と出て、「失敗しましたと出ます。",
+          "mark": "「",
+          "note": "対になったかぎ括弧は指摘せず、閉じていないかぎ括弧だけを指摘します。",
+          "note_en": "Paired brackets are not reported, only the opening bracket that is never closed."
+        },
+        {
+          "rule": "4.3.4.二重かぎかっこ『』",
+          "text": "『設定ガイド』を読んでから、『入門編を読みます。",
+          "mark": "『",
+          "note": "対になった二重かぎ括弧は指摘せず、閉じていない二重かぎ括弧だけを指摘します。",
+          "note_en": "Paired brackets are not reported, only the opening bracket that is never closed."
+        },
+        {
+          "rule": "4.3.5.二重引用符",
+          "text": "タスク \"build\" と \"test を実行します。",
+          "mark": "\"",
+          "note": "引用符の数が奇数のときだけ、対にならない1つを指摘します。",
+          "note_en": "Only when the number of quotation marks is odd, the unpaired one is reported."
+        },
+        {
+          "rule": "4.3.6.中かっこ{ }",
+          "text": "変数 {id} と {name を使います。",
+          "mark": "{",
+          "note": "対になった波括弧は指摘せず、閉じていない波括弧だけを指摘します。",
+          "note_en": "Paired braces are not reported, only the opening brace that is never closed."
+        },
+        {
+          "rule": "4.3.7.山かっこ<>",
+          "text": "A -> B の順に呼び、Vec<T を使います。",
+          "mark": "<",
+          "note": "矢印や比較の記号は、山かっことして数えません。",
+          "note_en": "Arrows and comparison operators are not counted as angle brackets."
+        }
+      ]
+    },
+    {
+      "id": "japanese-wording",
+      "title": "ひらがな、さ入れ言葉、同義語",
+      "title_en": "Hiragana, forms with `さ`, and synonyms",
+      "rules": [
+        {
+          "rule": "ja-hiragana-hojodoushi",
+          "text": "レビューを頂きました。設定を確認して頂きたいです。",
+          "mark": "頂き",
+          "note": "補助動詞ではない「頂きました」は指摘しません。",
+          "note_en": "A main verb such as `頂きました` is not reported."
+        },
+        {
+          "rule": "ja-hiragana-keishikimeishi",
+          "text": "ビルドに時間がかかる時は、ログを確認します。",
+          "mark": "時"
+        },
+        {
+          "rule": "ja-keishikimeishi",
+          "value": "{ detection_ue = false }",
+          "text": "先に保存した方が安全です。確認した上で実行します。",
+          "mark": "方",
+          "note": "「うえ」の指摘は設定で外しているので、「上」は指摘しません。",
+          "note_en": "The report for `うえ` is turned off by the setting, so `上` is not reported."
+        },
+        {
+          "rule": "ja-hiragana-fukushi",
+          "text": "既存の設定は既に読み込まれています。",
+          "mark": "既に"
+        },
+        {
+          "rule": "ja-hiragana-daimeishi",
+          "text": "設定ファイルは何処に置いても読み込まれます。",
+          "mark": "何処"
+        },
+        {
+          "rule": "@textlint-ja/no-insert-dropping-sa",
+          "text": "試したさそうな人がいます。この設定で良そうです。",
+          "mark": [
+            "さそう",
+            "良そう"
+          ]
+        },
+        {
+          "rule": "@textlint-ja/no-synonyms",
+          "text": "サーバを起動します。次にサーバーを停止します。",
+          "mark": [
+            "サーバ",
+            "サーバー"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "general",
+      "title": "言語を問わない確認",
+      "title_en": "Language-independent checks",
+      "rules": [
+        {
+          "rule": "no-todo",
+          "text": "- [x] 設定を書く\n- [ ] 手順を書く\n- TODO: 例を足す",
+          "mark": [
+            "[ ]",
+            "TODO: 例を足す"
+          ],
+          "note": "完了したタスクは指摘しません。",
+          "note_en": "A completed task is not reported."
+        },
+        {
+          "rule": "date-weekday-mismatch",
+          "text": "候補は2026年12月1日(火)と2026年12月4日(木)です。",
+          "mark": "木",
+          "note": "曜日が合う日付は指摘しません。",
+          "note_en": "A date whose weekday is correct is not reported."
+        }
+      ]
+    },
+    {
+      "id": "english",
+      "title": "英語の綴りと表現",
+      "title_en": "English spelling and style",
+      "rules": [
+        {
+          "rule": "terminology",
+          "value": "{ terms = [['front[- ]end(\\w*)', 'frontend$1']] }",
+          "text": "Build the front-end on github.",
+          "note": "組み込みの辞書だけに当たる語は、直さずに指摘だけを出します。",
+          "note_en": "A word that only the built-in dictionary matches is reported and left as it is."
+        },
+        {
+          "rule": "spelling",
+          "text": "Install the pacakge before the build.",
+          "mark": "pacakge"
+        },
+        {
+          "rule": "common-misspellings",
+          "text": "Check teh config, then recieve it.",
+          "mark": [
+            "teh",
+            "recieve"
+          ]
+        },
+        {
+          "rule": "write-good",
+          "text": "The very simple file was read by the CLI.",
+          "mark": [
+            "very",
+            "was read"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "custom-rules-and-filters",
+      "title": "利用者の置き換えとfilter",
+      "title_en": "Custom replacements and filters",
+      "rules": [
+        {
+          "rule": "prh",
+          "value": "{ ruleContents = ['''\nrules:\n  - expected: 利用者\n    pattern: /ユーザー?/\n'''] }",
+          "text": "ユーザの設定を、ユーザーごとに保存します。"
+        },
+        {
+          "rule": "@textlint-rule/pattern",
+          "value": "{ patterns = [{ message = \"日付はYYYY-MM-DDで書く\", pattern = '/(\\d{4})/(\\d{2})/(\\d{2})/', replace = \"$1-$2-$3\" }] }",
+          "text": "開始は2026/12/01、終了は12/04です。",
+          "note": "年の無い日付は、パターンに当たらないので直しません。",
+          "note_en": "A date without a year does not match the pattern, so it stays."
+        }
+      ]
+    }
+  ],
+  "skipped": [
+    {
+      "rule": "4.3.8.一重引用符",
+      "reason": "presetのキーを設定に書けるようにIDだけを持つルールで、どの例文にも指摘を出しません。",
+      "reason_en": "This rule only exists so that the preset key can be written in a configuration, and it reports nothing for any text."
+    },
+    {
+      "rule": "no-dead-link",
+      "reason": "リンク先を調べるルールは標準入力の本文には適用されず、例文は標準入力から渡すので、指摘を出せません。",
+      "reason_en": "The rule that checks link targets does not apply to text from standard input, and the example text is passed through standard input, so it can report nothing."
+    }
+  ]
+}

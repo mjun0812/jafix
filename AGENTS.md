@@ -29,6 +29,7 @@ prek install
 | formatの確認       | `cargo fmt --check`                                  |
 | lint               | `cargo clippy --locked --all-targets -- -D warnings` |
 | ドキュメントのビルド | `npm ci && npm run docs:build`                       |
+| ルールの例の生成   | `cargo build --locked && npm run docs:examples`      |
 
 変更を終える前に、format、lint、すべてのテストを通す。CIは同じコマンドを実行する。
 
@@ -41,6 +42,7 @@ pre-commit hookは、Rustのファイルに `cargo fmt --check` と `cargo clipp
 - `src/hook/`: Claude CodeとCodexのhookの入力から対象行を決める処理。
 - `tests/`: 実際のバイナリを起動する統合テスト。`tests/common` の `Sandbox` が `HOME` と `XDG_CONFIG_HOME` を一時ディレクトリへ向けるので、実行した人の設定ファイルを読まない。
 - `docs/`: VitePressのドキュメントサイト。日本語版を基準にし、英語版は同じファイル名で `docs/en/` に置く。
+- `docs/rule-examples/`: 「ルールの例」の例文の定義(`examples.json`)と、そこから生成した日本語版の画像。英語版の画像は `docs/en/rule-examples/` にある。画像と2つのページ(`docs/rule-examples.md`、`docs/en/rule-examples.md`)は `scripts/rule-examples.mjs` が作るので、直接編集しない。
 - `skills/jafix/`: 配布するAgent Skill。
 
 ## 規約
@@ -49,3 +51,4 @@ pre-commit hookは、Rustのファイルに `cargo fmt --check` と `cargo clipp
 - PRのタイトルと本文は日本語で書く。
 - 利用者から見える振る舞いを変えたら、`README.md`、`REFERENCE.md`、`docs/` の日本語版と英語版を同じ変更で更新する。
 - テストは実際のバイナリを起動して確かめる。新しいテストも `Sandbox` を使う。
+- 組み込みのルールを足したら、`docs/rule-examples/examples.json` に例文を足し、日英のルール一覧のルールIDを「ルールの例」へのリンクにする。ルールの判定か文面を変えたら、`npm run docs:examples` で画像とページを作り直す。CIは、生成したファイルが今のバイナリの結果と合うことを確かめる。

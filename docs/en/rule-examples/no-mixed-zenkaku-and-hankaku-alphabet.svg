@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="204" viewBox="0 0 720 204" role="img" aria-labelledby="title desc">
+<title id="title">Example of no-mixed-zenkaku-and-hankaku-alphabet</title>
+<desc id="desc">Before: ビルドはＲｕｓｔ製のCLIで行います。 / After: ビルドはRust製のCLIで行います。</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="203" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 160.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>no-mixed-zenkaku-and-hankaku-alphabet</text>
+<rect x="369" y="13" width="39.4" height="22" rx="11" fill="#ddf4ff"/>
+<text x="388.7" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#0969da'>Fix</text>
+<text class="l" x="24" y="83">Before</text>
+<text class="w" x="115" y="84">ビ</text>
+<text class="w" x="137" y="84">ル</text>
+<text class="w" x="159" y="84">ド</text>
+<text class="w" x="181" y="84">は</text>
+<rect x="192" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="203" y="84">Ｒ</text>
+<rect x="214" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="225" y="84">ｕ</text>
+<rect x="236" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="247" y="84">ｓ</text>
+<rect x="258" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="269" y="84">ｔ</text>
+<text class="w" x="291" y="84">製</text>
+<text class="w" x="313" y="84">の</text>
+<text class="n" x="330.6" y="84">C</text>
+<text class="n" x="343.8" y="84">L</text>
+<text class="n" x="357" y="84">I</text>
+<text class="w" x="374.6" y="84">で</text>
+<text class="w" x="396.6" y="84">行</text>
+<text class="w" x="418.6" y="84">い</text>
+<text class="w" x="440.6" y="84">ま</text>
+<text class="w" x="462.6" y="84">す</text>
+<text class="w" x="484.6" y="84">。</text>
+<text class="l" x="24" y="131">After</text>
+<text class="w" x="115" y="132">ビ</text>
+<text class="w" x="137" y="132">ル</text>
+<text class="w" x="159" y="132">ド</text>
+<text class="w" x="181" y="132">は</text>
+<rect x="192" y="111" width="13.2" height="29" rx="3" fill="#aceebb"/>
+<text class="n g" x="198.6" y="132">R</text>
+<rect x="205.2" y="111" width="13.2" height="29" rx="3" fill="#aceebb"/>
+<text class="n g" x="211.8" y="132">u</text>
+<rect x="218.4" y="111" width="13.2" height="29" rx="3" fill="#aceebb"/>
+<text class="n g" x="225" y="132">s</text>
+<rect x="231.6" y="111" width="13.2" height="29" rx="3" fill="#aceebb"/>
+<text class="n g" x="238.2" y="132">t</text>
+<text class="w" x="255.8" y="132">製</text>
+<text class="w" x="277.8" y="132">の</text>
+<text class="n" x="295.4" y="132">C</text>
+<text class="n" x="308.6" y="132">L</text>
+<text class="n" x="321.8" y="132">I</text>
+<text class="w" x="339.4" y="132">で</text>
+<text class="w" x="361.4" y="132">行</text>
+<text class="w" x="383.4" y="132">い</text>
+<text class="w" x="405.4" y="132">ま</text>
+<text class="w" x="427.4" y="132">す</text>
+<text class="w" x="449.4" y="132">。</text>
+<text class="l" x="24" y="186">Standardizes Latin letters to the configured half-width or full-width form</text>
+<text class="l" x="696" y="186" style="text-anchor:end">1 finding</text>
+</svg>

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="156" viewBox="0 0 720 156" role="img" aria-labelledby="title desc">
+<title id="title">ja-space-after-question の例</title>
+<desc id="desc">例文: この設定は有効ですか？ 無効でも動きます。</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="155" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 112.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>ja-space-after-question</text>
+<rect x="243" y="13" width="44" height="22" rx="11" fill="#fff8c5"/>
+<text x="265" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#9a6700'>指摘</text>
+<text class="l" x="24" y="83">例文</text>
+<text class="w" x="115" y="84">こ</text>
+<text class="w" x="137" y="84">の</text>
+<text class="w" x="159" y="84">設</text>
+<text class="w" x="181" y="84">定</text>
+<text class="w" x="203" y="84">は</text>
+<text class="w" x="225" y="84">有</text>
+<text class="w" x="247" y="84">効</text>
+<text class="w" x="269" y="84">で</text>
+<text class="w" x="291" y="84">す</text>
+<text class="w" x="313" y="84">か</text>
+<text class="w" x="335" y="84">？</text>
+<rect x="346" y="63" width="13.2" height="29" rx="3" fill="#ffcecb"/>
+<path d="M348.5 81v5h8.2v-5" fill="none" stroke="#cf222e" stroke-width="1.5"/>
+<text class="w" x="370.2" y="84">無</text>
+<text class="w" x="392.2" y="84">効</text>
+<text class="w" x="414.2" y="84">で</text>
+<text class="w" x="436.2" y="84">も</text>
+<text class="w" x="458.2" y="84">動</text>
+<text class="w" x="480.2" y="84">き</text>
+<text class="w" x="502.2" y="84">ま</text>
+<text class="w" x="524.2" y="84">す</text>
+<text class="w" x="546.2" y="84">。</text>
+<text class="l" x="24" y="138">文末の「？」の後に別の文が続くので、直後の半角空白を全角空白にする</text>
+<text class="l" x="696" y="138" style="text-anchor:end">1か所</text>
+</svg>

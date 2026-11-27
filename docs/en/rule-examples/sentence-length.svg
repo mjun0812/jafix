@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="192" viewBox="0 0 720 192" role="img" aria-labelledby="title desc">
+<title id="title">Example of sentence-length</title>
+<desc id="desc">Example: 設定を変更します。この値は次回のビルドから、すべてのテストとキャッシュに反映されます。</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="191" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 148.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>sentence-length</text>
+<rect x="171" y="13" width="58.9" height="22" rx="11" fill="#fff8c5"/>
+<text x="200.4" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#9a6700'>Report</text>
+<text class="l" x="24" y="83">Example</text>
+<text class="w" x="115" y="84">設</text>
+<text class="w" x="137" y="84">定</text>
+<text class="w" x="159" y="84">を</text>
+<text class="w" x="181" y="84">変</text>
+<text class="w" x="203" y="84">更</text>
+<text class="w" x="225" y="84">し</text>
+<text class="w" x="247" y="84">ま</text>
+<text class="w" x="269" y="84">す</text>
+<text class="w" x="291" y="84">。</text>
+<rect x="302" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="313" y="84">こ</text>
+<rect x="324" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="335" y="84">の</text>
+<rect x="346" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="357" y="84">値</text>
+<rect x="368" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="379" y="84">は</text>
+<rect x="390" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="401" y="84">次</text>
+<rect x="412" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="423" y="84">回</text>
+<rect x="434" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="445" y="84">の</text>
+<rect x="456" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="467" y="84">ビ</text>
+<rect x="478" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="489" y="84">ル</text>
+<rect x="500" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="511" y="84">ド</text>
+<rect x="522" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="533" y="84">か</text>
+<rect x="544" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="555" y="84">ら</text>
+<rect x="566" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="577" y="84">、</text>
+<rect x="588" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="599" y="84">す</text>
+<rect x="610" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="621" y="84">べ</text>
+<rect x="632" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="643" y="84">て</text>
+<rect x="654" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="665" y="84">の</text>
+<rect x="104" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="115" y="120">テ</text>
+<rect x="126" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="137" y="120">ス</text>
+<rect x="148" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="159" y="120">ト</text>
+<rect x="170" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="181" y="120">と</text>
+<rect x="192" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="203" y="120">キ</text>
+<rect x="214" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="225" y="120">ャ</text>
+<rect x="236" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="247" y="120">ッ</text>
+<rect x="258" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="269" y="120">シ</text>
+<rect x="280" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="291" y="120">ュ</text>
+<rect x="302" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="313" y="120">に</text>
+<rect x="324" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="335" y="120">反</text>
+<rect x="346" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="357" y="120">映</text>
+<rect x="368" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="379" y="120">さ</text>
+<rect x="390" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="401" y="120">れ</text>
+<rect x="412" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="423" y="120">ま</text>
+<rect x="434" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="445" y="120">す</text>
+<rect x="456" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="467" y="120">。</text>
+<text class="l" x="24" y="174">Flags sentences that exceed the length limit</text>
+<text class="l" x="696" y="174" style="text-anchor:end">1 finding</text>
+</svg>

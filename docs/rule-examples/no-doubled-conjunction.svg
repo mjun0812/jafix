@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="192" viewBox="0 0 720 192" role="img" aria-labelledby="title desc">
+<title id="title">no-doubled-conjunction の例</title>
+<desc id="desc">例文: ビルド自体は通りました。しかし、テストは失敗しました。しかし、原因は不明です。</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="191" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 148.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>no-doubled-conjunction</text>
+<rect x="234" y="13" width="44" height="22" rx="11" fill="#fff8c5"/>
+<text x="256" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#9a6700'>指摘</text>
+<text class="l" x="24" y="83">例文</text>
+<text class="w" x="115" y="84">ビ</text>
+<text class="w" x="137" y="84">ル</text>
+<text class="w" x="159" y="84">ド</text>
+<text class="w" x="181" y="84">自</text>
+<text class="w" x="203" y="84">体</text>
+<text class="w" x="225" y="84">は</text>
+<text class="w" x="247" y="84">通</text>
+<text class="w" x="269" y="84">り</text>
+<text class="w" x="291" y="84">ま</text>
+<text class="w" x="313" y="84">し</text>
+<text class="w" x="335" y="84">た</text>
+<text class="w" x="357" y="84">。</text>
+<text class="w" x="379" y="84">し</text>
+<text class="w" x="401" y="84">か</text>
+<text class="w" x="423" y="84">し</text>
+<text class="w" x="445" y="84">、</text>
+<text class="w" x="467" y="84">テ</text>
+<text class="w" x="489" y="84">ス</text>
+<text class="w" x="511" y="84">ト</text>
+<text class="w" x="533" y="84">は</text>
+<text class="w" x="555" y="84">失</text>
+<text class="w" x="577" y="84">敗</text>
+<text class="w" x="599" y="84">し</text>
+<text class="w" x="621" y="84">ま</text>
+<text class="w" x="643" y="84">し</text>
+<text class="w" x="665" y="84">た</text>
+<text class="w" x="687" y="84">。</text>
+<rect x="104" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="115" y="120">し</text>
+<rect x="126" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="137" y="120">か</text>
+<rect x="148" y="99" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="159" y="120">し</text>
+<text class="w" x="181" y="120">、</text>
+<text class="w" x="203" y="120">原</text>
+<text class="w" x="225" y="120">因</text>
+<text class="w" x="247" y="120">は</text>
+<text class="w" x="269" y="120">不</text>
+<text class="w" x="291" y="120">明</text>
+<text class="w" x="313" y="120">で</text>
+<text class="w" x="335" y="120">す</text>
+<text class="w" x="357" y="120">。</text>
+<text class="l" x="24" y="174">同じ接続詞「しかし」が続いている</text>
+<text class="l" x="696" y="174" style="text-anchor:end">1か所</text>
+</svg>

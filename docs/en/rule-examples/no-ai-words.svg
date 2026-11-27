@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="156" viewBox="0 0 720 156" role="img" aria-labelledby="title desc">
+<title id="title">Example of no-ai-words</title>
+<desc id="desc">Example: 死活監視で通信経路を確認します。</desc>
+<style>text{fill:#1f2328}.w{font:22px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle}.n{font:22px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.c{font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-anchor:middle}.l{font:13px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;fill:#59636e}.r{fill:#cf222e}.g{fill:#116329}.q{fill:#8c959f}</style>
+<rect x="0.5" y="0.5" width="719" height="155" rx="8" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M1 46V9a8 8 0 0 1 8-8h702a8 8 0 0 1 8 8v37z" fill="#f6f8fa"/>
+<path d="M1 46.5h718M1 112.5h718" stroke="#d1d9e0"/>
+<text x="24" y="29" style='font:600 15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'>no-ai-words</text>
+<rect x="135" y="13" width="58.9" height="22" rx="11" fill="#fff8c5"/>
+<text x="164.4" y="28.5" style='font:600 12px "Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;text-anchor:middle;fill:#9a6700'>Report</text>
+<text class="l" x="24" y="83">Example</text>
+<rect x="104" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="115" y="84">死</text>
+<rect x="126" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="137" y="84">活</text>
+<text class="w" x="159" y="84">監</text>
+<text class="w" x="181" y="84">視</text>
+<text class="w" x="203" y="84">で</text>
+<text class="w" x="225" y="84">通</text>
+<text class="w" x="247" y="84">信</text>
+<rect x="258" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="269" y="84">経</text>
+<rect x="280" y="63" width="22" height="29" rx="3" fill="#ffcecb"/>
+<text class="w r" x="291" y="84">路</text>
+<text class="w" x="313" y="84">を</text>
+<text class="w" x="335" y="84">確</text>
+<text class="w" x="357" y="84">認</text>
+<text class="w" x="379" y="84">し</text>
+<text class="w" x="401" y="84">ま</text>
+<text class="w" x="423" y="84">す</text>
+<text class="w" x="445" y="84">。</text>
+<text class="l" x="24" y="138">Flags words common in AI writing by matching their base form and part of speech</text>
+<text class="l" x="696" y="138" style="text-anchor:end">2 findings</text>
+</svg>
