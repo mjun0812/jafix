@@ -383,11 +383,7 @@ impl Builtin {
             .collect();
         let mut reported = dictionary_rules_reporting(&parts, self).into_iter();
         for replacement in &replacements {
-            let fixes: Vec<RuleId> = replacement
-                .parts
-                .iter()
-                .flat_map(|part| fix_rules_hitting(part, self))
-                .collect();
+            let fixes = fix_rules_hitting(&replacement.parts, self);
             let reports: Vec<RuleId> = reported
                 .by_ref()
                 .take(replacement.parts.len())
