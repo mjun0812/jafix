@@ -15,7 +15,7 @@ use std::sync::LazyLock;
 use regex::Regex;
 
 use crate::prose::{Document, Prose};
-use crate::sentence::{self, HardBreak};
+use crate::sentence;
 
 use super::builtin::Builtin;
 use super::{FixRuleFinding, Report, RuleId};
@@ -28,11 +28,11 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
     }
     if builtin.yomiyasu_instruction_residue || builtin.yomiyasu_chat_response {
         for paragraph in document.paragraphs.iter().filter(|p| !p.blockquote) {
-            let mut sentences = sentence::split(src, paragraph, HardBreak::ListItems)
-                .into_iter()
+            let mut sentences = sentence::list_sentences(src, paragraph)
+                .iter()
                 .map(|sentence| {
                     let text = visible_sentence(src, &sentence.range, document);
-                    (sentence.range, text)
+                    (sentence.range.clone(), text)
                 })
                 .peekable();
             while let Some((range, text)) = sentences.next() {
@@ -110,6 +110,21 @@ fn visible_text(src: &str, range: &Range<usize>, document: &Document) -> String 
         .collect()
 }
 
+/// リンクの文字列を伏せた本文。元のソースの位置を返さないルールは、文字ごとの位置を記録しない
+fn unlinked_text(src: &str, range: &Range<usize>, document: &Document) -> String {
+    let mut text = String::new();
+    for (part, piece) in visible_pieces(src, range, document) {
+        match part {
+            None => text.push(' '),
+            Some(part) if part.context.link || part.context.link_reference => {
+                text.extend(std::iter::repeat_n(' ', src[piece].chars().count()));
+            }
+            Some(_) => text.push_str(&src[piece]),
+        }
+    }
+    text
+}
+
 /// `visible_text` の文字列を作る切れ端の、元のソース上の範囲と、それが置かれた本文の範囲の並び。本文の間に入れる空白は、
 /// 次の本文の先頭の空の範囲で、本文の範囲は `None` である
 fn visible_pieces<'a>(
@@ -181,8 +196,8 @@ impl Visible {
     }
 
     /// リンクの文字列を、1文字ずつ半角空白にした `text`
-    fn unlinked(&self) -> String {
-        blank(&self.text, &self.links)
+    fn unlinked(&self) -> Cow<'_, str> {
+        blank(Cow::Borrowed(self.text.as_str()), &self.links)
     }
 }
 
@@ -207,6 +222,9 @@ fn prose_in<'a>(document: &'a Document, range: &Range<usize>) -> &'a [Prose] {
 }
 
 fn without_trailing_decoration(text: &str) -> &str {
+    if text.ends_with(['。', '、', '！', '？', '!', '?']) {
+        return text;
+    }
     static DECORATION: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"[\s\p{Extended_Pictographic}\p{Regional_Indicator}\p{Emoji_Modifier}\u{FE0F}\u{200D}]+$").unwrap()
     });
@@ -435,7 +453,7 @@ fn end_closers(
 
 /// 語の規則が見る文字列。かぎ括弧・角括弧・引用符の中と、英数字の識別子 (`snake_case`、`camelCase`、`.` や `/` を含む語)
 /// を、1文字ずつ半角空白にする
-fn masked_words(text: &str) -> String {
+fn masked_words(text: Cow<'_, str>) -> Cow<'_, str> {
     static QUOTES: LazyLock<Regex> =
         LazyLock::new(|| Regex::new("“[^”\n]*”|\"[^\"\n]*\"|‘[^’\n]*’").unwrap());
     static IDENTIFIER: LazyLock<regress::Regex> = LazyLock::new(|| {
@@ -445,22 +463,29 @@ fn masked_words(text: &str) -> String {
         ))
         .unwrap()
     });
-    let text = blank(text, &paired_ranges(text.char_indices(), &BRACKETS));
+    let brackets = paired_ranges(text.char_indices(), &BRACKETS);
+    let text = blank(text, &brackets);
     let quotes: Vec<_> = QUOTES.find_iter(&text).map(|hit| hit.range()).collect();
-    let text = blank(&text, &quotes);
+    let text = blank(text, &quotes);
+    if !text
+        .bytes()
+        .any(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+    {
+        return text;
+    }
     let identifiers: Vec<_> = IDENTIFIER.find_iter(&text).map(|hit| hit.range()).collect();
-    blank(&text, &identifiers)
+    blank(text, &identifiers)
 }
 
 /// 引用として中を伏せる括弧の組。yomiyasuは `[` `]` も引用として伏せる
 const BRACKETS: [(char, char); 3] = [('「', '」'), ('『', '』'), ('[', ']')];
 
 /// 対になった括弧の、開きから閉じまでの範囲。括弧の種類ごとに対を取り、入れ子の内側の対の範囲も返す
-fn paired_ranges(
+fn paired_ranges<const N: usize>(
     chars: impl IntoIterator<Item = (usize, char)>,
-    pairs: &[(char, char)],
+    pairs: &[(char, char); N],
 ) -> Vec<Range<usize>> {
-    let mut opens = vec![Vec::new(); pairs.len()];
+    let mut opens: [Vec<usize>; N] = std::array::from_fn(|_| Vec::new());
     let mut ranges = Vec::new();
     for (i, c) in chars {
         if let Some(kind) = pairs.iter().position(|&(open, _)| open == c) {
@@ -475,7 +500,10 @@ fn paired_ranges(
 }
 
 /// `ranges` の中の文字を、1文字ずつ半角空白にする。字数を変えないので、字数を数える正規表現の結果は変わらない
-fn blank(text: &str, ranges: &[Range<usize>]) -> String {
+fn blank<'a>(text: Cow<'a, str>, ranges: &[Range<usize>]) -> Cow<'a, str> {
+    if ranges.is_empty() {
+        return text;
+    }
     text.char_indices()
         .map(|(i, c)| {
             if ranges.iter().any(|range| range.contains(&i)) {

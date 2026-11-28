@@ -146,6 +146,11 @@ fn upper_first(text: &str) -> String {
 
 /// 利用者の `terms` の項目の箇所を、利用者の置き換えとして返す
 pub fn replacements(src: &str, texts: &[&Prose], rule: &Terminology) -> Vec<UserReplacement> {
+    if !rule.word_terms.iter().any(|term| term.user)
+        && !rule.pair_terms.iter().any(|term| term.user)
+    {
+        return Vec::new();
+    }
     matches(src, texts, rule)
         .into_iter()
         .filter(|m| m.user)

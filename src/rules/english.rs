@@ -86,7 +86,7 @@ pub fn dictionary_report(src: &str, prose: &Prose, builtin: &Builtin) -> Vec<Rep
     reports
 }
 
-/// `terminology` の利用者の `terms` の項目の箇所を返す。重なりは `rules::replacements` が解く
+/// `terminology` の利用者の `terms` の項目の箇所を返す。重なりは `rules::user_replacements` が解く
 pub fn replacements(src: &str, texts: &[&Prose], rule: &Terminology) -> Vec<UserReplacement> {
     terminology::replacements(src, texts, rule)
 }

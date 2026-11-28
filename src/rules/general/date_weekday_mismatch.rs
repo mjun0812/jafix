@@ -26,8 +26,14 @@ pub fn report(src: &str, texts: &[Prose], rule: &DateWeekdayMismatch) -> Vec<Rep
     let mut reports = Vec::new();
     for prose in texts {
         let text = &src[prose.range.clone()];
-        // 日付の書式を当てるのは重いので、曜日の括弧を持たない本文の範囲を先に除く
-        if !text.contains(['(', '（']) {
+        // 日付の書式を調べる前に、曜日として読める括弧が1つはあることを確かめる
+        if !text.match_indices(['(', '（']).any(|(start, _)| {
+            let tail = &text[start..];
+            PAREN
+                .find(tail)
+                .and_then(|paren| paren.group(2))
+                .is_some_and(|inside| date::weekday_name(tail[inside].trim(), rule.lang).is_some())
+        }) {
             continue;
         }
         for found in date::find_dates(text) {

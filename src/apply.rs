@@ -42,8 +42,12 @@ impl<'a> LineIndex<'a> {
         Self { src, line_starts }
     }
 
+    pub fn line(&self, offset: usize) -> usize {
+        self.line_starts.partition_point(|&start| start <= offset)
+    }
+
     pub fn line_col(&self, offset: usize) -> (usize, usize) {
-        let line = self.line_starts.partition_point(|&start| start <= offset);
+        let line = self.line(offset);
         let column = self.src[self.line_starts[line - 1]..offset].chars().count() + 1;
         (line, column)
     }
@@ -51,12 +55,14 @@ impl<'a> LineIndex<'a> {
 
 /// 始まりの位置が対象行にある箇所だけを置き換えた内容を返す
 pub fn apply(src: &str, findings: &[Finding], targets: &TargetLines) -> String {
-    let index = LineIndex::new(src);
+    let index = matches!(targets, TargetLines::Lines(_)).then(|| LineIndex::new(src));
     let mut out = String::with_capacity(src.len());
     let mut copied = 0;
     for finding in findings {
-        let (line, _) = index.line_col(finding.range.start);
-        if !targets.contains(line) {
+        if index
+            .as_ref()
+            .is_some_and(|index| !targets.contains(index.line(finding.range.start)))
+        {
             continue;
         }
         out.push_str(&src[copied..finding.range.start]);

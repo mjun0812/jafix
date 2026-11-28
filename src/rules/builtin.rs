@@ -2276,6 +2276,10 @@ impl JtfStyle {
         self.enabled[rule as usize]
     }
 
+    pub fn any_enabled(&self) -> bool {
+        self.enabled.contains(&true)
+    }
+
     /// `rule` を、`options` が無ければ無効にし、あればそのオプションで有効にする。`3.3` だけがオプションを持つ
     fn set(&mut self, rule: JtfRule, options: Option<&Table>) -> Result<(), String> {
         self.enabled[rule as usize] = match rule {

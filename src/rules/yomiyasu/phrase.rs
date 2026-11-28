@@ -1,6 +1,7 @@
 //! 定型の前置きと結び、AIの言い回し。yomiyasu 3.4.1の `meta_filler` (チャット応答の2型を除く)、`summary_restatement`、
 //! `meta_intro`、`count_declaration`、`ai_phrase` の検査
 
+use std::borrow::Cow;
 use std::ops::Range;
 use std::sync::LazyLock;
 
@@ -9,11 +10,11 @@ use regex::Regex;
 use crate::prose::Document;
 use crate::rules::builtin::Builtin;
 use crate::rules::{Report, RuleId};
-use crate::sentence::{self, HardBreak};
+use crate::sentence;
 
 use super::{
-    BRACKETS, Visible, blank, chat_response, clauses, end_closers, finding, masked_words,
-    paired_ranges, prose_in, visible_text, with_undecorated,
+    BRACKETS, blank, chat_response, clauses, end_closers, finding, masked_words, paired_ranges,
+    prose_in, unlinked_text, visible_text, with_undecorated,
 };
 
 pub(super) fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> {
@@ -25,7 +26,7 @@ pub(super) fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<R
     if builtin.yomiyasu_meta_filler || !statements.is_empty() {
         // 見出し・表のセル・引用は見ない
         for paragraph in document.paragraphs.iter().filter(|p| !p.blockquote) {
-            for sentence in sentence::split(src, paragraph, HardBreak::ListItems) {
+            for sentence in sentence::list_sentences(src, paragraph) {
                 let text = visible_text(src, &sentence.range, document);
                 if builtin.yomiyasu_meta_filler
                     && let Some(hit) = meta_filler(
@@ -135,7 +136,10 @@ static FILLERS: LazyLock<[Filler; 13]> = LazyLock::new(|| {
 fn meta_filler(text: &str, closers: &str) -> Option<String> {
     let plain: Vec<&str> = clauses(text).collect();
     let undecorated = with_undecorated(plain.iter().copied(), closers);
-    let masked = blank(text, &paired_ranges(text.char_indices(), &BRACKETS));
+    let masked = blank(
+        Cow::Borrowed(text),
+        &paired_ranges(text.char_indices(), &BRACKETS),
+    );
     let unquoted = with_undecorated(clauses(&masked), closers);
     FILLERS.iter().find_map(|filler| {
         let hit = |clause: &str| {
@@ -438,8 +442,8 @@ fn report_ai_phrase(src: &str, document: &Document, reports: &mut Vec<Report>) {
         )
         .filter(|(paragraph, _)| !paragraph.blockquote);
     for (paragraph, block) in paragraphs {
-        for sentence in sentence::split(src, paragraph, HardBreak::ListItems) {
-            report_ai_phrase_in(src, document, sentence.range, block, reports);
+        for sentence in sentence::list_sentences(src, paragraph) {
+            report_ai_phrase_in(src, document, sentence.range.clone(), block, reports);
         }
     }
     for cell in &document.table_cells {
@@ -467,7 +471,7 @@ fn report_ai_phrase_in(
     reports: &mut Vec<Report>,
 ) {
     // yomiyasuは角括弧の中を伏せるので、リンクの文字列も伏せる
-    let text = masked_words(&Visible::new(src, &range, document).unlinked());
+    let text = masked_words(Cow::Owned(unlinked_text(src, &range, document)));
     let hit = word_clauses(&text).find_map(|clause| {
         AI_PHRASES.iter().find(|phrase| {
             phrase.blocks.contains(&block)

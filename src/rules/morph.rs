@@ -31,7 +31,7 @@ use regex::Regex;
 
 use crate::morph::{self, Token};
 use crate::prose::{Context, Document, Inline, InlineKind};
-use crate::sentence::{self, HardBreak, Sentence};
+use crate::sentence::{self, Sentence};
 
 use self::dict::ABUSAGES;
 use self::no_mix_dearu_desumasu::{Kind, Styles};
@@ -39,7 +39,7 @@ use self::projection::Projection;
 use super::builtin::Builtin;
 use super::{Report, RuleId};
 
-/// 有効なルールの指摘を返す。順は問わない (`rules::report` が位置の順に並べる)
+/// 有効なルールの指摘を返す。呼び出し側が位置の順に並べる
 pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> {
     let mut reports = Vec::new();
     let mut styles = Styles::default();
@@ -64,7 +64,7 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
         if (!unquoted && redundant.is_none()) || skips_japanese(paragraph.range.start) {
             continue;
         }
-        let sentences = sentence::split(src, paragraph, HardBreak::ListItems);
+        let sentences = sentence::list_sentences(src, paragraph);
         let projections: Vec<Projection> = sentences
             .iter()
             .map(|sentence| Projection::new(src, sentence))
@@ -111,9 +111,9 @@ pub fn report(src: &str, document: &Document, builtin: &Builtin) -> Vec<Report> 
             .iter()
             .filter(|heading| !heading.blockquote && !skips_japanese(heading.range.start))
         {
-            for sentence in sentence::split(src, heading, HardBreak::ListItems) {
-                let projection = Projection::new(src, &sentence);
-                let analyzed = Analyzed::new(&sentence, &projection);
+            for sentence in sentence::list_sentences(src, heading) {
+                let projection = Projection::new(src, sentence);
+                let analyzed = Analyzed::new(sentence, &projection);
                 styles.count(Kind::Header, &analyzed, rule.strict);
             }
         }
